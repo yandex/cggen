@@ -7,6 +7,33 @@
 
 import Foundation
 
+extension CGRect {
+  var x: CGFloat {
+    return origin.x
+  }
+  var y: CGFloat {
+    return origin.y
+  }
+}
+
+extension Int {
+  var abs: Int {
+    return self < 0 ? -self : self
+  }
+}
+
+struct RGBColor {
+  let red : CGFloat
+  let green : CGFloat
+  let blue : CGFloat
+  func cgColor() -> CGColor {
+    return CGColor(red: red, green: green, blue: blue, alpha: 1)
+  }
+  func uniqId() -> String {
+    return "\("\(red)\(green)\(blue)".hashValue.abs)"
+  }
+}
+
 enum DrawStep {
   case saveGState
   case restoreGState
@@ -17,8 +44,8 @@ enum DrawStep {
   case clip(CGPathFillRule)
   case endPath
   case flatness(CGFloat)
-  case nonStrokeColorSpace(CGColorSpace)
-  case nonStrokeColor(CGColor)
+  case nonStrokeColorSpace
+  case nonStrokeColor(RGBColor)
   case appendRectangle(CGRect)
   case fill(CGPathFillRule)
 }
@@ -28,6 +55,9 @@ class DrawRoute {
   private var steps : Array<DrawStep> = [];
   init(boundingRect : CGRect) {
     self.boundingRect = boundingRect
+  }
+  public func processResources(resources: [String:PDFObject]) {
+    // TBD
   }
   public func push(step: DrawStep) -> Int {
     steps.append(step)
@@ -65,14 +95,15 @@ extension DrawRoute {
       case .clip(let rule):
         ctx.clip(using: rule)
       case .endPath:
+        // FIXME: Decide what to do here
         break
-//        ctx.closePath()
       case .flatness(let flatness):
         ctx.setFlatness(flatness)
-      case .nonStrokeColorSpace(let cs):
-        ctx.setFillColorSpace(cs)
+      case .nonStrokeColorSpace:
+        // ctx.setFillColorSpace(cs)
+        break
       case .nonStrokeColor(let color):
-        ctx.setFillColor(color)
+        ctx.setFillColor(color.cgColor())
       case .appendRectangle(let rect):
         ctx.addRect(rect)
       case .fill(let rule):

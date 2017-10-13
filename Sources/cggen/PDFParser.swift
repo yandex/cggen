@@ -7,6 +7,86 @@
 
 import Foundation
 
+enum PDFObject {
+  case null
+  case boolean(CGPDFBoolean)
+  case integer(CGPDFInteger)
+  case real(CGPDFReal)
+  case name(String)
+  case string(String)
+  case array([PDFObject])
+  case dictionary([String:PDFObject])
+  case stream([String:PDFObject])
+  init(pdfObj obj: CGPDFObjectRef) {
+    let type = CGPDFObjectGetType(obj)
+    switch type {
+    case .null:
+      self = .null
+    case .boolean:
+      var bool: CGPDFBoolean = 0
+      guard CGPDFObjectGetValue(obj, .boolean, &bool) else { fatalError() }
+      self = .boolean(bool)
+    case .integer:
+      var integer: CGPDFInteger = 0
+      guard CGPDFObjectGetValue(obj, .integer, &integer) else { fatalError() }
+      self = .integer(integer)
+    case .real:
+      var real: CGPDFReal = 0
+      guard CGPDFObjectGetValue(obj, .real, &real) else { fatalError() }
+      self = .real(real)
+    case .name:
+      var tempCString: UnsafePointer<Int8>? = nil
+      CGPDFObjectGetValue(obj, .name, &tempCString)
+      self = .name(String(cString: tempCString!))
+    case .string:
+      var tempString: CGPDFStringRef? = nil
+      CGPDFObjectGetValue(obj, .string, &tempString)
+      let string: String = CGPDFStringCopyTextString(tempString!)! as String
+      self = .string(string)
+    case .array:
+      var tempArray: CGPDFArrayRef? = nil;
+      CGPDFObjectGetValue(obj, .array, &tempArray)
+      let array = tempArray!
+      let range = 0..<CGPDFArrayGetCount(array)
+      self = .array(range.map { (i) -> PDFObject in
+        var tempObj: CGPDFObjectRef? = nil
+        CGPDFArrayGetObject(array, i, &tempObj)
+        let obj = tempObj!
+        return PDFObject(pdfObj: obj)
+      })
+    case .dictionary:
+      var tempDict: CGPDFDictionaryRef? = nil;
+      CGPDFObjectGetValue(obj, .dictionary, &tempDict)
+      self = .dictionary(PDFObject.processDict(tempDict!))
+    case .stream:
+      var tempStream: CGPDFDictionaryRef? = nil;
+      CGPDFObjectGetValue(obj, .stream, &tempStream)
+      let stream = tempStream!
+      let dict = CGPDFStreamGetDictionary(stream)!
+      self = .stream(PDFObject.processDict(dict))
+    }
+  }
+
+  static func processDict(_ dict: CGPDFDictionaryRef) -> [String : PDFObject] {
+    var result: NSMutableDictionary = NSMutableDictionary()
+    CGPDFDictionaryApplyFunction(dict, { (key, obj, info) in
+      let result = info!.load(as: NSMutableDictionary.self)
+      let key = String(cString: key)
+      if key == "Parent" {
+        result[key] = PDFObject.null
+        return
+      }
+      result[key] = PDFObject(pdfObj: obj)
+    }, &result)
+    return result as! [String : PDFObject]
+  }
+
+  func fDictionary() -> [String:PDFObject] {
+    guard case .dictionary(let d) = self else { fatalError() }
+    return d
+  }
+}
+
 extension CGPDFScannerRef {
   func popNumber() -> CGPDFReal? {
     var val : CGPDFReal = 0;
@@ -34,19 +114,20 @@ extension CGPDFScannerRef {
     guard let origin = popPoint() else { fatalError() }
     return CGRect(origin: origin, size: size)
   }
-  func popColor() -> CGColor? {
+  func popColor() -> RGBColor? {
     guard let blue = popNumber() else { return nil }
     guard let green = popNumber(), let red = popNumber() else { fatalError() }
-    return CGColor(red: red, green: green, blue: blue, alpha: 1)
+    return RGBColor(red: red, green: green, blue: blue)
+  }
+  func popName() -> String? {
+    var pointer: UnsafePointer<Int8>? = nil
+    CGPDFScannerPopName(self, &pointer)
+    guard let cString = pointer else { return nil }
+    return String(cString: cString)
   }
 }
 
-func parse(scale: CGFloat) -> [CGImage] {
-  let pdfURL = URL(fileURLWithPath: CommandLine.arguments[2]) as CFURL
-
-  // Create pdf document
-
-
+func parse(pdfURL: CFURL) -> [DrawRoute] {
   guard let operatorTableRef = CGPDFOperatorTableCreate(),
       let pdfDoc = CGPDFDocument(pdfURL) else {
     return [];
@@ -80,9 +161,8 @@ func parse(scale: CGFloat) -> [CGImage] {
     callback(info: info, step: .flatness(scanner.popNumber()!))
   }
   CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { (scanner, info) in
-    // FIXME: Extract proper color space
-    let cs = CGColorSpaceCreateDeviceRGB();
-    callback(info: info, step: .nonStrokeColorSpace(cs))
+    // TBD: Extract proper color space
+    callback(info: info, step: .nonStrokeColorSpace)
   }
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "m") { (scanner, info) in
@@ -105,23 +185,29 @@ func parse(scale: CGFloat) -> [CGImage] {
     callback(info: info, step: .fill(.winding))
   }
 
-  return (1...pdfDoc.numberOfPages).map { (pageNum) -> CGImage in
+  return (1...pdfDoc.numberOfPages).map { (pageNum) in
     let page = pdfDoc.page(at: pageNum)!
+
     let stream = CGPDFContentStreamCreateWithPage(page)
-    print()
     var route = DrawRoute(boundingRect: page.getBoxRect(.mediaBox))
+
+    let pageDictionary = PDFObject.processDict(page.dictionary!)
+    guard case .dictionary(let resources) = pageDictionary["Resources"]! else {
+      fatalError()
+    }
+    route.processResources(resources: resources)
+
     let scanner = CGPDFScannerCreate(stream, operatorTableRef, &route)
     CGPDFScannerScan(scanner)
 
     CGPDFScannerRelease(scanner)
     CGPDFContentStreamRelease(stream)
-    return route.draw(scale: scale)
+    return route
   }
 }
 
 func callback(info: UnsafeMutableRawPointer?, step : DrawStep) {
   let route = info!.load(as: DrawRoute.self)
   let n = route.push(step: step)
-  print("\(n) \(step)")
   info!.storeBytes(of: route, as: DrawRoute.self)
 }
