@@ -24,6 +24,7 @@ extension CoreGraphicsGenerator {
   func generateFile(namesAndRoutes: [(String, DrawRoute)]) -> String {
     return filePreamble()
       + namesAndRoutes.map({ generateImageFunction(nameAndRoute: $0)}).joined(separator: "\n\n")
+      + "\n"
   }
 }
 
