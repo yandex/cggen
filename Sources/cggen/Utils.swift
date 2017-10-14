@@ -11,3 +11,12 @@ extension String {
     return components(separatedBy: "_").map { $0.capitalizedFirst()}.joined()
   }
 }
+
+extension CGRect {
+  var x: CGFloat {
+    return origin.x
+  }
+  var y: CGFloat {
+    return origin.y
+  }
+}

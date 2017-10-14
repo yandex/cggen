@@ -3,30 +3,12 @@
 
 import Foundation
 
-extension CGRect {
-  var x: CGFloat {
-    return origin.x
-  }
-  var y: CGFloat {
-    return origin.y
-  }
-}
-
-extension Int {
-  var abs: Int {
-    return self < 0 ? -self : self
-  }
-}
-
 struct RGBColor {
   let red : CGFloat
   let green : CGFloat
   let blue : CGFloat
   func cgColor() -> CGColor {
     return CGColor(red: red, green: green, blue: blue, alpha: 1)
-  }
-  func uniqId() -> String {
-    return "\("\(red)\(green)\(blue)".hashValue.abs)"
   }
 }
 
