@@ -1,9 +1,5 @@
-//
-//  PDFParser.swift
-//  cggenPackageDescription
-//
-//  Created by Alfred Zien on 11/10/2017.
-//
+// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Author: Alfred Zien <zienag@yandex-team.ru>
 
 import Foundation
 
@@ -208,6 +204,6 @@ func parse(pdfURL: CFURL) -> [DrawRoute] {
 
 func callback(info: UnsafeMutableRawPointer?, step : DrawStep) {
   let route = info!.load(as: DrawRoute.self)
-  let n = route.push(step: step)
+  _ = route.push(step: step)
   info!.storeBytes(of: route, as: DrawRoute.self)
 }
