@@ -3,6 +3,24 @@
 
 import Foundation
 
+struct Logger {
+  static var shared = Logger()
+  private var level: Bool? = nil
+  mutating func setLevel(level: Bool) {
+    self.level = level;
+  }
+  func log(_ s: String) {
+    guard let level = level else { fatalError("log level must be set") }
+    if level {
+      print(s)
+    }
+  }
+}
+
+func log(_ s: String) {
+  Logger.shared.log(s)
+}
+
 extension String {
   func capitalizedFirst() -> String {
     return prefix(1).uppercased() + dropFirst()

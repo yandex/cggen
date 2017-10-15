@@ -63,6 +63,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     let release = "  CGColorRelease(\(colorVarName));"
     return [createColor, cmdStr, release];
   }
+  
 
   func filePreamble() -> String {
     let importLine: String
@@ -112,6 +113,16 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       case .evenOdd:
         return [cmd("EOFillPath")]
       }
+    case .strokeColorSpace:
+      return []
+    case .strokeColor(let color):
+      return cmd("SetStrokeColorWithColor", color: color)
+    case .concatCTM(let transform):
+      return [cmd("ConcatCTM", "CGAffineTransformMake(\(transform.a), \(transform.b), \(transform.c), \(transform.d), \(transform.tx), \(transform.ty))")]
+    case .lineWidth(let w):
+      return [cmd("SetLineWidth", float: w)]
+    case .stroke:
+      return [cmd("StrokePath")]
     }
   }
 

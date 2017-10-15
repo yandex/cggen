@@ -121,6 +121,15 @@ extension CGPDFScannerRef {
     guard let cString = pointer else { return nil }
     return String(cString: cString)
   }
+  func popAffineTransform() -> CGAffineTransform? {
+    guard let f = popNumber() else { return nil }
+    guard let e = popNumber(),
+      let d = popNumber(),
+      let c = popNumber(),
+      let b = popNumber(),
+      let a = popNumber() else { fatalError() }
+    return CGAffineTransform(a: a, b: b, c: c, d: d, tx: e, ty: f)
+  }
 }
 
 func parse(pdfURL: CFURL) -> [DrawRoute] {
@@ -129,17 +138,63 @@ func parse(pdfURL: CFURL) -> [DrawRoute] {
     return [];
   }
 
-  CGPDFOperatorTableSetCallback(operatorTableRef, "q") { (scanner, info) in
-    callback(info: info, step: .saveGState)
+  CGPDFOperatorTableSetCallback(operatorTableRef, "b") { (scanner, info) in
+    fatalError("not implemented")
   }
-  CGPDFOperatorTableSetCallback(operatorTableRef, "Q") { (scanner, info) in
-    callback(info: info, step: .restoreGState)
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "B") { (scanner, info) in
+    fatalError("not implemented")
   }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "b*") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "B*") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "BDC") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "BT") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "BX") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
   CGPDFOperatorTableSetCallback(operatorTableRef, "c") { (scanner, info) in
     let c3 = scanner.popPoint()!
     let c2 = scanner.popPoint()!
     let c1 = scanner.popPoint()!
     callback(info: info, step: .curve(c1, c2, c3))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "cm") { (scanner, info) in
+    callback(info: info, step: .concatCTM(scanner.popAffineTransform()!))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "CS") { (scanner, info) in
+    callback(info: info, step: .strokeColorSpace)
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { (scanner, info) in
+    // TBD: Extract proper color space
+    callback(info: info, step: .nonStrokeColorSpace)
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "d") { (scanner, info) in
+    fatalError("not implemented")
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "q") { (scanner, info) in
+    callback(info: info, step: .saveGState)
+  }
+  CGPDFOperatorTableSetCallback(operatorTableRef, "Q") { (scanner, info) in
+    callback(info: info, step: .restoreGState)
   }
   CGPDFOperatorTableSetCallback(operatorTableRef, "l") { (scanner, info) in
     callback(info: info, step: .line(scanner.popPoint()!))
@@ -147,38 +202,52 @@ func parse(pdfURL: CFURL) -> [DrawRoute] {
   CGPDFOperatorTableSetCallback(operatorTableRef, "h") { (scanner, info) in
     callback(info: info, step: .closePath)
   }
-  CGPDFOperatorTableSetCallback(operatorTableRef, "W") { (scanner, info) in
-    callback(info: info, step: .clip(.winding))
-  }
+
   CGPDFOperatorTableSetCallback(operatorTableRef, "n") { (scanner, info) in
     callback(info: info, step: .endPath)
   }
   CGPDFOperatorTableSetCallback(operatorTableRef, "i") { (scanner, info) in
     callback(info: info, step: .flatness(scanner.popNumber()!))
   }
-  CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { (scanner, info) in
-    // TBD: Extract proper color space
-    callback(info: info, step: .nonStrokeColorSpace)
-  }
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "m") { (scanner, info) in
     callback(info: info, step: .moveTo(scanner.popPoint()!))
-  }
-
-  CGPDFOperatorTableSetCallback(operatorTableRef, "W*") { (scanner, info) in
-    callback(info: info, step: .clip(.evenOdd))
   }
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "re") { (scanner, info) in
     callback(info: info, step: .appendRectangle(scanner.popRect()!))
   }
 
+  CGPDFOperatorTableSetCallback(operatorTableRef, "s") { (scanner, info) in
+    fatalError()
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "S") { (scanner, info) in
+    callback(info: info, step: .stroke)
+  }
+
   CGPDFOperatorTableSetCallback(operatorTableRef, "sc") { (scanner, info) in
     callback(info: info, step: .nonStrokeColor(scanner.popColor()!))
   }
 
+  CGPDFOperatorTableSetCallback(operatorTableRef, "SC") { (scanner, info) in
+    callback(info: info, step: .strokeColor(scanner.popColor()!))
+  }
+
   CGPDFOperatorTableSetCallback(operatorTableRef, "f") { (scanner, info) in
     callback(info: info, step: .fill(.winding))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "w") { (scanner, info) in
+    callback(info: info, step: .lineWidth(scanner.popNumber()!))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "W") { (scanner, info) in
+    callback(info: info, step: .clip(.winding))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "W*") { (scanner, info) in
+    callback(info: info, step: .clip(.evenOdd))
   }
 
   return (1...pdfDoc.numberOfPages).map { (pageNum) in
@@ -204,6 +273,7 @@ func parse(pdfURL: CFURL) -> [DrawRoute] {
 
 func callback(info: UnsafeMutableRawPointer?, step : DrawStep) {
   let route = info!.load(as: DrawRoute.self)
-  _ = route.push(step: step)
+  let n = route.push(step: step)
+  cggen.log("\(n): \(step)")
   info!.storeBytes(of: route, as: DrawRoute.self)
 }

@@ -23,9 +23,14 @@ enum DrawStep {
   case endPath
   case flatness(CGFloat)
   case nonStrokeColorSpace
+  case strokeColorSpace
   case nonStrokeColor(RGBColor)
+  case strokeColor(RGBColor)
   case appendRectangle(CGRect)
   case fill(CGPathFillRule)
+  case concatCTM(CGAffineTransform)
+  case lineWidth(CGFloat)
+  case stroke
 }
 
 class DrawRoute {
@@ -78,7 +83,7 @@ extension DrawRoute {
       case .flatness(let flatness):
         ctx.setFlatness(flatness)
       case .nonStrokeColorSpace:
-        // ctx.setFillColorSpace(cs)
+        // FIXME: Color space
         break
       case .nonStrokeColor(let color):
         ctx.setFillColor(color.cgColor())
@@ -86,6 +91,17 @@ extension DrawRoute {
         ctx.addRect(rect)
       case .fill(let rule):
         ctx.fillPath(using: rule)
+      case .strokeColorSpace:
+        // FIXME: Color space
+        break
+      case .strokeColor(let color):
+        ctx.setStrokeColor(color.cgColor())
+      case .concatCTM(let transform):
+        ctx.concatenate(transform)
+      case .lineWidth(let w):
+        ctx.setLineWidth(w)
+      case .stroke:
+        ctx.strokePath()
       }
     }
     return ctx.makeImage()!
