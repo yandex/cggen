@@ -149,7 +149,7 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   }
   func funcStart(imageName: String, imageSize: CGSize) -> [String] {
     return [
-      "static const CGSize k\(imageName)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};",
+      "static const CGSize k\(prefix)\(imageName)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};",
       "void \(prefix)Draw\(imageName)ImageInContext(CGContextRef context);",
     ]
   }

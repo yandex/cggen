@@ -13,6 +13,7 @@ enum PDFObject {
   case array([PDFObject])
   case dictionary([String:PDFObject])
   case stream([String:PDFObject])
+  
   init(pdfObj obj: CGPDFObjectRef) {
     let type = CGPDFObjectGetType(obj)
     switch type {
