@@ -1,15 +1,7 @@
 {
   "object": {
     "pins": [
-      {
-        "package": "ArgParse",
-        "repositoryURL": "https://github.com/dmulholland/ArgParse.git",
-        "state": {
-          "branch": null,
-          "revision": "bf716948e7f8429021e2672ae7abdf40e5b07970",
-          "version": "0.4.0"
-        }
-      }
+
     ]
   },
   "version": 1

@@ -5,12 +5,11 @@ import PackageDescription
 
 let package = Package(
   name: "cggen",
-  dependencies: [
-    .package(url: "https://github.com/dmulholland/ArgParse.git", .exact("0.4.0")),
-  ],
   targets: [
     .target(
       name: "cggen",
       dependencies: [ "ArgParse" ]),
+    .target(
+      name: "ArgParse")
   ]
 )
