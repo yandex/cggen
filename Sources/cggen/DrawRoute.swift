@@ -12,6 +12,13 @@ struct RGBColor {
   }
 }
 
+struct Gradient {
+  let locationAndColors: [(CGFloat, RGBColor)]
+  let startPoint: CGPoint
+  let endPoint: CGPoint
+  let options: CGGradientDrawingOptions
+}
+
 enum DrawStep {
   case saveGState
   case restoreGState
@@ -31,16 +38,18 @@ enum DrawStep {
   case concatCTM(CGAffineTransform)
   case lineWidth(CGFloat)
   case stroke
+  case colorRenderingIntent
+  case parametersFromGraphicsState
+  case paintWithGradient(String)
 }
 
 class DrawRoute {
-  let boundingRect : CGRect;
-  private var steps : Array<DrawStep> = [];
-  init(boundingRect : CGRect) {
+  let boundingRect: CGRect
+  let gradients: [String:Gradient]
+  private var steps: Array<DrawStep> = [];
+  init(boundingRect: CGRect, gradients: [String:Gradient]) {
     self.boundingRect = boundingRect
-  }
-  public func processResources(resources: [String:PDFObject]) {
-    // TBD
+    self.gradients = gradients
   }
   public func push(step: DrawStep) -> Int {
     steps.append(step)
@@ -102,6 +111,21 @@ extension DrawRoute {
         ctx.setLineWidth(w)
       case .stroke:
         ctx.strokePath()
+      case .colorRenderingIntent:
+        break
+      case .parametersFromGraphicsState:
+        break
+      case .paintWithGradient(let gradientKey):
+        let grad = gradients[gradientKey]!
+        let locs = grad.locationAndColors.map { $0.0 }
+        let color = grad.locationAndColors.map { $0.1.cgColor() }
+        let cgGrad = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                colors: color as CFArray,
+                                locations: locs)!
+        ctx.drawLinearGradient(cgGrad,
+                               start: grad.startPoint,
+                               end: grad.endPoint,
+                               options: grad.options)
       }
     }
     return ctx.makeImage()!
