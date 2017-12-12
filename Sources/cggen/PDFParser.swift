@@ -1,6 +1,7 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
+import Base
 import Foundation
 
 struct PDFFunction {
@@ -352,7 +353,7 @@ class ParsingContext {
 func parse(pdfURL: CFURL) -> [DrawRoute] {
   guard let operatorTableRef = CGPDFOperatorTableCreate(),
       let pdfDoc = CGPDFDocument(pdfURL) else {
-    return [];
+    fatalError("Could not open pdf file at: \(pdfURL)");
   }
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "b") { (scanner, info) in
@@ -437,6 +438,14 @@ func parse(pdfURL: CFURL) -> [DrawRoute] {
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "re") { (scanner, info) in
     callback(info: info, step: .appendRectangle(scanner.popRect()!))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "rg") { (scanner, info) in
+    callback(info: info, step: .nonStrokeColor(scanner.popColor()!))
+  }
+
+  CGPDFOperatorTableSetCallback(operatorTableRef, "RG") { (scanner, info) in
+    callback(info: info, step: .strokeColor(scanner.popColor()!))
   }
 
   CGPDFOperatorTableSetCallback(operatorTableRef, "ri") { (scanner, info) in

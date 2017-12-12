@@ -5,11 +5,20 @@ import PackageDescription
 
 let package = Package(
   name: "cggen",
+  products: [
+    .executable(name: "cggen", targets: ["cggen"]),
+    .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
+  ],
   targets: [
     .target(
-      name: "cggen",
-      dependencies: [ "ArgParse" ]),
+      name: "png-fuzzy-compare",
+      dependencies: [ "ArgParse", "Base" ]),
     .target(
-      name: "ArgParse")
+      name: "cggen",
+      dependencies: [ "ArgParse", "Base" ]),
+    .target(
+      name: "ArgParse"),
+    .target(
+      name: "Base"),
   ]
 )

@@ -559,3 +559,12 @@ public class ArgParser {
         print("  \(command ?? "[none]")")
     }
 }
+
+extension ArgParser {
+  public func string(at key: String) -> String? {
+    return found(key) ? getString(key) : nil
+  }
+  public func double(at key: String) -> Double? {
+    return found(key) ? getDouble(key) : nil
+  }
+}
