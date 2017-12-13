@@ -3,10 +3,11 @@
 
 struct Logger {
   static var shared = Logger()
-  private var level: Bool? = nil
+  private var level: Bool?
   mutating func setLevel(level: Bool) {
-    self.level = level;
+    self.level = level
   }
+
   func log(_ s: String) {
     guard let level = level else { fatalError("log level must be set") }
     if level {

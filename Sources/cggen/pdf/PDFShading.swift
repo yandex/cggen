@@ -4,7 +4,7 @@
 import Foundation
 
 struct PDFShading {
-  enum ShadingType: Int  {
+  enum ShadingType: Int {
     case functionBased = 1
     case axial
     case radial
@@ -13,6 +13,7 @@ struct PDFShading {
     case coonsPatchMeshes
     case tensorProductPatchMeshes
   }
+
   let extend: (Bool, Bool)
   let colorSpace: PDFObject
   let type: ShadingType
@@ -48,15 +49,15 @@ struct PDFShading {
       // Function
       let functionObj = dict["Function"],
       let function = PDFFunction(obj: functionObj)
-      else { return nil }
+    else { return nil }
 
     precondition(type == .axial, "Only axial shading supported")
 
-    self.extend = (extendStart != 0, extendEnd != 0)
+    extend = (extendStart != 0, extendEnd != 0)
     self.colorSpace = colorSpace
     self.type = type
-    self.domain = (domainStart, domainEnd)
-    self.coords = (coordsX0, coordsY0, coordsX1, coordsY1)
+    domain = (domainStart, domainEnd)
+    coords = (coordsX0, coordsY0, coordsX1, coordsY1)
     self.function = function
   }
 

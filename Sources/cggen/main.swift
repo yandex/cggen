@@ -1,8 +1,8 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import Foundation
 import ArgParse
+import Foundation
 
 extension Double {
   var cgfloat: CGFloat {
@@ -62,13 +62,13 @@ func main(args: Args) {
   let routes = args.files
     .map { URL(fileURLWithPath: $0) }
     .map { ($0.deletingPathExtension().lastPathComponent, PDFParser.parse(pdfURL: $0 as CFURL)) }
-    .flatMap { (nameAndRoutes) in
+    .flatMap { nameAndRoutes in
       nameAndRoutes.1.enumerated().flatMap({ (offset, route) -> (ImageName, DrawRoute) in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
         let imgName = ImageName(snakeCase: finalName)
         return (imgName, route)
       })
-  }
+    }
 
   let objcPrefix = args.objcPrefix ?? ""
 

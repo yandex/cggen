@@ -7,6 +7,9 @@
 // Version: 0.4.0
 // -----------------------------------------------------------------------------
 
+// swiftformat:disable blankLinesBetweenScopes consecutiveBlankLines elseOnSameLine
+// swiftformat:disable indent redundantSelf semicolons spaceAroundOperators
+
 import Foundation
 
 

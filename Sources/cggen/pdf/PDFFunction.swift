@@ -1,8 +1,8 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import CoreGraphics
 import Base
+import CoreGraphics
 
 struct PDFFunction {
   struct Point {
@@ -30,7 +30,7 @@ struct PDFFunction {
       case let .array(domainArray) = domainObj,
       let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
       let bitsPerSample = dict["BitsPerSample"]?.integerVal()
-      else { return nil }
+    else { return nil }
     precondition(format == .raw)
 
     let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
@@ -42,13 +42,13 @@ struct PDFFunction {
     precondition(bitsPerSample == 8, "Only UInt8 supported")
     let samples = [UInt8](data).map { CGFloat($0) / CGFloat(UInt8.max) }
     let values = samples.splitBy(subSize: rangeDim)
-    let points = (0 ..< size[0]).map { (s) -> Point in
+    let points = (0..<size[0]).map { (s) -> Point in
       let start = domain[0].0
       let end = domain[0].1
       let step = (end - start) / CGFloat(size[0] - 1)
       let current = start + CGFloat(s) * step
       return Point(arg: current, value: values[s])
-      }.removeIntermediates()
+    }.removeIntermediates()
 
     self.range = range
     self.rangeDim = rangeDim
@@ -68,7 +68,7 @@ extension PDFFunction.Point: LinearInterpolatable {
       .reduce(0) { (acc, pair) -> CGFloat in
         let d = pair.0 - pair.1
         return acc + d * d
-    }
+      }
     return squareDistance < 0.001
   }
   static func linearInterpolate(from lhs: PDFFunction.Point,
@@ -76,12 +76,12 @@ extension PDFFunction.Point: LinearInterpolatable {
                                 at x: CGFloat) -> PDFFunction.Point {
     precondition(lhs.value.count == rhs.value.count)
     let outN = lhs.value.count
-    let out = (0 ..< outN).map { (i) -> CGFloat in
+    let out = (0..<outN).map { (i) -> CGFloat in
       let x1 = lhs.arg
       let x2 = rhs.arg
       let y1 = lhs.value[i]
       let y2 = rhs.value[i]
-      let k =  (y1 - y2) / (x1 - x2)
+      let k = (y1 - y2) / (x1 - x2)
       let b = y1 - k * x1
       return k * x + b
     }

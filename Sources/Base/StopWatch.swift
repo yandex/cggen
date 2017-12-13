@@ -18,6 +18,7 @@ public struct StopWatch {
   public func lap() -> Result {
     return Result(time: Date().timeIntervalSince(started))
   }
+
   public mutating func reset() -> Result {
     let prevStarted = started
     started = Date()

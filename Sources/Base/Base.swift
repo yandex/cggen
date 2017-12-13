@@ -1,15 +1,16 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import Foundation
 import CoreGraphics
+import Foundation
 
 extension String {
   public func capitalizedFirst() -> String {
     return prefix(1).uppercased() + dropFirst()
   }
+
   public func snakeToCamelCase() -> String {
-    return components(separatedBy: "_").map { $0.capitalizedFirst()}.joined()
+    return components(separatedBy: "_").map { $0.capitalizedFirst() }.joined()
   }
 }
 
@@ -34,9 +35,10 @@ extension Array {
   public func splitBy(subSize: Int) -> [[Element]] {
     return stride(from: 0, to: count, by: subSize).map { startIndex in
       let endIndex = startIndex.advanced(by: subSize)
-      return Array(self[startIndex ..< endIndex])
+      return Array(self[startIndex..<endIndex])
     }
   }
+
   public func appendToAll<T>(a: T) -> [(T, Element)] {
     return map { (a, $0) }
   }

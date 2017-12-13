@@ -11,6 +11,7 @@ struct RGBAColor {
   var cgColor: CGColor {
     return CGColor(red: red, green: green, blue: blue, alpha: alpha)
   }
+
   static func rgb(_ rgb: RGBColor, alpha: CGFloat) -> RGBAColor {
     return RGBAColor(red: rgb.red, green: rgb.green,
                      blue: rgb.blue, alpha: alpha)
@@ -54,16 +55,18 @@ enum DrawStep {
 
 struct DrawRoute {
   let boundingRect: CGRect
-  let gradients: [String:Gradient]
-  private var steps: Array<DrawStep> = [];
-  init(boundingRect: CGRect, gradients: [String:Gradient]) {
+  let gradients: [String: Gradient]
+  private var steps: Array<DrawStep> = []
+  init(boundingRect: CGRect, gradients: [String: Gradient]) {
     self.boundingRect = boundingRect
     self.gradients = gradients
   }
+
   public mutating func push(step: DrawStep) -> Int {
     steps.append(step)
     return steps.count
   }
+
   public func getSteps() -> [DrawStep] {
     return steps
   }
@@ -85,25 +88,25 @@ extension DrawRoute {
         ctx.saveGState()
       case .restoreGState:
         ctx.restoreGState()
-      case .moveTo(let p):
+      case let .moveTo(p):
         ctx.move(to: p)
-      case .curve(let p1, let p2, let p3):
+      case let .curve(p1, p2, p3):
         ctx.addCurve(to: p3, control1: p1, control2: p2)
-      case .line(let p):
+      case let .line(p):
         ctx.addLine(to: p)
       case .closePath:
         ctx.closePath()
-      case .clip(let rule):
+      case let .clip(rule):
         ctx.clip(using: rule)
       case .endPath:
         // FIXME: Decide what to do here
         break
-      case .flatness(let flatness):
+      case let .flatness(flatness):
         ctx.setFlatness(flatness)
       case .fillColorSpace:
         // FIXME: Color space
         break
-      case .appendRectangle(let rect):
+      case let .appendRectangle(rect):
         ctx.addRect(rect)
       case let .fill(color, rule):
         ctx.setFillColor(color.cgColor)
@@ -111,9 +114,9 @@ extension DrawRoute {
       case .strokeColorSpace:
         // FIXME: Color space
         break
-      case .concatCTM(let transform):
+      case let .concatCTM(transform):
         ctx.concatenate(transform)
-      case .lineWidth(let w):
+      case let .lineWidth(w):
         ctx.setLineWidth(w)
       case let .stroke(color):
         ctx.setStrokeColor(color.cgColor)
@@ -122,7 +125,7 @@ extension DrawRoute {
         break
       case .parametersFromGraphicsState:
         break
-      case .paintWithGradient(let gradientKey):
+      case let .paintWithGradient(gradientKey):
         let grad = gradients[gradientKey]!
         let locs = grad.locationAndColors.map { $0.0 }
         let color = grad.locationAndColors.map { $0.1.cgColor }

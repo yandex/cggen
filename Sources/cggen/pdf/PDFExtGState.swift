@@ -12,7 +12,7 @@ struct PDFExtGState {
   let commands: [PDFGStateCommand]
   init?(obj: PDFObject) {
     guard let dict = obj.dictionaryVal()
-      else { return nil }
+    else { return nil }
     commands = dict.flatMap { (arg) -> PDFGStateCommand? in
       let (key, val) = arg
       switch key {

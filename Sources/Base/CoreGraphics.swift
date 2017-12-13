@@ -4,7 +4,6 @@
 import CoreGraphics
 import CoreServices
 import ImageIO
-import AppKit
 
 // Geometry
 
@@ -37,6 +36,7 @@ public extension CGRect {
   public var x: CGFloat {
     return origin.x
   }
+
   public var y: CGFloat {
     return origin.y
   }
@@ -82,14 +82,15 @@ extension CGContext {
   public static func bitmapRGBContext(size: CGSize) -> CGContext {
     return bitmapRGBContext(size: .from(cgsize: size))
   }
+
   public static func bitmapRGBContext(size: CGIntSize) -> CGContext {
-    return CGContext.init(data: nil,
-                          width: size.width,
-                          height: size.height,
-                          bitsPerComponent: 8,
-                          bytesPerRow: 0,
-                          space: .deviceRGB,
-                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    return CGContext(data: nil,
+                     width: size.width,
+                     height: size.height,
+                     bitsPerComponent: 8,
+                     bytesPerRow: 0,
+                     space: .deviceRGB,
+                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
   }
 }
 
@@ -98,15 +99,6 @@ extension CGContext {
 extension CGColor {
   public static var white: CGColor {
     return CGColor(red: 1, green: 1, blue: 1, alpha: 1)
-  }
-}
-
-extension CGContext {
-  func nssize() -> NSSize {
-    return NSSize.init(width: width, height: height)
-  }
-  func nsimage() -> NSImage {
-    return NSImage(cgImage: makeImage()!, size: nssize())
   }
 }
 
@@ -137,9 +129,9 @@ public extension CGImage {
 
   public func write(fileURL: CFURL) throws {
     guard let destination = CGImageDestinationCreateWithURL(fileURL, kUTTypePNG, 1, nil)
-      else { throw CGImageWriteError.failedDestinationFinalize }
+    else { throw CGImageWriteError.failedDestinationFinalize }
     CGImageDestinationAddImage(destination, self, nil)
     guard CGImageDestinationFinalize(destination)
-      else { throw CGImageWriteError.failedDestinationFinalize }
+    else { throw CGImageWriteError.failedDestinationFinalize }
   }
 }

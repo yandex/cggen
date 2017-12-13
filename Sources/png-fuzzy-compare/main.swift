@@ -38,12 +38,12 @@ enum ReadImageError: Error {
 func readImage(filePath: String) throws -> CGImage {
   let url = URL(fileURLWithPath: filePath) as CFURL
   guard let dataProvider = CGDataProvider(url: url)
-    else { throw ReadImageError.failedToCreateDataProvider }
+  else { throw ReadImageError.failedToCreateDataProvider }
   guard let img = CGImage(pngDataProviderSource: dataProvider,
                           decode: nil,
                           shouldInterpolate: true,
                           intent: .defaultIntent)
-    else { throw ReadImageError.failedToCreateImage }
+  else { throw ReadImageError.failedToCreateImage }
   return img
 }
 
@@ -59,15 +59,17 @@ struct RGBAPixel: Equatable {
     blue = bufferPiece[2]
     alpha = bufferPiece[3]
   }
+
   var components: [UInt8] {
     return [red, green, blue, alpha]
   }
+
   var componentsNormalized: [Double] {
     return components.map { Double($0) / Double(UInt8.max) }
   }
 
   static func ==(lhs: RGBAPixel, rhs: RGBAPixel) -> Bool {
-    return lhs.components == rhs.components;
+    return lhs.components == rhs.components
   }
 }
 
@@ -81,7 +83,7 @@ struct RGBABuffer: Equatable {
 
   init(raw: UnsafePointer<UInt8>, size: CGIntSize, bytesPerRow: Int) {
     let length = size.height * bytesPerRow
-    let buffer = UnsafeBufferPointer(start: raw, count: length);
+    let buffer = UnsafeBufferPointer(start: raw, count: length)
     pixels = Array(buffer)
       .splitBy(subSize: 4)
       .map { RGBAPixel(bufferPiece: $0) }
@@ -120,8 +122,8 @@ func symbolForRelativeDeviation(_ deviation: Double) -> String {
 
 func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
   return zip(buffer1.pixels, buffer2.pixels)
-    .map { (l1, l2) in zip(l1, l2)
-      .map { (p1, p2) in
+    .map { l1, l2 in zip(l1, l2)
+      .map { p1, p2 in
         let deviation = zip(p1.componentsNormalized, p2.componentsNormalized)
           .map(-)
           .rootMeanSquare()
