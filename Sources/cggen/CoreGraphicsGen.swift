@@ -74,7 +74,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     return uid
   }
 
-  private func with(colors: [RGBColor], block: ([String]) -> [String]) -> [String] {
+  private func with(colors: [RGBAColor], block: ([String]) -> [String]) -> [String] {
     let colorNamesAndLines = colors.map { define(color: $0) }
     let colorNames = colorNamesAndLines.map { $0.0 }
     let colorDefLines = colorNamesAndLines.map { $0.1 }
@@ -82,9 +82,9 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     return colorDefLines + block(colorNames) + releaseLines
   }
 
-  private func define(color: RGBColor) -> (String, String) {
+  private func define(color: RGBAColor) -> (String, String) {
     let colorVarName = "color\(ObjcCGGenerator.asquireUniqID())"
-    let createColor = "  CGColorRef \(colorVarName) = CGColorCreate(\(rgbColorSpaceVarName), (CGFloat []){(CGFloat)\(color.red), (CGFloat)\(color.green), (CGFloat)\(color.blue), 1});"
+    let createColor = "  CGColorRef \(colorVarName) = CGColorCreate(\(rgbColorSpaceVarName), (CGFloat []){(CGFloat)\(color.red), (CGFloat)\(color.green), (CGFloat)\(color.blue), (CGFloat)\(color.alpha)});"
     return (colorVarName, createColor)
   }
 
@@ -92,7 +92,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     return "  CGColorRelease(\(colorVarName));"
   }
 
-  private func cmd(_ name: String, color: RGBColor) -> [String] {
+  private func cmd(_ name: String, color: RGBAColor) -> [String] {
     let (colorVarName, createColor) = define(color: color)
     let cmdStr = cmd(name, "\(colorVarName)")
     let releaseLine = release(colorVarName: colorVarName)
@@ -142,29 +142,28 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       return []
     case .flatness(let flatness):
       return [cmd("SetFlatness", float: flatness)]
-    case .nonStrokeColorSpace:
+    case .fillColorSpace:
       return []
-    case .nonStrokeColor(let color):
-      return cmd("SetFillColorWithColor", color: color)
     case .appendRectangle(let rect):
       return [cmd("AddRect", rect: rect)]
-    case .fill(let rule):
+    case let .fill(color, rule):
+      let colorCmd = cmd("SetFillColorWithColor", color: color)
+      let fillCmd: String
       switch rule {
       case .winding:
-        return [cmd("FillPath")]
+        fillCmd = cmd("FillPath")
       case .evenOdd:
-        return [cmd("EOFillPath")]
+        fillCmd = cmd("EOFillPath")
       }
+      return colorCmd + [fillCmd]
     case .strokeColorSpace:
       return []
-    case .strokeColor(let color):
-      return cmd("SetStrokeColorWithColor", color: color)
     case .concatCTM(let transform):
       return [cmd("ConcatCTM", "CGAffineTransformMake(\(transform.a), \(transform.b), \(transform.c), \(transform.d), \(transform.tx), \(transform.ty))")]
     case .lineWidth(let w):
       return [cmd("SetLineWidth", float: w)]
-    case .stroke:
-      return [cmd("StrokePath")]
+    case let .stroke(color):
+      return cmd("SetStrokeColorWithColor", color: color) + [cmd("StrokePath")]
     case .colorRenderingIntent:
       return []
     case .parametersFromGraphicsState:

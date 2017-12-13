@@ -41,16 +41,3 @@ extension Array {
     return map { (a, $0) }
   }
 }
-
-//public func diagnose(file: String = #file, line: Int = #line) -> Bool {
-//  print("Checking \(file):\(line)")
-//  return true
-//}
-//
-//extension AnyObject {
-//  public func diagnose(file: String = #file, line: Int = #line) -> Self {
-//    print("Checking \(file):\(line)")
-//    return true
-//  }
-//}
-

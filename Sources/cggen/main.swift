@@ -61,7 +61,7 @@ func main(args: Args) {
   Logger.shared.setLevel(level: args.verbose)
   let routes = args.files
     .map { URL(fileURLWithPath: $0) }
-    .map { ($0.deletingPathExtension().lastPathComponent, parse(pdfURL: $0 as CFURL)) }
+    .map { ($0.deletingPathExtension().lastPathComponent, PDFParser.parse(pdfURL: $0 as CFURL)) }
     .flatMap { (nameAndRoutes) in
       nameAndRoutes.1.enumerated().flatMap({ (offset, route) -> (ImageName, DrawRoute) in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")

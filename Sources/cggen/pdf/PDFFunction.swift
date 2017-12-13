@@ -1,0 +1,90 @@
+// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Author: Alfred Zien <zienag@yandex-team.ru>
+
+import CoreGraphics
+import Base
+
+struct PDFFunction {
+  struct Point {
+    let arg: CGFloat
+    let value: [CGFloat]
+  }
+
+  let rangeDim: Int
+  let domainDim: Int
+  let range: [(CGFloat, CGFloat)]
+  let domain: [(CGFloat, CGFloat)]
+  let size: [Int]
+  let length: Int
+  let points: [Point]
+
+  init?(obj: PDFObject) {
+    guard case let .stream(dict, format, data) = obj,
+      let rangeObj = dict["Range"],
+      case let .array(rangeArray) = rangeObj,
+      let rangeRaw = rangeArray.map({ $0.realFromIntOrReal() }).unwrap(),
+      let sizeObj = dict["Size"],
+      let size = sizeObj.integerArray(),
+      let length = dict["Length"]?.integerVal(),
+      let domainObj = dict["Domain"],
+      case let .array(domainArray) = domainObj,
+      let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
+      let bitsPerSample = dict["BitsPerSample"]?.integerVal()
+      else { return nil }
+    precondition(format == .raw)
+
+    let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
+    let rangeDim = range.count
+    let domain = domainRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
+    let domainDim = domain.count
+    precondition(domainDim == 1, "Only R1 -> RN supported")
+
+    precondition(bitsPerSample == 8, "Only UInt8 supported")
+    let samples = [UInt8](data).map { CGFloat($0) / CGFloat(UInt8.max) }
+    let values = samples.splitBy(subSize: rangeDim)
+    let points = (0 ..< size[0]).map { (s) -> Point in
+      let start = domain[0].0
+      let end = domain[0].1
+      let step = (end - start) / CGFloat(size[0] - 1)
+      let current = start + CGFloat(s) * step
+      return Point(arg: current, value: values[s])
+      }.removeIntermediates()
+
+    self.range = range
+    self.rangeDim = rangeDim
+    self.domain = domain
+    self.domainDim = domainDim
+    self.size = size
+    self.length = length
+    self.points = points
+  }
+}
+
+extension PDFFunction.Point: LinearInterpolatable {
+  typealias AbscissaType = CGFloat
+  var abscissa: CGFloat { return arg }
+  func near(_ other: PDFFunction.Point) -> Bool {
+    let squareDistance = zip(value, other.value)
+      .reduce(0) { (acc, pair) -> CGFloat in
+        let d = pair.0 - pair.1
+        return acc + d * d
+    }
+    return squareDistance < 0.001
+  }
+  static func linearInterpolate(from lhs: PDFFunction.Point,
+                                to rhs: PDFFunction.Point,
+                                at x: CGFloat) -> PDFFunction.Point {
+    precondition(lhs.value.count == rhs.value.count)
+    let outN = lhs.value.count
+    let out = (0 ..< outN).map { (i) -> CGFloat in
+      let x1 = lhs.arg
+      let x2 = rhs.arg
+      let y1 = lhs.value[i]
+      let y2 = rhs.value[i]
+      let k =  (y1 - y2) / (x1 - x2)
+      let b = y1 - k * x1
+      return k * x + b
+    }
+    return PDFFunction.Point(arg: x, value: out)
+  }
+}
