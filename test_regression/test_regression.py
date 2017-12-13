@@ -128,8 +128,40 @@ class cggen_tests(unittest.TestCase):
         self.assertLess(float(output), tolerance)
 
 
+    def test_alpha(self):
+        self.checkImagesEqual('alpha')
+
+
+    def test_fill(self):
+        self.checkImagesEqual('fill')
+
+
+    def test_gradient_shape(self):
+        self.checkImagesEqual('gradient_shape')
+
+
+    def test_gradient_three_dots(self):
+        self.checkImagesEqual('gradient_three_dots')
+
+
+    def test_gradient_with_alpha(self):
+        self.checkImagesEqual('gradient_with_alpha')
+
+
+    def test_gradient_with_mask(self):
+        self.checkImagesEqual('gradient_with_mask')
+
+
+    def test_gradient(self):
+        self.checkImagesEqual('gradient')
+
+
     def test_lines(self):
         self.checkImagesEqual('lines')
+
+
+    def test_shapes(self):
+        self.checkImagesEqual('shapes')
 
 
 def main():
