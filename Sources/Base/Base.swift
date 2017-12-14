@@ -3,6 +3,7 @@
 
 import CoreGraphics
 import Foundation
+import Dispatch
 
 extension String {
   public func capitalizedFirst() -> String {
@@ -41,5 +42,19 @@ extension Array {
 
   public func appendToAll<T>(a: T) -> [(T, Element)] {
     return map { (a, $0) }
+  }
+
+  public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
+    var result = [T?](repeating: nil, count: count)
+    let syncQueue = DispatchQueue(label: "sync_queue")
+    DispatchQueue.concurrentPerform(iterations: count) { i in
+      let val = transform(self[i])
+      syncQueue.async {
+        result[i] = val
+      }
+    }
+    return syncQueue.sync {
+      return result.map { $0! }
+    }
   }
 }

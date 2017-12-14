@@ -61,13 +61,14 @@ func main(args: Args) {
   Logger.shared.setLevel(level: args.verbose)
   let routes = args.files
     .map { URL(fileURLWithPath: $0) }
-    .map { ($0.deletingPathExtension().lastPathComponent, PDFParser.parse(pdfURL: $0 as CFURL)) }
+    .concurrentMap { ($0.deletingPathExtension().lastPathComponent,
+                      PDFParser.parse(pdfURL: $0 as CFURL)) }
     .flatMap { nameAndRoutes in
-      nameAndRoutes.1.enumerated().flatMap({ (offset, route) -> (ImageName, DrawRoute) in
+      nameAndRoutes.1.enumerated().flatMap { (offset, route) -> (ImageName, DrawRoute) in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
         let imgName = ImageName(snakeCase: finalName)
         return (imgName, route)
-      })
+      }
     }
 
   let objcPrefix = args.objcPrefix ?? ""
