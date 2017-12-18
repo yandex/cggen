@@ -48,6 +48,12 @@ public extension CGAffineTransform {
   }
 }
 
+extension Double {
+  public var cgfloat: CGFloat {
+    return CGFloat(self)
+  }
+}
+
 // PDF
 
 public extension CGPDFDocument {

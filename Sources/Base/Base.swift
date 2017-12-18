@@ -2,8 +2,8 @@
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
 import CoreGraphics
-import Foundation
 import Dispatch
+import Foundation
 
 extension String {
   public func capitalizedFirst() -> String {
@@ -54,7 +54,31 @@ extension Array {
       }
     }
     return syncQueue.sync {
-      return result.map { $0! }
+      result.map { $0! }
+    }
+  }
+}
+
+extension Sequence {
+  public func concurrentMap<T>(_ transform: @escaping (Element) -> T) -> [T] {
+    var result = [T?]()
+    let syncQueue = DispatchQueue(label: "sync_queue")
+    let workQueue = DispatchQueue(label: "work_queue", attributes: .concurrent)
+    for (i, e) in enumerated() {
+      syncQueue.async {
+        result.append(nil)
+      }
+      workQueue.async {
+        let val = transform(e)
+        syncQueue.sync {
+          result[i] = val
+        }
+      }
+    }
+    return workQueue.sync(flags: .barrier) {
+      syncQueue.sync {
+        result.map { $0! }
+      }
     }
   }
 }

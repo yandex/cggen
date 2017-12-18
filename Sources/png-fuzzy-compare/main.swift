@@ -68,6 +68,10 @@ struct RGBAPixel: Equatable {
     return components.map { Double($0) / Double(UInt8.max) }
   }
 
+  var squaredSum: Double {
+    return componentsNormalized.map({ $0 * $0 }).reduce(0, +)
+  }
+
   static func ==(lhs: RGBAPixel, rhs: RGBAPixel) -> Bool {
     return lhs.components == rhs.components
   }
@@ -122,7 +126,7 @@ func symbolForRelativeDeviation(_ deviation: Double) -> String {
 
 func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
   return zip(buffer1.pixels, buffer2.pixels)
-    .map { l1, l2 in zip(l1, l2)
+    .concurrentMap { l1, l2 in zip(l1, l2)
       .map { p1, p2 in
         let deviation = zip(p1.componentsNormalized, p2.componentsNormalized)
           .map(-)
@@ -161,7 +165,7 @@ func main(args: Args) -> Int32 {
     .flatMap { $0 }
     .flatMap { $0.componentsNormalized }
 
-  let ziped = zip(rw1, rw2).map(-)
+  let ziped = zip(rw1, rw2).lazy.map(-)
   print(ziped.rootMeanSquare())
   return 0
 }

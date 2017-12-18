@@ -28,7 +28,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
         CGSizeApplyAffineTransform(s, CGAffineTransformMakeScale(kScale, kScale));
         CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
         CGContextRef ctx =
-          CGBitmapContextCreate(NULL, contextSize.width, contextSize.width, 8, 0,
+          CGBitmapContextCreate(NULL, (size_t)contextSize.width, (size_t)contextSize.width, 8, 0,
                                 colorSpace, kCGImageAlphaPremultipliedLast);
         CGContextSetAllowsAntialiasing(ctx, NO);
         CGContextScaleCTM(ctx, kScale, kScale);
@@ -47,7 +47,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
         return t ? 0 : 1;
       }
 
-      int main(int argc, const char* argv[]) {
+      int main(int __attribute__((unused)) argc, const char* __attribute__((unused)) argv[]) {
         int retCode = 0;
 
       """

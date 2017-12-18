@@ -8,13 +8,17 @@ let package = Package(
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
     .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
+    .executable(name: "pdf-to-png", targets: ["pdf-to-png"]),
   ],
   targets: [
+    .target(
+      name: "cggen",
+      dependencies: ["ArgParse", "Base"]),
     .target(
       name: "png-fuzzy-compare",
       dependencies: ["ArgParse", "Base"]),
     .target(
-      name: "cggen",
+      name: "pdf-to-png",
       dependencies: ["ArgParse", "Base"]),
     .target(
       name: "ArgParse"),

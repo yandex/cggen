@@ -6,6 +6,8 @@ import os
 import shutil
 import subprocess
 import unittest
+from time import time
+
 
 pdf_samples_dir_path = 'test_regression/pdf_samples'
 temp_dir_path = 'test_regression/temp'
@@ -43,6 +45,8 @@ def filename_wo_ext_from_dir(dir):
 class cggen_tests(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+
+        t0 = time()
         compile_cggen()
         temp_dir = os.path.abspath(temp_dir_path)
         if os.path.exists(temp_dir):
@@ -51,6 +55,7 @@ class cggen_tests(unittest.TestCase):
         build_path = get_build_path()
         cggen_path = os.path.join(build_path, 'cggen')
         diff_tool_path = os.path.join(build_path, 'png-fuzzy-compare')
+        pdf_to_png_conversion_tool = os.path.join(build_path, 'pdf-to-png')
         temp_dir = temp_dir
         header_path = os.path.join(temp_dir, 'gen.h')
         impl_path = os.path.join(temp_dir, 'gen.m')
@@ -62,7 +67,11 @@ class cggen_tests(unittest.TestCase):
         png_path = os.path.join(temp_dir, 'png')
         if not os.path.exists(png_path):
             os.mkdir(png_path)
-        cmd = [
+
+        t_cggen_compile = time()
+        print "Compiled cggen in", t_cggen_compile - t0
+
+        cggen_invoc = [
                   cggen_path,
                   '--objc-header',
                   header_path,
@@ -74,15 +83,30 @@ class cggen_tests(unittest.TestCase):
                   caller_path,
                   '--caller-png-output',
                   png_path,
-                  '--output-png',
-                  reference_png_path,
                   '--caller-scale',
                   images_generation_scale
               ] + pdf_samples()
-        subprocess.check_call(cmd)
+        subprocess.check_call(cggen_invoc)
 
-        clang_invocation = [
+        t_cggen_invoc = time()
+        print "cggen invoked in", t_cggen_invoc - t_cggen_compile
+
+        reference_pngs_invoc = [
+            pdf_to_png_conversion_tool,
+            '--out',
+            reference_png_path,
+            '--scale',
+            images_generation_scale,
+        ] + pdf_samples()
+        subprocess.check_call(reference_pngs_invoc)
+
+        t_png_generated = time()
+        print "Ref PNG generated", t_png_generated - t_cggen_invoc
+
+        clang_invoc = [
             'clang',
+            '-Weverything',
+            '-Werror',
             '-isysroot',
             sdk_path(),
             '-framework',
@@ -98,8 +122,13 @@ class cggen_tests(unittest.TestCase):
             '-o',
             bin_path,
         ]
-        subprocess.check_call(clang_invocation)
+        subprocess.check_call(clang_invoc)
+        t_clang_invoc = time()
+        print "Clang invocation:", t_clang_invoc - t_png_generated
+
         subprocess.check_call([bin_path])
+        t_png_gen = time()
+        print "PNG Generated:", t_png_gen - t_clang_invoc
 
         self.temp_dir = temp_dir
         self.diff_tool_path = diff_tool_path

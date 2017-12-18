@@ -32,8 +32,7 @@ extension Array where Element: LinearInterpolatable {
 
 extension Sequence where Element: FloatingPoint {
   public func rootMeanSquare() -> Element {
-    let valuesSquared = map { $0 * $0 }
-    let meanSquare = valuesSquared.reduce(0, +) / Element(valuesSquared.count)
-    return meanSquare.squareRoot()
+    let (count, sumOfSquares) = reduce((0, 0)) { ($0.0 + 1, $0.1 + $1 * $1) }
+    return (sumOfSquares / Element(count)).squareRoot()
   }
 }

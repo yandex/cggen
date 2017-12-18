@@ -2,13 +2,8 @@
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
 import ArgParse
+import Base
 import Foundation
-
-extension Double {
-  var cgfloat: CGFloat {
-    return CGFloat(self)
-  }
-}
 
 struct Args {
   let objcHeader: String?
@@ -19,7 +14,6 @@ struct Args {
   let callerScale: Double
   let callerPngOutputPath: String?
   let verbose: Bool
-  let pngOutputDir: String?
   let files: [String]
 }
 
@@ -34,7 +28,6 @@ func ParseArgs() -> Args {
   let callerScaleKey = "caller-scale"
   let callerPngOutputPathKey = "caller-png-output"
   let verboseFlagKey = "verbose"
-  let pngOutputDirKey = "output-png"
   parser.newString(objcHeaderKey)
   parser.newString(objcImplKey)
   parser.newString(objcHeaderImportPathKey)
@@ -43,7 +36,6 @@ func ParseArgs() -> Args {
   parser.newDouble(callerScaleKey)
   parser.newString(callerPngOutputPathKey)
   parser.newFlag(verboseFlagKey)
-  parser.newString(pngOutputDirKey)
   parser.parse()
   return Args(objcHeader: parser.string(at: objcHeaderKey),
               objcPrefix: parser.string(at: objcPrefixKey),
@@ -53,12 +45,13 @@ func ParseArgs() -> Args {
               callerScale: parser.double(at: callerScaleKey) ?? 1,
               callerPngOutputPath: parser.string(at: callerPngOutputPathKey),
               verbose: parser.getFlag(verboseFlagKey),
-              pngOutputDir: parser.getString(pngOutputDirKey),
               files: parser.getArgs())
 }
 
 func main(args: Args) {
   Logger.shared.setLevel(level: args.verbose)
+  var stopwatch = StopWatch()
+
   let routes = args.files
     .map { URL(fileURLWithPath: $0) }
     .concurrentMap { ($0.deletingPathExtension().lastPathComponent,
@@ -70,7 +63,7 @@ func main(args: Args) {
         return (imgName, route)
       }
     }
-
+  log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
 
   if let objcHeaderPath = args.objcHeader {
@@ -78,6 +71,7 @@ func main(args: Args) {
     let fileStr = headerGenerator.generateFile(namesAndRoutes: routes)
     try! fileStr.write(toFile: objcHeaderPath, atomically: true, encoding: .utf8)
   }
+  log("Header generated in: \(stopwatch.reset())")
 
   if let objcImplPath = args.objcImpl {
     let headerImportPath = args.objcHeaderImportPath
@@ -86,6 +80,7 @@ func main(args: Args) {
     let fileStr = implGenerator.generateFile(namesAndRoutes: routes)
     try! fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
   }
+  log("Impl generated in: \(stopwatch.reset())")
 
   if let objcCallerPath = args.objcCallerPath,
     let pngOutputPath = args.callerPngOutputPath,
@@ -98,17 +93,7 @@ func main(args: Args) {
     try! fileStr.write(toFile: objcCallerPath, atomically: true, encoding: .utf8)
   }
 
-  if let pngOutputDir = args.pngOutputDir {
-    args.files
-      .map(URL.init(fileURLWithPath:))
-      .map { ($0.deletingPathExtension().lastPathComponent, CGPDFDocument($0 as CFURL)!) }
-      .flatMap { $0.1.pages.appendToAll(a: $0.0) }
-      .map { ($0.0, $0.1.render(scale: args.callerScale.cgfloat)!) }
-      .forEach { (name: String, img: CGImage) in
-        let url = URL(fileURLWithPath: pngOutputDir)
-          .appendingPathComponent("\(name).png") as CFURL
-        try! img.write(fileURL: url) }
-  }
+  log("Caller generated in: \(stopwatch.reset())")
 }
 
 main(args: ParseArgs())

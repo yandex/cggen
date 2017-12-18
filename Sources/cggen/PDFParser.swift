@@ -150,7 +150,7 @@ enum PDFParser {
 
   private static func callback(context: ParsingContext, step: DrawStep) {
     let n = context.route.push(step: step)
-    cggen.log("\(n): \(step)")
+    log("\(n): \(step)")
   }
 
   private static func getContext(_ info: UnsafeMutableRawPointer?) -> ParsingContext {
@@ -223,7 +223,7 @@ enum PDFParser {
           context.strokeAlpha = a
         }
       })
-      cggen.log("push gstate: \(extGState)")
+      log("push gstate: \(extGState)")
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "q") { _, info in
