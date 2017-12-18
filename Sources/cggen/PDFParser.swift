@@ -7,13 +7,16 @@ import Foundation
 struct Resources {
   let shadings: [String: PDFShading]
   let gStates: [String: PDFExtGState]
+  let xObjects: [String: PDFXObject]
   init?(obj: PDFObject) {
     guard case let .dictionary(dict) = obj
     else { return nil }
     let shadingDict = dict["Shading"]?.dictionaryVal() ?? [:]
     let gStatesDict = dict["ExtGState"]?.dictionaryVal() ?? [:]
+    let xObjectsDict = dict["XObject"]?.dictionaryVal() ?? [:]
     shadings = shadingDict.mapValues { PDFShading(obj: $0)! }
     gStates = gStatesDict.mapValues { PDFExtGState(obj: $0)! }
+    xObjects = xObjectsDict.mapValues { PDFXObject(obj: $0)! }
   }
 }
 
@@ -195,6 +198,10 @@ enum PDFParser {
       fatalError("not implemented")
     }
 
+    CGPDFOperatorTableSetCallback(operatorTableRef, "BI") { scanner, info in
+      fatalError("not implemented")
+    }
+
     CGPDFOperatorTableSetCallback(operatorTableRef, "BT") { _, _ in
       fatalError("not implemented")
     }
@@ -228,6 +235,13 @@ enum PDFParser {
       let lengths = scanner.popArray()!.map { CGFloat($0.integerVal()!) }
       let pattern = DashPattern(phase: phase, lengths: lengths)
       PDFParser.callback(info: info, step: .dash(pattern))
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "Do") { scanner, info in
+      let context = info!.load(as: ParsingContext.self)
+      let name = scanner.popName()!
+      let _ = context.resources.xObjects[name]!
+      fatalError("XObject handling not implemented yet")
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in
