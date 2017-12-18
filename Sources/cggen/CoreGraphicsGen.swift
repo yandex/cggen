@@ -207,6 +207,9 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
         return [colorArray, gradientDef, colorArrayRelease, optionsLine, drawGradientLine, releaseGradient]
       }
       return lines
+    case let .dash(pattern):
+      let args = "\(pattern.phase), \(ObjCGen.cgFloatArray(pattern.lengths)), \(pattern.lengths.count)"
+      return [cmd("SetLineDash", args)]
     }
   }
 

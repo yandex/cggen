@@ -29,6 +29,22 @@ private extension CGPDFScannerRef {
     return CGPDFScannerPopNumber(self, &val) ? val : nil
   }
 
+  func popInt() -> CGPDFInteger? {
+    var val: CGPDFInteger = 0
+    return CGPDFScannerPopInteger(self, &val) ? val : nil
+  }
+
+  func popArray() -> [PDFObject]? {
+    var pointer: CGPDFArrayRef?
+    CGPDFScannerPopArray(self, &pointer)
+    guard let array = pointer else { return nil }
+    return (0..<CGPDFArrayGetCount(array)).map { i in
+      var objPtr: CGPDFObjectRef?
+      CGPDFArrayGetObject(array, i, &objPtr)
+      return PDFObject(pdfObj: objPtr!)
+    }
+  }
+
   private func popTwoNumbers() -> (CGFloat, CGFloat)? {
     guard let a1 = popNumber() else {
       return nil
@@ -207,8 +223,11 @@ enum PDFParser {
       PDFParser.callback(info: info, step: .fillColorSpace)
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "d") { _, _ in
-      fatalError("not implemented")
+    CGPDFOperatorTableSetCallback(operatorTableRef, "d") { scanner, info in
+      let phase = CGFloat(scanner.popInt()!)
+      let lengths = scanner.popArray()!.map { CGFloat($0.integerVal()!) }
+      let pattern = DashPattern(phase: phase, lengths: lengths)
+      PDFParser.callback(info: info, step: .dash(pattern))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in

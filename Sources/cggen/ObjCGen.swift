@@ -28,4 +28,9 @@ struct ObjCGen {
   static func functionDef(imageName: String, prefix: String) -> String {
     return functionWithArgs(imageName: imageName, prefix: prefix).appending(" {")
   }
+
+  static func cgFloatArray(_ array: [CGFloat]) -> String {
+    let elements = array.map { "(CGFloat)\($0)" }.joined(separator: ", ")
+    return "(CGFloat []){\(elements)}"
+  }
 }

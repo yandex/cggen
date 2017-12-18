@@ -31,6 +31,11 @@ struct Gradient {
   let options: CGGradientDrawingOptions
 }
 
+struct DashPattern {
+  let phase: CGFloat
+  let lengths: [CGFloat]
+}
+
 enum DrawStep {
   case saveGState
   case restoreGState
@@ -39,6 +44,7 @@ enum DrawStep {
   case line(CGPoint)
   case closePath
   case clip(CGPathFillRule)
+  case dash(DashPattern)
   case endPath
   case flatness(CGFloat)
   case fillColorSpace
@@ -136,6 +142,8 @@ extension DrawRoute {
                                start: grad.startPoint,
                                end: grad.endPoint,
                                options: grad.options)
+      case let .dash(pattern):
+        ctx.setLineDash(phase: pattern.phase, lengths: pattern.lengths)
       }
     }
     return ctx.makeImage()!
