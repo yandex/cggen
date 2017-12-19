@@ -21,7 +21,7 @@ struct PDFShading {
   let coords: (CGFloat, CGFloat, CGFloat, CGFloat)
   let function: PDFFunction
 
-  init?(obj: PDFObject) {
+  init?(obj: PDFObject) throws {
     guard case let .dictionary(dict) = obj,
       // Extend
       let extendObj = dict["Extend"],
@@ -47,9 +47,9 @@ struct PDFShading {
       let coordsX1 = coordsArray[2].realFromIntOrReal(),
       let coordsY1 = coordsArray[3].realFromIntOrReal(),
       // Function
-      let functionObj = dict["Function"],
-      let function = PDFFunction(obj: functionObj)
+      let functionObj = dict["Function"]
     else { return nil }
+    let function = try PDFFunction(obj: functionObj)
 
     precondition(type == .axial, "Only axial shading supported")
 

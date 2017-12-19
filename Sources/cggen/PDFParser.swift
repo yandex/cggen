@@ -349,6 +349,12 @@ enum PDFParser {
                          step: .fill(context.fillColor!, .winding))
     }
 
+    CGPDFOperatorTableSetCallback(operatorTableRef, "f*") { _, info in
+      let context = PDFParser.getContext(info)
+      PDFParser.callback(context: context,
+                         step: .fill(context.fillColor!, .evenOdd))
+    }
+
     CGPDFOperatorTableSetCallback(operatorTableRef, "w") { scanner, info in
       PDFParser.callback(info: info, step: .lineWidth(scanner.popNumber()!))
     }
