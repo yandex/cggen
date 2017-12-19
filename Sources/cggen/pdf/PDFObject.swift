@@ -84,7 +84,7 @@ enum PDFObject {
     return nil
   }
 
-  func integerVal() -> Int? {
+  var intValue: Int? {
     if case let .integer(int) = self {
       return int
     }
@@ -93,7 +93,7 @@ enum PDFObject {
 
   func integerArray() -> [Int]? {
     guard case let .array(a) = self else { return nil }
-    return a.map { $0.integerVal() }.unwrap()
+    return a.map { $0.intValue }.unwrap()
   }
 
   func dictionaryVal() -> [String: PDFObject]? {
@@ -115,5 +115,47 @@ enum PDFObject {
       return s
     }
     return nil
+  }
+
+  var boolValue: Bool? {
+    if case let .boolean(b) = self {
+      return b != 0
+    }
+    return nil
+  }
+
+  var dictFromDictOrStream: [String: PDFObject]? {
+    switch self {
+    case let .dictionary(d):
+      return d
+    case let .stream(s):
+      return s.dict
+    default:
+      return nil
+    }
+  }
+
+}
+
+extension CGRect {
+  static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
+    guard array.count == 4, let x = array[0].realFromIntOrReal(),
+      let y = array[1].realFromIntOrReal(),
+      let w = array[2].realFromIntOrReal(),
+      let h = array[3].realFromIntOrReal() else { return nil }
+    return self.init(x: x, y: y, width: w, height: h)
+  }
+}
+
+extension CGAffineTransform {
+  init?(pdfArray array: [PDFObject]) {
+    guard array.count == 6,
+      let a = array[0].realFromIntOrReal(),
+      let b = array[1].realFromIntOrReal(),
+      let c = array[2].realFromIntOrReal(),
+      let d = array[3].realFromIntOrReal(),
+      let e = array[4].realFromIntOrReal(),
+      let f = array[5].realFromIntOrReal() else { return nil }
+    self.init(a: a, b: b, c: c, d: d, tx: e, ty: f)
   }
 }

@@ -58,6 +58,10 @@ enum DrawStep {
   case parametersFromGraphicsState
   case paintWithGradient(String)
   case subroute(DrawRoute)
+  case clipToRect(CGRect)
+  case beginTransparencyLayer
+  case endTransparencyLayer
+  case globalAlpha(CGFloat)
 }
 
 struct DrawRoute {
@@ -148,6 +152,14 @@ extension DrawRoute {
         ctx.setLineDash(phase: pattern.phase, lengths: pattern.lengths)
       case let .subroute(route):
         route.draw(on: ctx)
+      case let .clipToRect(rect):
+        ctx.clip(to: rect)
+      case .beginTransparencyLayer:
+        ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+      case .endTransparencyLayer:
+        ctx.endTransparencyLayer()
+      case let .globalAlpha(a):
+        ctx.setAlpha(a)
       }
     }
   }

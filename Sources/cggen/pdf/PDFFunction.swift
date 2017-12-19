@@ -10,6 +10,20 @@ struct PDFFunction {
     let value: [CGFloat]
   }
 
+  enum FunctionType: Int {
+    case sampled = 0
+    case exponentialInterpolation = 2
+    case stitching = 3
+    case postsciptCalculator = 4
+  }
+  static let supportedTypes: Set<FunctionType> = [ .sampled ]
+
+  enum ParseError: Error {
+    case noFunctionType
+    case unsupportedFunctionType(FunctionType)
+    case other
+  }
+
   let rangeDim: Int
   let domainDim: Int
   let range: [(CGFloat, CGFloat)]
@@ -18,19 +32,26 @@ struct PDFFunction {
   let length: Int
   let points: [Point]
 
-  init?(obj: PDFObject) {
+  init(obj: PDFObject) throws {
+    guard let dict = obj.dictFromDictOrStream,
+      let functionTypeRaw = dict["FunctionType"]?.intValue,
+      let functionType = FunctionType(rawValue: functionTypeRaw)
+      else { throw ParseError.noFunctionType }
+    guard PDFFunction.supportedTypes.contains(functionType)
+      else { throw ParseError.unsupportedFunctionType(functionType) }
+
     guard case let .stream(stream) = obj,
       let rangeObj = stream.dict["Range"],
       case let .array(rangeArray) = rangeObj,
       let rangeRaw = rangeArray.map({ $0.realFromIntOrReal() }).unwrap(),
       let sizeObj = stream.dict["Size"],
       let size = sizeObj.integerArray(),
-      let length = stream.dict["Length"]?.integerVal(),
+      let length = stream.dict["Length"]?.intValue,
       let domainObj = stream.dict["Domain"],
       case let .array(domainArray) = domainObj,
       let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
-      let bitsPerSample = stream.dict["BitsPerSample"]?.integerVal()
-    else { return nil }
+      let bitsPerSample = stream.dict["BitsPerSample"]?.intValue
+    else { throw ParseError.other }
     precondition(stream.format == .raw)
 
     let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }

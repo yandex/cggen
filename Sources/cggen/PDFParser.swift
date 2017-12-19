@@ -102,16 +102,16 @@ enum PDFParser {
     var strokeRGBColor: RGBColor?
     var fillRGBColor: RGBColor?
 
-    var strokeColor: RGBAColor {
+    var strokeColor: RGBAColor? {
       guard let strokeRGBColor = strokeRGBColor else {
-        fatalError("Stroke color should been set")
+        return nil
       }
       return RGBAColor.rgb(strokeRGBColor, alpha: strokeAlpha)
     }
 
-    var fillColor: RGBAColor {
+    var fillColor: RGBAColor? {
       guard let fillRGBColor = fillRGBColor else {
-        fatalError("Fill color should been set")
+        return nil
       }
       return RGBAColor.rgb(fillRGBColor, alpha: fillAlpha)
     }
@@ -154,9 +154,13 @@ enum PDFParser {
     callback(context: info!.load(as: ParsingContext.self), step: step)
   }
 
-  private static func callback(context: ParsingContext, step: DrawStep) {
+  private static func callback(context: ParsingContext,
+                               step: DrawStep,
+                               silent: Bool = false) {
     let n = context.route.push(step: step)
-    log("\(n): \(step)")
+    if !silent {
+      log("\(n): \(step)")
+    }
   }
 
   private static func getContext(_ info: UnsafeMutableRawPointer?) -> ParsingContext {
@@ -219,7 +223,7 @@ enum PDFParser {
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d") { scanner, info in
       let phase = CGFloat(scanner.popInt()!)
-      let lengths = scanner.popArray()!.map { CGFloat($0.integerVal()!) }
+      let lengths = scanner.popArray()!.map { CGFloat($0.intValue!) }
       let pattern = DashPattern(phase: phase, lengths: lengths)
       PDFParser.callback(info: info, step: .dash(pattern))
     }
@@ -228,6 +232,18 @@ enum PDFParser {
       let context = info!.load(as: ParsingContext.self)
       let name = scanner.popName()!
       let xobject = context.resources.xObjects[name]!
+
+      PDFParser.callback(context: context,
+                         step: .globalAlpha(context.fillAlpha))
+      PDFParser.callback(context: context, step: .saveGState)
+      if let matrix = xobject.matrix {
+        PDFParser.callback(context: context, step: .concatCTM(matrix))
+      }
+      PDFParser.callback(context: context, step: .clipToRect(xobject.bbox))
+      PDFParser.callback(context: context, step: .beginTransparencyLayer)
+
+      log("\nstart xobject: \(name)")
+
       let gradients = xobject.resources.shadings.mapValues { $0.makeGradient() }
       let route = DrawRoute(boundingRect: context.route.boundingRect,
                             gradients: gradients)
@@ -242,7 +258,12 @@ enum PDFParser {
                                        &nested)
 
       CGPDFScannerScan(scanner)
-      PDFParser.callback(context: context, step: .subroute(nested.route))
+      log("end xobject: \(name)\n")
+      PDFParser.callback(context: context,
+                         step: .subroute(nested.route),
+                         silent: true)
+      PDFParser.callback(context: context, step: .endTransparencyLayer)
+      PDFParser.callback(context: context, step: .restoreGState)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in
@@ -307,7 +328,7 @@ enum PDFParser {
     CGPDFOperatorTableSetCallback(operatorTableRef, "S") { _, info in
       let context = PDFParser.getContext(info)
       PDFParser.callback(context: context,
-                         step: .stroke(context.strokeColor))
+                         step: .stroke(context.strokeColor!))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sc") { scanner, info in
@@ -325,7 +346,7 @@ enum PDFParser {
     CGPDFOperatorTableSetCallback(operatorTableRef, "f") { _, info in
       let context = PDFParser.getContext(info)
       PDFParser.callback(context: context,
-                         step: .fill(context.fillColor, .winding))
+                         step: .fill(context.fillColor!, .winding))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "w") { scanner, info in

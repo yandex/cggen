@@ -214,6 +214,14 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       return route.steps.flatMap {
         command(step: $0, gradients: route.gradients)
       }
+    case let .clipToRect(rect):
+      return [cmd("ClipToRect", rect: rect)]
+    case .beginTransparencyLayer:
+      return [cmd("BeginTransparencyLayer", "NULL")]
+    case .endTransparencyLayer:
+      return [cmd("EndTransparencyLayer")]
+    case let .globalAlpha(a):
+      return [cmd("SetAlpha", float: a)]
     }
   }
 
