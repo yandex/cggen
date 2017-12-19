@@ -4,13 +4,20 @@
 import Foundation
 
 struct PDFXObject {
-  let dict: [String: PDFObject]
-  let format: CGPDFDataFormat
-  let data: Data
+  let stream: PDFStream
+  let resources: PDFResources
+  let subtype: String
+
   init?(obj: PDFObject) {
-    guard case let .stream(dict, format, data) = obj else { return nil }
-    self.dict = dict
-    self.format = format
-    self.data = data
+    guard case let .stream(stream) = obj,
+      case let .name(type)? = stream.dict["Type"],
+      case let .name(subtype)? = stream.dict["Subtype"],
+      let resourcesDict = stream.dict["Resources"],
+      let resources = PDFResources(obj: resourcesDict),
+      type == "XObject"
+    else { return nil }
+    self.stream = stream
+    self.resources = resources
+    self.subtype = subtype
   }
 }

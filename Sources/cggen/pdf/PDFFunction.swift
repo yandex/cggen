@@ -19,19 +19,19 @@ struct PDFFunction {
   let points: [Point]
 
   init?(obj: PDFObject) {
-    guard case let .stream(dict, format, data) = obj,
-      let rangeObj = dict["Range"],
+    guard case let .stream(stream) = obj,
+      let rangeObj = stream.dict["Range"],
       case let .array(rangeArray) = rangeObj,
       let rangeRaw = rangeArray.map({ $0.realFromIntOrReal() }).unwrap(),
-      let sizeObj = dict["Size"],
+      let sizeObj = stream.dict["Size"],
       let size = sizeObj.integerArray(),
-      let length = dict["Length"]?.integerVal(),
-      let domainObj = dict["Domain"],
+      let length = stream.dict["Length"]?.integerVal(),
+      let domainObj = stream.dict["Domain"],
       case let .array(domainArray) = domainObj,
       let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
-      let bitsPerSample = dict["BitsPerSample"]?.integerVal()
+      let bitsPerSample = stream.dict["BitsPerSample"]?.integerVal()
     else { return nil }
-    precondition(format == .raw)
+    precondition(stream.format == .raw)
 
     let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
     let rangeDim = range.count
@@ -40,7 +40,7 @@ struct PDFFunction {
     precondition(domainDim == 1, "Only R1 -> RN supported")
 
     precondition(bitsPerSample == 8, "Only UInt8 supported")
-    let samples = [UInt8](data).map { CGFloat($0) / CGFloat(UInt8.max) }
+    let samples = [UInt8](stream.data).map { CGFloat($0) / CGFloat(UInt8.max) }
     let values = samples.splitBy(subSize: rangeDim)
     let points = (0..<size[0]).map { (s) -> Point in
       let start = domain[0].0

@@ -81,4 +81,19 @@ extension Sequence {
       }
     }
   }
+
+  public func forAll(_ predicate: (Element) -> Bool) -> Bool {
+    for e in self {
+      if !predicate(e) {
+        return false
+      }
+    }
+    return true
+  }
+}
+
+extension Dictionary {
+  public func forAllValue(_ predicate: (Dictionary.Value) -> Bool) -> Bool {
+    return values.forAll(predicate)
+  }
 }

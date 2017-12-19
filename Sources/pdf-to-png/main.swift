@@ -8,6 +8,7 @@ import Foundation
 struct Args {
   let outDir: String
   let scale: Double
+  let suffix: String
   let files: [String]
 }
 
@@ -16,11 +17,14 @@ func parseArgs() -> Args {
                          version: "0.1")
   let outDirKey = "out"
   let scaleKey = "scale"
+  let suffixKey = "suffix"
   parser.newString(outDirKey)
   parser.newDouble(scaleKey)
+  parser.newString(suffixKey)
   parser.parse()
   return Args(outDir: parser.getString(outDirKey),
               scale: parser.getDouble(scaleKey),
+              suffix: parser.getString(suffixKey),
               files: parser.getArgs())
 }
 
@@ -32,7 +36,7 @@ func main(args: Args) -> Int32 {
     .concurrentMap { ($0.0, $0.1.render(scale: args.scale.cgfloat)!) }
     .forEach { (name: String, img: CGImage) in
       let url = URL(fileURLWithPath: args.outDir)
-        .appendingPathComponent("\(name).png") as CFURL
+        .appendingPathComponent("\(name)\(args.suffix).png") as CFURL
       try! img.write(fileURL: url) }
   return 0
 }

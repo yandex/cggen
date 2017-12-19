@@ -4,22 +4,6 @@
 import Base
 import Foundation
 
-struct Resources {
-  let shadings: [String: PDFShading]
-  let gStates: [String: PDFExtGState]
-  let xObjects: [String: PDFXObject]
-  init?(obj: PDFObject) {
-    guard case let .dictionary(dict) = obj
-    else { return nil }
-    let shadingDict = dict["Shading"]?.dictionaryVal() ?? [:]
-    let gStatesDict = dict["ExtGState"]?.dictionaryVal() ?? [:]
-    let xObjectsDict = dict["XObject"]?.dictionaryVal() ?? [:]
-    shadings = shadingDict.mapValues { PDFShading(obj: $0)! }
-    gStates = gStatesDict.mapValues { PDFExtGState(obj: $0)! }
-    xObjects = xObjectsDict.mapValues { PDFXObject(obj: $0)! }
-  }
-}
-
 extension CGPDFDocument {
   var pages: [CGPDFPage] {
     return (1...numberOfPages).map { page(at: $0)! }
@@ -108,7 +92,9 @@ private extension CGPDFScannerRef {
 enum PDFParser {
   private class ParsingContext {
     var route: DrawRoute
-    let resources: Resources
+    let resources: PDFResources
+
+    var stream: CGPDFContentStreamRef
 
     var strokeAlpha: CGFloat = 1
     var fillAlpha: CGFloat = 1
@@ -130,9 +116,10 @@ enum PDFParser {
       return RGBAColor.rgb(fillRGBColor, alpha: fillAlpha)
     }
 
-    init(route: DrawRoute, resources: Resources) {
+    init(route: DrawRoute, resources: PDFResources, stream: CGPDFContentStreamRef) {
       self.route = route
       self.resources = resources
+      self.stream = stream
     }
   }
 
@@ -146,12 +133,12 @@ enum PDFParser {
       let stream = CGPDFContentStreamCreateWithPage(page)
 
       let pageDictionary = PDFObject.processDict(page.dictionary!)
-      let resources = Resources(obj: pageDictionary["Resources"]!)!
+      let resources = PDFResources(obj: pageDictionary["Resources"]!)!
 
       let gradients = resources.shadings.mapValues { $0.makeGradient() }
       let route = DrawRoute(boundingRect: page.getBoxRect(.mediaBox),
                             gradients: gradients)
-      var context = ParsingContext(route: route, resources: resources)
+      var context = ParsingContext(route: route, resources: resources, stream: stream)
 
       let scanner = CGPDFScannerCreate(stream, operatorTable, &context)
       CGPDFScannerScan(scanner)
@@ -198,7 +185,7 @@ enum PDFParser {
       fatalError("not implemented")
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "BI") { scanner, info in
+    CGPDFOperatorTableSetCallback(operatorTableRef, "BI") { _, _ in
       fatalError("not implemented")
     }
 
@@ -240,8 +227,22 @@ enum PDFParser {
     CGPDFOperatorTableSetCallback(operatorTableRef, "Do") { scanner, info in
       let context = info!.load(as: ParsingContext.self)
       let name = scanner.popName()!
-      let _ = context.resources.xObjects[name]!
-      fatalError("XObject handling not implemented yet")
+      let xobject = context.resources.xObjects[name]!
+      let gradients = xobject.resources.shadings.mapValues { $0.makeGradient() }
+      let route = DrawRoute(boundingRect: context.route.boundingRect,
+                            gradients: gradients)
+      let stream = CGPDFContentStreamCreateWithStream(xobject.stream.raw,
+                                                      xobject.stream.rawDict,
+                                                      context.stream)
+      var nested = ParsingContext(route: route,
+                                  resources: xobject.resources,
+                                  stream: stream)
+      let scanner = CGPDFScannerCreate(stream,
+                                       PDFParser.makeOperatorTable(),
+                                       &nested)
+
+      CGPDFScannerScan(scanner)
+      PDFParser.callback(context: context, step: .subroute(nested.route))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in

@@ -57,12 +57,13 @@ enum DrawStep {
   case colorRenderingIntent
   case parametersFromGraphicsState
   case paintWithGradient(String)
+  case subroute(DrawRoute)
 }
 
 struct DrawRoute {
   let boundingRect: CGRect
   let gradients: [String: Gradient]
-  private var steps: Array<DrawStep> = []
+  private(set) var steps: Array<DrawStep> = []
   init(boundingRect: CGRect, gradients: [String: Gradient]) {
     self.boundingRect = boundingRect
     self.gradients = gradients
@@ -71,10 +72,6 @@ struct DrawRoute {
   public mutating func push(step: DrawStep) -> Int {
     steps.append(step)
     return steps.count
-  }
-
-  public func getSteps() -> [DrawStep] {
-    return steps
   }
 }
 
@@ -88,6 +85,11 @@ extension DrawRoute {
                         space: CGColorSpaceCreateDeviceRGB(),
                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
     ctx.scaleBy(x: scale, y: scale)
+    draw(on: ctx)
+    return ctx.makeImage()!
+  }
+
+  private func draw(on ctx: CGContext) {
     for step in steps {
       switch step {
       case .saveGState:
@@ -144,8 +146,9 @@ extension DrawRoute {
                                options: grad.options)
       case let .dash(pattern):
         ctx.setLineDash(phase: pattern.phase, lengths: pattern.lengths)
+      case let .subroute(route):
+        route.draw(on: ctx)
       }
     }
-    return ctx.makeImage()!
   }
 }

@@ -25,7 +25,7 @@ extension CoreGraphicsGenerator {
   private func generateImageFunction(imgName: ImageName, route: DrawRoute) -> [String] {
     let size = route.boundingRect.size
     let preambleLines = funcStart(imageName: imgName, imageSize: size)
-    let commandsLines = route.getSteps().flatMap {
+    let commandsLines = route.steps.flatMap {
       command(step: $0,
               gradients: route.gradients)
     }
@@ -210,6 +210,10 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     case let .dash(pattern):
       let args = "\(pattern.phase), \(ObjCGen.cgFloatArray(pattern.lengths)), \(pattern.lengths.count)"
       return [cmd("SetLineDash", args)]
+    case let .subroute(route):
+      return route.steps.flatMap {
+        command(step: $0, gradients: route.gradients)
+      }
     }
   }
 

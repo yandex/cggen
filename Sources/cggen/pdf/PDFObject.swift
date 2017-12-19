@@ -12,7 +12,7 @@ enum PDFObject {
   case string(String)
   case array([PDFObject])
   case dictionary([String: PDFObject])
-  case stream([String: PDFObject], CGPDFDataFormat, Data)
+  case stream(PDFStream)
 
   init(pdfObj obj: CGPDFObjectRef) {
     let type = CGPDFObjectGetType(obj)
@@ -56,13 +56,7 @@ enum PDFObject {
       CGPDFObjectGetValue(obj, .dictionary, &tempDict)
       self = .dictionary(PDFObject.processDict(tempDict!))
     case .stream:
-      var tempStream: CGPDFStreamRef?
-      CGPDFObjectGetValue(obj, .stream, &tempStream)
-      let stream = tempStream!
-      var format: CGPDFDataFormat = .raw
-      let data: NSData = CGPDFStreamCopyData(stream, &format)!
-      let dict = CGPDFStreamGetDictionary(stream)!
-      self = .stream(PDFObject.processDict(dict), format, data as Data)
+      self = .stream(PDFStream(obj: obj)!)
     }
   }
 
