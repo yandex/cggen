@@ -7,10 +7,7 @@
 
 import Foundation
 
-struct ObjCGen {
-  private init() {
-  }
-
+enum ObjCGen {
   static func functionName(imageName: String, prefix: String) -> String {
     return "\(prefix)Draw\(imageName)ImageInContext"
   }

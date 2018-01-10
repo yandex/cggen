@@ -74,7 +74,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   }
 
   private static var uniqColorID = 0
-  private static func asquireUniqID() -> Int {
+  private static func acquireUniqID() -> Int {
     let uid = uniqColorID
     uniqColorID += 1
     return uid
@@ -89,7 +89,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   }
 
   private func define(color: RGBAColor) -> (String, String) {
-    let colorVarName = "color\(ObjcCGGenerator.asquireUniqID())"
+    let colorVarName = "color\(ObjcCGGenerator.acquireUniqID())"
     let createColor = "  CGColorRef \(colorVarName) = CGColorCreate(\(rgbColorSpaceVarName), (CGFloat []){(CGFloat)\(color.red), (CGFloat)\(color.green), (CGFloat)\(color.blue), (CGFloat)\(color.alpha)});"
     return (colorVarName, createColor)
   }
@@ -180,11 +180,11 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       let locations = gradient.locationAndColors.map { $0.0 }
       let lines = with(colors: colors) { (colorNames) -> [String] in
         let colorString = colorNames.map { "(__bridge id)\($0)" }.joined(separator: ", ")
-        let colorsArrayVarName = "colors\(ObjcCGGenerator.asquireUniqID())"
+        let colorsArrayVarName = "colors\(ObjcCGGenerator.acquireUniqID())"
         let colorArray = "  CFArrayRef \(colorsArrayVarName) = CFBridgingRetain(@[ \(colorString) ]);"
         let locationList = locations.map { "(CGFloat)\($0)" }.joined(separator: ", ")
         let locationArray = "(CGFloat []){\(locationList)}"
-        let gradientName = "gradient\(ObjcCGGenerator.asquireUniqID())"
+        let gradientName = "gradient\(ObjcCGGenerator.acquireUniqID())"
         let gradientDef = "  CGGradientRef \(gradientName) = CGGradientCreateWithColors(\(rgbColorSpaceVarName), \(colorsArrayVarName), \(locationArray));"
         let colorArrayRelease = "  CFRelease(\(colorsArrayVarName));"
 
@@ -198,7 +198,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
         if optionsStrings.isEmpty {
           optionsStrings.append("0")
         }
-        let optionsVarName = "gradientOptions\(ObjcCGGenerator.asquireUniqID())"
+        let optionsVarName = "gradientOptions\(ObjcCGGenerator.acquireUniqID())"
         let optionsLine = "  CGGradientDrawingOptions \(optionsVarName) = (CGGradientDrawingOptions)(\(optionsStrings.joined(separator: " | ")));"
         let startPoint = "CGPointMake((CGFloat)\(gradient.startPoint.x), (CGFloat)\(gradient.startPoint.y))"
         let endPoint = "CGPointMake((CGFloat)\(gradient.endPoint.x), (CGFloat)\(gradient.endPoint.y))"

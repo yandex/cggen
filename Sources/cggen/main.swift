@@ -17,7 +17,7 @@ struct Args {
   let files: [String]
 }
 
-func ParseArgs() -> Args {
+func parseArgs() -> Args {
   let parser = ArgParser(helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
                          version: "0.1")
   let objcHeaderKey = "objc-header"
@@ -96,4 +96,4 @@ func main(args: Args) {
   log("Caller generated in: \(stopwatch.reset())")
 }
 
-main(args: ParseArgs())
+main(args: parseArgs())
