@@ -25,23 +25,27 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       ].joined(separator: "\n")
   }
 
-  func funcStart(imageName: ImageName, imageSize _: CGSize) -> [String] {
-    return [
-      ObjCGen.functionDef(imageName: imageName.camelCase, prefix: prefix),
-      "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",
-    ]
-  }
-
-  func command(step: DrawStep, gradients: [String: Gradient]) -> [String] {
-    return cggen.command(step: step, gradients: gradients)
-  }
-
-  func funcEnd(imageName _: ImageName, imageSize _: CGSize) -> [String] {
-    return ["  CGColorSpaceRelease(\(rgbColorSpaceVarName));", "}"]
+  func generateImageFunction(imgName: ImageName, route: DrawRoute) -> String {
+    let preambleLines = funcStart(imageName: imgName)
+    let commandsLines = route.steps.flatMap {
+      command(step: $0,
+              gradients: route.gradients)
+    }
+    let conclusionLines = ["  CGColorSpaceRelease(\(rgbColorSpaceVarName));", "}"]
+    return (preambleLines + commandsLines + conclusionLines).joined(separator: "\n")
   }
 
   func fileEnding() -> String {
     return ""
+  }
+}
+
+extension ObjcCGGenerator {
+  private func funcStart(imageName: ImageName) -> [String] {
+    return [
+      ObjCGen.functionDef(imageName: imageName.camelCase, prefix: prefix),
+      "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",
+    ]
   }
 }
 
