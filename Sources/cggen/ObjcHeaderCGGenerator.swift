@@ -14,20 +14,14 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
       ].joined(separator: "\n")
   }
 
-  func command(step _: DrawStep, gradients _: [String: Gradient]) -> [String] {
-    return []
-  }
-
-  func funcStart(imageName: ImageName, imageSize: CGSize) -> [String] {
-    let camel = imageName.camelCase
-    return [
-      "static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};",
-      ObjCGen.functionDecl(imageName: camel, prefix: prefix),
-    ]
-  }
-
-  func funcEnd(imageName _: ImageName, imageSize _: CGSize) -> [String] {
-    return []
+  func generateImageFunction(imgName: ImageName, route: DrawRoute) -> String {
+    let camel = imgName.camelCase
+    let imageSize = route.boundingRect.size
+    return
+      """
+      static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};
+      \(ObjCGen.functionDecl(imageName: camel, prefix: prefix))
+      """
   }
 
   func fileEnding() -> String {

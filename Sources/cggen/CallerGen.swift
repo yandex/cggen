@@ -53,22 +53,15 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       """
   }
 
-  func funcStart(imageName: ImageName, imageSize _: CGSize) -> [String] {
-    let camel = imageName.camelCase
+  func generateImageFunction(imgName: ImageName, route _: DrawRoute) -> String {
+    let camel = imgName.camelCase
     let function = ObjCGen.functionName(imageName: camel, prefix: prefix)
-    return [
-      "  retCode |= WriteImageToFile(\(function),",
-      "      k\(camel)ImageSize,",
-      "      @\"\(outputPath)/\(imageName.snakeCase).png\");",
-    ]
-  }
-
-  func command(step _: DrawStep, gradients _: [String: Gradient]) -> [String] {
-    return []
-  }
-
-  func funcEnd(imageName _: ImageName, imageSize _: CGSize) -> [String] {
-    return []
+    return
+      """
+        retCode |= WriteImageToFile(\(function),
+            k\(camel)ImageSize,
+            @\"\(outputPath)/\(imgName.snakeCase).png\");
+      """
   }
 
   func fileEnding() -> String {
