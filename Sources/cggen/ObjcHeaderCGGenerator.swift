@@ -1,9 +1,5 @@
-//
-//  ObjcHeaderCGGenerator.swift
-//  cggen
-//
-//  Created by Alexander Skvortsov on 10/01/2018.
-//
+// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Author: Alexander Skvortsov <askvortsov@yandex-team.ru>
 
 import CoreGraphics
 

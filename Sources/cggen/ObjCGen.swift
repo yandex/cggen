@@ -1,9 +1,5 @@
-//
-//  ObjCGen.swift
-//  cggenPackageDescription
-//
-//  Created by Alfred Zien on 25/11/2017.
-//
+// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Author: Alfred Zien <zienag@yandex-team.ru>
 
 import Foundation
 
