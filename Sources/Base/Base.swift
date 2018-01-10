@@ -6,12 +6,39 @@ import Dispatch
 import Foundation
 
 extension String {
+  private var camelCaseComponents: [String] {
+    let components = self.components(separatedBy: .uppercaseLetters)
+    var currentPos = index(startIndex, offsetBy: components.first?.count ?? 0)
+    var result: [String] = components.first.map { [$0] } ?? []
+    for comp in components.dropFirst() {
+      result.append(String(self[currentPos]) + comp)
+      currentPos = index(currentPos, offsetBy: comp.count + 1)
+    }
+    return result
+  }
+
+  private var nameComponents: [String] {
+    return components(separatedBy: CharacterSet(charactersIn: "_-: "))
+      .flatMap { $0.camelCaseComponents }
+  }
+
   public func capitalizedFirst() -> String {
     return prefix(1).uppercased() + dropFirst()
   }
 
-  public func snakeToCamelCase() -> String {
-    return components(separatedBy: "_").map { $0.capitalizedFirst() }.joined()
+  public var snakeCase: String {
+    return nameComponents
+      .map { $0.lowercased() }
+      .joined(separator: "_")
+  }
+
+  public var lowerCamelCase: String {
+    let comps = nameComponents
+    return (comps.first ?? "").lowercased() + comps.dropFirst().map { $0.capitalized }.joined()
+  }
+
+  public var upperCamelCase: String {
+    return nameComponents.map { $0.capitalized }.joined()
   }
 }
 

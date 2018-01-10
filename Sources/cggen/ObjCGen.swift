@@ -27,3 +27,44 @@ enum ObjCGen {
     return "(CGFloat []){\(elements)}"
   }
 }
+
+extension GenerationParams {
+  var descriptorTypename: String {
+    return prefix + "GeneratedImageDescriptor"
+  }
+
+  func descriptorName(for image: Image) -> String {
+    return "k" + prefix + image.name.upperCamelCase + "Descriptor"
+  }
+
+  func moduleImport(_ name: String) -> String {
+    if importAsModules {
+      return "@import \(name);"
+    } else {
+      return "#import <\(name)/\(name).h>"
+    }
+  }
+
+  var cggenSupportHeaderBody: String {
+    return
+      """
+      \(commonHeaderPrefix)
+
+      \(moduleImport("CoreFoundation"))
+      \(moduleImport("CoreGraphics"))
+
+      CF_ASSUME_NONNULL_BEGIN
+
+      typedef struct CF_BRIDGED_TYPE(id) \(prefix)\(module)GraphicResources *\(prefix)\(module)GraphicResourcesRef
+      CF_SWIFT_NAME(GraphicResources);
+
+      typedef struct {
+      CGSize size;
+      void (*drawingHandler)(CGContextRef);
+      } \(descriptorTypename) CF_SWIFT_NAME(GraphicResources.Descriptor);
+
+      CF_ASSUME_NONNULL_END
+
+      """
+  }
+}
