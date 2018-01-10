@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alexander Skvortsov <askvortsov@yandex-team.ru>
 
 import CoreGraphics
@@ -25,11 +25,11 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       ].joined(separator: "\n")
   }
 
-  func generateImageFunction(imgName: ImageName, route: DrawRoute) -> String {
-    let preambleLines = funcStart(imageName: imgName)
-    let commandsLines = route.steps.flatMap {
+  func generateImageFunction(image: Image) -> String {
+    let preambleLines = funcStart(imageName: image.name)
+    let commandsLines = image.route.steps.flatMap {
       command(step: $0,
-              gradients: route.gradients)
+              gradients: image.route.gradients)
     }
     let conclusionLines = ["  CGColorSpaceRelease(\(rgbColorSpaceVarName));", "}"]
     return (preambleLines + commandsLines + conclusionLines).joined(separator: "\n")
@@ -41,7 +41,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
 }
 
 extension ObjcCGGenerator {
-  private func funcStart(imageName: ImageName) -> [String] {
+  private func funcStart(imageName: Image.Name) -> [String] {
     return [
       ObjCGen.functionDef(imageName: imageName.camelCase, prefix: prefix),
       "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",

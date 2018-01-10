@@ -53,14 +53,14 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       """
   }
 
-  func generateImageFunction(imgName: ImageName, route _: DrawRoute) -> String {
-    let camel = imgName.camelCase
+  func generateImageFunction(image: Image) -> String {
+    let camel = image.name.camelCase
     let function = ObjCGen.functionName(imageName: camel, prefix: prefix)
     return
       """
         retCode |= WriteImageToFile(\(function),
             k\(camel)ImageSize,
-            @\"\(outputPath)/\(imgName.snakeCase).png\");
+            @\"\(outputPath)/\(image.name.snakeCase).png\");
       """
   }
 

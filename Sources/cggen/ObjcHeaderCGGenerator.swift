@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Yandex LLC. All rights reserved.
+// Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alexander Skvortsov <askvortsov@yandex-team.ru>
 
 import CoreGraphics
@@ -14,9 +14,9 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
       ].joined(separator: "\n")
   }
 
-  func generateImageFunction(imgName: ImageName, route: DrawRoute) -> String {
-    let camel = imgName.camelCase
-    let imageSize = route.boundingRect.size
+  func generateImageFunction(image: Image) -> String {
+    let camel = image.name.camelCase
+    let imageSize = image.route.boundingRect.size
     return
       """
       static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};
