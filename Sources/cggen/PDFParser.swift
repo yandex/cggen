@@ -223,7 +223,7 @@ enum PDFParser {
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d") { scanner, info in
       let phase = CGFloat(scanner.popInt()!)
-      let lengths = scanner.popArray()!.map { CGFloat($0.intValue!) }
+      let lengths = scanner.popArray()!.map { CGFloat($0.realFromIntOrReal()!) }
       let pattern = DashPattern(phase: phase, lengths: lengths)
       PDFParser.callback(info: info, step: .dash(pattern))
     }
@@ -266,6 +266,18 @@ enum PDFParser {
       PDFParser.callback(context: context, step: .restoreGState)
     }
 
+    CGPDFOperatorTableSetCallback(operatorTableRef, "f") { _, info in
+      let context = PDFParser.getContext(info)
+      PDFParser.callback(context: context,
+                         step: .fill(context.fillColor!, .winding))
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "f*") { _, info in
+      let context = PDFParser.getContext(info)
+      PDFParser.callback(context: context,
+                         step: .fill(context.fillColor!, .evenOdd))
+    }
+
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in
       let context = info!.load(as: ParsingContext.self)
       let gsName = scanner.popName()!
@@ -281,30 +293,27 @@ enum PDFParser {
       log("push gstate: \(extGState)")
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "q") { _, info in
-      PDFParser.callback(info: info, step: .saveGState)
-    }
-    CGPDFOperatorTableSetCallback(operatorTableRef, "Q") { _, info in
-      PDFParser.callback(info: info, step: .restoreGState)
-    }
     CGPDFOperatorTableSetCallback(operatorTableRef, "l") { scanner, info in
       PDFParser.callback(info: info, step: .line(scanner.popPoint()!))
     }
     CGPDFOperatorTableSetCallback(operatorTableRef, "h") { _, info in
       PDFParser.callback(info: info, step: .closePath)
     }
-
-    CGPDFOperatorTableSetCallback(operatorTableRef, "n") { _, info in
-      PDFParser.callback(info: info, step: .endPath)
-    }
     CGPDFOperatorTableSetCallback(operatorTableRef, "i") { scanner, info in
       PDFParser.callback(info: info, step: .flatness(scanner.popNumber()!))
     }
-
     CGPDFOperatorTableSetCallback(operatorTableRef, "m") { scanner, info in
       PDFParser.callback(info: info, step: .moveTo(scanner.popPoint()!))
     }
-
+    CGPDFOperatorTableSetCallback(operatorTableRef, "n") { _, info in
+      PDFParser.callback(info: info, step: .endPath)
+    }
+    CGPDFOperatorTableSetCallback(operatorTableRef, "q") { _, info in
+      PDFParser.callback(info: info, step: .saveGState)
+    }
+    CGPDFOperatorTableSetCallback(operatorTableRef, "Q") { _, info in
+      PDFParser.callback(info: info, step: .restoreGState)
+    }
     CGPDFOperatorTableSetCallback(operatorTableRef, "re") { scanner, info in
       PDFParser.callback(info: info, step: .appendRectangle(scanner.popRect()!))
     }
@@ -341,18 +350,6 @@ enum PDFParser {
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sh") { scanner, info in
       PDFParser.callback(info: info, step: .paintWithGradient(scanner.popName()!))
-    }
-
-    CGPDFOperatorTableSetCallback(operatorTableRef, "f") { _, info in
-      let context = PDFParser.getContext(info)
-      PDFParser.callback(context: context,
-                         step: .fill(context.fillColor!, .winding))
-    }
-
-    CGPDFOperatorTableSetCallback(operatorTableRef, "f*") { _, info in
-      let context = PDFParser.getContext(info)
-      PDFParser.callback(context: context,
-                         step: .fill(context.fillColor!, .evenOdd))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "w") { scanner, info in
