@@ -84,7 +84,13 @@ private extension CGPDFScannerRef {
 
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) -> [PDFOperator] {
-    return []
+    var context = Context()
+    let operatorTable = makeOperatorTable()
+    let scanner = CGPDFScannerCreate(stream, operatorTable, &context)
+    CGPDFScannerScan(scanner)
+    CGPDFScannerRelease(scanner)
+    CGPDFContentStreamRelease(stream)
+    return context.operators
   }
 
   private class Context {
@@ -189,7 +195,13 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.fillEvenOdd)
     }
 
-    // TODO: G, g
+    CGPDFOperatorTableSetCallback(operatorTableRef, "G") { _, info in
+      Parser.ctx(info).operators.append(.grayLevelStroke)
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "g") { _, info in
+      Parser.ctx(info).operators.append(.grayLevelNonstroke)
+    }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in
       let name = scanner.popName()!
@@ -205,7 +217,29 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.setFlatnessTolerance(tolerance))
     }
 
-    // TODO: ID, j, J, K, k
+//    This prints a error. Should be investigated further
+//    `ID' isn't an operator.
+//    CGPDFOperatorTableSetCallback(operatorTableRef, "ID") { scanner, info in
+//      Parser.ctx(info).operators.append(.inlineImageDataBegin)
+//    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "j") { scanner, info in
+      let style = scanner.popInt()!
+      Parser.ctx(info).operators.append(.lineJoinStyle(style))
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "J") { scanner, info in
+      let style = scanner.popInt()!
+      Parser.ctx(info).operators.append(.lineCapStyle(style))
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "K") { scanner, info in
+      Parser.ctx(info).operators.append(.cmykColorStroke)
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "k") { scanner, info in
+      Parser.ctx(info).operators.append(.cmykColorNonstroke)
+    }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "l") { scanner, info in
       let point = scanner.popPoint()!

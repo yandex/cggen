@@ -68,9 +68,9 @@ enum PDFOperator {
   // ID
   case inlineImageDataBegin
   // j
-  case lineJoinStyle
+  case lineJoinStyle(Int)
   // J
-  case lineCapStyle
+  case lineCapStyle(Int)
   // K
   case cmykColorStroke
   // k

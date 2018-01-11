@@ -2,6 +2,7 @@
 // Author: Alexander Skvortsov <askvortsov@yandex-team.ru>
 
 import CoreGraphics
+import PDFParse
 
 struct ObjcCGGenerator: CoreGraphicsGenerator {
   let prefix: String

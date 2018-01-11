@@ -3,40 +3,42 @@
 
 import Foundation
 
-struct RGBAColor {
-  let red: CGFloat
-  let green: CGFloat
-  let blue: CGFloat
-  let alpha: CGFloat
-  var cgColor: CGColor {
+// FIXME: Extract this file from PDFParse
+
+public struct RGBAColor {
+  public let red: CGFloat
+  public let green: CGFloat
+  public let blue: CGFloat
+  public let alpha: CGFloat
+  public var cgColor: CGColor {
     return CGColor(red: red, green: green, blue: blue, alpha: alpha)
   }
 
-  static func rgb(_ rgb: RGBColor, alpha: CGFloat) -> RGBAColor {
+  public static func rgb(_ rgb: RGBColor, alpha: CGFloat) -> RGBAColor {
     return RGBAColor(red: rgb.red, green: rgb.green,
                      blue: rgb.blue, alpha: alpha)
   }
 }
 
-struct RGBColor {
-  let red: CGFloat
-  let green: CGFloat
-  let blue: CGFloat
+public struct RGBColor {
+  public let red: CGFloat
+  public let green: CGFloat
+  public let blue: CGFloat
 }
 
-struct Gradient {
-  let locationAndColors: [(CGFloat, RGBAColor)]
-  let startPoint: CGPoint
-  let endPoint: CGPoint
-  let options: CGGradientDrawingOptions
+public struct Gradient {
+  public let locationAndColors: [(CGFloat, RGBAColor)]
+  public let startPoint: CGPoint
+  public let endPoint: CGPoint
+  public let options: CGGradientDrawingOptions
 }
 
-struct DashPattern {
-  let phase: CGFloat
-  let lengths: [CGFloat]
+public struct DashPattern {
+  public let phase: CGFloat
+  public let lengths: [CGFloat]
 }
 
-enum DrawStep {
+public enum DrawStep {
   case saveGState
   case restoreGState
   case moveTo(CGPoint)
@@ -64,10 +66,10 @@ enum DrawStep {
   case globalAlpha(CGFloat)
 }
 
-struct DrawRoute {
-  let boundingRect: CGRect
-  let gradients: [String: Gradient]
-  private(set) var steps: Array<DrawStep> = []
+public struct DrawRoute {
+  public let boundingRect: CGRect
+  public let gradients: [String: Gradient]
+  public private(set) var steps: Array<DrawStep> = []
   init(boundingRect: CGRect, gradients: [String: Gradient]) {
     self.boundingRect = boundingRect
     self.gradients = gradients
@@ -79,6 +81,7 @@ struct DrawRoute {
   }
 }
 
+// FIXME: Move to better place
 extension DrawRoute {
   func draw(scale: CGFloat) -> CGImage {
     let ctx = CGContext(data: nil,

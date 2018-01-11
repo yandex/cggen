@@ -4,6 +4,7 @@
 import ArgParse
 import Base
 import Foundation
+import PDFParse
 
 struct Args {
   let objcHeader: String?

@@ -4,92 +4,7 @@
 import Base
 import Foundation
 
-extension CGPDFDocument {
-  var pages: [CGPDFPage] {
-    return (1...numberOfPages).map { page(at: $0)! }
-  }
-}
-
-private extension CGPDFScannerRef {
-  func popNumber() -> CGPDFReal? {
-    var val: CGPDFReal = 0
-    return CGPDFScannerPopNumber(self, &val) ? val : nil
-  }
-
-  func popInt() -> CGPDFInteger? {
-    var val: CGPDFInteger = 0
-    return CGPDFScannerPopInteger(self, &val) ? val : nil
-  }
-
-  func popArray() -> [PDFObject]? {
-    var pointer: CGPDFArrayRef?
-    CGPDFScannerPopArray(self, &pointer)
-    guard let array = pointer else { return nil }
-    return (0..<CGPDFArrayGetCount(array)).map { i in
-      var objPtr: CGPDFObjectRef?
-      CGPDFArrayGetObject(array, i, &objPtr)
-      return PDFObject(pdfObj: objPtr!)
-    }
-  }
-
-  private func popTwoNumbers() -> (CGFloat, CGFloat)? {
-    guard let a1 = popNumber() else {
-      return nil
-    }
-    guard let a2 = popNumber() else {
-      fatalError()
-    }
-    return (a1, a2)
-  }
-
-  func popPoint() -> CGPoint? {
-    guard let pair = popTwoNumbers() else { return nil }
-    return CGPoint(x: pair.1, y: pair.0)
-  }
-
-  func popSize() -> CGSize? {
-    guard let pair = popTwoNumbers() else { return nil }
-    return CGSize(width: pair.1, height: pair.0)
-  }
-
-  func popRect() -> CGRect? {
-    guard let size = popSize() else { return nil }
-    guard let origin = popPoint() else { fatalError() }
-    return CGRect(origin: origin, size: size)
-  }
-
-  func popColor() -> RGBColor? {
-    guard let blue = popNumber() else { return nil }
-    guard let green = popNumber(), let red = popNumber() else { fatalError() }
-    return RGBColor(red: red, green: green, blue: blue)
-  }
-
-  func popName() -> String? {
-    var pointer: UnsafePointer<Int8>?
-    CGPDFScannerPopName(self, &pointer)
-    guard let cString = pointer else { return nil }
-    return String(cString: cString)
-  }
-
-  func popAffineTransform() -> CGAffineTransform? {
-    guard let f = popNumber() else { return nil }
-    guard let e = popNumber(),
-      let d = popNumber(),
-      let c = popNumber(),
-      let b = popNumber(),
-      let a = popNumber() else { fatalError() }
-    return CGAffineTransform(a: a, b: b, c: c, d: d, tx: e, ty: f)
-  }
-
-  func popObject() -> PDFObject? {
-    var objP: CGPDFObjectRef?
-    CGPDFScannerPopObject(self, &objP)
-    guard let obj = objP else { return nil }
-    return PDFObject(pdfObj: obj)
-  }
-}
-
-enum PDFParser {
+public enum PDFParser {
   private class ParsingContext {
     var route: DrawRoute
     let resources: PDFResources
@@ -123,7 +38,7 @@ enum PDFParser {
     }
   }
 
-  static func parse(pdfURL: CFURL) -> [DrawRoute] {
+  public static func parse(pdfURL: CFURL) -> [DrawRoute] {
     guard let pdfDoc = CGPDFDocument(pdfURL) else {
       fatalError("Could not open pdf file at: \(pdfURL)")
     }
@@ -132,6 +47,11 @@ enum PDFParser {
     return pdfDoc.pages.map { page in
       let stream = CGPDFContentStreamCreateWithPage(page)
 
+      let ops = PDFContentStreamParser
+        .parse(stream: CGPDFContentStreamCreateWithPage(page))
+      print(ops.enumerated()
+        .map { "\($0.offset + 1): \($0.element)" }.joined(separator: "\n"))
+      print("===============================================================")
       let pageDictionary = PDFObject.processDict(page.dictionary!)
       let resources = PDFResources(obj: pageDictionary["Resources"]!)!
 
@@ -364,5 +284,90 @@ enum PDFParser {
       PDFParser.callback(info: info, step: .clip(.evenOdd))
     }
     return operatorTableRef
+  }
+}
+
+extension CGPDFDocument {
+  var pages: [CGPDFPage] {
+    return (1...numberOfPages).map { page(at: $0)! }
+  }
+}
+
+private extension CGPDFScannerRef {
+  func popNumber() -> CGPDFReal? {
+    var val: CGPDFReal = 0
+    return CGPDFScannerPopNumber(self, &val) ? val : nil
+  }
+
+  func popInt() -> CGPDFInteger? {
+    var val: CGPDFInteger = 0
+    return CGPDFScannerPopInteger(self, &val) ? val : nil
+  }
+
+  func popArray() -> [PDFObject]? {
+    var pointer: CGPDFArrayRef?
+    CGPDFScannerPopArray(self, &pointer)
+    guard let array = pointer else { return nil }
+    return (0..<CGPDFArrayGetCount(array)).map { i in
+      var objPtr: CGPDFObjectRef?
+      CGPDFArrayGetObject(array, i, &objPtr)
+      return PDFObject(pdfObj: objPtr!)
+    }
+  }
+
+  private func popTwoNumbers() -> (CGFloat, CGFloat)? {
+    guard let a1 = popNumber() else {
+      return nil
+    }
+    guard let a2 = popNumber() else {
+      fatalError()
+    }
+    return (a1, a2)
+  }
+
+  func popPoint() -> CGPoint? {
+    guard let pair = popTwoNumbers() else { return nil }
+    return CGPoint(x: pair.1, y: pair.0)
+  }
+
+  func popSize() -> CGSize? {
+    guard let pair = popTwoNumbers() else { return nil }
+    return CGSize(width: pair.1, height: pair.0)
+  }
+
+  func popRect() -> CGRect? {
+    guard let size = popSize() else { return nil }
+    guard let origin = popPoint() else { fatalError() }
+    return CGRect(origin: origin, size: size)
+  }
+
+  func popColor() -> RGBColor? {
+    guard let blue = popNumber() else { return nil }
+    guard let green = popNumber(), let red = popNumber() else { fatalError() }
+    return RGBColor(red: red, green: green, blue: blue)
+  }
+
+  func popName() -> String? {
+    var pointer: UnsafePointer<Int8>?
+    CGPDFScannerPopName(self, &pointer)
+    guard let cString = pointer else { return nil }
+    return String(cString: cString)
+  }
+
+  func popAffineTransform() -> CGAffineTransform? {
+    guard let f = popNumber() else { return nil }
+    guard let e = popNumber(),
+      let d = popNumber(),
+      let c = popNumber(),
+      let b = popNumber(),
+      let a = popNumber() else { fatalError() }
+    return CGAffineTransform(a: a, b: b, c: c, d: d, tx: e, ty: f)
+  }
+
+  func popObject() -> PDFObject? {
+    var objP: CGPDFObjectRef?
+    CGPDFScannerPopObject(self, &objP)
+    guard let obj = objP else { return nil }
+    return PDFObject(pdfObj: obj)
   }
 }

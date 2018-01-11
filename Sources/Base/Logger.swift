@@ -1,10 +1,10 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-struct Logger {
-  static var shared = Logger()
+public struct Logger {
+  public static var shared = Logger()
   private var level: Bool?
-  mutating func setLevel(level: Bool) {
+  public mutating func setLevel(level: Bool) {
     self.level = level
   }
 
@@ -16,6 +16,6 @@ struct Logger {
   }
 }
 
-func log(_ s: String) {
+public func log(_ s: String) {
   Logger.shared.log(s)
 }
