@@ -14,6 +14,10 @@ struct Args {
   let objcCallerPath: String?
   let callerScale: Double
   let callerPngOutputPath: String?
+  let generationStyle: String?
+  let cggenSupportHeaderPath: String?
+  let module: String?
+  let importAsModules: Bool
   let verbose: Bool
   let files: [String]
 }
@@ -28,6 +32,10 @@ func parseArgs() -> Args {
   let objcCallerPathKey = "objc-caller-path"
   let callerScaleKey = "caller-scale"
   let callerPngOutputPathKey = "caller-png-output"
+  let generationStyleKey = "generation-style"
+  let cggenSupportHeaderPathKey = "cggen-support-header-path"
+  let moduleKey = "module-name"
+  let importAsModulesKey = "import-as-modules"
   let verboseFlagKey = "verbose"
   parser.newString(objcHeaderKey)
   parser.newString(objcImplKey)
@@ -36,6 +44,10 @@ func parseArgs() -> Args {
   parser.newString(objcCallerPathKey)
   parser.newDouble(callerScaleKey)
   parser.newString(callerPngOutputPathKey)
+  parser.newString(generationStyleKey)
+  parser.newString(cggenSupportHeaderPathKey)
+  parser.newString(moduleKey)
+  parser.newFlag(importAsModulesKey)
   parser.newFlag(verboseFlagKey)
   parser.parse()
   return Args(objcHeader: parser.string(at: objcHeaderKey),
@@ -45,6 +57,10 @@ func parseArgs() -> Args {
               objcCallerPath: parser.string(at: objcCallerPathKey),
               callerScale: parser.double(at: callerScaleKey) ?? 1,
               callerPngOutputPath: parser.string(at: callerPngOutputPathKey),
+              generationStyle: parser.string(at: generationStyleKey),
+              cggenSupportHeaderPath: parser.string(at: cggenSupportHeaderPathKey),
+              module: parser.string(at: moduleKey),
+              importAsModules: parser.getFlag(importAsModulesKey),
               verbose: parser.getFlag(verboseFlagKey),
               files: parser.getArgs())
 }
@@ -60,15 +76,19 @@ func main(args: Args) {
     .flatMap { nameAndRoutes in
       nameAndRoutes.1.enumerated().flatMap { (offset, route) -> Image in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
-        let imgName = Image.Name(snakeCase: finalName)
-        return Image(name: imgName, route: route)
+        return Image(name: finalName, route: route)
       }
     }
   log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
+  let style = args.generationStyle.flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
+  let params = GenerationParams(style: style,
+                                importAsModules: args.importAsModules,
+                                prefix: objcPrefix,
+                                module: args.module ?? "")
 
   if let objcHeaderPath = args.objcHeader {
-    let headerGenerator = ObjcHeaderCGGenerator(prefix: objcPrefix)
+    let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let fileStr = headerGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcHeaderPath, atomically: true, encoding: .utf8)
   }
@@ -76,12 +96,19 @@ func main(args: Args) {
 
   if let objcImplPath = args.objcImpl {
     let headerImportPath = args.objcHeaderImportPath
-    let implGenerator = ObjcCGGenerator(prefix: objcPrefix,
+    let implGenerator = ObjcCGGenerator(params: params,
                                         headerImportPath: headerImportPath)
     let fileStr = implGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
   }
   log("Impl generated in: \(stopwatch.reset())")
+
+  if case .swiftFriendly = params.style, let path = args.cggenSupportHeaderPath {
+    try! params.cggenSupportHeaderBody.write(toFile: path,
+                                             atomically: true,
+                                             encoding: .utf8)
+    log("cggen_support was generated in: \(stopwatch.reset())")
+  }
 
   if let objcCallerPath = args.objcCallerPath,
     let pngOutputPath = args.callerPngOutputPath,

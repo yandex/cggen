@@ -12,10 +12,15 @@ protocol CoreGraphicsGenerator {
 
 extension CoreGraphicsGenerator {
   func generateFile(images: [Image]) -> String {
-    return filePreamble()
-      + images.map(generateImageFunction).joined(separator: "\n\n")
-      + "\n"
-      + fileEnding()
-      + "\n"
+    return
+      """
+      \(commonHeaderPrefix)
+
+      \(filePreamble())
+      \(images.map(generateImageFunction).joined(separator: "\n\n"))
+
+      \(fileEnding())
+
+      """
   }
 }
