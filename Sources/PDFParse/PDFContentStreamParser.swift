@@ -233,11 +233,11 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.lineCapStyle(style))
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "K") { scanner, info in
+    CGPDFOperatorTableSetCallback(operatorTableRef, "K") { _, info in
       Parser.ctx(info).operators.append(.cmykColorStroke)
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "k") { scanner, info in
+    CGPDFOperatorTableSetCallback(operatorTableRef, "k") { _, info in
       Parser.ctx(info).operators.append(.cmykColorNonstroke)
     }
 

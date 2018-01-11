@@ -23,7 +23,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
       "",
       foundation_import,
       "\n",
-      ].joined(separator: "\n")
+    ].joined(separator: "\n")
   }
 
   func generateImageFunction(image: Image) -> String {
@@ -49,7 +49,6 @@ extension ObjcCGGenerator {
     ]
   }
 }
-
 
 private func cmd(_ name: String, _ args: String? = nil) -> String {
   let argStr: String

@@ -134,7 +134,6 @@ enum PDFObject {
       return nil
     }
   }
-
 }
 
 extension CGRect {

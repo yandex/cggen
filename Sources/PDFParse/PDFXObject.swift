@@ -6,7 +6,7 @@ import Foundation
 struct PDFXObject {
   static let unsupportedKeys: Set<String> =
     ["Ref", "Metadata", "PieceInfo", "StructParent", "StructParents", "OPI"]
-  static let unsupportedSubtypes: Set<String> = [ "Image" ]
+  static let unsupportedSubtypes: Set<String> = ["Image"]
   let stream: PDFStream
   let resources: PDFResources
   let bbox: CGRect

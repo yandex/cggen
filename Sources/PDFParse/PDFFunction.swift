@@ -16,7 +16,8 @@ struct PDFFunction {
     case stitching = 3
     case postsciptCalculator = 4
   }
-  static let supportedTypes: Set<FunctionType> = [ .sampled ]
+
+  static let supportedTypes: Set<FunctionType> = [.sampled]
 
   enum ParseError: Error {
     case noFunctionType
@@ -36,9 +37,9 @@ struct PDFFunction {
     guard let dict = obj.dictFromDictOrStream,
       let functionTypeRaw = dict["FunctionType"]?.intValue,
       let functionType = FunctionType(rawValue: functionTypeRaw)
-      else { throw ParseError.noFunctionType }
+    else { throw ParseError.noFunctionType }
     guard PDFFunction.supportedTypes.contains(functionType)
-      else { throw ParseError.unsupportedFunctionType(functionType) }
+    else { throw ParseError.unsupportedFunctionType(functionType) }
 
     guard case let .stream(stream) = obj,
       let rangeObj = stream.dict["Range"],
