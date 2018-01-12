@@ -49,7 +49,7 @@ private extension GenerationParams {
       return
         """
         extern const \(descriptorTypename) \(descriptorName(for: image))
-        CF_SWIFT_NAME(GraphicResources.\(image.name.lowerCamelCase));
+        CF_SWIFT_NAME(\(module)Resources.\(image.name.lowerCamelCase));
         """
     }
   }

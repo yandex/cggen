@@ -56,12 +56,12 @@ extension GenerationParams {
       CF_ASSUME_NONNULL_BEGIN
 
       typedef struct CF_BRIDGED_TYPE(id) \(prefix)\(module)GraphicResources *\(prefix)\(module)GraphicResourcesRef
-      CF_SWIFT_NAME(GraphicResources);
+      CF_SWIFT_NAME(\(module)Resources);
 
       typedef struct {
       CGSize size;
       void (*drawingHandler)(CGContextRef);
-      } \(descriptorTypename) CF_SWIFT_NAME(GraphicResources.Descriptor);
+      } \(descriptorTypename) CF_SWIFT_NAME(\(module)Resources.Descriptor);
 
       CF_ASSUME_NONNULL_END
 
