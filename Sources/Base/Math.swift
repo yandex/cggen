@@ -12,14 +12,16 @@ public protocol LinearInterpolatable {
 
 extension Array where Element: LinearInterpolatable {
   public func removeIntermediates() -> [Element] {
-    if count == 2 {
+    if count <= 2 {
       return self
     }
 
     var result = [self[0]]
     var startIndex = 0
     for currentIndex in 1..<count - 1 {
-      let ip = Element.linearInterpolate(from: self[startIndex], to: self[currentIndex + 1], at: self[currentIndex].abscissa)
+      let ip = Element.linearInterpolate(from: self[startIndex],
+                                         to: self[currentIndex + 1],
+                                         at: self[currentIndex].abscissa)
       if !ip.near(self[currentIndex]) {
         result.append(self[currentIndex])
         startIndex = currentIndex

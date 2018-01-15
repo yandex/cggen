@@ -3,17 +3,18 @@
 
 import Foundation
 
-struct PDFXObject {
-  static let unsupportedKeys: Set<String> =
+public struct PDFXObject {
+  private static let unsupportedKeys: Set<String> =
     ["Ref", "Metadata", "PieceInfo", "StructParent", "StructParents", "OPI"]
-  static let unsupportedSubtypes: Set<String> = ["Image"]
-  let stream: PDFStream
-  let resources: PDFResources
-  let bbox: CGRect
-  let group: Group?
-  let matrix: CGAffineTransform?
+  private static let unsupportedSubtypes: Set<String> = ["Image"]
 
-  init?(obj: PDFObject) {
+  public let operators: [PDFOperator]
+  public let resources: PDFResources
+  public let bbox: CGRect
+  public let group: Group?
+  public let matrix: CGAffineTransform?
+
+  init?(obj: PDFObject, parentStream: CGPDFContentStreamRef) {
     guard case let .stream(stream) = obj,
       case let dict = stream.dict,
       case let .name(type)? = dict["Type"],
@@ -22,11 +23,17 @@ struct PDFXObject {
     precondition(!PDFXObject.unsupportedSubtypes.contains(subtype),
                  "XObject with subtype \(subtype) is not supported")
     precondition(subtype == "Form",
-                 "XObject with subtype \(subtype) is not implemnted (yet?)")
+                 "XObject with subtype \(subtype) is not implemented (yet?)")
+
+    let contentStream = CGPDFContentStreamCreateWithStream(stream.raw,
+                                                           stream.rawDict,
+                                                           parentStream)
+
     guard case let .array(bboxArray)? = dict["BBox"],
       let resourcesDict = dict["Resources"],
-      let resources = PDFResources(obj: resourcesDict),
+      let resources = PDFResources(obj: resourcesDict, parentStream: contentStream),
       let bbox = CGRect.fromPDFArray(bboxArray) else { return nil }
+    let operators = PDFContentStreamParser.parse(stream: contentStream)
 
     let group: Group?
     if case let .dictionary(groupDict)? = stream.dict["Group"] {
@@ -45,31 +52,31 @@ struct PDFXObject {
       Set(dict.keys).intersection(PDFXObject.unsupportedKeys)
     precondition(illegalKeys.isEmpty, "\(illegalKeys) are not supported")
 
-    self.stream = stream
+    self.operators = operators
     self.resources = resources
     self.bbox = bbox
     self.group = group
     self.matrix = matrix
   }
 
-  struct Group {
+  public struct Group {
     let colorSpace: PDFObject?
-    let isolated: Bool?
-    let knockout: Bool?
+    public let isolated: Bool
+    public let knockout: Bool
 
     init?(dict: [String: PDFObject]) {
       guard case let .name(subtype)? = dict["S"]
       else { return nil }
       precondition(subtype == "Transparency")
       colorSpace = dict["CS"]
-      isolated = dict["I"]?.boolValue
-      knockout = dict["K"]?.boolValue
+      isolated = dict["I"]?.boolValue ?? false
+      knockout = dict["K"]?.boolValue ?? false
     }
   }
 }
 
 extension PDFXObject: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     return """
     
     - resources: \(resources)

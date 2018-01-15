@@ -4,10 +4,10 @@
 import Base
 import CoreGraphics
 
-struct PDFFunction {
-  struct Point {
-    let arg: CGFloat
-    let value: [CGFloat]
+public struct PDFFunction {
+  public struct Point {
+    public let arg: CGFloat
+    public let value: [CGFloat]
   }
 
   enum FunctionType: Int {
@@ -31,7 +31,7 @@ struct PDFFunction {
   let domain: [(CGFloat, CGFloat)]
   let size: [Int]
   let length: Int
-  let points: [Point]
+  public let points: [Point]
 
   init(obj: PDFObject) throws {
     guard let dict = obj.dictFromDictOrStream,
@@ -64,13 +64,14 @@ struct PDFFunction {
     precondition(bitsPerSample == 8, "Only UInt8 supported")
     let samples = [UInt8](stream.data).map { CGFloat($0) / CGFloat(UInt8.max) }
     let values = samples.splitBy(subSize: rangeDim)
-    let points = (0..<size[0]).map { (s) -> Point in
+    let allPoints = (0..<size[0]).map { (s) -> Point in
       let start = domain[0].0
       let end = domain[0].1
       let step = (end - start) / CGFloat(size[0] - 1)
       let current = start + CGFloat(s) * step
       return Point(arg: current, value: values[s])
-    }.removeIntermediates()
+    }
+    let points = allPoints.removeIntermediates()
 
     self.range = range
     self.rangeDim = rangeDim
@@ -83,9 +84,9 @@ struct PDFFunction {
 }
 
 extension PDFFunction.Point: LinearInterpolatable {
-  typealias AbscissaType = CGFloat
-  var abscissa: CGFloat { return arg }
-  func near(_ other: PDFFunction.Point) -> Bool {
+  public typealias AbscissaType = CGFloat
+  public var abscissa: CGFloat { return arg }
+  public func near(_ other: PDFFunction.Point) -> Bool {
     let squareDistance = zip(value, other.value)
       .reduce(0) { (acc, pair) -> CGFloat in
         let d = pair.0 - pair.1
@@ -93,16 +94,13 @@ extension PDFFunction.Point: LinearInterpolatable {
       }
     return squareDistance < 0.001
   }
-  static func linearInterpolate(from lhs: PDFFunction.Point,
-                                to rhs: PDFFunction.Point,
-                                at x: CGFloat) -> PDFFunction.Point {
+  public static func linearInterpolate(from lhs: PDFFunction.Point,
+                                       to rhs: PDFFunction.Point,
+                                       at x: CGFloat) -> PDFFunction.Point {
     precondition(lhs.value.count == rhs.value.count)
-    let outN = lhs.value.count
-    let out = (0..<outN).map { (i) -> CGFloat in
-      let x1 = lhs.arg
-      let x2 = rhs.arg
-      let y1 = lhs.value[i]
-      let y2 = rhs.value[i]
+    let x1 = lhs.arg
+    let x2 = rhs.arg
+    let out = zip(lhs.value, rhs.value).map { (y1, y2) -> CGFloat in
       let k = (y1 - y2) / (x1 - x2)
       let b = y1 - k * x1
       return k * x + b

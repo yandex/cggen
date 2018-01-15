@@ -3,13 +3,13 @@
 
 import Foundation
 
-enum PDFGStateCommand {
+public enum PDFGStateCommand {
   case fillAlpha(CGFloat)
   case strokeAlpha(CGFloat)
 }
 
-struct PDFExtGState {
-  let commands: [PDFGStateCommand]
+public struct PDFExtGState {
+  public let commands: [PDFGStateCommand]
   init?(obj: PDFObject) {
     guard let dict = obj.dictionaryVal()
     else { return nil }

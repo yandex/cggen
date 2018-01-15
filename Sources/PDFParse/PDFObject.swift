@@ -3,7 +3,7 @@
 
 import Foundation
 
-enum PDFObject {
+internal enum PDFObject {
   case null
   case boolean(CGPDFBoolean)
   case integer(CGPDFInteger)
@@ -136,7 +136,7 @@ enum PDFObject {
   }
 }
 
-extension CGRect {
+internal extension CGRect {
   static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
     guard array.count == 4, let x = array[0].realFromIntOrReal(),
       let y = array[1].realFromIntOrReal(),
@@ -146,7 +146,7 @@ extension CGRect {
   }
 }
 
-extension CGAffineTransform {
+internal extension CGAffineTransform {
   init?(pdfArray array: [PDFObject]) {
     guard array.count == 6,
       let a = array[0].realFromIntOrReal(),

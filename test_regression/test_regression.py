@@ -192,6 +192,9 @@ class cggen_tests(unittest.TestCase):
     def test_shapes(self):
         self.checkImagesEqual('shapes')
 
+    def test_group_opacity(self):
+        self.checkImagesEqual('group_opacity')
+
 
 def main():
     unittest.main()

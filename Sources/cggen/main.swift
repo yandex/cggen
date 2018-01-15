@@ -74,8 +74,9 @@ func main(args: Args) {
     .concurrentMap { ($0.deletingPathExtension().lastPathComponent,
                       PDFParser.parse(pdfURL: $0 as CFURL)) }
     .flatMap { nameAndRoutes in
-      nameAndRoutes.1.enumerated().flatMap { (offset, route) -> Image in
+      nameAndRoutes.1.enumerated().flatMap { (offset, page) -> Image in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
+        let route = PDFToDrawRouteConverter.convert(page: page)
         return Image(name: finalName, route: route)
       }
     }
@@ -91,8 +92,8 @@ func main(args: Args) {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let fileStr = headerGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcHeaderPath, atomically: true, encoding: .utf8)
+    log("Header generated in: \(stopwatch.reset())")
   }
-  log("Header generated in: \(stopwatch.reset())")
 
   if let objcImplPath = args.objcImpl {
     let headerImportPath = args.objcHeaderImportPath
@@ -100,8 +101,8 @@ func main(args: Args) {
                                         headerImportPath: headerImportPath)
     let fileStr = implGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
+    log("Impl generated in: \(stopwatch.reset())")
   }
-  log("Impl generated in: \(stopwatch.reset())")
 
   if case .swiftFriendly = params.style, let path = args.cggenSupportHeaderPath {
     try! params.cggenSupportHeaderBody.write(toFile: path,
@@ -119,9 +120,8 @@ func main(args: Args) {
                                         outputPath: pngOutputPath)
     let fileStr = callerGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcCallerPath, atomically: true, encoding: .utf8)
+    log("Caller generated in: \(stopwatch.reset())")
   }
-
-  log("Caller generated in: \(stopwatch.reset())")
 }
 
 main(args: parseArgs())

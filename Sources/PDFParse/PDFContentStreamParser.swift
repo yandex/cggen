@@ -2,85 +2,7 @@
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
 import Foundation
-
-private extension CGPDFScannerRef {
-  func popNumber() -> CGPDFReal? {
-    var val: CGPDFReal = 0
-    return CGPDFScannerPopNumber(self, &val) ? val : nil
-  }
-
-  func popInt() -> CGPDFInteger? {
-    var val: CGPDFInteger = 0
-    return CGPDFScannerPopInteger(self, &val) ? val : nil
-  }
-
-  func popArray() -> [PDFObject]? {
-    var pointer: CGPDFArrayRef?
-    CGPDFScannerPopArray(self, &pointer)
-    guard let array = pointer else { return nil }
-    return (0..<CGPDFArrayGetCount(array)).map { i in
-      var objPtr: CGPDFObjectRef?
-      CGPDFArrayGetObject(array, i, &objPtr)
-      return PDFObject(pdfObj: objPtr!)
-    }
-  }
-
-  private func popTwoNumbers() -> (CGFloat, CGFloat)? {
-    guard let a1 = popNumber() else {
-      return nil
-    }
-    guard let a2 = popNumber() else {
-      fatalError()
-    }
-    return (a1, a2)
-  }
-
-  func popPoint() -> CGPoint? {
-    guard let pair = popTwoNumbers() else { return nil }
-    return CGPoint(x: pair.1, y: pair.0)
-  }
-
-  func popSize() -> CGSize? {
-    guard let pair = popTwoNumbers() else { return nil }
-    return CGSize(width: pair.1, height: pair.0)
-  }
-
-  func popRect() -> CGRect? {
-    guard let size = popSize() else { return nil }
-    guard let origin = popPoint() else { fatalError() }
-    return CGRect(origin: origin, size: size)
-  }
-
-  func popColor() -> RGBColor? {
-    guard let blue = popNumber() else { return nil }
-    guard let green = popNumber(), let red = popNumber() else { fatalError() }
-    return RGBColor(red: red, green: green, blue: blue)
-  }
-
-  func popName() -> String? {
-    var pointer: UnsafePointer<Int8>?
-    CGPDFScannerPopName(self, &pointer)
-    guard let cString = pointer else { return nil }
-    return String(cString: cString)
-  }
-
-  func popAffineTransform() -> CGAffineTransform? {
-    guard let f = popNumber() else { return nil }
-    guard let e = popNumber(),
-      let d = popNumber(),
-      let c = popNumber(),
-      let b = popNumber(),
-      let a = popNumber() else { fatalError() }
-    return CGAffineTransform(a: a, b: b, c: c, d: d, tx: e, ty: f)
-  }
-
-  func popObject() -> PDFObject? {
-    var objP: CGPDFObjectRef?
-    CGPDFScannerPopObject(self, &objP)
-    guard let obj = objP else { return nil }
-    return PDFObject(pdfObj: obj)
-  }
-}
+import Base
 
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) -> [PDFOperator] {
@@ -188,7 +110,7 @@ enum PDFContentStreamParser {
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "F") { _, info in
-      Parser.ctx(info).operators.append(.fillWindingObsolete)
+      Parser.ctx(info).operators.append(.fillWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "f*") { _, info in
@@ -279,8 +201,9 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "ri") { _, info in
-      Parser.ctx(info).operators.append(.colorRenderingIntent)
+    CGPDFOperatorTableSetCallback(operatorTableRef, "ri") { scanner, info in
+      let name = scanner.popName()!
+      Parser.ctx(info).operators.append(.colorRenderingIntent(name))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "s") { _, info in
@@ -298,7 +221,7 @@ enum PDFContentStreamParser {
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sc") { scanner, info in
       let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.rgbColorStroke(color))
+      Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sh") { scanner, info in
@@ -322,5 +245,84 @@ enum PDFContentStreamParser {
     }
     // TODO: text things: ',"
     return operatorTableRef
+  }
+}
+
+private extension CGPDFScannerRef {
+  func popNumber() -> CGPDFReal? {
+    var val: CGPDFReal = 0
+    return CGPDFScannerPopNumber(self, &val) ? val : nil
+  }
+
+  func popInt() -> CGPDFInteger? {
+    var val: CGPDFInteger = 0
+    return CGPDFScannerPopInteger(self, &val) ? val : nil
+  }
+
+  func popArray() -> [PDFObject]? {
+    var pointer: CGPDFArrayRef?
+    CGPDFScannerPopArray(self, &pointer)
+    guard let array = pointer else { return nil }
+    return (0..<CGPDFArrayGetCount(array)).map { i in
+      var objPtr: CGPDFObjectRef?
+      CGPDFArrayGetObject(array, i, &objPtr)
+      return PDFObject(pdfObj: objPtr!)
+    }
+  }
+
+  private func popTwoNumbers() -> (CGFloat, CGFloat)? {
+    guard let a1 = popNumber() else {
+      return nil
+    }
+    guard let a2 = popNumber() else {
+      fatalError()
+    }
+    return (a1, a2)
+  }
+
+  func popPoint() -> CGPoint? {
+    guard let pair = popTwoNumbers() else { return nil }
+    return CGPoint(x: pair.1, y: pair.0)
+  }
+
+  func popSize() -> CGSize? {
+    guard let pair = popTwoNumbers() else { return nil }
+    return CGSize(width: pair.1, height: pair.0)
+  }
+
+  func popRect() -> CGRect? {
+    guard let size = popSize() else { return nil }
+    guard let origin = popPoint() else { fatalError() }
+    return CGRect(origin: origin, size: size)
+  }
+
+  func popColor() -> Base.RGBColor? {
+    guard let blue = popNumber() else { return nil }
+    guard let green = popNumber(), let red = popNumber() else { fatalError() }
+    return RGBColor(red: red, green: green, blue: blue)
+  }
+
+  func popName() -> String? {
+    var pointer: UnsafePointer<Int8>?
+    CGPDFScannerPopName(self, &pointer)
+    guard let cString = pointer else { return nil }
+    return String(cString: cString)
+  }
+
+  func popAffineTransform() -> CGAffineTransform? {
+    guard let f = popNumber() else { return nil }
+    guard let e = popNumber(),
+      let d = popNumber(),
+      let c = popNumber(),
+      let b = popNumber(),
+      let a = popNumber() else { fatalError() }
+    return CGAffineTransform(a: a, b: b, c: c, d: d, tx: e, ty: f)
+  }
+
+  func popObject() -> PDFObject? {
+    var objP: CGPDFObjectRef?
+    CGPDFScannerPopObject(self, &objP)
+    guard let obj = objP else { return nil }
+    return PDFObject(pdfObj: obj)
   }
 }

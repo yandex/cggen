@@ -3,8 +3,9 @@
 
 import CoreGraphics
 import Foundation
+import Base
 
-enum PDFOperator {
+public enum PDFOperator {
   // b
   case closeFillStrokePathWinding
   // B
@@ -49,10 +50,8 @@ enum PDFOperator {
   case textObjectEnd
   // EX
   case compatabilitySectionEnd
-  // f
+  // f, F
   case fillWinding
-  // F
-  case fillWindingObsolete
   // f*
   case fillEvenOdd
   // G
@@ -92,19 +91,19 @@ enum PDFOperator {
   // re
   case appendRectangle(CGRect)
   // RG
-  case rgbColorStroke(RGBColor)
+  case rgbColorStroke(Base.RGBColor)
   // rg
-  case rgbColorNonstroke(RGBColor)
+  case rgbColorNonstroke(Base.RGBColor)
   // ri
-  case colorRenderingIntent
+  case colorRenderingIntent(String)
   // s
   case closeAndStrokePath
   // S
   case strokePath
   // SC
-  case colorStroke(RGBColor)
+  case colorStroke(Base.RGBColor)
   // sc
-  case colorNonstroke(RGBColor)
+  case colorNonstroke(Base.RGBColor)
   // SCN
   case iccOrSpecialColorStroke
   // scn

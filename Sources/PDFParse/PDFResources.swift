@@ -3,11 +3,12 @@
 
 import Foundation
 
-struct PDFResources {
-  let shadings: [String: PDFShading]
-  let gStates: [String: PDFExtGState]
-  let xObjects: [String: PDFXObject]
-  init?(obj: PDFObject) {
+public struct PDFResources {
+  public let shadings: [String: PDFShading]
+  public let gStates: [String: PDFExtGState]
+  public let xObjects: [String: PDFXObject]
+
+  internal init?(obj: PDFObject, parentStream: CGPDFContentStreamRef) {
     guard case let .dictionary(dict) = obj
     else { return nil }
     let shadingDict = dict["Shading"]?.dictionaryVal() ?? [:]
@@ -15,6 +16,8 @@ struct PDFResources {
     let xObjectsDict = dict["XObject"]?.dictionaryVal() ?? [:]
     shadings = shadingDict.mapValues { try! PDFShading(obj: $0)! }
     gStates = gStatesDict.mapValues { PDFExtGState(obj: $0)! }
-    xObjects = xObjectsDict.mapValues { PDFXObject(obj: $0)! }
+    xObjects = xObjectsDict.mapValues {
+      PDFXObject(obj: $0, parentStream: parentStream)!
+    }
   }
 }

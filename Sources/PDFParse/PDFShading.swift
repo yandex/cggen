@@ -3,8 +3,8 @@
 
 import Foundation
 
-struct PDFShading {
-  enum ShadingType: Int {
+public struct PDFShading {
+  public enum ShadingType: Int {
     case functionBased = 1
     case axial
     case radial
@@ -14,12 +14,12 @@ struct PDFShading {
     case tensorProductPatchMeshes
   }
 
-  let extend: (Bool, Bool)
+  public let extend: (Bool, Bool)
   let colorSpace: PDFObject
-  let type: ShadingType
-  let domain: (CGFloat, CGFloat)
-  let coords: (CGFloat, CGFloat, CGFloat, CGFloat)
-  let function: PDFFunction
+  public let type: ShadingType
+  public let domain: (CGFloat, CGFloat)
+  public let coords: (CGFloat, CGFloat, CGFloat, CGFloat)
+  public let function: PDFFunction
 
   init?(obj: PDFObject) throws {
     guard case let .dictionary(dict) = obj,
@@ -59,31 +59,5 @@ struct PDFShading {
     domain = (domainStart, domainEnd)
     coords = (coordsX0, coordsY0, coordsX1, coordsY1)
     self.function = function
-  }
-
-  func makeGradient() -> Gradient {
-    let locationAndColors = function.points.map { (point) -> (CGFloat, RGBAColor) in
-      precondition(point.value.count == 3)
-      let loc = point.arg
-      let components = point.value
-      let color = RGBAColor(red: components[0],
-                            green: components[1],
-                            blue: components[2],
-                            alpha: 1)
-      return (loc, color)
-    }
-    var options: CGGradientDrawingOptions = []
-    if extend.0 {
-      options.insert(.drawsBeforeStartLocation)
-    }
-    if extend.1 {
-      options.insert(.drawsAfterEndLocation)
-    }
-    let startPoint = CGPoint(x: coords.0, y: coords.1)
-    let endPoint = CGPoint(x: coords.2, y: coords.3)
-    return Gradient(locationAndColors: locationAndColors,
-                    startPoint: startPoint,
-                    endPoint: endPoint,
-                    options: options)
   }
 }
