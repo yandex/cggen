@@ -10,7 +10,7 @@ public enum PDFParser {
       fatalError("Could not open pdf file at: \(pdfURL)")
     }
     return pdfDoc.pages.map {
-      return PDFPage(page: $0)!
+      PDFPage(page: $0)!
     }
   }
 }

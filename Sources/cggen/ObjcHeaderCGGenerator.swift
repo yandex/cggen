@@ -40,15 +40,17 @@ private extension GenerationParams {
 
     switch style {
     case .plain:
+      let functionDecl = ObjCGen.functionDecl(imageName: camel, prefix: prefix)
       return
         """
         static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};
-        \(ObjCGen.functionDecl(imageName: camel, prefix: prefix))
+        \(functionDecl)
         """
     case .swiftFriendly:
+      let descriptorVarName = descriptorName(for: image)
       return
         """
-        extern const \(descriptorTypename) \(descriptorName(for: image))
+        extern const \(descriptorTypename) \(descriptorVarName)
         CF_SWIFT_NAME(\(module)Resources.\(image.name.lowerCamelCase));
         """
     }

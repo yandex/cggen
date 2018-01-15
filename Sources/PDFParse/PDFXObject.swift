@@ -77,12 +77,14 @@ public struct PDFXObject {
 
 extension PDFXObject: CustomStringConvertible {
   public var description: String {
+    let groupDescr = String(describing: group)
+    let matrixDescr = String(describing: matrix)
     return """
     
     - resources: \(resources)
     - bbox: \(bbox)
-    - group: \(String(describing: group))
-    - matrix: \(String(describing: matrix))
+    - group: \(groupDescr)
+    - matrix: \(matrixDescr)
     """
   }
 }

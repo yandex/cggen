@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import Foundation
 import Base
+import Foundation
 
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) -> [PDFOperator] {

@@ -1,9 +1,9 @@
 // Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alexander Skvortsov <askvortsov@yandex-team.ru>
 
+import Base
 import CoreGraphics
 import PDFParse
-import Base
 
 struct ObjcCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
@@ -31,7 +31,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     lines += functionBodyForDrawRoute(route: image.route, contextName: "context")
     lines += [
       "  CGColorSpaceRelease(\(rgbColorSpaceVarName));",
-      "}"
+      "}",
     ]
     lines += params.descriptorLines(for: image)
 
@@ -98,7 +98,7 @@ private extension GenerationParams {
         "const \(descriptorTypename) \(descriptorName(for: image)) = {",
         "  { (CGFloat)\(size.width), (CGFloat)\(size.height) },",
         "  \(funcName(imageName: image.name))",
-        "};"
+        "};",
       ]
     }
   }

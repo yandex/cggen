@@ -1,8 +1,8 @@
 // Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import Foundation
 import CoreGraphics
+import Foundation
 
 public struct PDFPage {
   public let resources: PDFResources

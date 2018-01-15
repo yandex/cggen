@@ -43,6 +43,7 @@ private extension CGPDFStreamRef {
     }
     return (data, format)
   }
+
   var dictionary: CGPDFDictionaryRef? {
     return CGPDFStreamGetDictionary(self)
   }

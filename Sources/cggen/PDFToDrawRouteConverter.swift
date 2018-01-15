@@ -1,15 +1,15 @@
 // Copyright (c) 2018 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
+import Base
 import Foundation
 import PDFParse
-import Base
 
 private class Context {
   var fillAlpha: CGFloat = 1
   var strokeAlpha: CGFloat = 1
-  var fillColor: Base.RGBColor? = nil
-  var strokeColor: Base.RGBColor? = nil
+  var fillColor: Base.RGBColor?
+  var strokeColor: Base.RGBColor?
 
   var fillColorWithAlpha: RGBAColor? {
     guard let fillColor = self.fillColor else { return nil }
@@ -26,8 +26,8 @@ enum PDFToDrawRouteConverter {
   static func convert(xobject: PDFXObject) -> DrawRoute {
     let ctm = xobject.matrix ?? .identity
     let bbox = xobject.bbox
-    var prepend: [DrawStep] = [ .saveGState, .concatCTM(ctm), .clipToRect(bbox) ]
-    var append: [DrawStep] = [ .restoreGState ]
+    var prepend: [DrawStep] = [.saveGState, .concatCTM(ctm), .clipToRect(bbox)]
+    var append: [DrawStep] = [.restoreGState]
     if xobject.group != nil {
       prepend.append(.beginTransparencyLayer)
       append.append(.endTransparencyLayer)
@@ -38,6 +38,7 @@ enum PDFToDrawRouteConverter {
                    prependSteps: prepend,
                    appendSteps: append)
   }
+
   static func convert(page: PDFPage) -> DrawRoute {
     return convert(resources: page.resources,
                    bbox: page.bbox,
@@ -93,9 +94,9 @@ private extension PDFOperator {
       return .curveTo(p1, p2, p3)
     case let .concatCTM(transform):
       return .concatCTM(transform)
-    case .colorSpaceStroke(_):
+    case .colorSpaceStroke:
       return .strokeColorSpace
-    case .colorSpaceNonstroke(_):
+    case .colorSpaceNonstroke:
       return .fillColorSpace
     case let .dash(phase, lengths):
       let pattern = DashPattern(phase: phase, lengths: lengths)
@@ -109,8 +110,8 @@ private extension PDFOperator {
     case let .invokeXObject(name):
       return .composite([
         .globalAlpha(context.fillAlpha),
-        .subrouteWithName(name)
-        ])
+        .subrouteWithName(name),
+      ])
 
     case .markedContentPointWithPListDefine:
       fatalError("Not implemented")
@@ -196,7 +197,7 @@ private extension PDFOperator {
       return .colorRenderingIntent(CGColorRenderingIntent(pdfIntent: name))
 
     case .closeAndStrokePath:
-      return .composite([ .closePath, .strokeWithColor(context) ])
+      return .composite([.closePath, .strokeWithColor(context)])
     case .strokePath:
       return .strokeWithColor(context)
     case let .colorStroke(color):
@@ -240,7 +241,7 @@ private extension PDFOperator {
       fatalError("Not implemented")
     case .curveToWithInitailPointReplicated:
       fatalError("Not implemented")
-    case .lineWidth(_):
+    case .lineWidth:
       fatalError("Not implemented")
 
     case .clipWinding:
@@ -308,14 +309,14 @@ private extension DrawStep {
   static func fillWithColor(context: Context, rule: CGPathFillRule) -> DrawStep {
     return .composite([
       .fillColor(context.fillColorWithAlpha!),
-      .fill(rule)
-      ])
+      .fill(rule),
+    ])
   }
 
   static func strokeWithColor(_ context: Context) -> DrawStep {
     return .composite([
       .strokeColor(context.strokeColorWithAlpha!),
-      .stroke
-      ])
+      .stroke,
+    ])
   }
 }
