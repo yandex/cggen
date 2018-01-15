@@ -6,6 +6,7 @@ import Foundation
 import PDFParse
 
 private class Context {
+  private var stack: [Context] = []
   var fillAlpha: CGFloat = 1
   var strokeAlpha: CGFloat = 1
   var fillColor: Base.RGBColor?
@@ -19,6 +20,27 @@ private class Context {
   var strokeColorWithAlpha: RGBAColor? {
     guard let strokeColor = self.strokeColor else { return nil }
     return RGBAColor.rgb(strokeColor, alpha: strokeAlpha)
+  }
+
+  func save() {
+    stack.append(self.copy())
+  }
+  func restore() {
+    let restored = stack.removeLast()
+    restored.copyStateTo(ctx: self)
+  }
+
+  func copy() -> Context {
+    let new = Context()
+    copyStateTo(ctx: new)
+    return new
+  }
+
+  private func copyStateTo(ctx: Context) {
+    ctx.fillAlpha = self.fillAlpha
+    ctx.strokeAlpha = self.strokeAlpha
+    ctx.fillColor = self.fillColor
+    ctx.strokeColor = self.strokeColor
   }
 }
 
@@ -182,8 +204,10 @@ private extension PDFOperator {
     case .endPath:
       return .endPath
     case .saveGState:
+      context.save()
       return .saveGState
     case .restoreGState:
+      context.restore()
       return .restoreGState
     case let .appendRectangle(rect):
       return .appendRectangle(rect)

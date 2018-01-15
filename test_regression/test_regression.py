@@ -169,6 +169,7 @@ class cggen_tests(unittest.TestCase):
         self.checkImagesEqual('gradient_shape')
 
 
+    @unittest.expectedFailure
     def test_gradient_three_dots(self):
         self.checkImagesEqual('gradient_three_dots')
 
@@ -202,6 +203,10 @@ class cggen_tests(unittest.TestCase):
 
     def test_caps_joins(self):
         self.checkImagesEqual('caps_joins')
+
+
+    def test_underlying_object_with_tiny_alpha(self):
+        self.checkImagesEqual('underlying_object_with_tiny_alpha')
 
 
 def main():
