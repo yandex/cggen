@@ -196,6 +196,14 @@ class cggen_tests(unittest.TestCase):
         self.checkImagesEqual('group_opacity')
 
 
+    def test_dashes(self):
+        self.checkImagesEqual('dashes')
+
+
+    def test_caps_joins(self):
+        self.checkImagesEqual('caps_joins')
+
+
 def main():
     unittest.main()
 

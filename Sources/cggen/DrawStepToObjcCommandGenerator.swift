@@ -99,8 +99,8 @@ struct DrawStepToObjcCommandGenerator {
       case .evenOdd:
         return [cmd("EOFillPath")]
       }
-    case .lineJoinStyle:
-      fatalError()
+    case let .lineJoinStyle(style):
+      return [cmd("SetLineJoin", style.objcConstName)]
     case let .lineCapStyle(style):
       return [cmd("SetLineCap", style.objcConstName)]
     case let .subrouteWithName(name):
@@ -176,6 +176,19 @@ extension CGLineCap {
       return "kCGLineCapRound"
     case .square:
       return "kCGLineCapSquare"
+    }
+  }
+}
+
+extension CGLineJoin {
+  var objcConstName: String {
+    switch self {
+    case .bevel:
+      return "kCGLineJoinBevel"
+    case .miter:
+      return "kCGLineJoinMiter"
+    case .round:
+      return "kCGLineJoinRound"
     }
   }
 }

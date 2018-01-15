@@ -241,9 +241,9 @@ private extension PDFOperator {
       fatalError("Not implemented")
     case .curveToWithInitailPointReplicated:
       fatalError("Not implemented")
+
     case let .lineWidth(w):
       return .lineWidth(w)
-
     case .clipWinding:
       return .clip(.winding)
     case .clipEvenOdd:
