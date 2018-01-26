@@ -27,5 +27,8 @@ let package = Package(
     .target(
       name: "PDFParse",
       dependencies: ["Base"]),
+    .testTarget(
+      name: "BaseTests",
+      dependencies: ["Base"]),
   ]
 )

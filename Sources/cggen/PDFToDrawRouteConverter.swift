@@ -23,8 +23,9 @@ private class Context {
   }
 
   func save() {
-    stack.append(self.copy())
+    stack.append(copy())
   }
+
   func restore() {
     let restored = stack.removeLast()
     restored.copyStateTo(ctx: self)
@@ -37,10 +38,10 @@ private class Context {
   }
 
   private func copyStateTo(ctx: Context) {
-    ctx.fillAlpha = self.fillAlpha
-    ctx.strokeAlpha = self.strokeAlpha
-    ctx.fillColor = self.fillColor
-    ctx.strokeColor = self.strokeColor
+    ctx.fillAlpha = fillAlpha
+    ctx.strokeAlpha = strokeAlpha
+    ctx.fillColor = fillColor
+    ctx.strokeColor = strokeColor
   }
 }
 
