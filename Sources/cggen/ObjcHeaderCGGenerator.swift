@@ -51,7 +51,7 @@ private extension GenerationParams {
       return
         """
         extern const \(descriptorTypename) \(descriptorVarName)
-        CF_SWIFT_NAME(YXGeneratedImageDescriptor.\(image.name.lowerCamelCase));
+        CF_SWIFT_NAME(\(descriptorTypename).\(image.name.lowerCamelCase));
         """
     }
   }
