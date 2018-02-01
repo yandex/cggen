@@ -71,7 +71,7 @@ public struct PDFFunction {
       let current = start + CGFloat(s) * step
       return Point(arg: current, value: values[s])
     }
-    let points = allPoints.removeIntermediates()
+    let points = allPoints.removeIntermediates(tolerance: 0.01)
 
     self.range = range
     self.rangeDim = rangeDim
@@ -84,16 +84,19 @@ public struct PDFFunction {
 }
 
 extension PDFFunction.Point: LinearInterpolatable {
+  public typealias DistanceType = CGFloat
   public typealias AbscissaType = CGFloat
   public var abscissa: CGFloat { return arg }
-  public func near(_ other: PDFFunction.Point) -> Bool {
+
+  public func distanceTo(_ other: PDFFunction.Point) -> CGFloat {
     let squareDistance = zip(value, other.value)
       .reduce(0) { (acc, pair) -> CGFloat in
         let d = pair.0 - pair.1
         return acc + d * d
       }
-    return squareDistance < 0.001
+    return sqrt(squareDistance)
   }
+
   public static func linearInterpolate(from lhs: PDFFunction.Point,
                                        to rhs: PDFFunction.Point,
                                        at x: CGFloat) -> PDFFunction.Point {

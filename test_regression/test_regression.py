@@ -47,7 +47,6 @@ class cggen_tests(unittest.TestCase):
         self.checkImagesEqual('gradient_shape')
 
 
-    @unittest.expectedFailure
     def test_gradient_three_dots(self):
         self.checkImagesEqual('gradient_three_dots')
 
