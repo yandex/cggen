@@ -11,11 +11,11 @@ struct Point: Equatable, LinearInterpolatable {
   typealias AbscissaType = Double
   typealias DistanceType = Double
 
-  public var abscissa: Double {
+  public var abscissa: AbscissaType {
     return x
   }
 
-  func distanceTo(_ other: Point) -> Double {
+  func distanceTo(_ other: Point) -> DistanceType {
     let dx = x - other.x
     let dy = y - other.y
     return sqrt((dx * dx) + (dy * dy))
@@ -36,13 +36,12 @@ struct Point: Equatable, LinearInterpolatable {
   }
 }
 
+private let delta = Double.ulpOfOne * 100
 private func line(k: Double, b: Double) -> (Double) -> Point {
   return { Point(x: $0, y: k * $0 + b) }
 }
 
-class RemoveIntermediates: XCTestCase {
-  let delta = Double.ulpOfOne * 100
-
+final class RemoveIntermediatesTests: XCTestCase {
   func test_empty() {
     let points = [Point]()
     XCTAssertEqual(points.removeIntermediates(tolerance: 0), points)
