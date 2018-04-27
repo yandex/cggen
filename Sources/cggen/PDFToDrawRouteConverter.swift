@@ -165,6 +165,9 @@ private extension PDFOperator {
           context.fillAlpha = alpha
         case let .strokeAlpha(alpha):
           context.strokeAlpha = alpha
+        case let .blendMode(pdfBlendMode):
+          let blendMode = CGBlendMode(pdfBlendMode: pdfBlendMode)
+          return .blendMode(blendMode)
         }
         return .empty
       }
@@ -298,6 +301,39 @@ extension CGColorRenderingIntent {
     default:
       assertionFailure("Unknown pdf color rendering intent: \(pdfIntent)")
       self = .defaultIntent
+    }
+  }
+}
+
+private extension CGBlendMode {
+  init(pdfBlendMode: String) {
+    switch pdfBlendMode {
+    case "Normal":
+      self = .normal
+    case "Multiply":
+      self = .multiply
+    case "Screen":
+      self = .screen
+    case "Overlay":
+      self = .overlay
+    case "Darken":
+      self = .darken
+    case "Lighten":
+      self = .lighten
+    case "ColorDodge":
+      self = .colorDodge
+    case "ColorBurn":
+      self = .colorBurn
+      case "HardLight":
+      self = .hardLight
+    case "SoftLight":
+      self = .softLight
+      case "Difference":
+      self = .difference
+    case "Exclusion":
+      self = .exclusion
+    default:
+      fatalError("Unknown/unimplemented blend mode – '\(pdfBlendMode)'")
     }
   }
 }

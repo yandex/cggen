@@ -6,6 +6,7 @@ import Foundation
 public enum PDFGStateCommand {
   case fillAlpha(CGFloat)
   case strokeAlpha(CGFloat)
+  case blendMode(String)
 }
 
 public struct PDFExtGState {
@@ -26,8 +27,11 @@ public struct PDFExtGState {
       case "CA":
         let alpha = val.realFromIntOrReal()!
         return .strokeAlpha(alpha)
+      case "BM":
+        let name = val.nameVal()!
+        return .blendMode(name)
       default:
-        fatalError("\(key): Unknown/unimplemented graphical state command")
+        fatalError("Unknown/unimplemented graphical state command – '\(key)'")
       }
     }
   }
