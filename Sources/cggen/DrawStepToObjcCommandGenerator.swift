@@ -115,6 +115,8 @@ struct DrawStepToObjcCommandGenerator {
       return steps.flatMap {
         command(step: $0, gradients: gradients, subroutes: subroutes)
       }
+    case let .blendMode(blendMode):
+      return [cmd("SetBlendMode", blendMode.objcConstname)]
     }
   }
 
@@ -164,6 +166,69 @@ struct DrawStepToObjcCommandGenerator {
 
   private func release(colorVarName: String) -> String {
     return "  CGColorRelease(\(colorVarName));"
+  }
+}
+
+private extension CGBlendMode {
+  var objcConstname: String {
+    switch self {
+    case .normal:
+      return "kCGBlendModeNormal"
+    case .multiply:
+      return "kCGBlendModeMultiply"
+    case .screen:
+      return "kCGBlendModeScreen"
+    case .overlay:
+      return "kCGBlendModeOverlay"
+    case .darken:
+      return "kCGBlendModeDarken"
+    case .lighten:
+      return "kCGBlendModeLighten"
+    case .colorDodge:
+      return "kCGBlendModeColorDodge"
+    case .colorBurn:
+      return "kCGBlendModeColorBurn"
+    case .softLight:
+      return "kCGBlendModeSoftLight"
+    case .hardLight:
+      return "kCGBlendModeHardLight"
+    case .difference:
+      return "kCGBlendModeDifference"
+    case .exclusion:
+      return "kCGBlendModeExclusion"
+    case .hue:
+      return "kCGBlendModeHue"
+    case .saturation:
+      return "kCGBlendModeSaturation"
+    case .color:
+      return "kCGBlendModeColor"
+    case .luminosity:
+      return "kCGBlendModeLuminosity"
+    case .clear:
+      return "kCGBlendModeClear"
+    case .copy:
+      return "kCGBlendModeCopy"
+    case .sourceIn:
+      return "kCGBlendModeSourceIn"
+    case .sourceOut:
+      return "kCGBlendModeSourceOut"
+    case .sourceAtop:
+      return "kCGBlendModeSourceAtop"
+    case .destinationOver:
+      return "kCGBlendModeDestinationOver"
+    case .destinationIn:
+      return "kCGBlendModeDestinationIn"
+    case .destinationOut:
+      return "kCGBlendModeDestinationOut"
+    case .destinationAtop:
+      return "kCGBlendModeDestinationAtop"
+    case .xor:
+      return "kCGBlendModeXOR"
+    case .plusDarker:
+      return "kCGBlendModePlusDarker"
+    case .plusLighter:
+      return "kCGBlendModePlusLighter"
+    }
   }
 }
 

@@ -54,6 +54,7 @@ public enum DrawStep {
 
   case paintWithGradient(String)
   case subrouteWithName(String)
+  case blendMode(CGBlendMode)
 
   case beginTransparencyLayer
   case endTransparencyLayer
