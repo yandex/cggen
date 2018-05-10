@@ -5,10 +5,16 @@ import Base
 import Foundation
 
 public struct Gradient {
+  public enum Kind {
+    case axial
+    case radial(startRadius: CGFloat, endRadius: CGFloat)
+  }
+
   public let locationAndColors: [(CGFloat, RGBAColor)]
   public let startPoint: CGPoint
   public let endPoint: CGPoint
   public let options: CGGradientDrawingOptions
+  public let kind: Kind
 }
 
 public struct DashPattern {

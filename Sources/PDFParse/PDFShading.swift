@@ -4,60 +4,133 @@
 import Foundation
 
 public struct PDFShading {
-  public enum ShadingType: Int {
-    case functionBased = 1
-    case axial
-    case radial
-    case freeFormGouraudShadedTriangleMeshes
-    case latticeFormGouraudShadedTriangleMeshes
-    case coonsPatchMeshes
-    case tensorProductPatchMeshes
+  public enum Error: Swift.Error {
+    case invalidStructure
+    case unsupportedType(ShadingType)
+    case unsupportedDomain(Domain)
   }
 
-  public let extend: (Bool, Bool)
+  public typealias Extend = (before: Bool, after: Bool)
+  public typealias Domain = (t0: CGFloat, t1: CGFloat)
+  private static let defaultExtend: Extend = (false, false)
+  private static let defaultDomain: Domain = (t0: 0.0, t1: 1.0)
+
+  public struct Axial {
+    public let coords: (p0: CGPoint, p1: CGPoint)
+    public let domain: Domain
+    public let function: PDFFunction
+    public let extend: Extend
+
+    init(dict: PDFDictionary) throws {
+      guard let coords = dict["Coords"]?.floatArray(),
+        let functionObj = dict["Function"],
+        coords.count == 4
+      else { throw Error.invalidStructure }
+      self.coords = (p0: CGPoint(x: coords[0], y: coords[1]),
+                     p1: CGPoint(x: coords[2], y: coords[3]))
+      function = try PDFFunction(obj: functionObj)
+      domain = try dict["Domain"]?.domain() ?? defaultDomain
+      extend = try dict["Extend"]?.extend() ?? defaultExtend
+      if domain != defaultDomain { throw Error.unsupportedDomain(domain) }
+    }
+  }
+
+  public struct Radial {
+    public let coords: (p0: CGPoint, p1: CGPoint)
+    public let startRadius: CGFloat
+    public let endRadius: CGFloat
+    public let domain: Domain
+    public let function: PDFFunction
+    public let extend: Extend
+
+    init(dict: PDFDictionary) throws {
+      guard let coords = dict["Coords"]?.floatArray(),
+        let functionObj = dict["Function"],
+        coords.count == 6
+      else { throw Error.invalidStructure }
+      self.coords = (p0: CGPoint(x: coords[0], y: coords[1]),
+                     p1: CGPoint(x: coords[3], y: coords[4]))
+      startRadius = coords[2]
+      endRadius = coords[5]
+      function = try PDFFunction(obj: functionObj)
+      extend = try dict["Extend"]?.extend() ?? defaultExtend
+      domain = try dict["Domain"]?.domain() ?? defaultDomain
+      if domain != defaultDomain { throw Error.unsupportedDomain(domain) }
+    }
+  }
+
+  public enum Kind {
+    case axial(Axial)
+    case radial(Radial)
+  }
+
   let colorSpace: PDFObject
-  public let type: ShadingType
-  public let domain: (CGFloat, CGFloat)
-  public let coords: (CGFloat, CGFloat, CGFloat, CGFloat)
-  public let function: PDFFunction
+  public let kind: Kind
 
-  init?(obj: PDFObject) throws {
+  init(obj: PDFObject) throws {
     guard case let .dictionary(dict) = obj,
-      // Extend
-      let extendObj = dict["Extend"],
-      case let .array(extendArray) = extendObj,
-      case let .boolean(extendStart) = extendArray[0],
-      case let .boolean(extendEnd) = extendArray[1],
-      // Color space
-      let colorSpace = dict["ColorSpace"],
-      // Type
-      let typeObj = dict["ShadingType"],
-      case let .integer(typeInt) = typeObj,
+      case let .integer(typeInt)? = dict["ShadingType"],
       let type = ShadingType(rawValue: typeInt),
-      // Domain
-      let domainObj = dict["Domain"],
-      case let .array(domainArray) = domainObj,
-      let domainStart = domainArray[0].realFromIntOrReal(),
-      let domainEnd = domainArray[1].realFromIntOrReal(),
-      // Coordinates
-      let coordsObj = dict["Coords"],
-      case let .array(coordsArray) = coordsObj,
-      let coordsX0 = coordsArray[0].realFromIntOrReal(),
-      let coordsY0 = coordsArray[1].realFromIntOrReal(),
-      let coordsX1 = coordsArray[2].realFromIntOrReal(),
-      let coordsY1 = coordsArray[3].realFromIntOrReal(),
-      // Function
-      let functionObj = dict["Function"]
-    else { return nil }
-    let function = try PDFFunction(obj: functionObj)
+      let colorSpace = dict["ColorSpace"]
+    else { throw Error.invalidStructure }
 
-    precondition(type == .axial, "Only axial shading supported")
-
-    extend = (extendStart != 0, extendEnd != 0)
     self.colorSpace = colorSpace
-    self.type = type
-    domain = (domainStart, domainEnd)
-    coords = (coordsX0, coordsY0, coordsX1, coordsY1)
-    self.function = function
+    switch type {
+    case .axial:
+      let axial = try Axial(dict: dict)
+      kind = .axial(axial)
+    case .radial:
+      let radial = try Radial(dict: dict)
+      kind = .radial(radial)
+    case .functionBased,
+         .freeFormGouraudShadedTriangleMeshes,
+         .latticeFormGouraudShadedTriangleMeshes,
+         .coonsPatchMeshes,
+         .tensorProductPatchMeshes:
+      throw Error.unsupportedType(type)
+    }
+  }
+}
+
+public enum ShadingType: Int {
+  case functionBased = 1
+  case axial
+  case radial
+  case freeFormGouraudShadedTriangleMeshes
+  case latticeFormGouraudShadedTriangleMeshes
+  case coonsPatchMeshes
+  case tensorProductPatchMeshes
+}
+
+private typealias Error = PDFShading.Error
+
+private extension PDFObject {
+  func extend() throws -> PDFShading.Extend {
+    guard case let .array(array) = self,
+      array.count == 2,
+      case let .boolean(before) = array[0],
+      case let .boolean(after) = array[1]
+    else { throw Error.invalidStructure }
+    return (before: before != 0, after: after != 0)
+  }
+
+  func domain() throws -> PDFShading.Domain {
+    guard let array = floatArray(),
+      array.count == 2 else { throw Error.invalidStructure }
+    return (array[0], array[1])
+  }
+
+  func floatArray() -> [CGFloat]? {
+    guard case let .array(array) = self,
+      let a = array.map({ $0.realFromIntOrReal() }).unwrap()
+    else { return nil }
+    return a
+  }
+
+  func boolArray() -> [Bool]? {
+    guard case let .array(array) = self,
+      let a = array.map({ $0.boolValue }).unwrap()
+      else { return nil }
+    return a
   }
 }

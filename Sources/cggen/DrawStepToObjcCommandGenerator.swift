@@ -76,7 +76,16 @@ struct DrawStepToObjcCommandGenerator {
         let optionsLine = "  CGGradientDrawingOptions \(optionsVarName) = (CGGradientDrawingOptions)(\(optionsStrings.joined(separator: " | ")));"
         let startPoint = "CGPointMake((CGFloat)\(gradient.startPoint.x), (CGFloat)\(gradient.startPoint.y))"
         let endPoint = "CGPointMake((CGFloat)\(gradient.endPoint.x), (CGFloat)\(gradient.endPoint.y))"
-        let drawGradientLine = "  CGContextDrawLinearGradient(\(contextVarName), \(gradientName), \(startPoint), \(endPoint), \(optionsVarName));"
+
+        let drawGradientLine: String
+        switch gradient.kind {
+        case .axial:
+          let args = "\(gradientName), \(startPoint), \(endPoint), \(optionsVarName)"
+          drawGradientLine = cmd("DrawLinearGradient", args)
+        case let .radial(startRadius, endRadius):
+          let args = "\(gradientName), \(startPoint), (CGFloat)\(startRadius), \(endPoint), (CGFloat)\(endRadius), \(optionsVarName)"
+          drawGradientLine = cmd("DrawRadialGradient", args)
+        }
         let releaseGradient = "  CGGradientRelease(\(gradientName));"
         return [colorArray, gradientDef, colorArrayRelease, optionsLine, drawGradientLine, releaseGradient]
       }
