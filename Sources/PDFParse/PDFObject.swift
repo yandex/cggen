@@ -3,6 +3,8 @@
 
 import Foundation
 
+internal typealias PDFDictionary = [String: PDFObject]
+
 internal enum PDFObject {
   case null
   case boolean(CGPDFBoolean)
@@ -11,7 +13,7 @@ internal enum PDFObject {
   case name(String)
   case string(String)
   case array([PDFObject])
-  case dictionary([String: PDFObject])
+  case dictionary(PDFDictionary)
   case stream(PDFStream)
 
   init(pdfObj obj: CGPDFObjectRef) {

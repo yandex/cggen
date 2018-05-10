@@ -43,6 +43,9 @@ class cggen_tests(unittest.TestCase):
         self.checkImagesEqual('fill')
 
 
+    def test_gradient_radial(self):
+        self.checkImagesEqual('gradient_radial')
+
     def test_gradient_shape(self):
         self.checkImagesEqual('gradient_shape')
 

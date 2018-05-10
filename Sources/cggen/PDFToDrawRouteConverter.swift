@@ -324,11 +324,11 @@ private extension CGBlendMode {
       self = .colorDodge
     case "ColorBurn":
       self = .colorBurn
-      case "HardLight":
+    case "HardLight":
       self = .hardLight
     case "SoftLight":
       self = .softLight
-      case "Difference":
+    case "Difference":
       self = .difference
     case "Exclusion":
       self = .exclusion
@@ -357,12 +357,57 @@ private extension PDFShading {
     if extend.1 {
       options.insert(.drawsAfterEndLocation)
     }
-    let startPoint = CGPoint(x: coords.0, y: coords.1)
-    let endPoint = CGPoint(x: coords.2, y: coords.3)
     return Gradient(locationAndColors: locationAndColors,
                     startPoint: startPoint,
                     endPoint: endPoint,
-                    options: options)
+                    options: options,
+                    kind: gradientKind)
+  }
+
+  var function: PDFFunction {
+    switch kind {
+    case let .axial(axial):
+      return axial.function
+    case let .radial(radial):
+      return radial.function
+    }
+  }
+
+  var extend: PDFShading.Extend {
+    switch kind {
+    case let .axial(axial):
+      return axial.extend
+    case let .radial(radial):
+      return radial.extend
+    }
+  }
+
+  var startPoint: CGPoint {
+    switch kind {
+    case let .axial(axial):
+      return axial.coords.p0
+    case let .radial(radial):
+      return radial.coords.p0
+    }
+  }
+
+  var endPoint: CGPoint {
+    switch kind {
+    case let .axial(axial):
+      return axial.coords.p1
+    case let .radial(radial):
+      return radial.coords.p1
+    }
+  }
+
+  var gradientKind: Gradient.Kind {
+    switch kind {
+    case .axial:
+      return .axial
+    case let .radial(radial):
+      return .radial(
+        startRadius: radial.startRadius, endRadius: radial.endRadius)
+    }
   }
 }
 
