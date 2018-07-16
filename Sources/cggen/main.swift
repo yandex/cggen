@@ -74,7 +74,7 @@ func main(args: Args) {
     .concurrentMap { ($0.deletingPathExtension().lastPathComponent,
                       PDFParser.parse(pdfURL: $0 as CFURL)) }
     .flatMap { nameAndRoutes in
-      nameAndRoutes.1.enumerated().flatMap { (offset, page) -> Image in
+      nameAndRoutes.1.enumerated().compactMap { (offset, page) -> Image in
         let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
         let route = PDFToDrawRouteConverter.convert(page: page)
         return Image(name: finalName, route: route)

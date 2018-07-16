@@ -71,17 +71,9 @@ struct RGBAPixel: Equatable {
   var squaredSum: Double {
     return componentsNormalized.map({ $0 * $0 }).reduce(0, +)
   }
-
-  static func ==(lhs: RGBAPixel, rhs: RGBAPixel) -> Bool {
-    return lhs.components == rhs.components
-  }
 }
 
 struct RGBABuffer: Equatable {
-  static func ==(lhs: RGBABuffer, rhs: RGBABuffer) -> Bool {
-    return lhs.size == rhs.size && lhs.pixels.elementsEqual(rhs.pixels, by: ==)
-  }
-
   let size: CGIntSize
   let pixels: [[RGBAPixel]]
 

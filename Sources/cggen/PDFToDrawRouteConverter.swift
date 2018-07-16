@@ -168,6 +168,8 @@ private extension PDFOperator {
         case let .blendMode(pdfBlendMode):
           let blendMode = CGBlendMode(pdfBlendMode: pdfBlendMode)
           return .blendMode(blendMode)
+        case .sMask:
+          fatalError("Soft Mask not implemented")
         }
         return .empty
       }

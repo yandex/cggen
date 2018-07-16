@@ -14,11 +14,12 @@ public struct PDFXObject {
   public let group: Group?
   public let matrix: CGAffineTransform?
 
-  init?(obj: PDFObject, parentStream: CGPDFContentStreamRef) {
+  internal typealias Factory = (PDFObject) throws -> PDFXObject
+  internal init(obj: PDFObject, parentStream: CGPDFContentStreamRef) throws {
     guard case let .stream(stream) = obj,
       case let dict = stream.dict,
       case let .name(type)? = dict["Type"],
-      case let .name(subtype)? = dict["Subtype"] else { return nil }
+      case let .name(subtype)? = dict["Subtype"] else { throw Error.parsingError }
     precondition(type == "XObject")
     precondition(!PDFXObject.unsupportedSubtypes.contains(subtype),
                  "XObject with subtype \(subtype) is not supported")
@@ -32,7 +33,7 @@ public struct PDFXObject {
     guard case let .array(bboxArray)? = dict["BBox"],
       let resourcesDict = dict["Resources"],
       let resources = PDFResources(obj: resourcesDict, parentStream: contentStream),
-      let bbox = CGRect.fromPDFArray(bboxArray) else { return nil }
+      let bbox = CGRect.fromPDFArray(bboxArray) else { throw Error.parsingError }
     let operators = PDFContentStreamParser.parse(stream: contentStream)
 
     let group: Group?
