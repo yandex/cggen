@@ -1,7 +1,8 @@
 // Copyright (c) 2017 Yandex LLC. All rights reserved.
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
-import Foundation
+import Base
+import CoreGraphics
 
 public struct PDFResources {
   public let shadings: [String: PDFShading]
@@ -11,13 +12,12 @@ public struct PDFResources {
   internal init?(obj: PDFObject, parentStream: CGPDFContentStreamRef) {
     guard case let .dictionary(dict) = obj
     else { return nil }
+    let xobjFactory = partial(PDFXObject.init, arg2: parentStream)
     let shadingDict = dict["Shading"]?.dictionaryVal() ?? [:]
     let gStatesDict = dict["ExtGState"]?.dictionaryVal() ?? [:]
     let xObjectsDict = dict["XObject"]?.dictionaryVal() ?? [:]
     shadings = shadingDict.mapValues { try! PDFShading(obj: $0) }
-    gStates = gStatesDict.mapValues { PDFExtGState(obj: $0)! }
-    xObjects = xObjectsDict.mapValues {
-      PDFXObject(obj: $0, parentStream: parentStream)!
-    }
+    gStates = try! gStatesDict.mapValues(partial(PDFExtGState.init, arg2: xobjFactory))
+    xObjects = try! xObjectsDict.mapValues(xobjFactory)
   }
 }

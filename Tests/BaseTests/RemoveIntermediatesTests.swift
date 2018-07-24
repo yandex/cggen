@@ -30,10 +30,6 @@ struct Point: Equatable, LinearInterpolatable {
     let b = lhs.y - k * lhs.x
     return Point(x: x, y: k * x + b)
   }
-
-  static func ==(lhs: Point, rhs: Point) -> Bool {
-    return lhs.x == rhs.x && lhs.y == rhs.y
-  }
 }
 
 private let delta = Double.ulpOfOne * 100

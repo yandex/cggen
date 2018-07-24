@@ -26,10 +26,6 @@ public struct CGIntSize: Equatable {
     return CGIntSize(width: max(lhs.width, rhs.width),
                      height: max(lhs.height, rhs.height))
   }
-
-  public static func ==(lhs: CGIntSize, rhs: CGIntSize) -> Bool {
-    return lhs.width == rhs.width && lhs.height == rhs.width
-  }
 }
 
 public extension CGRect {
@@ -58,7 +54,7 @@ extension Double {
 
 public extension CGPDFDocument {
   public var pages: [CGPDFPage] {
-    return (1...numberOfPages).flatMap(page(at:))
+    return (1...numberOfPages).compactMap(page(at:))
   }
 }
 

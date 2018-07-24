@@ -19,12 +19,6 @@ public struct PDFFunction {
 
   static let supportedTypes: Set<FunctionType> = [.sampled]
 
-  enum ParseError: Error {
-    case noFunctionType
-    case unsupportedFunctionType(FunctionType)
-    case other
-  }
-
   let rangeDim: Int
   let domainDim: Int
   let range: [(CGFloat, CGFloat)]
@@ -37,9 +31,9 @@ public struct PDFFunction {
     guard let dict = obj.dictFromDictOrStream,
       let functionTypeRaw = dict["FunctionType"]?.intValue,
       let functionType = FunctionType(rawValue: functionTypeRaw)
-    else { throw ParseError.noFunctionType }
+    else { throw Error.parsingError }
     guard PDFFunction.supportedTypes.contains(functionType)
-    else { throw ParseError.unsupportedFunctionType(functionType) }
+    else { throw Error.unsupported("function type \(functionType)") }
 
     guard case let .stream(stream) = obj,
       let rangeObj = stream.dict["Range"],
@@ -52,7 +46,7 @@ public struct PDFFunction {
       case let .array(domainArray) = domainObj,
       let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
       let bitsPerSample = stream.dict["BitsPerSample"]?.intValue
-    else { throw ParseError.other }
+    else { throw Error.parsingError }
     precondition(stream.format == .raw)
 
     let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }

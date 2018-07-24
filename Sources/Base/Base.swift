@@ -118,3 +118,13 @@ extension Sequence {
     return true
   }
 }
+
+public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
+  return { try f($0, arg2) }
+}
+
+public func check(_ condition: Bool, _ error: Error) throws {
+  if !condition {
+    throw error
+  }
+}
