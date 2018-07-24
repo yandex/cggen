@@ -9,6 +9,8 @@
 
 // swiftformat:disable blankLinesBetweenScopes consecutiveBlankLines elseOnSameLine
 // swiftformat:disable indent redundantSelf semicolons spaceAroundOperators
+// swiftformat:disable blankLinesAtStartOfScope
+
 
 import Foundation
 

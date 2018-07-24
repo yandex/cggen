@@ -123,7 +123,7 @@ private extension PDFObject {
   func boolArray() -> [Bool]? {
     guard case let .array(array) = self,
       let a = array.map({ $0.boolValue }).unwrap()
-      else { return nil }
+    else { return nil }
     return a
   }
 }

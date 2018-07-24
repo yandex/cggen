@@ -24,7 +24,7 @@ public struct PDFSoftMask {
     guard let dict = obj.dictionaryVal(),
       dict["Type"]?.nameVal() == "Mask",
       let subType = try dict["S"].map(SubType.init),
-    let transparencyGroup = try dict["G"].map(xobjFactory)
+      let transparencyGroup = try dict["G"].map(xobjFactory)
     else {
       throw Error.parsingError
     }
