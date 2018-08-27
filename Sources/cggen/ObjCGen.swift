@@ -30,7 +30,7 @@ enum ObjCGen {
 
 extension GenerationParams {
   var descriptorTypename: String {
-    return prefix + "GeneratedImageDescriptor"
+    return prefix + module + "GeneratedImageDescriptor"
   }
 
   func descriptorName(for image: Image) -> String {
