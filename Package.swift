@@ -13,22 +13,29 @@ let package = Package(
   targets: [
     .target(
       name: "cggen",
-      dependencies: ["ArgParse", "Base", "PDFParse"]),
+      dependencies: ["ArgParse", "Base", "PDFParse"]
+    ),
     .target(
       name: "png-fuzzy-compare",
-      dependencies: ["ArgParse", "Base"]),
+      dependencies: ["ArgParse", "Base"]
+    ),
     .target(
       name: "pdf-to-png",
-      dependencies: ["ArgParse", "Base"]),
+      dependencies: ["ArgParse", "Base"]
+    ),
     .target(
-      name: "ArgParse"),
+      name: "ArgParse"
+    ),
     .target(
-      name: "Base"),
+      name: "Base"
+    ),
     .target(
       name: "PDFParse",
-      dependencies: ["Base"]),
+      dependencies: ["Base"]
+    ),
     .testTarget(
       name: "BaseTests",
-      dependencies: ["Base"]),
+      dependencies: ["Base"]
+    ),
   ]
 )

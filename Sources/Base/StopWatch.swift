@@ -12,8 +12,7 @@ public struct StopWatch {
   }
 
   var started = Date()
-  public init() {
-  }
+  public init() {}
 
   public func lap() -> Result {
     return Result(time: Date().timeIntervalSince(started))

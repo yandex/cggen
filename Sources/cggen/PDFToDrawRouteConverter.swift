@@ -406,7 +406,8 @@ private extension PDFShading {
       return .axial
     case let .radial(radial):
       return .radial(
-        startRadius: radial.startRadius, endRadius: radial.endRadius)
+        startRadius: radial.startRadius, endRadius: radial.endRadius
+      )
     }
   }
 }
