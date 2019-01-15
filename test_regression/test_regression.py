@@ -93,6 +93,10 @@ class cggen_tests(unittest.TestCase):
         self.checkImagesEqual('nested_transparent_group')
 
 
+    def test_white_cross_scn_operator(self):
+        self.checkImagesEqual('white_cross_scn_operator')
+
+
 def main():
     unittest.main()
 

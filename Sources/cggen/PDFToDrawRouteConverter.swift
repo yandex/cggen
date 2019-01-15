@@ -9,16 +9,14 @@ private class Context {
   private var stack: [Context] = []
   var fillAlpha: CGFloat = 1
   var strokeAlpha: CGFloat = 1
-  var fillColor: Base.RGBColor?
-  var strokeColor: Base.RGBColor?
+  var fillColor: Base.RGBColor = .black
+  var strokeColor: Base.RGBColor = .black
 
-  var fillColorWithAlpha: RGBAColor? {
-    guard let fillColor = self.fillColor else { return nil }
+  var fillColorWithAlpha: RGBAColor {
     return RGBAColor.rgb(fillColor, alpha: fillAlpha)
   }
 
-  var strokeColorWithAlpha: RGBAColor? {
-    guard let strokeColor = self.strokeColor else { return nil }
+  var strokeColorWithAlpha: RGBAColor {
     return RGBAColor.rgb(strokeColor, alpha: strokeAlpha)
   }
 
@@ -416,14 +414,14 @@ private extension PDFShading {
 private extension DrawStep {
   static func fillWithColor(context: Context, rule: CGPathFillRule) -> DrawStep {
     return .composite([
-      .fillColor(context.fillColorWithAlpha!),
+      .fillColor(context.fillColorWithAlpha),
       .fill(rule),
     ])
   }
 
   static func strokeWithColor(_ context: Context) -> DrawStep {
     return .composite([
-      .strokeColor(context.strokeColorWithAlpha!),
+      .strokeColor(context.strokeColorWithAlpha),
       .stroke,
     ])
   }
