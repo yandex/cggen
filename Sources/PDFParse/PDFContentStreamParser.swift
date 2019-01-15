@@ -224,6 +224,16 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
     }
 
+    CGPDFOperatorTableSetCallback(operatorTableRef, "SCN") { scanner, info in
+      let color = scanner.popColor()!
+      Parser.ctx(info).operators.append(.colorStroke(color))
+    }
+
+    CGPDFOperatorTableSetCallback(operatorTableRef, "scn") { scanner, info in
+      let color = scanner.popColor()!
+      Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
+    }
+
     CGPDFOperatorTableSetCallback(operatorTableRef, "sh") { scanner, info in
       let name = scanner.popName()!
       Parser.ctx(info).operators.append(.shadingFill(name))

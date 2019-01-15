@@ -12,6 +12,8 @@ public struct RGBColor {
     self.green = green
     self.blue = blue
   }
+
+  public static let black = RGBColor(red: 0, green: 0, blue: 0)
 }
 
 public struct RGBAColor {
