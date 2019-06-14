@@ -24,6 +24,6 @@ try? FileManager().createDirectory(atPath: ".build",
 
 let fd = fopen(".build/.build_lock", "w")!
 lockf(Int32(fd.pointee._file), F_LOCK, 0)
-perform("/usr/bin/swift build -c release --static-swift-stdlib --product cggen")
+perform("/usr/bin/swift build -c release --product cggen")
 lockf(Int32(fd.pointee._file), F_ULOCK, 0)
 fclose(fd)
