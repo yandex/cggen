@@ -31,6 +31,8 @@ struct DrawStepToObjcCommandGenerator {
         return [cmd("Clip")]
       case .evenOdd:
         return [cmd("EOClip")]
+      @unknown default:
+        fatalError()
       }
     case .endPath:
       return []
@@ -107,6 +109,8 @@ struct DrawStepToObjcCommandGenerator {
         return [cmd("FillPath")]
       case .evenOdd:
         return [cmd("EOFillPath")]
+      @unknown default:
+        fatalError()
       }
     case let .lineJoinStyle(style):
       return [cmd("SetLineJoin", style.objcConstName)]
@@ -237,6 +241,8 @@ private extension CGBlendMode {
       return "kCGBlendModePlusDarker"
     case .plusLighter:
       return "kCGBlendModePlusLighter"
+    @unknown default:
+      fatalError("Uknown CGBlendMode \(self)")
     }
   }
 }
@@ -250,6 +256,8 @@ extension CGLineCap {
       return "kCGLineCapRound"
     case .square:
       return "kCGLineCapSquare"
+    @unknown default:
+      fatalError("Uknown CGLineCap \(self)")
     }
   }
 }
@@ -263,6 +271,8 @@ extension CGLineJoin {
       return "kCGLineJoinMiter"
     case .round:
       return "kCGLineJoinRound"
+    @unknown default:
+      fatalError("Uknown CGLineJoin \(self)")
     }
   }
 }
@@ -280,6 +290,8 @@ extension CGColorRenderingIntent {
       return "kCGRenderingIntentRelativeColorimetric"
     case .saturation:
       return "kCGRenderingIntentSaturation"
+    @unknown default:
+      fatalError("Uknown CGColorRenderingIntent \(self)")
     }
   }
 }

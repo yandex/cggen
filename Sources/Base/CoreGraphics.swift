@@ -28,7 +28,7 @@ public struct CGIntSize: Equatable {
   }
 }
 
-public extension CGRect {
+extension CGRect {
   public var x: CGFloat {
     return origin.x
   }
@@ -38,7 +38,7 @@ public extension CGRect {
   }
 }
 
-public extension CGAffineTransform {
+extension CGAffineTransform {
   public static func scale(_ scale: CGFloat) -> CGAffineTransform {
     return CGAffineTransform(scaleX: scale, y: scale)
   }
@@ -52,13 +52,13 @@ extension Double {
 
 // PDF
 
-public extension CGPDFDocument {
+extension CGPDFDocument {
   public var pages: [CGPDFPage] {
     return (1...numberOfPages).compactMap(page(at:))
   }
 }
 
-public extension CGPDFPage {
+extension CGPDFPage {
   public func render(scale: CGFloat) -> CGImage? {
     let s = getBoxRect(.mediaBox).size
     let ctxSize = s.applying(.scale(scale))
@@ -72,7 +72,7 @@ public extension CGPDFPage {
 
 // Color space
 
-public extension CGColorSpace {
+extension CGColorSpace {
   public static var deviceRGB: CGColorSpace {
     return CGColorSpaceCreateDeviceRGB()
   }
@@ -106,7 +106,7 @@ extension CGColor {
 
 // Image
 
-public extension CGImage {
+extension CGImage {
   public var intSize: CGIntSize {
     return .size(w: width, h: height)
   }

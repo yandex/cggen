@@ -59,6 +59,8 @@ internal enum PDFObject {
       self = .dictionary(PDFObject.processDict(tempDict!))
     case .stream:
       self = .stream(PDFStream(obj: obj)!)
+    @unknown default:
+      fatalError("Unknown pdf object type \(type)")
     }
   }
 
