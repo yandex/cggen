@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
   name: "cggen",
+  platforms: [
+    .macOS(.v10_14), .iOS(.v12),
+  ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
     .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
