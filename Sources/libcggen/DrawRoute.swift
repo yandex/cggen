@@ -4,29 +4,29 @@
 import Base
 import Foundation
 
-public struct Gradient {
-  public enum Kind {
+struct Gradient {
+  enum Kind {
     case axial
     case radial(startRadius: CGFloat, endRadius: CGFloat)
   }
 
-  public let locationAndColors: [(CGFloat, RGBAColor)]
-  public let startPoint: CGPoint
-  public let endPoint: CGPoint
-  public let options: CGGradientDrawingOptions
-  public let kind: Kind
+  let locationAndColors: [(CGFloat, RGBAColor)]
+  let startPoint: CGPoint
+  let endPoint: CGPoint
+  let options: CGGradientDrawingOptions
+  let kind: Kind
 }
 
-public struct DashPattern {
-  public let phase: CGFloat
-  public let lengths: [CGFloat]
-  public init(phase: CGFloat, lengths: [CGFloat]) {
+struct DashPattern {
+  let phase: CGFloat
+  let lengths: [CGFloat]
+  init(phase: CGFloat, lengths: [CGFloat]) {
     self.phase = phase
     self.lengths = lengths
   }
 }
 
-public enum DrawStep {
+enum DrawStep {
   case saveGState
   case restoreGState
 
@@ -70,15 +70,17 @@ public enum DrawStep {
   static let empty = DrawStep.composite([])
 }
 
-public struct DrawRoute {
-  public let boundingRect: CGRect
-  public let gradients: [String: Gradient]
-  public let subroutes: [String: DrawRoute]
-  public let steps: [DrawStep]
-  public init(boundingRect: CGRect,
-              gradients: [String: Gradient],
-              subroutes: [String: DrawRoute],
-              steps: [DrawStep]) {
+struct DrawRoute {
+  let boundingRect: CGRect
+  let gradients: [String: Gradient]
+  let subroutes: [String: DrawRoute]
+  let steps: [DrawStep]
+  init(
+    boundingRect: CGRect,
+    gradients: [String: Gradient],
+    subroutes: [String: DrawRoute],
+    steps: [DrawStep]
+  ) {
     self.boundingRect = boundingRect
     self.gradients = gradients
     self.subroutes = subroutes

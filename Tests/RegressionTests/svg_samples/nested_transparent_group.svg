@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>nested_transparent_group</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <polygon id="path-1" points="0 0 50 0 50 50 0 50"></polygon>
+        <polygon id="path-3" points="0 0 40 0 40 40 0 40"></polygon>
+        <path d="M10,20 C4.477153,20 0,15.52285 0,10 C0,4.47715 4.477153,0 10,0 C15.52285,0 20,4.47715 20,10 C20,15.52285 15.52285,20 10,20 Z" id="path-5"></path>
+        <path d="M10,20 C4.47715,20 0,15.52285 0,10 C0,4.47715 4.47715,0 10,0 C15.52285,0 20,4.47715 20,10 C20,15.52285 15.52285,20 10,20 Z" id="path-7"></path>
+        <path d="M10,20 C4.47715,20 0,15.522847 0,10 C0,4.47715 4.47715,0 10,0 C15.52285,0 20,4.47715 20,10 C20,15.522847 15.52285,20 10,20 Z" id="path-9"></path>
+        <path d="M10,20 C4.477153,20 0,15.522847 0,10 C0,4.47715 4.477153,0 10,0 C15.52285,0 20,4.47715 20,10 C20,15.522847 15.52285,20 10,20 Z" id="path-11"></path>
+        <path d="M7.5,15 C3.35786,15 0,11.64214 0,7.5 C0,3.35786 3.35786,0 7.5,0 C11.64214,0 15,3.35786 15,7.5 C15,11.64214 11.64214,15 7.5,15 Z" id="path-13"></path>
+        <path d="M7.5,15 C3.35786,15 0,11.64214 0,7.5 C0,3.35786 3.35786,0 7.5,0 C11.64214,0 15,3.35786 15,7.5 C15,11.64214 11.64214,15 7.5,15 Z" id="path-15"></path>
+        <path d="M7.5,15 C3.35786,15 0,11.64214 0,7.5 C0,3.35786 3.35786,0 7.5,0 C11.64214,0 15,3.35786 15,7.5 C15,11.64214 11.64214,15 7.5,15 Z" id="path-17"></path>
+        <path d="M7.5,15 C3.35786,15 0,11.64214 0,7.5 C0,3.35786 3.35786,0 7.5,0 C11.64214,0 15,3.35786 15,7.5 C15,11.64214 11.64214,15 7.5,15 Z" id="path-19"></path>
+    </defs>
+    <g id="nested_transparent_group" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-3">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Clip-2"></g>
+            <polygon id="Fill-1" fill="#D0021B" mask="url(#mask-2)" points="-5 55 55 55 55 -5 -5 -5"></polygon>
+        </g>
+        <g id="Group-52" transform="translate(0.000000, 1.000000)" stroke="#ED3C52" stroke-linecap="square">
+            <path d="M0.5,0.5 L49.5,0.5" id="Stroke-4"></path>
+            <path d="M0.5,6.5 L49.5,6.5" id="Stroke-6"></path>
+            <path d="M0.5,12.5 L49.5,12.5" id="Stroke-8"></path>
+            <path d="M0.5,18.5 L49.5,18.5" id="Stroke-10"></path>
+            <path d="M0.5,25.5 L49.5,25.5" id="Stroke-12"></path>
+            <path d="M0.5,31.5 L49.5,31.5" id="Stroke-14"></path>
+            <path d="M0.5,37.5 L49.5,37.5" id="Stroke-16"></path>
+            <path d="M0.5,43.5 L49.5,43.5" id="Stroke-18"></path>
+            <path d="M0.5,2.5 L49.5,2.5" id="Stroke-20"></path>
+            <path d="M0.5,8.5 L49.5,8.5" id="Stroke-22"></path>
+            <path d="M0.5,14.5 L49.5,14.5" id="Stroke-24"></path>
+            <path d="M0.5,20.5 L49.5,20.5" id="Stroke-26"></path>
+            <path d="M0.5,27.5 L49.5,27.5" id="Stroke-28"></path>
+            <path d="M0.5,33.5 L49.5,33.5" id="Stroke-30"></path>
+            <path d="M0.5,39.5 L49.5,39.5" id="Stroke-32"></path>
+            <path d="M0.5,45.5 L49.5,45.5" id="Stroke-34"></path>
+            <path d="M0.5,4.5 L49.5,4.5" id="Stroke-36"></path>
+            <path d="M0.5,10.5 L49.5,10.5" id="Stroke-38"></path>
+            <path d="M0.5,16.5 L49.5,16.5" id="Stroke-40"></path>
+            <path d="M0.5,22.5 L49.5,22.5" id="Stroke-42"></path>
+            <path d="M0.5,29.5 L49.5,29.5" id="Stroke-44"></path>
+            <path d="M0.5,35.5 L49.5,35.5" id="Stroke-46"></path>
+            <path d="M0.5,41.5 L49.5,41.5" id="Stroke-48"></path>
+            <path d="M0.5,47.5 L49.5,47.5" id="Stroke-50"></path>
+        </g>
+        <g id="Group-81" transform="translate(5.000000, 5.000000)">
+            <g id="Group-55">
+                <mask id="mask-4" fill="white">
+                    <use xlink:href="#path-3"></use>
+                </mask>
+                <g id="Clip-54"></g>
+                <polygon id="Fill-53" fill-opacity="0.5" fill="#F5A623" mask="url(#mask-4)" points="-5 45 45 45 45 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-58">
+                <mask id="mask-6" fill="white">
+                    <use xlink:href="#path-5"></use>
+                </mask>
+                <g id="Clip-57"></g>
+                <polygon id="Fill-56" fill-opacity="0.5" fill="#F8E71C" mask="url(#mask-6)" points="-5 25 25 25 25 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-61" transform="translate(20.000000, 0.000000)">
+                <mask id="mask-8" fill="white">
+                    <use xlink:href="#path-7"></use>
+                </mask>
+                <g id="Clip-60"></g>
+                <polygon id="Fill-59" fill-opacity="0.5" fill="#F8E71C" mask="url(#mask-8)" points="-5 25 25 25 25 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-64" transform="translate(20.000000, 20.000000)">
+                <mask id="mask-10" fill="white">
+                    <use xlink:href="#path-9"></use>
+                </mask>
+                <g id="Clip-63"></g>
+                <polygon id="Fill-62" fill-opacity="0.5" fill="#F8E71C" mask="url(#mask-10)" points="-5 25 25 25 25 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-67" transform="translate(0.000000, 20.000000)">
+                <mask id="mask-12" fill="white">
+                    <use xlink:href="#path-11"></use>
+                </mask>
+                <g id="Clip-66"></g>
+                <polygon id="Fill-65" fill-opacity="0.5" fill="#F8E71C" mask="url(#mask-12)" points="-5 25 25 25 25 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-80" transform="translate(8.000000, 9.000000)">
+                <g id="Group-70" transform="translate(0.000000, 7.000000)">
+                    <mask id="mask-14" fill="white">
+                        <use xlink:href="#path-13"></use>
+                    </mask>
+                    <g id="Clip-69"></g>
+                    <polygon id="Fill-68" fill-opacity="0.6782" fill="#8B572A" mask="url(#mask-14)" points="-5 20 20 20 20 -5 -5 -5"></polygon>
+                </g>
+                <g id="Group-73">
+                    <mask id="mask-16" fill="white">
+                        <use xlink:href="#path-15"></use>
+                    </mask>
+                    <g id="Clip-72"></g>
+                    <polygon id="Fill-71" fill-opacity="0.6782" fill="#8B572A" mask="url(#mask-16)" points="-5 20 20 20 20 -5 -5 -5"></polygon>
+                </g>
+                <g id="Group-76" transform="translate(10.000000, 0.000000)">
+                    <mask id="mask-18" fill="white">
+                        <use xlink:href="#path-17"></use>
+                    </mask>
+                    <g id="Clip-75"></g>
+                    <polygon id="Fill-74" fill-opacity="0.6782" fill="#8B572A" mask="url(#mask-18)" points="-5 20 20 20 20 -5 -5 -5"></polygon>
+                </g>
+                <g id="Group-79" transform="translate(10.000000, 7.000000)">
+                    <mask id="mask-20" fill="white">
+                        <use xlink:href="#path-19"></use>
+                    </mask>
+                    <g id="Clip-78"></g>
+                    <polygon id="Fill-77" fill-opacity="0.6782" fill="#8B572A" mask="url(#mask-20)" points="-5 20 20 20 20 -5 -5 -5"></polygon>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

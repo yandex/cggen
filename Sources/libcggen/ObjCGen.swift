@@ -37,34 +37,36 @@ extension GenerationParams {
     return "k" + prefix + image.name.upperCamelCase + "Descriptor"
   }
 
-  func moduleImport(_ name: String) -> String {
-    if importAsModules {
-      return "@import \(name);"
-    } else {
-      return "#import <\(name)/\(name).h>"
-    }
+  var cggenSupportHeaderBody: ObjcTerm {
+    return supportHeader(
+      importAsModules: importAsModules, prefix: prefix, module: module)
   }
+}
 
-  var cggenSupportHeaderBody: String {
-    return
-      """
-      \(commonHeaderPrefix)
-
-      \(moduleImport("CoreFoundation"))
-      \(moduleImport("CoreGraphics"))
-
-      CF_ASSUME_NONNULL_BEGIN
-
-      typedef struct CF_BRIDGED_TYPE(id) \(prefix)\(module)GraphicResources *\(prefix)\(module)GraphicResourcesRef
-      CF_SWIFT_NAME(\(module)Resources);
-
-      typedef struct {
-      CGSize size;
-      void (*drawingHandler)(CGContextRef);
-      } \(descriptorTypename) CF_SWIFT_NAME(\(module)Resources.Descriptor);
-
-      CF_ASSUME_NONNULL_END
-
-      """
-  }
+private func supportHeader(
+  importAsModules: Bool,
+  prefix: String,
+  module: String
+) -> ObjcTerm {
+  return ObjcTerm(
+    commonHeaderPrefix,
+    .newLine,
+    .import(.coreGraphics, .coreFoundation, asModule: importAsModules),
+    .newLine,
+    .inCFNonnullRegion(
+      .swiftNamespace("\(module)Resources", cPref: prefix),
+      .cdecl(.init(
+        specifiers: [
+          .storage(.typedef),
+          .type(.structOrUnion(
+            .struct, attributes: [], identifier: nil, declList: [
+              .init(spec: [.CGSize], decl: [.identifier("size")]),
+              .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))])
+            ]))
+        ], declarators: [
+          .namedInSwift("\(module)Resources.Descriptor", decl: .identifier("descriptorTypename")),
+        ]
+        ))
+    )
+  )
 }

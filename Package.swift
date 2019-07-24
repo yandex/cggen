@@ -16,7 +16,11 @@ let package = Package(
   targets: [
     .target(
       name: "cggen",
-      dependencies: ["ArgParse", "Base", "PDFParse"]
+      dependencies: ["ArgParse", "libcggen", "Base"]
+    ),
+    .target(
+      name: "libcggen",
+      dependencies: ["Base", "PDFParse"]
     ),
     .target(
       name: "png-fuzzy-compare",
@@ -37,8 +41,12 @@ let package = Package(
       dependencies: ["Base"]
     ),
     .testTarget(
-      name: "BaseTests",
-      dependencies: ["Base"]
+      name: "UnitTests",
+      dependencies: ["Base", "libcggen"]
     ),
+    .testTarget(
+      name: "RegressionTests",
+      dependencies: ["libcggen"]
+    )
   ]
 )

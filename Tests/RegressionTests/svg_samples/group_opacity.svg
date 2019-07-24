@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <title>group_opacity</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <polygon id="path-1" points="0 0 50 0 50 50 0 50"></polygon>
+        <polygon id="path-3" points="15 22.5 10.36475 29.26585 10.59161 21.06763 2.86475 23.81678 7.86708 17.31763 0 15 7.86708 12.68237 2.86475 6.18322 10.59161 8.93237 10.36475 0.73415 15 7.5 19.63525 0.73415 19.40839 8.93237 27.13525 6.18322 22.13292 12.68237 30 15 22.13292 17.31763 27.13525 23.81678 19.40839 21.06763 19.63525 29.26585"></polygon>
+        <polygon id="path-5" points="0 0 20 0 20 20 0 20"></polygon>
+        <path d="M5,10 C2.23858,10 0,7.76142 0,5 C0,2.23858 2.23858,0 5,0 C7.76142,0 10,2.23858 10,5 C10,7.76142 7.76142,10 5,10 Z" id="path-7"></path>
+        <path d="M5,10 C2.23858,10 0,7.76142 0,5 C0,2.23858 2.23858,0 5,0 C7.76142,0 10,2.23858 10,5 C10,7.76142 7.76142,10 5,10 Z" id="path-9"></path>
+        <path d="M5,10 C2.23858,10 0,7.76142 0,5 C0,2.23858 2.23858,0 5,0 C7.76142,0 10,2.23858 10,5 C10,7.76142 7.76142,10 5,10 Z" id="path-11"></path>
+        <path d="M5,10 C2.23858,10 0,7.76142 0,5 C0,2.23858 2.23858,0 5,0 C7.76142,0 10,2.23858 10,5 C10,7.76142 7.76142,10 5,10 Z" id="path-13"></path>
+    </defs>
+    <g id="group_opacity" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-3">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Clip-2"></g>
+            <polygon id="Fill-1" fill="#D0021B" mask="url(#mask-2)" points="-5 55 55 55 55 -5 -5 -5"></polygon>
+        </g>
+        <g id="Group-6" transform="translate(10.000000, 10.000000)">
+            <mask id="mask-4" fill="white">
+                <use xlink:href="#path-3"></use>
+            </mask>
+            <g id="Clip-5"></g>
+            <polygon id="Fill-4" fill="#7ED321" mask="url(#mask-4)" points="-5 34.265848 35 34.265848 35 -4.265852 -5 -4.265852"></polygon>
+        </g>
+        <g id="Group-22" transform="translate(15.000000, 15.000000)">
+            <g id="Group-9">
+                <mask id="mask-6" fill="white">
+                    <use xlink:href="#path-5"></use>
+                </mask>
+                <g id="Clip-8"></g>
+                <polygon id="Fill-7" fill-opacity="0.6385" fill="#F5A623" mask="url(#mask-6)" points="-5 25 25 25 25 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-12">
+                <mask id="mask-8" fill="white">
+                    <use xlink:href="#path-7"></use>
+                </mask>
+                <g id="Clip-11"></g>
+                <polygon id="Fill-10" fill-opacity="0.6385" fill="#F8E71C" mask="url(#mask-8)" points="-5 15 15 15 15 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-15" transform="translate(10.000000, 0.000000)">
+                <mask id="mask-10" fill="white">
+                    <use xlink:href="#path-9"></use>
+                </mask>
+                <g id="Clip-14"></g>
+                <polygon id="Fill-13" fill-opacity="0.6385" fill="#F8E71C" mask="url(#mask-10)" points="-5 15 15 15 15 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-18" transform="translate(10.000000, 10.000000)">
+                <mask id="mask-12" fill="white">
+                    <use xlink:href="#path-11"></use>
+                </mask>
+                <g id="Clip-17"></g>
+                <polygon id="Fill-16" fill-opacity="0.6385" fill="#F8E71C" mask="url(#mask-12)" points="-5 15 15 15 15 -5 -5 -5"></polygon>
+            </g>
+            <g id="Group-21" transform="translate(0.000000, 10.000000)">
+                <mask id="mask-14" fill="white">
+                    <use xlink:href="#path-13"></use>
+                </mask>
+                <g id="Clip-20"></g>
+                <polygon id="Fill-19" fill-opacity="0.6385" fill="#F8E71C" mask="url(#mask-14)" points="-5 15 15 15 15 -5 -5 -5"></polygon>
+            </g>
+        </g>
+    </g>
+</svg>

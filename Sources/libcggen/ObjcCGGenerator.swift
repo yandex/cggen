@@ -10,19 +10,10 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   let headerImportPath: String?
 
   func filePreamble() -> String {
-    let importLine: String
-    if let headerImportPath = headerImportPath {
-      importLine = "#import \"\(headerImportPath)\""
-    } else {
-      importLine = params.moduleImport("CoreGraphics")
-    }
-    let foundationImport = params.moduleImport("Foundation")
-    return [
-      importLine,
-      "",
-      foundationImport,
-      "\n",
-    ].joined(separator: "\n")
+    return ObjcTerm([
+      headerImportPath.map { ObjcTerm.import(.doubleQuotes(path: $0)) },
+      .import(.foundation, .coreGraphics, asModule: params.importAsModules)
+    ].compactMap(identity).insertSeparator(.newLine)).renderText()
   }
 
   func generateImageFunction(image: Image) -> String {

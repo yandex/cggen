@@ -86,6 +86,23 @@ extension Array {
   }
 }
 
+extension Array where Element == String {
+  public func appendFirstToLast(_ strings: [String], separator: String) -> [String] {
+    let mid: String
+    switch (last, strings.first) {
+    case let (last?, nil):
+      mid = last
+    case let (nil, first?):
+      mid = first
+    case let (last?, first?):
+      mid = last + separator + first
+    case (nil, nil):
+      return []
+    }
+    return dropLast() + [mid] + strings.dropFirst()
+  }
+}
+
 extension Sequence {
   public func concurrentMap<T>(_ transform: @escaping (Element) -> T) -> [T] {
     var result = [T?]()
@@ -109,13 +126,8 @@ extension Sequence {
     }
   }
 
-  public func forall(_ predicate: (Element) -> Bool) -> Bool {
-    for e in self {
-      if !predicate(e) {
-        return false
-      }
-    }
-    return true
+  public func insertSeparator(_ separator: Element) -> JoinedSequence<[[Self.Element]]> {
+    return map { [$0] }.joined(separator: [separator])
   }
 }
 
@@ -123,8 +135,23 @@ public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) ->
   return { try f($0, arg2) }
 }
 
+@inlinable
+public func identity<T>(_ t: T) -> T {
+  return t
+}
+
 public func check(_ condition: Bool, _ error: Error) throws {
   if !condition {
     throw error
   }
+}
+
+public func zip<T, U>(_ t: T?, _ u: U?) -> (T, U)? {
+  return t.flatMap { t in u.map { u in (t, u) } }
+}
+
+public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
+  var copy = value
+  modifier(&copy)
+  return copy
 }

@@ -23,12 +23,12 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
 }
 
 private extension GenerationParams {
-  var imports: String {
+  var imports: ObjcTerm {
     switch style {
     case .plain:
-      return moduleImport("CoreGraphics")
+      return .import(.coreGraphics, asModule: importAsModules)
     case .swiftFriendly:
-      return "#include \"cggen_support.h\""
+      return .import(.doubleQuotes(path: "cggen_support.h"))
     }
   }
 }
