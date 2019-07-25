@@ -39,7 +39,8 @@ extension GenerationParams {
 
   var cggenSupportHeaderBody: ObjcTerm {
     return supportHeader(
-      importAsModules: importAsModules, prefix: prefix, module: module)
+      importAsModules: importAsModules, prefix: prefix, module: module
+    )
   }
 }
 
@@ -61,12 +62,13 @@ private func supportHeader(
           .type(.structOrUnion(
             .struct, attributes: [], identifier: nil, declList: [
               .init(spec: [.CGSize], decl: [.identifier("size")]),
-              .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))])
-            ]))
+              .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))]),
+            ]
+          )),
         ], declarators: [
           .namedInSwift("\(module)Resources.Descriptor", decl: .identifier("descriptorTypename")),
         ]
-        ))
+      ))
     )
   )
 }

@@ -15,7 +15,6 @@ extension Renderable where RenderType == [String] {
   }
 }
 
-
 extension Collection where Element: Renderable {
   func render() -> [Element.RenderType] {
     return map { $0.render() }
@@ -34,7 +33,7 @@ extension ObjcTerm: Renderable {
       return [""]
     case let .comment(comment):
       return ["// \(comment)"]
-    case let .`import`(importStatement):
+    case let .import(importStatement):
       return [importStatement.render()]
     case let .moduleImport(module):
       return ["@import \(module);"]
@@ -45,7 +44,6 @@ extension ObjcTerm: Renderable {
     }
   }
 }
-
 
 extension ObjcTerm.CDecl: Renderable {
   typealias RenderType = [String]
@@ -65,7 +63,7 @@ extension ObjcTerm.CDecl.Specifier: Renderable {
     switch self {
     case let .storage(storageClass):
       return [storageClass.rawValue]
-    case .functionSpecifier(_):
+    case .functionSpecifier:
       return []
     case let .attribute(attr):
       return [attr]
@@ -100,7 +98,7 @@ extension ObjcTerm.CDecl.Declarator.Pointer: Renderable {
   typealias RenderType = String
   func render() -> String {
     switch self {
-    case .last(_):
+    case .last:
       return "*"
     case let .more(typeQual: _, pointer: next):
       return "*" + next.render()
@@ -112,7 +110,7 @@ extension ObjcTerm.CDecl.Specifier.TypeSpecifier: Renderable {
   typealias RenderType = [String]
   func render() -> [String] {
     switch self {
-    case .enum(_):
+    case .enum:
       return []
     case let .simple(typeName):
       return [typeName]
@@ -123,7 +121,7 @@ extension ObjcTerm.CDecl.Specifier.TypeSpecifier: Renderable {
         return [structDecl]
       }
       let structMembers = declList.render(indent: 2).map { "\($0);" }
-      return ["\(structDecl) {"] + structMembers + [ "}" ]
+      return ["\(structDecl) {"] + structMembers + ["}"]
     }
   }
 }

@@ -2,9 +2,9 @@
 // Author: Alfred Zien <zienag@yandex-team.ru>
 
 import ArgParse
-import libcggen
-import Foundation
 import Base
+import Foundation
+import libcggen
 
 func parseArgs() -> Args {
   let parser = ArgParser(helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",

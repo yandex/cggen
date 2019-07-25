@@ -6,6 +6,7 @@ enum ObjcTerm {
     case angleBrackets(path: String)
     case doubleQuotes(path: String)
   }
+
   struct CDecl {
     enum Specifier {
       enum StorageClass: String {
@@ -13,34 +14,41 @@ enum ObjcTerm {
         case `static`
         case extern
       }
+
       enum TypeSpecifier {
         enum StructOrUnion: String {
           case `struct`
           case union
         }
+
         struct StructDeclaration {
           var spec: [TypeSpecifier]
           var decl: [Declarator]
         }
+
         case simple(String)
         case structOrUnion(StructOrUnion, attributes: [String], identifier: String?, declList: [StructDeclaration])
         case `enum`(NotImplemented)
       }
+
       case storage(StorageClass)
       case type(TypeSpecifier)
       case attribute(String)
       case functionSpecifier(NotImplemented)
     }
+
     struct Declarator {
       enum Direct {
         case identifier(String)
         indirect case braced(Declarator)
         indirect case parametrList(Declarator, [Specifier])
       }
+
       enum Pointer {
         case last(typeQual: NotImplemented?)
         indirect case more(typeQual: NotImplemented?, pointer: Pointer)
       }
+
       var pointer: Pointer?
       var direct: Direct
       var attributes: [String]
@@ -48,7 +56,7 @@ enum ObjcTerm {
       init(pointer: Pointer?, direct: Direct, attrs: [String]) {
         self.pointer = pointer
         self.direct = direct
-        self.attributes = attrs
+        attributes = attrs
       }
 
       init(identifier: String) {
@@ -57,9 +65,11 @@ enum ObjcTerm {
         attributes = []
       }
     }
+
     var specifiers: [Specifier]
     var declarators: [Declarator]
   }
+
   indirect case composite([ObjcTerm])
   case `import`(Import)
   case newLine
@@ -112,7 +122,7 @@ extension ObjcTerm.CDecl.Specifier.TypeSpecifier: ExpressibleByStringLiteral {
 
 extension ObjcTerm.CDecl.Declarator {
   static func functionPointer(
-    name: String,
+    name _: String,
     _ params: ObjcTerm.CDecl.Specifier...
   ) -> ObjcTerm.CDecl.Declarator {
     return .parametrList(
@@ -124,6 +134,7 @@ extension ObjcTerm.CDecl.Declarator {
 
 extension ObjcTerm {
   // MARK: imports
+
   struct SystemModule: ExpressibleByStringLiteral {
     var value: StaticString
     var name: String { return value.description }
@@ -131,16 +142,18 @@ extension ObjcTerm {
       self.value = value
     }
 
-    static let foundation = SystemModule.init(stringLiteral: "Foundation")
-    static let coreGraphics = SystemModule.init(stringLiteral: "CoreGraphics")
-    static let coreFoundation = SystemModule.init(stringLiteral: "CoreFoundation")
+    static let foundation: SystemModule = "Foundation"
+    static let coreGraphics: SystemModule = "CoreGraphics"
+    static let coreFoundation: SystemModule = "CoreFoundation"
   }
+
   static func `import`(_ systemModule: SystemModule, asModule: Bool) -> ObjcTerm {
     let name = systemModule.name
     return asModule ?
       .moduleImport(module: name) :
       .import(.doubleQuotes(path: "\(name)/\(name).h"))
   }
+
   static func `import`(
     _ systemModules: SystemModule...,
     asModule: Bool
@@ -149,17 +162,19 @@ extension ObjcTerm {
   }
 
   // MARK: Composite
+
   init<T: Sequence>(
     _ lexems: T
   ) where T.Element == ObjcTerm {
     self = .composite(.init(lexems))
   }
-  
+
   init(_ lexems: ObjcTerm...) {
     self = .composite(lexems)
   }
 
   // MARK: Audited regions
+
   static func inAuditedRegion(
     _ lexems: ObjcTerm,
     startRegion: String,
@@ -183,6 +198,7 @@ extension ObjcTerm {
   }
 
   // MARK: Swift bridging
+
   // typedef struct CF_BRIDGED_TYPE(id) objcName *objcNameRef CF_SWIFT_NAME(namespace);
   static func swiftNamespace(_ namespace: String, cPref: String) -> ObjcTerm {
     return .cdecl(.init(specifiers: [
@@ -193,10 +209,10 @@ extension ObjcTerm {
         identifier: "\(cPref)\(namespace)", declList: []
       )),
     ], declarators: [
-      .namedInSwift(
-        namespace,
-        decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
-      )
+        .namedInSwift(
+          namespace,
+          decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
+        ),
     ]))
   }
 }

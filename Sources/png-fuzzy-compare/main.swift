@@ -69,7 +69,7 @@ struct RGBAPixel: Equatable {
   }
 
   var squaredSum: Double {
-    return componentsNormalized.map({ $0 * $0 }).reduce(0, +)
+    return componentsNormalized.map { $0 * $0 }.reduce(0, +)
   }
 }
 

@@ -12,7 +12,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   func filePreamble() -> String {
     return ObjcTerm([
       headerImportPath.map { ObjcTerm.import(.doubleQuotes(path: $0)) },
-      .import(.foundation, .coreGraphics, asModule: params.importAsModules)
+      .import(.foundation, .coreGraphics, asModule: params.importAsModules),
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
   }
 
@@ -47,9 +47,9 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
                                                  contextVarName: contextName,
                                                  globalDeviceRGBContextName: rgbColorSpaceVarName)
   let commandsLines = route.steps.flatMap { (step) -> [String] in
-    return generator.command(step: step,
-                             gradients: route.gradients,
-                             subroutes: route.subroutes)
+    generator.command(step: step,
+                      gradients: route.gradients,
+                      subroutes: route.subroutes)
   }
   return subroutes + commandsLines
 }

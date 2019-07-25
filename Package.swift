@@ -47,6 +47,6 @@ let package = Package(
     .testTarget(
       name: "RegressionTests",
       dependencies: ["libcggen"]
-    )
+    ),
   ]
 )

@@ -1,11 +1,11 @@
-import XCTest
 @testable import libcggen
+import XCTest
 
 final class ObjcLexTests: XCTestCase {
   typealias Declarator = ObjcTerm.CDecl.Declarator
   func testComments() {
     XCTAssertEqual(
-      ObjcTerm.composite([ .comment("Hello"), .comment("World") ]).renderText(),
+      ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText(),
       """
       // Hello
       // World
@@ -17,7 +17,7 @@ final class ObjcLexTests: XCTestCase {
     XCTAssertEqual(
       ObjcTerm.composite([
         .import(.angleBrackets(path: "Foundation/Foundation.h")),
-        .import(.doubleQuotes(path: "foo/bar/baz.h"))
+        .import(.doubleQuotes(path: "foo/bar/baz.h")),
       ]).renderText(),
       """
       #import <Foundation/Foundation.h>
@@ -31,9 +31,9 @@ final class ObjcLexTests: XCTestCase {
       .storage(.typedef),
       .type(.structOrUnion(.struct, attributes: ["CF_BRIDGED_TYPE(id)"], identifier: "OldT", declList: [])),
     ], declarators: [
-      .namedInSwift("SwiftT", decl: .pointed(.identifier("NewT")))
+                     .namedInSwift("SwiftT", decl: .pointed(.identifier("NewT"))),
     ]).renderText(),
-    """
+                   """
     typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
     """)
   }
@@ -44,12 +44,13 @@ final class ObjcLexTests: XCTestCase {
       .type(.structOrUnion(
         .struct, attributes: [], identifier: nil, declList: [
           .init(spec: [.CGSize], decl: [.identifier("size")]),
-          .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))])
-        ]))
+          .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))]),
+        ]
+      )),
     ], declarators: [
-      .identifier("Foo"),
+                     .identifier("Foo"),
     ]).renderText(),
-    """
+                   """
     typedef struct {
       CGSize size;
       void (*drawingHandler)(CGContextRef);

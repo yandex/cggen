@@ -5,6 +5,9 @@ import CoreGraphics
 import Dispatch
 import Foundation
 
+infix operator !!
+infix operator ^^
+
 extension String {
   private var camelCaseComponents: [String] {
     let components = self.components(separatedBy: .uppercaseLetters)
@@ -42,6 +45,18 @@ extension String {
   }
 }
 
+extension Optional {
+  public static func !!(v: Optional, e: Error) throws -> Wrapped {
+    guard let unwrapped = v else { throw e }
+    return unwrapped
+  }
+
+  public static func ^^ <T: Error>(v: Optional, e: T) -> Result<Wrapped, T> {
+    guard let unwrapped = v else { return .failure(e) }
+    return .success(unwrapped)
+  }
+}
+
 public protocol OptionalType {
   associatedtype Wrapped
   var optional: Wrapped? { get }
@@ -53,7 +68,7 @@ extension Optional: OptionalType {
 
 extension Sequence where Iterator.Element: OptionalType {
   public func unwrap() -> [Iterator.Element.Wrapped]? {
-    return reduce(Optional<[Element.Wrapped]>([])) { acc, e in
+    return reduce([Element.Wrapped]?([])) { acc, e in
       acc.flatMap { a in e.optional.map { a + [$0] } }
     }
   }
@@ -83,6 +98,12 @@ extension Array {
     return syncQueue.sync {
       result.map { $0! }
     }
+  }
+
+  public mutating func modifyLast(_ modifier: (inout Element) -> Void) {
+    guard var el = popLast() else { return }
+    modifier(&el)
+    append(el)
   }
 }
 

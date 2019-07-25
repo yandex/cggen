@@ -1,5 +1,5 @@
-import XCTest
 import libcggen
+import XCTest
 
 class SVGTest: XCTestCase {
   let fm = FileManager.default
@@ -18,12 +18,12 @@ func getCurentFilePath(_ file: StaticString = #file) -> URL {
     .deletingLastPathComponent()
 }
 
-
 extension FileManager {
   func contentsOfDirectory(at url: URL) throws -> [URL] {
     return try contentsOfDirectory(
       at: url,
       includingPropertiesForKeys: nil,
-      options: [])
+      options: []
+    )
   }
 }

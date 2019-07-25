@@ -16,7 +16,7 @@ import Foundation
 
 
 /// Write a string to standard error.
-fileprivate func writeStderr(_ string: String) {
+private func writeStderr(_ string: String) {
     if let data = string.data(using: .utf8) {
         FileHandle.standardError.write(data)
     }
@@ -31,13 +31,13 @@ public func exitError(_ message: String) -> Never {
 
 
 /// Internal enum for classifying option types.
-fileprivate enum OptionType {
+private enum OptionType {
     case bool, string, integer, double
 }
 
 
 /// Internal class for storing option data.
-fileprivate class Option {
+private class Option {
     let type: OptionType
     var found = false
     var bools = [Bool]()
@@ -47,9 +47,9 @@ fileprivate class Option {
 
     var fallbacks = (
         bool: false,
-        string: "",
-        int: 0,
-        double: 0.0
+      string: "",
+      int: 0,
+      double: 0.0
     )
 
     init(_ type: OptionType) {
@@ -80,7 +80,7 @@ fileprivate class Option {
 
 
 /// Internal class for making an array of arguments available as a stream.
-fileprivate class ArgStream {
+private class ArgStream {
     let args: [String]
     var index = 0
 
@@ -380,7 +380,7 @@ public class ArgParser {
             else if arg.starts(with: "-") {
                 if arg == "-" {
                     arguments.append(arg)
-                } else if Array(arg)[1] >= "0" && Array(arg)[1] <= "9" {
+                } else if Array(arg)[1] >= "0", Array(arg)[1] <= "9" {
                     arguments.append(arg)
                 } else {
                     parseShortOption(String(arg.dropFirst(1)), stream)
@@ -395,7 +395,7 @@ public class ArgParser {
             }
 
             // Is the argument the automatic 'help' command?
-            else if is_first_arg && arg == "help" {
+            else if is_first_arg, arg == "help" {
                 if stream.hasNext() {
                     let name = stream.next()
                     if let cmdParser = commands[name] {
@@ -438,12 +438,12 @@ public class ArgParser {
         }
 
         // Is the argument an automatic --help flag?
-        else if arg == "help" && helptext != nil {
+        else if arg == "help", helptext != nil {
             exitHelp()
         }
 
         // Is the argument an automatic --version flag?
-        else if arg == "version" && version != nil {
+        else if arg == "version", version != nil {
             exitVersion()
         }
 
@@ -468,9 +468,9 @@ public class ArgParser {
         // -h or -v flag before exiting.
         for char in arg {
             guard let option = options[String(char)] else {
-                if char == "h" && helptext != nil {
+                if char == "h", helptext != nil {
                     exitHelp()
-                } else if char == "v" && version != nil {
+                } else if char == "v", version != nil {
                     exitVersion()
                 } else {
                     exitError("-\(char) is not a recognised option")
@@ -491,8 +491,8 @@ public class ArgParser {
     private func parseEqualsOption(prefix: String, arg: String) {
         let split = arg.split(
             separator: "=",
-            maxSplits: 1,
-            omittingEmptySubsequences: false
+          maxSplits: 1,
+          omittingEmptySubsequences: false
         )
         let name = String(split[0])
         let value = String(split[1])

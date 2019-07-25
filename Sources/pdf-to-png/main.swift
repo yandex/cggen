@@ -37,7 +37,8 @@ func main(args: Args) -> Int32 {
     .forEach { (name: String, img: CGImage) in
       let url = URL(fileURLWithPath: args.outDir)
         .appendingPathComponent("\(name)\(args.suffix).png") as CFURL
-      try! img.write(fileURL: url) }
+      try! img.write(fileURL: url)
+    }
   return 0
 }
 

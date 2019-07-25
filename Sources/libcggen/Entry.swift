@@ -62,7 +62,7 @@ public func runCggen(with args: Args) {
         let route = PDFToDrawRouteConverter.convert(page: page)
         return Image(name: finalName, route: route)
       }
-  }
+    }
   log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
   let style = args.generationStyle.flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
