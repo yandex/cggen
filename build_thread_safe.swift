@@ -19,8 +19,10 @@ func perform(_ command: [String]) {
   task.waitUntilExit()
 }
 
-try? FileManager().createDirectory(atPath: ".build",
-                                   withIntermediateDirectories: false)
+try? FileManager().createDirectory(
+  atPath: ".build",
+  withIntermediateDirectories: false
+)
 
 let fd = fopen(".build/.build_lock", "w")!
 lockf(Int32(fd.pointee._file), F_LOCK, 0)

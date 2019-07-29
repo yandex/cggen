@@ -9,9 +9,11 @@ struct DrawStepToObjcCommandGenerator {
   let contextVarName: String
   let globalDeviceRGBContextName: String
 
-  func command(step: DrawStep,
-               gradients: [String: Gradient],
-               subroutes: [String: DrawRoute]) -> [String] {
+  func command(
+    step: DrawStep,
+    gradients: [String: Gradient],
+    subroutes: [String: DrawRoute]
+  ) -> [String] {
     switch step {
     case .saveGState:
       return [cmd("SaveGState")]

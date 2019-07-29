@@ -21,9 +21,11 @@ struct Point: Equatable, LinearInterpolatable {
     return sqrt((dx * dx) + (dy * dy))
   }
 
-  static func linearInterpolate(from lhs: Point,
-                                to rhs: Point,
-                                at x: Double) -> Point {
+  static func linearInterpolate(
+    from lhs: Point,
+    to rhs: Point,
+    at x: Double
+  ) -> Point {
     let dx = rhs.x - lhs.x
     let dy = rhs.y - lhs.y
     let k = dy / dx
@@ -56,15 +58,19 @@ final class RemoveIntermediatesTests: XCTestCase {
   func test_oneDirectlyProportionalLine() {
     let l = line(k: 1, b: 0)
     let points = stride(from: 0.0, to: 2.0, by: 0.01).map(l)
-    XCTAssertEqual(points.removeIntermediates(tolerance: Double.ulpOfOne),
-                   [points.first!, points.last!])
+    XCTAssertEqual(
+      points.removeIntermediates(tolerance: Double.ulpOfOne),
+      [points.first!, points.last!]
+    )
   }
 
   func test_oneLine() {
     let l = line(k: -2, b: 10)
     let points = stride(from: -10.0, through: 2.0, by: 0.01).map(l)
-    XCTAssertEqual(points.removeIntermediates(tolerance: delta),
-                   [points.first!, points.last!])
+    XCTAssertEqual(
+      points.removeIntermediates(tolerance: delta),
+      [points.first!, points.last!]
+    )
   }
 
   func test_twoLines() {
@@ -74,8 +80,10 @@ final class RemoveIntermediatesTests: XCTestCase {
     let points2 = stride(from: 0, to: 2, by: 0.01).map(line2)
     let points = points1 + points2
     let expected = [points1.first!, points2.first!, points2.last!]
-    XCTAssertEqual(points.removeIntermediates(tolerance: delta),
-                   expected)
+    XCTAssertEqual(
+      points.removeIntermediates(tolerance: delta),
+      expected
+    )
   }
 
   func test_twoLinesWithBigTolerance() {
@@ -85,7 +93,9 @@ final class RemoveIntermediatesTests: XCTestCase {
     let points2 = stride(from: 0, to: 1, by: 0.01).map(line2)
     let points = points1 + points2
     let expected = [points1.first!, points2.first!, points2.last!]
-    XCTAssertEqual(points.removeIntermediates(tolerance: 0.1),
-                   expected)
+    XCTAssertEqual(
+      points.removeIntermediates(tolerance: 0.1),
+      expected
+    )
   }
 }

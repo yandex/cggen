@@ -21,8 +21,10 @@ public struct PDFShading {
         let functionObj = dict["Function"],
         coords.count == 4
       else { throw Error.parsingError }
-      self.coords = (p0: CGPoint(x: coords[0], y: coords[1]),
-                     p1: CGPoint(x: coords[2], y: coords[3]))
+      self.coords = (
+        p0: CGPoint(x: coords[0], y: coords[1]),
+        p1: CGPoint(x: coords[2], y: coords[3])
+      )
       function = try PDFFunction(obj: functionObj)
       domain = try dict["Domain"]?.domain() ?? defaultDomain
       extend = try dict["Extend"]?.extend() ?? defaultExtend
@@ -43,8 +45,10 @@ public struct PDFShading {
         let functionObj = dict["Function"],
         coords.count == 6
       else { throw Error.parsingError }
-      self.coords = (p0: CGPoint(x: coords[0], y: coords[1]),
-                     p1: CGPoint(x: coords[3], y: coords[4]))
+      self.coords = (
+        p0: CGPoint(x: coords[0], y: coords[1]),
+        p1: CGPoint(x: coords[3], y: coords[4])
+      )
       startRadius = coords[2]
       endRadius = coords[5]
       function = try PDFFunction(obj: functionObj)

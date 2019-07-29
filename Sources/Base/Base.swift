@@ -55,6 +55,10 @@ extension Optional {
     guard let unwrapped = v else { return .failure(e) }
     return .success(unwrapped)
   }
+
+  public func map<T>(_ kp: KeyPath<Wrapped, T>) -> T? {
+    return map { $0[keyPath: kp] }
+  }
 }
 
 public protocol OptionalType {
@@ -75,10 +79,10 @@ extension Sequence where Iterator.Element: OptionalType {
 }
 
 extension Array {
-  public func splitBy(subSize: Int) -> [[Element]] {
+  public func splitBy(subSize: Int) -> [ArraySlice<Element>] {
     return stride(from: 0, to: count, by: subSize).map { startIndex in
       let endIndex = startIndex.advanced(by: subSize)
-      return Array(self[startIndex..<endIndex])
+      return self[startIndex..<endIndex]
     }
   }
 
@@ -152,6 +156,13 @@ extension Sequence {
   }
 }
 
+extension Collection {
+  @inlinable
+  public subscript(safe index: Index) -> Element? {
+    startIndex <= index && endIndex > index ? self[index] : nil
+  }
+}
+
 public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
   return { try f($0, arg2) }
 }
@@ -175,4 +186,45 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
   var copy = value
   modifier(&copy)
   return copy
+}
+
+public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {
+  waitCallbackOnMT { completion in
+    operation {
+      completion(())
+    }
+  }
+}
+
+public func waitCallbackOnMT<T>(_ operation: (@escaping (T) -> Void) -> Void) -> T {
+  let semaphore = DispatchSemaphore(value: 0)
+  var result: T?
+  operation {
+    result = $0
+    semaphore.signal()
+  }
+
+  RunLoop.current.spin {
+    semaphore.wait(timeout: .now()) == .timedOut
+  }
+
+  return result!
+}
+
+extension RunLoop {
+  public func spin(while condition: () -> Bool) {
+    while condition() {
+      run(until: .init())
+    }
+  }
+}
+
+public func apply<T>(_ f: () -> T) -> T {
+  return f()
+}
+
+extension CaseIterable where Self: RawRepresentable, RawValue: Hashable {
+  public static var rawValues: Set<AllCases.Element.RawValue> {
+    return Set(allCases.map { $0.rawValue })
+  }
 }

@@ -27,34 +27,38 @@ final class ObjcLexTests: XCTestCase {
   }
 
   func testCDecl() {
-    XCTAssertEqual(ObjcTerm.CDecl(specifiers: [
-      .storage(.typedef),
-      .type(.structOrUnion(.struct, attributes: ["CF_BRIDGED_TYPE(id)"], identifier: "OldT", declList: [])),
-    ], declarators: [
-                     .namedInSwift("SwiftT", decl: .pointed(.identifier("NewT"))),
-    ]).renderText(),
-                   """
-    typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
-    """)
+    XCTAssertEqual(
+      ObjcTerm.CDecl(specifiers: [
+        .storage(.typedef),
+        .type(.structOrUnion(.struct, attributes: ["CF_BRIDGED_TYPE(id)"], identifier: "OldT", declList: [])),
+      ], declarators: [
+        .namedInSwift("SwiftT", decl: .pointed(.identifier("NewT"))),
+      ]).renderText(),
+      """
+      typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
+      """
+    )
   }
 
   func testCStruct() {
-    XCTAssertEqual(ObjcTerm.CDecl(specifiers: [
-      .storage(.typedef),
-      .type(.structOrUnion(
-        .struct, attributes: [], identifier: nil, declList: [
-          .init(spec: [.CGSize], decl: [.identifier("size")]),
-          .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))]),
-        ]
-      )),
-    ], declarators: [
-                     .identifier("Foo"),
-    ]).renderText(),
-                   """
-    typedef struct {
-      CGSize size;
-      void (*drawingHandler)(CGContextRef);
-    } Foo;
-    """)
+    XCTAssertEqual(
+      ObjcTerm.CDecl(specifiers: [
+        .storage(.typedef),
+        .type(.structOrUnion(
+          .struct, attributes: [], identifier: nil, declList: [
+            .init(spec: [.CGSize], decl: [.identifier("size")]),
+            .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))]),
+          ]
+        )),
+      ], declarators: [
+        .identifier("Foo"),
+      ]).renderText(),
+      """
+      typedef struct {
+        CGSize size;
+        void (*drawingHandler)(CGContextRef);
+      } Foo;
+      """
+    )
   }
 }

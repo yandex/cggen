@@ -7,8 +7,10 @@ import Foundation
 import libcggen
 
 func parseArgs() -> Args {
-  let parser = ArgParser(helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
-                         version: "0.1")
+  let parser = ArgParser(
+    helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
+    version: "0.1"
+  )
   let objcHeaderKey = "objc-header"
   let objcPrefixKey = "objc-prefix"
   let objcImplKey = "objc-impl"
@@ -34,19 +36,21 @@ func parseArgs() -> Args {
   parser.newFlag(importAsModulesKey)
   parser.newFlag(verboseFlagKey)
   parser.parse()
-  return Args(objcHeader: parser.string(at: objcHeaderKey),
-              objcPrefix: parser.string(at: objcPrefixKey),
-              objcImpl: parser.string(at: objcImplKey),
-              objcHeaderImportPath: parser.string(at: objcHeaderImportPathKey),
-              objcCallerPath: parser.string(at: objcCallerPathKey),
-              callerScale: parser.double(at: callerScaleKey) ?? 1,
-              callerPngOutputPath: parser.string(at: callerPngOutputPathKey),
-              generationStyle: parser.string(at: generationStyleKey),
-              cggenSupportHeaderPath: parser.string(at: cggenSupportHeaderPathKey),
-              module: parser.string(at: moduleKey),
-              importAsModules: parser.getFlag(importAsModulesKey),
-              verbose: parser.getFlag(verboseFlagKey),
-              files: parser.getArgs())
+  return Args(
+    objcHeader: parser.string(at: objcHeaderKey),
+    objcPrefix: parser.string(at: objcPrefixKey),
+    objcImpl: parser.string(at: objcImplKey),
+    objcHeaderImportPath: parser.string(at: objcHeaderImportPathKey),
+    objcCallerPath: parser.string(at: objcCallerPathKey),
+    callerScale: parser.double(at: callerScaleKey) ?? 1,
+    callerPngOutputPath: parser.string(at: callerPngOutputPathKey),
+    generationStyle: parser.string(at: generationStyleKey),
+    cggenSupportHeaderPath: parser.string(at: cggenSupportHeaderPathKey),
+    module: parser.string(at: moduleKey),
+    importAsModules: parser.getFlag(importAsModulesKey),
+    verbose: parser.getFlag(verboseFlagKey),
+    files: parser.getArgs()
+  )
 }
 
 runCggen(with: parseArgs())

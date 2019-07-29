@@ -53,37 +53,47 @@ enum PDFToDrawRouteConverter {
       prepend.append(.beginTransparencyLayer)
       append.append(.endTransparencyLayer)
     }
-    return convert(resources: xobject.resources,
-                   bbox: xobject.bbox,
-                   operators: xobject.operators,
-                   prependSteps: prepend,
-                   appendSteps: append)
+    return convert(
+      resources: xobject.resources,
+      bbox: xobject.bbox,
+      operators: xobject.operators,
+      prependSteps: prepend,
+      appendSteps: append
+    )
   }
 
   static func convert(page: PDFPage) -> DrawRoute {
-    return convert(resources: page.resources,
-                   bbox: page.bbox,
-                   operators: page.operators)
+    return convert(
+      resources: page.resources,
+      bbox: page.bbox,
+      operators: page.operators
+    )
   }
 
-  private static func convert(resources: PDFResources,
-                              bbox: CGRect,
-                              operators: [PDFOperator],
-                              prependSteps: [DrawStep] = [],
-                              appendSteps: [DrawStep] = []) -> DrawRoute {
+  private static func convert(
+    resources: PDFResources,
+    bbox: CGRect,
+    operators: [PDFOperator],
+    prependSteps: [DrawStep] = [],
+    appendSteps: [DrawStep] = []
+  ) -> DrawRoute {
     let gradients = resources.shadings.mapValues { $0.makeGradient() }
     let subroutes = resources.xObjects.mapValues { convert(xobject: $0) }
     precondition(resources.xObjects.count == subroutes.count)
     let steps = operatorsToSteps(ops: operators, resources: resources)
-    let route = DrawRoute(boundingRect: bbox,
-                          gradients: gradients,
-                          subroutes: subroutes,
-                          steps: prependSteps + steps + appendSteps)
+    let route = DrawRoute(
+      boundingRect: bbox,
+      gradients: gradients,
+      subroutes: subroutes,
+      steps: prependSteps + steps + appendSteps
+    )
     return route
   }
 
-  private static func operatorsToSteps(ops: [PDFOperator],
-                                       resources: PDFResources) -> [DrawStep] {
+  private static func operatorsToSteps(
+    ops: [PDFOperator],
+    resources: PDFResources
+  ) -> [DrawStep] {
     let context = Context()
     return ops.map { $0.drawStep(resources: resources, context: context) }
   }
@@ -344,10 +354,12 @@ private extension PDFShading {
       precondition(point.value.count == 3)
       let loc = point.arg
       let components = point.value
-      let color = RGBAColor(red: components[0],
-                            green: components[1],
-                            blue: components[2],
-                            alpha: 1)
+      let color = RGBAColor(
+        red: components[0],
+        green: components[1],
+        blue: components[2],
+        alpha: 1
+      )
       return (loc, color)
     }
     var options: CGGradientDrawingOptions = []
@@ -357,11 +369,13 @@ private extension PDFShading {
     if extend.1 {
       options.insert(.drawsAfterEndLocation)
     }
-    return Gradient(locationAndColors: locationAndColors,
-                    startPoint: startPoint,
-                    endPoint: endPoint,
-                    options: options,
-                    kind: gradientKind)
+    return Gradient(
+      locationAndColors: locationAndColors,
+      startPoint: startPoint,
+      endPoint: endPoint,
+      options: options,
+      kind: gradientKind
+    )
   }
 
   var function: PDFFunction {

@@ -21,11 +21,11 @@ class XMLParserTests: XCTestCase {
   }
 }
 
-func parse(_ xml: String) throws -> XML {
+private func parse(_ xml: String) throws -> XML {
   return try XML.parse(from: xml.data(using: .utf8).unsafelyUnwrapped).get()
 }
 
-let simpleXML = """
+private let simpleXML = """
 <note>
   <to>Tove</to>
   <from>Jani</from>
@@ -33,7 +33,7 @@ let simpleXML = """
 </note>
 """
 
-let simpleSVG = """
+private let simpleSVG = """
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="50px" height="50px">
   <g stroke="none" fill="none">

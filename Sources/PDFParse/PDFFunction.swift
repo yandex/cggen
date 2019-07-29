@@ -63,7 +63,7 @@ public struct PDFFunction {
       let end = domain[0].1
       let step = (end - start) / CGFloat(size[0] - 1)
       let current = start + CGFloat(s) * step
-      return Point(arg: current, value: values[s])
+      return Point(arg: current, value: Array(values[s]))
     }
     let points = allPoints.removeIntermediates(tolerance: 0.01)
 
@@ -91,9 +91,11 @@ extension PDFFunction.Point: LinearInterpolatable {
     return sqrt(squareDistance)
   }
 
-  public static func linearInterpolate(from lhs: PDFFunction.Point,
-                                       to rhs: PDFFunction.Point,
-                                       at x: CGFloat) -> PDFFunction.Point {
+  public static func linearInterpolate(
+    from lhs: PDFFunction.Point,
+    to rhs: PDFFunction.Point,
+    at x: CGFloat
+  ) -> PDFFunction.Point {
     precondition(lhs.value.count == rhs.value.count)
     let x1 = lhs.arg
     let x2 = rhs.arg

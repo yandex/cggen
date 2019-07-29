@@ -8,9 +8,11 @@ public protocol LinearInterpolatable {
   associatedtype DistanceType: Comparable
   var abscissa: AbscissaType { get }
   func distanceTo(_ other: Self) -> DistanceType
-  static func linearInterpolate(from lhs: Self,
-                                to rhs: Self,
-                                at x: AbscissaType) -> Self
+  static func linearInterpolate(
+    from lhs: Self,
+    to rhs: Self,
+    at x: AbscissaType
+  ) -> Self
 }
 
 extension Array where Element: LinearInterpolatable {

@@ -1,0 +1,23 @@
+{
+  "configurations" : [
+    {
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "UnitTests",
+        "name" : "UnitTests"
+      }
+    }
+  ],
+  "version" : 1
+}

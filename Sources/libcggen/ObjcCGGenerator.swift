@@ -43,13 +43,17 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
     let commandsLines = functionBodyForDrawRoute(route: route, contextName: contextName)
     return ([blockStart] + commandsLines + [blockEnd]).map { "  \($0)" }
   }
-  let generator = DrawStepToObjcCommandGenerator(uniqIDProvider: acquireUniqID,
-                                                 contextVarName: contextName,
-                                                 globalDeviceRGBContextName: rgbColorSpaceVarName)
+  let generator = DrawStepToObjcCommandGenerator(
+    uniqIDProvider: acquireUniqID,
+    contextVarName: contextName,
+    globalDeviceRGBContextName: rgbColorSpaceVarName
+  )
   let commandsLines = route.steps.flatMap { (step) -> [String] in
-    generator.command(step: step,
-                      gradients: route.gradients,
-                      subroutes: route.subroutes)
+    generator.command(
+      step: step,
+      gradients: route.gradients,
+      subroutes: route.subroutes
+    )
   }
   return subroutes + commandsLines
 }

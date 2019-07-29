@@ -32,6 +32,19 @@ public enum XML: Equatable {
       filterOutWhitespaceLines(in: $0) ^^ .emptyXML
     } : delegate.xml
   }
+
+  public func render() -> String {
+    switch self {
+    case let .el(element):
+      // stop-color="#C86DD7"
+      let attrs = element.attrs.map { #"\#($0.key)="\#($0.value)""# }
+      let children = element.children.map { $0.render() }.joined()
+      let openTag = ([element.tag] + attrs).joined(separator: " ")
+      return "<\(openTag)>\(children)</\(element.tag)>"
+    case let .text(text):
+      return text
+    }
+  }
 }
 
 public enum XMLParseError: Swift.Error {
@@ -106,59 +119,93 @@ private class XMLComposer: NSObject, XMLParserDelegate {
 
   // MARK: Unimplemented
 
-  func parser(_: XMLParser, foundIgnorableWhitespace _: String) {
+  func parser(
+    _: XMLParser, foundIgnorableWhitespace _: String
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundNotationDeclarationWithName _: String, publicID _: String?, systemID _: String?) {
+  func parser(
+    _: XMLParser, foundNotationDeclarationWithName _: String,
+    publicID _: String?, systemID _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundUnparsedEntityDeclarationWithName _: String, publicID _: String?, systemID _: String?, notationName _: String?) {
+  func parser(
+    _: XMLParser, foundUnparsedEntityDeclarationWithName _: String,
+    publicID _: String?, systemID _: String?, notationName _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundAttributeDeclarationWithName _: String, forElement _: String, type _: String?, defaultValue _: String?) {
+  func parser(
+    _: XMLParser, foundAttributeDeclarationWithName _: String,
+    forElement _: String, type _: String?, defaultValue _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundElementDeclarationWithName _: String, model _: String) {
+  func parser(
+    _: XMLParser, foundElementDeclarationWithName _: String, model _: String
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundInternalEntityDeclarationWithName _: String, value _: String?) {
+  func parser(
+    _: XMLParser, foundInternalEntityDeclarationWithName _: String,
+    value _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundExternalEntityDeclarationWithName _: String, publicID _: String?, systemID _: String?) {
+  func parser(
+    _: XMLParser, foundExternalEntityDeclarationWithName _: String,
+    publicID _: String?, systemID _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, didStartMappingPrefix _: String, toURI _: String) {
+  func parser(
+    _: XMLParser, didStartMappingPrefix _: String, toURI _: String
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, didEndMappingPrefix _: String) {
+  func parser(
+    _: XMLParser, didEndMappingPrefix _: String
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundProcessingInstructionWithTarget _: String, data _: String?) {
+  func parser(
+    _: XMLParser, foundProcessingInstructionWithTarget _: String,
+    data _: String?
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, foundCDATA _: Data) {
+  func parser(
+    _: XMLParser, foundCDATA _: Data
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, resolveExternalEntityName _: String, systemID _: String?) -> Data? {
+  func parser(
+    _: XMLParser, resolveExternalEntityName _: String, systemID _: String?
+  ) -> Data? {
     fatalError()
   }
 
-  func parser(_: XMLParser, parseErrorOccurred _: Error) {
+  func parser(
+    _: XMLParser, parseErrorOccurred _: Error
+  ) {
     fatalError()
   }
 
-  func parser(_: XMLParser, validationErrorOccurred _: Error) {
+  func parser(
+    _: XMLParser, validationErrorOccurred _: Error
+  ) {
     fatalError()
   }
 }

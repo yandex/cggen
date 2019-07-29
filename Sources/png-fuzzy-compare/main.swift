@@ -13,8 +13,10 @@ struct Args {
 }
 
 func ParseArgs() -> Args {
-  let parser = ArgParser(helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
-                         version: "0.1")
+  let parser = ArgParser(
+    helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
+    version: "0.1"
+  )
   let firstImagePathKey = "first-image"
   let secondImagePathKey = "second-image"
   let imageDiffOutputKey = "output-image-diff"
@@ -24,10 +26,12 @@ func ParseArgs() -> Args {
   parser.newString(imageDiffOutputKey)
   parser.newString(asciiDiffOutputKey)
   parser.parse()
-  return Args(firstImagePath: parser.string(at: firstImagePathKey)!,
-              secondImagePath: parser.string(at: secondImagePathKey)!,
-              imageDiffOutput: parser.string(at: imageDiffOutputKey),
-              asciiDiffOutput: parser.string(at: asciiDiffOutputKey))
+  return Args(
+    firstImagePath: parser.string(at: firstImagePathKey)!,
+    secondImagePath: parser.string(at: secondImagePathKey)!,
+    imageDiffOutput: parser.string(at: imageDiffOutputKey),
+    asciiDiffOutput: parser.string(at: asciiDiffOutputKey)
+  )
 }
 
 enum ReadImageError: Error {
@@ -39,63 +43,14 @@ func readImage(filePath: String) throws -> CGImage {
   let url = URL(fileURLWithPath: filePath) as CFURL
   guard let dataProvider = CGDataProvider(url: url)
   else { throw ReadImageError.failedToCreateDataProvider }
-  guard let img = CGImage(pngDataProviderSource: dataProvider,
-                          decode: nil,
-                          shouldInterpolate: true,
-                          intent: .defaultIntent)
+  guard let img = CGImage(
+    pngDataProviderSource: dataProvider,
+    decode: nil,
+    shouldInterpolate: true,
+    intent: .defaultIntent
+  )
   else { throw ReadImageError.failedToCreateImage }
   return img
-}
-
-struct RGBAPixel: Equatable {
-  let red: UInt8
-  let green: UInt8
-  let blue: UInt8
-  let alpha: UInt8
-  init(bufferPiece: [UInt8]) {
-    precondition(bufferPiece.count == 4)
-    red = bufferPiece[0]
-    green = bufferPiece[1]
-    blue = bufferPiece[2]
-    alpha = bufferPiece[3]
-  }
-
-  var components: [UInt8] {
-    return [red, green, blue, alpha]
-  }
-
-  var componentsNormalized: [Double] {
-    return components.map { Double($0) / Double(UInt8.max) }
-  }
-
-  var squaredSum: Double {
-    return componentsNormalized.map { $0 * $0 }.reduce(0, +)
-  }
-}
-
-struct RGBABuffer: Equatable {
-  let size: CGIntSize
-  let pixels: [[RGBAPixel]]
-
-  init(raw: UnsafePointer<UInt8>, size: CGIntSize, bytesPerRow: Int) {
-    let length = size.height * bytesPerRow
-    let buffer = UnsafeBufferPointer(start: raw, count: length)
-    pixels = Array(buffer)
-      .splitBy(subSize: 4)
-      .map { RGBAPixel(bufferPiece: $0) }
-      .splitBy(subSize: bytesPerRow / 4)
-      .map { Array($0.dropLast(bytesPerRow / 4 - size.width)) }
-    self.size = size
-  }
-}
-
-extension CGImage {
-  func rgbaBuffer() -> RGBABuffer {
-    let ctx = CGContext.bitmapRGBContext(size: intSize)
-    ctx.draw(self, in: intSize.rect)
-    let data = ctx.data!.assumingMemoryBound(to: UInt8.self)
-    return RGBABuffer(raw: data, size: intSize, bytesPerRow: ctx.bytesPerRow)
-  }
 }
 
 func symbolForRelativeDeviation(_ deviation: Double) -> String {

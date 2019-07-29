@@ -5,6 +5,61 @@ import CoreGraphics
 import CoreServices
 import ImageIO
 
+public struct RGBAPixel: Equatable {
+  public let red: UInt8
+  public let green: UInt8
+  public let blue: UInt8
+  public let alpha: UInt8
+
+  public init<T: RandomAccessCollection>(
+    bufferPiece: T
+  ) where T.Element == UInt8, T.Index == Int {
+    precondition(bufferPiece.count == 4)
+    let start = bufferPiece.startIndex
+    red = bufferPiece[start + 0]
+    green = bufferPiece[start + 1]
+    blue = bufferPiece[start + 2]
+    alpha = bufferPiece[start + 3]
+  }
+
+  var components: [UInt8] {
+    return [red, green, blue, alpha]
+  }
+
+  var componentsNormalized: [Double] {
+    return components.map { Double($0) / Double(UInt8.max) }
+  }
+
+  var squaredSum: Double {
+    return componentsNormalized.map { $0 * $0 }.reduce(0, +)
+  }
+}
+
+public struct RGBABuffer: Equatable {
+  public let size: CGIntSize
+  public let pixels: [[RGBAPixel]]
+
+  init(raw: UnsafePointer<UInt8>, size: CGIntSize, bytesPerRow: Int) {
+    let length = size.height * bytesPerRow
+    let buffer = UnsafeBufferPointer(start: raw, count: length)
+    pixels = Array(buffer)
+      .splitBy(subSize: 4)
+      .map { RGBAPixel(bufferPiece: $0) }
+      .splitBy(subSize: bytesPerRow / 4)
+      .map { Array($0.dropLast(bytesPerRow / 4 - size.width)) }
+    self.size = size
+  }
+}
+
+extension CGImage {
+  public func rgbaBuffer() -> RGBABuffer {
+    let ctx = CGContext.bitmapRGBContext(size: intSize)
+    ctx.draw(self, in: intSize.rect)
+    let data = ctx.data!.assumingMemoryBound(to: UInt8.self)
+    return RGBABuffer(raw: data, size: intSize, bytesPerRow: ctx.bytesPerRow)
+  }
+}
+
 // Geometry
 
 public struct CGIntSize: Equatable {
@@ -23,8 +78,10 @@ public struct CGIntSize: Equatable {
   }
 
   public static func union(lhs: CGIntSize, rhs: CGIntSize) -> CGIntSize {
-    return CGIntSize(width: max(lhs.width, rhs.width),
-                     height: max(lhs.height, rhs.height))
+    return CGIntSize(
+      width: max(lhs.width, rhs.width),
+      height: max(lhs.height, rhs.height)
+    )
   }
 }
 
@@ -35,6 +92,12 @@ extension CGRect {
 
   public var y: CGFloat {
     return origin.y
+  }
+}
+
+extension CGSize {
+  public static func square(_ dim: CGFloat) -> CGSize {
+    return .init(width: dim, height: dim)
   }
 }
 
@@ -86,13 +149,15 @@ extension CGContext {
   }
 
   public static func bitmapRGBContext(size: CGIntSize) -> CGContext {
-    return CGContext(data: nil,
-                     width: size.width,
-                     height: size.height,
-                     bitsPerComponent: 8,
-                     bytesPerRow: 0,
-                     space: .deviceRGB,
-                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+    return CGContext(
+      data: nil,
+      width: size.width,
+      height: size.height,
+      bitsPerComponent: 8,
+      bytesPerRow: 0,
+      space: .deviceRGB,
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    )!
   }
 }
 

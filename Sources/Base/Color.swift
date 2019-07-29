@@ -3,7 +3,7 @@
 
 import Foundation
 
-public struct RGBColor {
+public struct RGBColor: Equatable {
   public let red: CGFloat
   public let green: CGFloat
   public let blue: CGFloat
@@ -33,7 +33,9 @@ public struct RGBAColor {
   }
 
   public static func rgb(_ rgb: RGBColor, alpha: CGFloat) -> RGBAColor {
-    return RGBAColor(red: rgb.red, green: rgb.green,
-                     blue: rgb.blue, alpha: alpha)
+    return RGBAColor(
+      red: rgb.red, green: rgb.green,
+      blue: rgb.blue, alpha: alpha
+    )
   }
 }

@@ -21,14 +21,20 @@ public struct PDFXObject {
       case let .name(type)? = dict["Type"],
       case let .name(subtype)? = dict["Subtype"] else { throw Error.parsingError }
     precondition(type == "XObject")
-    precondition(!PDFXObject.unsupportedSubtypes.contains(subtype),
-                 "XObject with subtype \(subtype) is not supported")
-    precondition(subtype == "Form",
-                 "XObject with subtype \(subtype) is not implemented (yet?)")
+    precondition(
+      !PDFXObject.unsupportedSubtypes.contains(subtype),
+      "XObject with subtype \(subtype) is not supported"
+    )
+    precondition(
+      subtype == "Form",
+      "XObject with subtype \(subtype) is not implemented (yet?)"
+    )
 
-    let contentStream = CGPDFContentStreamCreateWithStream(stream.raw,
-                                                           stream.rawDict,
-                                                           parentStream)
+    let contentStream = CGPDFContentStreamCreateWithStream(
+      stream.raw,
+      stream.rawDict,
+      parentStream
+    )
 
     guard case let .array(bboxArray)? = dict["BBox"],
       let resourcesDict = dict["Resources"],
