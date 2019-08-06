@@ -34,7 +34,7 @@ extension GenerationParams {
   }
 
   func descriptorName(for image: Image) -> String {
-    return "k" + prefix + image.name.upperCamelCase + "Descriptor"
+    return "k" + prefix + module + image.name.upperCamelCase + "Descriptor"
   }
 
   var cggenSupportHeaderBody: ObjcTerm {
