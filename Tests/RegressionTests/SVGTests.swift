@@ -31,7 +31,7 @@ private func blackSquareHTML(size: Int) -> String {
   let blackRect = SVG.rect(.init(
     x: 0, y: 0,
     width: svgSize, height: svgSize,
-    presentation: .init(fill: .rgb(.black), fillOpacity: 1)
+    presentation: .init(fill: .rgb(.black()), fillOpacity: 1)
   ))
   let svg = SVG.Document(
     width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),

@@ -10,7 +10,7 @@ struct Gradient {
     case radial(startRadius: CGFloat, endRadius: CGFloat)
   }
 
-  let locationAndColors: [(CGFloat, RGBAColor)]
+  let locationAndColors: [(CGFloat, RGBACGColor)]
   let startPoint: CGPoint
   let endPoint: CGPoint
   let options: CGGradientDrawingOptions
@@ -55,8 +55,8 @@ enum DrawStep {
   case globalAlpha(CGFloat)
   case fillColorSpace
   case strokeColorSpace
-  case strokeColor(RGBAColor)
-  case fillColor(RGBAColor)
+  case strokeColor(RGBACGColor)
+  case fillColor(RGBACGColor)
 
   case paintWithGradient(String)
   case subrouteWithName(String)

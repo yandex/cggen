@@ -45,9 +45,9 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
       case .currentColor:
         break
       case .none:
-        steps.append(.fillColor(.rgb(.black, alpha: 0)))
+        steps.append(.fillColor(.init(gray: 0, alpha: 0)))
       case let .rgb(color):
-        steps.append(.fillColor(.rgb(color, alpha: ctx.fillAlpha)))
+        steps.append(.fillColor(color.norm().with(alpha: ctx.fillAlpha)))
       }
     }
     return .composite(steps + [
@@ -98,6 +98,6 @@ extension CGPathFillRule {
   }
 }
 
-extension RGBAColor {
-  static let none = RGBAColor.rgb(.black, alpha: 0)
+extension RGBACGColor {
+  static let none = RGBACGColor(red: .zero, green: .zero, blue: .zero, alpha: .zero)
 }

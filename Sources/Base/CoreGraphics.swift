@@ -5,33 +5,17 @@ import CoreGraphics
 import CoreServices
 import ImageIO
 
-public struct RGBAPixel: Equatable {
-  public let red: UInt8
-  public let green: UInt8
-  public let blue: UInt8
-  public let alpha: UInt8
+public typealias RGBAPixel = RGBAColor<UInt8>
 
-  public init<T: RandomAccessCollection>(
+extension RGBAPixel {
+  public init<T: Sequence>(
     bufferPiece: T
-  ) where T.Element == UInt8, T.Index == Int {
-    precondition(bufferPiece.count == 4)
-    let start = bufferPiece.startIndex
-    red = bufferPiece[start + 0]
-    green = bufferPiece[start + 1]
-    blue = bufferPiece[start + 2]
-    alpha = bufferPiece[start + 3]
-  }
-
-  var components: [UInt8] {
-    return [red, green, blue, alpha]
-  }
-
-  public var componentsNormalized: [Double] {
-    return components.map { Double($0) / Double(UInt8.max) }
-  }
-
-  var squaredSum: Double {
-    return componentsNormalized.map { $0 * $0 }.reduce(0, +)
+  ) where T.Element == UInt8 {
+    var it = bufferPiece.makeIterator()
+    red = it.next()!
+    green = it.next()!
+    blue = it.next()!
+    alpha = it.next()!
   }
 }
 

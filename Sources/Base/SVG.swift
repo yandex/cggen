@@ -6,6 +6,7 @@ public enum SVG: Equatable {
   // MARK: Attributes
 
   public typealias Float = Swift.Double
+  public typealias Color = RGBColor<UInt8>
 
   public struct Length: Equatable {
     public enum Unit: String, CaseIterable {
@@ -29,7 +30,7 @@ public enum SVG: Equatable {
   public enum Paint: Equatable {
     case none
     case currentColor
-    case rgb(RGBColor)
+    case rgb(Color)
     case funciri(Never)
   }
 
@@ -218,11 +219,11 @@ private enum Decoders {
       return .some(.none)
     default:
       if $0.starts(with: "#"), let hex = UInt32($0.dropFirst(), radix: 0x10) {
-        return .rgb(.init(
-          red: CGFloat((hex & 0xFF0000) >> 16) / CGFloat(UInt8.max),
-          green: CGFloat((hex & 0x00FF00) >> 8) / CGFloat(UInt8.max),
-          blue: CGFloat((hex & 0x00FF) >> 0) / CGFloat(UInt8.max)
-        ))
+        return withUnsafeBytes(of: hex.littleEndian) {
+          .rgb(.init(
+            red: $0[2], green: $0[1], blue: $0[0]
+          ))
+        }
       }
       return nil
     }
@@ -471,10 +472,10 @@ extension SVG.Paint {
   }
 }
 
-extension RGBColor {
+extension SVG.Color {
   var hexString: String {
-    let helper: (CGFloat) -> String = {
-      String(UInt8($0 * CGFloat(UInt8.max)), radix: 0x10, uppercase: true)
+    let helper: (UInt8) -> String = {
+      String($0, radix: 0x10, uppercase: true)
     }
     return [helper(red), helper(green), helper(blue)].joined()
   }
