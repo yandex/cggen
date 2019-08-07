@@ -6,11 +6,7 @@ import CoreGraphics
 struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
   func filePreamble() -> String {
-    return
-      """
-      \(params.imports)
-
-      """
+    return params.imports.renderText() + "\n"
   }
 
   func generateImageFunction(image: Image) -> String {

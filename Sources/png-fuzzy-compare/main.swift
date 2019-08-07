@@ -94,8 +94,8 @@ func main(args: Args) -> Int32 {
     try! CGImage.diff(lhs: img1, rhs: img2).write(fileURL: url)
   }
 
-  let buffer1 = img1.rgbaBuffer()
-  let buffer2 = img2.rgbaBuffer()
+  let buffer1 = RGBABuffer(image: img1)
+  let buffer2 = RGBABuffer(image: img2)
 
   if let diffOutputAscii = args.asciiDiffOutput {
     let url = URL(fileURLWithPath: diffOutputAscii)

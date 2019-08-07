@@ -48,23 +48,12 @@ public struct Args {
   }
 }
 
-public func runCggen(with args: Args) {
+public func runCggen(with args: Args) throws {
   Logger.shared.setLevel(level: args.verbose)
   var stopwatch = StopWatch()
+  let files = args.files.map(URL.init(fileURLWithPath:))
+  let images = try generateImages(from: files)
 
-  let images = args.files
-    .map { URL(fileURLWithPath: $0) }
-    .concurrentMap { (
-      $0.deletingPathExtension().lastPathComponent,
-      PDFParser.parse(pdfURL: $0 as CFURL)
-    ) }
-    .flatMap { nameAndRoutes in
-      nameAndRoutes.1.enumerated().compactMap { (offset, page) -> Image in
-        let finalName = nameAndRoutes.0 + (offset == 0 ? "" : "_\(offset)")
-        let route = PDFToDrawRouteConverter.convert(page: page)
-        return Image(name: finalName, route: route)
-      }
-    }
   log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
   let style = args.generationStyle.flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
@@ -111,5 +100,38 @@ public func runCggen(with args: Args) {
     let fileStr = callerGenerator.generateFile(images: images)
     try! fileStr.write(toFile: objcCallerPath, atomically: true, encoding: .utf8)
     log("Caller generated in: \(stopwatch.reset())")
+  }
+}
+
+public enum Error: Swift.Error {
+  case unsupportedFileExtension(String)
+  case multiplePagedPdfNotSupported(file: String)
+}
+
+private typealias Generator = (URL) throws -> DrawRoute
+
+private let generator: Generator = {
+  switch $0.pathExtension {
+  case "pdf":
+    let pages = PDFParser.parse(pdfURL: $0 as CFURL)
+    try check(
+      pages.count == 1,
+      Error.multiplePagedPdfNotSupported(file: $0.absoluteString)
+    )
+    return PDFToDrawRouteConverter.convert(page: pages[0])
+  case "svg":
+    let svg = try SVGParser.root(from: Data(contentsOf: $0))
+    return try SVGToDrawRouteConverter.convert(document: svg)
+  case let ext:
+    throw Error.unsupportedFileExtension(ext)
+  }
+}
+
+private func generateImages(from files: [URL], generator: Generator = generator) throws -> [Image] {
+  return try zip(files, files.concurrentMap(generator)).map {
+    Image(
+      name: $0.0.deletingPathExtension().lastPathComponent,
+      route: $0.1
+    )
   }
 }

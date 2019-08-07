@@ -1,7 +1,10 @@
 import CoreGraphics
 import Foundation
 
+// https://www.w3.org/TR/SVG11/
 public enum SVG: Equatable {
+  // MARK: Attributes
+
   public typealias Float = Swift.Double
 
   public struct Length: Equatable {
@@ -23,25 +26,53 @@ public enum SVG: Equatable {
     public var height: Float
   }
 
-  public struct Document: Equatable, ElementWithAttributes {
-    public enum Attribute: String, CaseIterable {
-      case width, height, viewBox
+  public enum Paint: Equatable {
+    case none
+    case currentColor
+    case rgb(RGBColor)
+    case funciri(Never)
+  }
+
+  public enum FillRule: String, Equatable {
+    case nonzero
+    case evenodd
+  }
+
+  // MARK: Attribute group
+
+  public struct CoreAttributes: Equatable {
+    var id: String?
+  }
+
+  public struct PresentationAttributes: Equatable {
+    public var fill: Paint?
+    public var fillRule: FillRule?
+    public var fillOpacity: Float?
+    public var stroke: Paint?
+    public var strokeWidth: Length?
+
+    public init(
+      fill: Paint? = nil,
+      fillRule: FillRule? = nil,
+      fillOpacity: Float? = nil,
+      stroke: Paint? = nil,
+      strokeWidth: Length? = nil
+    ) {
+      self.fill = fill
+      self.fillRule = fillRule
+      self.fillOpacity = fillOpacity
+      self.stroke = stroke
+      self.strokeWidth = strokeWidth
     }
+  }
 
-    public static let tag = "svg"
+  // MARK: Elements
 
+  public struct Document: Equatable {
     public var width: Length?
     public var height: Length?
     public var viewBox: ViewBox?
     public var children: [SVG]
-
-    public var xml: XML {
-      return .el("svg", attrs: [
-        "width": width?.encode(),
-        "height": height?.encode(),
-        "viewbox": viewBox?.encode(),
-      ].compactMapValues(identity), children: children.map { $0.xml })
-    }
 
     public init(width: Length?, height: Length?, viewBox: ViewBox?, children: [SVG]) {
       self.width = width
@@ -51,77 +82,116 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct Rect: Equatable, ElementWithAttributes {
-    public enum Attribute: String, CaseIterable {
-      case x, y, width, height
-      case fill, fillOpacity
-    }
-
-    public static let tag = "rect"
-
-    var x: Coordinate
-    var y: Coordinate
-    var width: Coordinate
-    var height: Coordinate
-    var fill: RGBColor?
-    var fillOpacity: Float?
+  public struct Rect: Equatable {
+    public var x: Coordinate?
+    public var y: Coordinate?
+    public var width: Coordinate?
+    public var height: Coordinate?
+    public var presentation: PresentationAttributes
 
     public init(
-      x: SVG.Coordinate,
-      y: SVG.Coordinate,
-      width: SVG.Coordinate,
-      height: SVG.Coordinate,
-      fill: RGBColor?,
-      fillOpacity: SVG.Float?
+      x: SVG.Coordinate?,
+      y: SVG.Coordinate?,
+      width: SVG.Coordinate?,
+      height: SVG.Coordinate?,
+      presentation: PresentationAttributes
     ) {
       self.x = x
       self.y = y
       self.width = width
       self.height = height
-      self.fill = fill
-      self.fillOpacity = fillOpacity
+      self.presentation = presentation
     }
   }
 
-  public static let insignificantTags: Set<String> = ["title", "desc"]
+  public struct Group: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var children: [SVG]
+  }
 
-  indirect case svg(Document)
-  case group
+  case svg(Document)
+  case group(Group)
   case rect(Rect)
   case polygon
   case mask
   case use
   case defs
+  case title(String)
+  case desc(String)
+}
 
-  public var xml: XML {
-    switch self {
-    case let .svg(doc):
-      return doc.xml
-    case let .rect(r):
-      return .el("rect", attrs: [
-        "x": "\(r.x)",
-        "y": "\(r.y)",
-        "width": "\(r.width)",
-        "height": "\(r.height)",
-        "fill": r.fill?.hexString,
-        "fill-opacity": r.fillOpacity?.description,
-      ].compactMapValues(identity))
-    case .group, .polygon, .mask, .use, .defs:
-      fatalError()
-    }
+// MARK: - Serialization
+
+private enum Tag: String {
+  case svg, rect, title, desc, g
+}
+
+private enum Attribute: String {
+  // XML
+  case xmlns, xmlnsxlink = "xmlns:xlink"
+  // Core
+  case id
+
+  case x, y, width, height
+  case fill, fillRule = "fill-rule", fillOpacity = "fill-opacity"
+  case stroke, strokeWidth = "stroke-width"
+
+  case viewBox, version
+}
+
+private struct AttributeSet: ExpressibleByArrayLiteral {
+  var attributes: Set<Attribute>
+
+  init(arrayLiteral elements: Attribute...) {
+    attributes = Set(elements)
+    precondition(attributes.count == elements.count)
+  }
+
+  private init(attributes: Set<Attribute>) {
+    self.attributes = attributes
+  }
+
+  static let rect: AttributeSet = [.x, .y, .width, .height]
+  static let presentation: AttributeSet = [
+    .fill, .fillRule, .fillOpacity,
+    .stroke, .strokeWidth,
+  ]
+  static let core: AttributeSet = [.id]
+
+  static func +(lhs: AttributeSet, rhs: AttributeSet) -> AttributeSet {
+    precondition(lhs.attributes.intersection(rhs.attributes).isEmpty)
+    return .init(attributes: lhs.attributes.union(rhs.attributes))
   }
 }
 
-public protocol SVGAttributeValue {
-  func encode() -> String
-  static func decode(from string: String) -> Self?
+private struct ElementCoding {
+  var tag: Tag
+  var attributes: AttributeSet
+
+  init(_ tag: Tag, attributes: AttributeSet) {
+    self.tag = tag
+    self.attributes = attributes
+  }
+
+  static let document = ElementCoding(
+    .svg, attributes: .rect + [.viewBox, .version, .xmlns, .xmlnsxlink]
+  )
+  static let rect = ElementCoding(.rect, attributes: .rect + .presentation + .core)
+  static let group = ElementCoding(.g, attributes: .presentation + .core)
 }
 
-public protocol ElementWithAttributes {
-  associatedtype Attribute: CaseIterable, RawRepresentable
-    where Attribute.RawValue == String
+extension SVG.Length {
+  public init(_ number: SVG.Float, _ unit: Unit? = nil) {
+    self.number = number
+    self.unit = unit
+  }
+}
 
-  static var tag: String { get }
+extension SVG.Length: ExpressibleByIntegerLiteral {
+  public init(integerLiteral value: Int) {
+    self.init(.init(value))
+  }
 }
 
 extension SVG.ViewBox {
@@ -138,131 +208,134 @@ extension SVG.ViewBox {
   }
 }
 
-extension SVG.ViewBox: SVGAttributeValue {
-  public static func decode(from string: String) -> Self? {
-    let numbers = string.split(separator: " ")
-    let parts = numbers.compactMap(SVG.Float.init)
-    guard numbers.count == 4, parts.count == 4 else { return nil }
-    return .init(parts[0], parts[1], parts[2], parts[3])
+// MARK: - Parser
+
+private typealias Decoder<T> = (String) -> T?
+private enum Decoders {
+  static let paint: Decoder<SVG.Paint> = {
+    switch $0 {
+    case "none":
+      return .some(.none)
+    default:
+      if $0.starts(with: "#"), let hex = UInt32($0.dropFirst(), radix: 0x10) {
+        return .rgb(.init(
+          red: CGFloat((hex & 0xFF0000) >> 16) / CGFloat(UInt8.max),
+          green: CGFloat((hex & 0x00FF00) >> 8) / CGFloat(UInt8.max),
+          blue: CGFloat((hex & 0x00FF) >> 0) / CGFloat(UInt8.max)
+        ))
+      }
+      return nil
+    }
   }
 
-  public func encode() -> String {
-    return ""
-  }
-}
-
-extension SVG.Float: SVGAttributeValue {
-  public static func decode(from string: String) -> SVG.Float? {
-    return SVG.Float(string)
-  }
-
-  public func encode() -> String {
-    return description
-  }
-}
-
-extension SVG.Length {
-  public init(_ number: SVG.Float, _ unit: Unit? = nil) {
-    self.number = number
-    self.unit = unit
-  }
-}
-
-extension SVG.Length: ExpressibleByIntegerLiteral {
-  public init(integerLiteral value: Int) {
-    self.init(.init(value))
-  }
-}
-
-extension SVG.Length: SVGAttributeValue {
-  public func encode() -> String {
-    return "\(number)\(unit?.rawValue ?? "")"
-  }
-
-  public static func decode(from string: String) -> SVG.Length? {
-    let unit = Unit.allCases.first { string.hasSuffix($0.rawValue) }
+  static let length: Decoder<SVG.Length> = { string in
+    let unit = SVG.Length.Unit.allCases.first { string.hasSuffix($0.rawValue) }
     let numberString = string.dropLast(unit.map(\.rawValue.count) ?? 0)
     guard let number = SVG.Float(numberString) else {
       return nil
     }
     return .init(number: number, unit: unit)
   }
-}
 
-extension RGBColor: SVGAttributeValue {
-  public func encode() -> String {
-    return hexString
+  static let viewBox: Decoder<SVG.ViewBox> = {
+    let numbers = $0.split(separator: " ")
+    let parts = numbers.compactMap(SVG.Float.init)
+    guard numbers.count == 4, parts.count == 4 else { return nil }
+    return .init(parts[0], parts[1], parts[2], parts[3])
   }
 
-  public static func decode(from string: String) -> RGBColor? {
-    guard string.starts(with: "#"),
-      let hex = UInt32(string.dropFirst()) else {
-      return nil
-    }
-    return .init(
-      red: CGFloat((hex & 0xFF0000) >> 16) / CGFloat(UInt8.max),
-      green: CGFloat((hex & 0x00FF00) >> 8) / CGFloat(UInt8.max),
-      blue: CGFloat((hex & 0x00FF) >> 0) / CGFloat(UInt8.max)
-    )
-  }
-
-  var hexString: String {
-    let helper: (CGFloat) -> String = {
-      String(UInt8($0 * CGFloat(UInt8.max)), radix: 0x10, uppercase: true)
-    }
-    return [helper(red), helper(green), helper(blue)].joined()
+  static let float: Decoder<SVG.Float> = {
+    SVG.Float($0)
   }
 }
 
 public enum SVGParser {
-  public enum Error: Swift.Error {
+  private enum Error: Swift.Error {
     case expectedSVGTag(got: String)
     case unexpectedXMLText(String)
-    case unknownAttributes(tag: String, attributes: Set<String>)
+    case unknown(attribute: String, tag: Tag)
+    case nonbelongig(attributes: Set<Attribute>, tag: Tag)
     case invalidAttributeFormat(
       tag: String,
       attribute: String,
       value: String,
       type: String
     )
+    case titleHasInvalidFormat(XML)
+    case uknownTag(String)
   }
 
-  private struct Attributes<T: ElementWithAttributes> {
-    var attrs: [String: String]
+  private struct Attributes {
+    private var attrs: [Attribute: String]
+    private var info: ElementCoding
 
-    init(element: XML.Element) {
-      precondition(element.tag == T.tag)
-      attrs = element.attrs
-    }
-
-    static func checked(_ el: XML.Element) throws -> Attributes {
-      let attrs = Attributes(element: el)
-      try attrs.check()
-      return attrs
-    }
-
-    subscript<U>(
-      _ attribute: T.Attribute
-    ) -> Result<U?, Error> where U: SVGAttributeValue {
-      attrs[attribute.rawValue].map {
-        U.decode(from: $0) ^^ Error.invalidAttributeFormat(
-          tag: T.tag,
-          attribute: attribute.rawValue,
-          value: $0,
-          type: "\(U.self)"
-        )
-      } ?? .success(nil)
-    }
-
-    func check() throws {
-      let input = Set(attrs.keys)
-      let known = T.Attribute.rawValues
+    init(element: XML.Element, info: ElementCoding) throws {
+      precondition(element.tag == info.tag.rawValue)
+      let attrs = element.attrs
+      let input = try Dictionary(uniqueKeysWithValues: zip(
+        attrs.keys.map { try Attribute(rawValue: $0) !! Error.unknown(attribute: $0, tag: info.tag) },
+        attrs.values
+      ))
+      let known = info.attributes.attributes
+      let inputKeys = Set(input.keys)
       try Base.check(
-        input.isSubset(of: known),
-        SVGParser.Error.unknownAttributes(
-          tag: SVG.Document.tag,
-          attributes: input.subtracting(known)
+        inputKeys.isSubset(of: known),
+        Error.nonbelongig(attributes: inputKeys.subtracting(known), tag: info.tag)
+      )
+      self.attrs = input
+      self.info = info
+    }
+
+    func decode<T>(decoder: @escaping Decoder<T>) -> (Attribute) throws -> T? {
+      return { [attrs, info] a in try attrs[a].map {
+        try decoder($0) !! Error.invalidAttributeFormat(
+          tag: info.tag.rawValue,
+          attribute: a.rawValue,
+          value: $0,
+          type: "\(T.self)"
         )
+      } }
+    }
+
+    typealias AttributeDecoder<T> = (Attribute) throws -> T?
+
+    var len: AttributeDecoder<SVG.Length> {
+      return decode(decoder: Decoders.length)
+    }
+
+    var coord: AttributeDecoder<SVG.Coordinate> {
+      return decode(decoder: Decoders.length)
+    }
+
+    var paint: AttributeDecoder<SVG.Paint> {
+      return decode(decoder: Decoders.paint)
+    }
+
+    var viewBox: AttributeDecoder<SVG.ViewBox> {
+      return decode(decoder: Decoders.viewBox)
+    }
+
+    var num: AttributeDecoder<SVG.Float> {
+      return decode(decoder: Decoders.float)
+    }
+
+    var id: AttributeDecoder<String> {
+      return decode(decoder: identity)
+    }
+
+    func presentation() throws -> SVG.PresentationAttributes {
+      return try .init(
+        fill: paint(.fill),
+        fillRule: decode(decoder: SVG.FillRule.init)(.fillRule),
+        fillOpacity: num(.fillOpacity),
+        stroke: paint(.stroke),
+        strokeWidth: len(.strokeWidth)
+      )
+    }
+
+    func core() throws -> SVG.CoreAttributes {
+      return try .init(
+        id: id(.id)
       )
     }
   }
@@ -274,7 +347,7 @@ public enum SVGParser {
   public static func root(from xml: XML) throws -> SVG.Document {
     switch xml {
     case let .el(el):
-      try check(el.tag == SVG.Document.tag, Error.expectedSVGTag(got: el.tag))
+      try check(el.tag == Tag.svg.rawValue, Error.expectedSVGTag(got: el.tag))
       return try document(from: el)
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -284,42 +357,131 @@ public enum SVGParser {
   public static func document(
     from el: XML.Element
   ) throws -> SVG.Document {
-    let attr = try Attributes<SVG.Document>.checked(el)
+    let attr = try Attributes(element: el, info: .document)
     return try .init(
-      width: attr[.width].get(),
-      height: attr[.height].get(),
-      viewBox: attr[.viewBox].get(),
+      width: attr.len(.width),
+      height: attr.len(.height),
+      viewBox: attr.viewBox(.viewBox),
       children: el.children.map(element(from:))
     )
   }
 
   public static func rect(from el: XML.Element) throws -> SVG.Rect {
-    let attr = try Attributes<SVG.Rect>.checked(el)
+    let attr = try Attributes(element: el, info: .rect)
     return try .init(
-      x: attr[.x].get() ?? 0,
-      y: attr[.y].get() ?? 0,
-      width: attr[.width].get() ?? 0,
-      height: attr[.height].get() ?? 0,
-      fill: attr[.fill].get(),
-      fillOpacity: attr[.fillOpacity].get()
+      x: attr.coord(.x),
+      y: attr.coord(.y),
+      width: attr.len(.width),
+      height: attr.len(.height),
+      presentation: attr.presentation()
+    )
+  }
+
+  public static func group(from el: XML.Element) throws -> SVG.Group {
+    let attr = try Attributes(element: el, info: .group)
+    return try .init(
+      core: attr.core(),
+      presentation: attr.presentation(),
+      children: el.children.map(element(from:))
     )
   }
 
   public static func element(from xml: XML) throws -> SVG {
     switch xml {
     case let .el(el):
-      switch el.tag {
-      case SVG.Document.tag:
+      guard let tag = Tag(rawValue: el.tag) else {
+        throw Error.uknownTag(el.tag)
+      }
+      switch tag {
+      case .svg:
         return try .svg(document(from: el))
-      case SVG.Rect.tag:
-        let attrs = Attributes<SVG.Rect>(element: el)
-        try attrs.check()
+      case .rect:
         return try .rect(rect(from: el))
-      case let unimplemented:
-        fatalError(unimplemented)
+      case .title:
+        guard el.children.count == 1,
+          let child = el.children.first, case let .text(title) = child else {
+          throw Error.titleHasInvalidFormat(xml)
+        }
+        return .title(title)
+      case .desc:
+        guard el.children.count == 1,
+          let child = el.children.first, case let .text(desc) = child else {
+          throw Error.titleHasInvalidFormat(xml)
+        }
+        return .desc(desc)
+      case .g:
+        return try .group(group(from: el))
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
     }
+  }
+}
+
+// MARK: - Render
+
+public func renderXML(from document: SVG.Document) -> XML {
+  return .el("svg", attrs: [
+    "width": document.width?.encode(),
+    "height": document.height?.encode(),
+    "viewBox": document.viewBox?.encode(),
+  ].compactMapValues(identity), children: document.children.map(renderXML))
+}
+
+public func renderXML(from svg: SVG) -> XML {
+  switch svg {
+  case let .svg(doc):
+    return renderXML(from: doc)
+  case let .rect(r):
+    return .el("rect", attrs: [
+      "x": r.x?.encode(),
+      "y": r.y?.encode(),
+      "width": r.width?.encode(),
+      "height": r.height?.encode(),
+      "fill": r.presentation.fill?.encode(),
+      "fill-opacity": r.presentation.fillOpacity?.description,
+    ].compactMapValues(identity))
+  case .group, .polygon, .mask, .use, .defs, .title, .desc:
+    fatalError()
+  }
+}
+
+extension SVG.Float {
+  public func encode() -> String {
+    return description
+  }
+}
+
+extension SVG.Length {
+  public func encode() -> String {
+    return "\(number)\(unit?.rawValue ?? "")"
+  }
+}
+
+extension SVG.Paint {
+  public func encode() -> String {
+    switch self {
+    case let .rgb(color):
+      return color.hexString
+    case .none:
+      return "none"
+    case .currentColor:
+      return "currentColor"
+    }
+  }
+}
+
+extension RGBColor {
+  var hexString: String {
+    let helper: (CGFloat) -> String = {
+      String(UInt8($0 * CGFloat(UInt8.max)), radix: 0x10, uppercase: true)
+    }
+    return [helper(red), helper(green), helper(blue)].joined()
+  }
+}
+
+extension SVG.ViewBox {
+  public func encode() -> String {
+    return ""
   }
 }
