@@ -47,7 +47,7 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
       case .none:
         steps.append(.fillColor(.init(gray: 0, alpha: 0)))
       case let .rgb(color):
-        steps.append(.fillColor(color.norm().with(alpha: ctx.fillAlpha)))
+        steps.append(.fillColor(color.norm().withAlpha(ctx.fillAlpha)))
       }
     }
     return .composite(steps + [

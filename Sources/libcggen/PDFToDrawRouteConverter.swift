@@ -13,11 +13,11 @@ private class Context {
   var strokeColor: PDFColor = .black()
 
   var fillColorWithAlpha: RGBACGColor {
-    return fillColor.with(alpha: fillAlpha)
+    return fillColor.withAlpha(fillAlpha)
   }
 
   var strokeColorWithAlpha: RGBACGColor {
-    return fillColor.with(alpha: strokeAlpha)
+    return strokeColor.withAlpha(strokeAlpha)
   }
 
   func save() {

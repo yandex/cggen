@@ -3,31 +3,31 @@
 
 import Foundation
 
-public struct Zero: Numeric, Comparable {
-  @inlinable public var magnitude: Zero { return Zero() }
+public struct Ø: Numeric, Comparable {
+  @inlinable public var magnitude: Ø { return Ø() }
 
   @inlinable public init<T>(exactly _: T) where T: BinaryInteger {}
   @inlinable public init() {}
   @inlinable public init(integerLiteral _: Int) {}
 
-  public static let zero = Zero()
-  public static func -=(_: inout Zero, _: Zero) {}
-  public static func +=(_: inout Zero, _: Zero) {}
-  public static func *=(_: inout Zero, _: Zero) {}
-  public static func *(_: Zero, _: Zero) -> Zero { return .init() }
-  public static func +(_: Zero, _: Zero) -> Zero { return .init() }
-  public static func -(_: Zero, _: Zero) -> Zero { return .init() }
-  public static func <(_: Zero, _: Zero) -> Bool { return false }
+  public static let zero = Ø()
+  public static func -=(_: inout Ø, _: Ø) {}
+  public static func +=(_: inout Ø, _: Ø) {}
+  public static func *=(_: inout Ø, _: Ø) {}
+  public static func *(_: Ø, _: Ø) -> Ø { return .init() }
+  public static func +(_: Ø, _: Ø) -> Ø { return .init() }
+  public static func -(_: Ø, _: Ø) -> Ø { return .init() }
+  public static func <(_: Ø, _: Ø) -> Bool { return false }
 }
 
-public struct RGBAColorType<ColorT: Numeric, AlphaT: Numeric>: Equatable {
-  public var red: ColorT
-  public var green: ColorT
-  public var blue: ColorT
-  public var alpha: AlphaT
+public struct RGBAColorType<Component: Numeric, Alpha: Numeric>: Equatable {
+  public var red: Component
+  public var green: Component
+  public var blue: Component
+  public var alpha: Alpha
 
   @inlinable
-  public init(red: ColorT, green: ColorT, blue: ColorT, alpha: AlphaT) {
+  public init(red: Component, green: Component, blue: Component, alpha: Alpha) {
     self.red = red
     self.green = green
     self.blue = blue
@@ -35,80 +35,80 @@ public struct RGBAColorType<ColorT: Numeric, AlphaT: Numeric>: Equatable {
   }
 
   @inlinable
-  public init(gray: ColorT, alpha: AlphaT) {
+  public init(gray: Component, alpha: Alpha) {
     self.init(red: gray, green: gray, blue: gray, alpha: alpha)
   }
 
   @inlinable
   public func map<C: Numeric, A: Numeric>(
-    colorT: (ColorT) -> C,
-    alphaT: (AlphaT) -> A
+    Component: (Component) -> C,
+    alphaT: (Alpha) -> A
   ) -> RGBAColorType<C, A> {
     return .init(
-      red: colorT(red),
-      green: colorT(green),
-      blue: colorT(blue),
+      red: Component(red),
+      green: Component(green),
+      blue: Component(blue),
       alpha: alphaT(alpha)
     )
   }
 }
 
-public typealias RGBColor<T: Numeric> = RGBAColorType<T, Zero>
+public typealias RGBColor<T: Numeric> = RGBAColorType<T, Ø>
 public typealias RGBAColor<T: Numeric> = RGBAColorType<T, T>
 
-extension RGBAColorType where AlphaT == Zero {
+extension RGBAColorType where Alpha == Ø {
   @inlinable
-  public init(red: ColorT, green: ColorT, blue: ColorT) {
-    self.init(red: red, green: green, blue: blue, alpha: Zero())
+  public init(red: Component, green: Component, blue: Component) {
+    self.init(red: red, green: green, blue: blue, alpha: Ø())
   }
 
   @inlinable
-  public static func gray(_ gray: ColorT) -> RGBColor<ColorT> {
+  public static func gray(_ gray: Component) -> RGBColor<Component> {
     return .init(red: gray, green: gray, blue: gray)
   }
 
   @inlinable
-  public static func black() -> RGBColor<ColorT> {
-    return .gray(ColorT.zero)
+  public static func black() -> RGBColor<Component> {
+    return .gray(Component.zero)
   }
 
   @inlinable
-  public func map<U: Numeric>(_ transform: (ColorT) -> U) -> RGBColor<U> {
-    return map(colorT: transform, alphaT: identity)
+  public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBColor<U> {
+    return map(Component: transform, alphaT: identity)
   }
 
   @inlinable
-  public func with(alpha: ColorT) -> RGBAColor<ColorT> {
+  public func withAlpha(_ alpha: Component) -> RGBAColor<Component> {
     return .init(red: red, green: green, blue: blue, alpha: alpha)
   }
 }
 
-extension RGBAColorType where ColorT == AlphaT {
+extension RGBAColorType where Component == Alpha {
   @inlinable
-  public func map<U: Numeric>(_ transform: (ColorT) -> U) -> RGBAColor<U> {
-    return map(colorT: transform, alphaT: transform)
+  public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBAColor<U> {
+    return map(Component: transform, alphaT: transform)
   }
 
   @inlinable
-  public var components: [ColorT] {
+  public var components: [Component] {
     return [red, green, blue, alpha]
   }
 }
 
-extension RGBAColorType where ColorT: FixedWidthInteger, AlphaT == Zero {
+extension RGBAColorType where Component: FixedWidthInteger, Alpha == Ø {
   @inlinable
   public func norm<F: BinaryFloatingPoint>(
     _: F.Type = F.self
   ) -> RGBColor<F> {
-    return map { F($0) / F(ColorT.max) }
+    return map { F($0) / F(Component.max) }
   }
 }
 
-extension RGBAColorType where ColorT: FixedWidthInteger, AlphaT == ColorT {
+extension RGBAColorType where Component: FixedWidthInteger, Alpha == Component {
   @inlinable
   public func norm<F: BinaryFloatingPoint>(
     _: F.Type = F.self
   ) -> RGBAColor<F> {
-    return map { F($0) / F(ColorT.max) }
+    return map { F($0) / F(Component.max) }
   }
 }

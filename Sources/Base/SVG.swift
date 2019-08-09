@@ -474,10 +474,7 @@ extension SVG.Paint {
 
 extension SVG.Color {
   var hexString: String {
-    let helper: (UInt8) -> String = {
-      String($0, radix: 0x10, uppercase: true)
-    }
-    return [helper(red), helper(green), helper(blue)].joined()
+    return hex((red, green, blue))
   }
 }
 
