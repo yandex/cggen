@@ -40,11 +40,11 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
 
   let rw1 = buffer1.pixels
     .flatMap { $0 }
-    .flatMap { $0.componentsNormalized }
+    .flatMap { $0.norm(Double.self).components }
 
   let rw2 = buffer2.pixels
     .flatMap { $0 }
-    .flatMap { $0.componentsNormalized }
+    .flatMap { $0.norm(Double.self).components }
 
   let ziped = zip(rw1, rw2).lazy.map(-)
   return ziped.rootMeanSquare()

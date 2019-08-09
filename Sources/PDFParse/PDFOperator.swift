@@ -91,9 +91,9 @@ public enum PDFOperator {
   // re
   case appendRectangle(CGRect)
   // RG
-  case rgbColorStroke(Base.RGBColor)
+  case rgbColorStroke(PDFColor)
   // rg
-  case rgbColorNonstroke(Base.RGBColor)
+  case rgbColorNonstroke(PDFColor)
   // ri
   case colorRenderingIntent(String)
   // s
@@ -101,9 +101,9 @@ public enum PDFOperator {
   // S
   case strokePath
   // SC
-  case colorStroke(Base.RGBColor)
+  case colorStroke(PDFColor)
   // sc
-  case colorNonstroke(Base.RGBColor)
+  case colorNonstroke(PDFColor)
   // SCN
   case iccOrSpecialColorStroke
   // scn

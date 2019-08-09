@@ -9,15 +9,15 @@ private class Context {
   private var stack: [Context] = []
   var fillAlpha: CGFloat = 1
   var strokeAlpha: CGFloat = 1
-  var fillColor: Base.RGBColor = .black
-  var strokeColor: Base.RGBColor = .black
+  var fillColor: PDFColor = .black()
+  var strokeColor: PDFColor = .black()
 
-  var fillColorWithAlpha: RGBAColor {
-    return RGBAColor.rgb(fillColor, alpha: fillAlpha)
+  var fillColorWithAlpha: RGBACGColor {
+    return fillColor.withAlpha(fillAlpha)
   }
 
-  var strokeColorWithAlpha: RGBAColor {
-    return RGBAColor.rgb(strokeColor, alpha: strokeAlpha)
+  var strokeColorWithAlpha: RGBACGColor {
+    return strokeColor.withAlpha(strokeAlpha)
   }
 
   func save() {
@@ -350,7 +350,7 @@ private extension CGBlendMode {
 
 private extension PDFShading {
   func makeGradient() -> Gradient {
-    let locationAndColors = function.points.map { (point) -> (CGFloat, RGBAColor) in
+    let locationAndColors = function.points.map { (point) -> (CGFloat, RGBACGColor) in
       precondition(point.value.count == 3)
       let loc = point.arg
       let components = point.value

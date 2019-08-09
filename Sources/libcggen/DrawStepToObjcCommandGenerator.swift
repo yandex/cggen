@@ -158,14 +158,14 @@ struct DrawStepToObjcCommandGenerator {
     return cmd(name, "(CGFloat)\(float)")
   }
 
-  private func cmd(_ name: String, color: RGBAColor) -> [String] {
+  private func cmd(_ name: String, color: RGBACGColor) -> [String] {
     let (colorVarName, createColor) = define(color: color)
     let cmdStr = cmd(name, "\(colorVarName)")
     let releaseLine = release(colorVarName: colorVarName)
     return [createColor, cmdStr, releaseLine]
   }
 
-  private func with(colors: [RGBAColor], block: ([String]) -> [String]) -> [String] {
+  private func with(colors: [RGBACGColor], block: ([String]) -> [String]) -> [String] {
     let colorNamesAndLines = colors.map { define(color: $0) }
     let colorNames = colorNamesAndLines.map { $0.0 }
     let colorDefLines = colorNamesAndLines.map { $0.1 }
@@ -173,7 +173,7 @@ struct DrawStepToObjcCommandGenerator {
     return colorDefLines + block(colorNames) + releaseLines
   }
 
-  private func define(color: RGBAColor) -> (String, String) {
+  private func define(color: RGBACGColor) -> (String, String) {
     let colorVarName = "color\(uniqIDProvider())"
     let createColor = "  CGColorRef \(colorVarName) = CGColorCreate(\(globalDeviceRGBContextName), (CGFloat []){(CGFloat)\(color.red), (CGFloat)\(color.green), (CGFloat)\(color.blue), (CGFloat)\(color.alpha)});"
     return (colorVarName, createColor)

@@ -71,11 +71,18 @@ func symbolForRelativeDeviation(_ deviation: Double) -> String {
   }
 }
 
+extension RGBAPixel {
+  var normComponents: [Double] {
+    return norm().components
+  }
+}
+
+
 func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
   return zip(buffer1.pixels, buffer2.pixels)
     .concurrentMap { l1, l2 in zip(l1, l2)
       .map { p1, p2 in
-        let deviation = zip(p1.componentsNormalized, p2.componentsNormalized)
+        let deviation = zip(p1.normComponents, p2.normComponents)
           .map(-)
           .rootMeanSquare()
         return symbolForRelativeDeviation(deviation)
@@ -106,11 +113,11 @@ func main(args: Args) -> Int32 {
 
   let rw1 = buffer1.pixels
     .flatMap { $0 }
-    .flatMap { $0.componentsNormalized }
+    .flatMap { $0.normComponents }
 
   let rw2 = buffer2.pixels
     .flatMap { $0 }
-    .flatMap { $0.componentsNormalized }
+    .flatMap { $0.normComponents }
 
   let ziped = zip(rw1, rw2).lazy.map(-)
   print(ziped.rootMeanSquare())

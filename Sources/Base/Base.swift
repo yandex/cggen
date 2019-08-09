@@ -44,6 +44,11 @@ extension String {
   public var upperCamelCase: String {
     return nameComponents.map { $0.capitalized }.joined()
   }
+
+  @inlinable
+  static public func HEX<T: BinaryInteger>(_ num: T) -> String {
+    return .init(num, radix: 0x10, uppercase: true)
+  }
 }
 
 extension Optional {
@@ -324,5 +329,12 @@ extension NSLock {
     lock()
     defer { unlock() }
     return block()
+  }
+}
+
+@inlinable
+public func hex<T>(_ bytes: T) -> String {
+  return withUnsafeBytes(of: bytes) {
+    $0.map(String.HEX).joined()
   }
 }

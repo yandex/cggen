@@ -306,10 +306,10 @@ private extension CGPDFScannerRef {
     return CGRect(origin: origin, size: size)
   }
 
-  func popColor() -> Base.RGBColor? {
+  func popColor() -> PDFColor? {
     guard let blue = popNumber() else { return nil }
     guard let green = popNumber(), let red = popNumber() else { fatalError() }
-    return RGBColor(red: red, green: green, blue: blue)
+    return PDFColor(red: red, green: green, blue: blue)
   }
 
   func popName() -> String? {
