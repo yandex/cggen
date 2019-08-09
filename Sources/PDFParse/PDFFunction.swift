@@ -49,7 +49,10 @@ public struct PDFFunction {
     else { throw Error.parsingError }
     precondition(stream.format == .raw)
 
-    let range = rangeRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
+    let range = rangeRaw.splitBy(subSize: 2).map {
+      ($0[$0.startIndex], $0[$0.startIndex + 1])
+    }
+
     let rangeDim = range.count
     let domain = domainRaw.splitBy(subSize: 2).map { ($0[0], $0[1]) }
     let domainDim = domain.count

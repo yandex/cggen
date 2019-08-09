@@ -53,4 +53,4 @@ func parseArgs() -> Args {
   )
 }
 
-runCggen(with: parseArgs())
+try runCggen(with: parseArgs())

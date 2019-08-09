@@ -7,6 +7,7 @@ import Foundation
 
 infix operator !!
 infix operator ^^
+infix operator ?=
 
 extension String {
   private var camelCaseComponents: [String] {
@@ -46,8 +47,11 @@ extension String {
 }
 
 extension Optional {
-  public static func !!(v: Optional, e: Error) throws -> Wrapped {
-    guard let unwrapped = v else { throw e }
+  public static func !!(
+    v: Optional,
+    e: @autoclosure () -> Error
+  ) throws -> Wrapped {
+    guard let unwrapped = v else { throw e() }
     return unwrapped
   }
 
@@ -70,6 +74,12 @@ extension Optional: OptionalType {
   public var optional: Wrapped? { return self }
 }
 
+public func ?= <T>(v: inout T, val: T?) {
+  if let val = val {
+    v = val
+  }
+}
+
 extension Sequence where Iterator.Element: OptionalType {
   public func unwrap() -> [Iterator.Element.Wrapped]? {
     return reduce([Element.Wrapped]?([])) { acc, e in
@@ -78,30 +88,110 @@ extension Sequence where Iterator.Element: OptionalType {
   }
 }
 
-extension Array {
-  public func splitBy(subSize: Int) -> [ArraySlice<Element>] {
-    return stride(from: 0, to: count, by: subSize).map { startIndex in
-      let endIndex = startIndex.advanced(by: subSize)
-      return self[startIndex..<endIndex]
+public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
+  public func index(after i: Index) -> Index {
+    return i.advanced(by: 1)
+  }
+
+  @inlinable
+  public subscript(position: Int) -> Collection.SubSequence {
+    _read {
+      let start = collection
+        .index(collection.startIndex, offsetBy: position * step)
+      let end = collection.index(start, offsetBy: step)
+      yield collection[start..<end]
     }
   }
 
+  public typealias Index = Int
+  public typealias Indicies = Range<Int>
+  public typealias SubSequence = Slice<Splitted<Collection>>
+  public typealias Element = Collection.SubSequence
+
+  public var startIndex: Int { return 0 }
+  public var endIndex: Int {
+    precondition(step > 0)
+    return collection.count / step
+  }
+
+  public var step: Int
+  public var collection: Collection
+
+  @inlinable
+  public func makeIterator() -> Iterator {
+    return .init(collection: collection, step: step)
+  }
+
+  public struct Iterator: IteratorProtocol {
+    private let collection: Collection
+    private let step: Int
+    private var idx: Collection.Index
+
+    public mutating func next() -> Element? {
+      guard idx < collection.endIndex else {
+        return nil
+      }
+      let current = idx
+      collection.formIndex(&idx, offsetBy: step)
+      return collection[current..<idx]
+    }
+
+    public init(collection: Collection, step: Int) {
+      precondition(step > 0)
+      self.collection = collection
+      self.step = step
+      idx = collection.startIndex
+    }
+  }
+
+  @inlinable
+  init(collection: Collection, step: Int) {
+    precondition(step > 0)
+    self.step = step
+    self.collection = collection
+  }
+}
+
+extension Collection where Index == Int {
+  public func splitBy(subSize: Int) -> Splitted<Self> {
+    return Splitted(collection: self, step: subSize)
+  }
+}
+
+extension Array {
   public func appendToAll<T>(a: T) -> [(T, Element)] {
     return map { (a, $0) }
   }
 
+  public func concurrentMap<T>(_ transform: (Element) throws -> T) throws -> [T] {
+    var result = [T?](repeating: nil, count: count)
+    let lock = NSLock()
+    var barrier: Error?
+    DispatchQueue.concurrentPerform(iterations: count) { i in
+      guard lock.locked({ barrier == nil }) else { return }
+      do {
+        let val = try transform(self[i])
+        lock.locked { result[i] = val }
+      } catch {
+        lock.locked { barrier = error }
+      }
+    }
+    if let error = barrier {
+      throw error
+    }
+    return result.map { $0! }
+  }
+
   public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
     var result = [T?](repeating: nil, count: count)
-    let syncQueue = DispatchQueue(label: "sync_queue")
+    let resultQueue = DispatchQueue(label: "result_queue")
     DispatchQueue.concurrentPerform(iterations: count) { i in
       let val = transform(self[i])
-      syncQueue.async {
+      resultQueue.async {
         result[i] = val
       }
     }
-    return syncQueue.sync {
-      result.map { $0! }
-    }
+    return resultQueue.sync { result.map { $0! } }
   }
 
   public mutating func modifyLast(_ modifier: (inout Element) -> Void) {
@@ -159,7 +249,7 @@ extension Sequence {
 extension Collection {
   @inlinable
   public subscript(safe index: Index) -> Element? {
-    startIndex <= index && endIndex > index ? self[index] : nil
+    return startIndex <= index && endIndex > index ? self[index] : nil
   }
 }
 
@@ -226,5 +316,13 @@ public func apply<T>(_ f: () -> T) -> T {
 extension CaseIterable where Self: RawRepresentable, RawValue: Hashable {
   public static var rawValues: Set<AllCases.Element.RawValue> {
     return Set(allCases.map { $0.rawValue })
+  }
+}
+
+extension NSLock {
+  func locked<T>(_ block: () -> T) -> T {
+    lock()
+    defer { unlock() }
+    return block()
   }
 }

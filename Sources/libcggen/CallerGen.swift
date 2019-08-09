@@ -57,7 +57,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
     return
       """
         retCode |= WriteImageToFile(\(function),
-            k\(camel)ImageSize,
+            k\(prefix)\(camel)ImageSize,
             @\"\(outputPath)/\(image.name).png\");
       """
   }

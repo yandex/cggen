@@ -5,7 +5,14 @@ class SVGParserTests: XCTestCase {
   func testSimpleSVG() throws {
     let dim = SVG.Length(50, .px)
     XCTAssertEqual(try parse(simpleSVG), SVG.Document(width: dim, height: dim, viewBox: nil, children: [
-      .rect(SVG.Rect(x: 0, y: 0, width: 50, height: 50, fill: nil, fillOpacity: nil)),
+      .rect(SVG.Rect(
+        x: 0, y: 0, width: 50, height: 50,
+        presentation: .init(fill: .rgb(.init(
+          red: 0x50 / CGFloat(UInt8.max),
+          green: 0xE3 / CGFloat(UInt8.max),
+          blue: 0xC2 / CGFloat(UInt8.max)
+        )))
+      )),
     ]))
   }
 }

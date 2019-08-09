@@ -26,7 +26,7 @@ public struct RGBAPixel: Equatable {
     return [red, green, blue, alpha]
   }
 
-  var componentsNormalized: [Double] {
+  public var componentsNormalized: [Double] {
     return components.map { Double($0) / Double(UInt8.max) }
   }
 
@@ -35,28 +35,39 @@ public struct RGBAPixel: Equatable {
   }
 }
 
-public struct RGBABuffer: Equatable {
+public class RGBABuffer {
   public let size: CGIntSize
-  public let pixels: [[RGBAPixel]]
+  public typealias BufferPieces = Splitted<UnsafeBufferPointer<UInt8>>
+  public typealias SlicedBufferPieces = Slice<BufferPieces>
+  public typealias Pixelated<T: Collection> = LazyMapCollection<T, RGBAPixel>
+  public typealias Lines = Splitted<Pixelated<BufferPieces>>
 
-  init(raw: UnsafePointer<UInt8>, size: CGIntSize, bytesPerRow: Int) {
+  public let pixels: LazyMapSequence<Lines, Pixelated<SlicedBufferPieces>>
+
+  private let free: () -> Void
+
+  public init(image: CGImage) {
+    let ctx = CGContext.bitmapRGBContext(size: image.intSize)
+    ctx.draw(image, in: image.intSize.rect)
+    let raw = ctx.data!.assumingMemoryBound(to: UInt8.self)
+    let size = image.intSize
+    let bytesPerRow = ctx.bytesPerRow
     let length = size.height * bytesPerRow
+    let pixelsPerRow = bytesPerRow / 4
     let buffer = UnsafeBufferPointer(start: raw, count: length)
-    pixels = Array(buffer)
+    free = { withExtendedLifetime(ctx) { _ in } }
+    pixels = buffer
       .splitBy(subSize: 4)
-      .map { RGBAPixel(bufferPiece: $0) }
-      .splitBy(subSize: bytesPerRow / 4)
-      .map { Array($0.dropLast(bytesPerRow / 4 - size.width)) }
+      .lazy
+      .map(RGBAPixel.init)
+      .splitBy(subSize: pixelsPerRow)
+      .lazy
+      .map { $0.dropLast(pixelsPerRow - size.width) }
     self.size = size
   }
-}
 
-extension CGImage {
-  public func rgbaBuffer() -> RGBABuffer {
-    let ctx = CGContext.bitmapRGBContext(size: intSize)
-    ctx.draw(self, in: intSize.rect)
-    let data = ctx.data!.assumingMemoryBound(to: UInt8.self)
-    return RGBABuffer(raw: data, size: intSize, bytesPerRow: ctx.bytesPerRow)
+  deinit {
+    free()
   }
 }
 

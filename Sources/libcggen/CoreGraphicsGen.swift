@@ -15,7 +15,7 @@ extension CoreGraphicsGenerator {
     let functions = images.map(generateImageFunction).joined(separator: "\n\n")
     return
       """
-      \(commonHeaderPrefix)
+      \(commonHeaderPrefix.renderText())
 
       \(filePreamble())
       \(functions)
