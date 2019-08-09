@@ -100,6 +100,10 @@ extension CGAffineTransform {
   public static func scale(_ scale: CGFloat) -> CGAffineTransform {
     return CGAffineTransform(scaleX: scale, y: scale)
   }
+
+  public static func invertYAxis(height: CGFloat) -> CGAffineTransform {
+    return CGAffineTransform(scaleX: 1, y: -1).concatenating(.init(translationX: 0, y: height))
+  }
 }
 
 extension Double {
@@ -156,14 +160,6 @@ extension CGContext {
   }
 }
 
-// Color
-
-extension CGColor {
-  public static var white: CGColor {
-    return CGColor(red: 1, green: 1, blue: 1, alpha: 1)
-  }
-}
-
 // Image
 
 extension CGImage {
@@ -195,5 +191,14 @@ extension CGImage {
     CGImageDestinationAddImage(destination, self, nil)
     guard CGImageDestinationFinalize(destination)
     else { throw CGImageWriteError.failedDestinationFinalize }
+  }
+
+  public func redraw(with background: CGColor) -> CGImage {
+    let size = intSize
+    let ctx = CGContext.bitmapRGBContext(size: size)
+    ctx.setFillColor(background)
+    ctx.fill(size.rect)
+    ctx.draw(self, in: size.rect)
+    return ctx.makeImage()!
   }
 }

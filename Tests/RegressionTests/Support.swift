@@ -55,7 +55,7 @@ func getCurentFilePath(_ file: StaticString = #file) -> URL {
     .deletingLastPathComponent()
 }
 
-func cggen(files: [URL]) throws -> [CGImage] {
+func cggen(files: [URL], scale: Double) throws -> [CGImage] {
   let fm = FileManager.default
 
   let tmpdir = try fm.url(
@@ -84,7 +84,8 @@ func cggen(files: [URL]) throws -> [CGImage] {
       objcImpl: impl.path,
       objcHeaderImportPath: header,
       objcCallerPath: caller.path,
-      callerScale: 1,
+      callerScale: scale,
+      callerAllowAntialiasing: true,
       callerPngOutputPath: outputPngs,
       generationStyle: nil,
       cggenSupportHeaderPath: nil,

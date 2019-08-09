@@ -111,10 +111,16 @@ public enum SVG: Equatable {
     public var children: [SVG]
   }
 
+  public struct Polygon: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var points: [Float]?
+  }
+
   case svg(Document)
   case group(Group)
   case rect(Rect)
-  case polygon
+  case polygon(Polygon)
   case mask
   case use
   case defs
@@ -125,7 +131,7 @@ public enum SVG: Equatable {
 // MARK: - Serialization
 
 private enum Tag: String {
-  case svg, rect, title, desc, g
+  case svg, rect, title, desc, g, polygon
 }
 
 private enum Attribute: String {
@@ -139,6 +145,7 @@ private enum Attribute: String {
   case stroke, strokeWidth = "stroke-width"
 
   case viewBox, version
+  case points
 }
 
 private struct AttributeSet: ExpressibleByArrayLiteral {
@@ -180,6 +187,7 @@ private struct ElementCoding {
   )
   static let rect = ElementCoding(.rect, attributes: .rect + .presentation + .core)
   static let group = ElementCoding(.g, attributes: .presentation + .core)
+  static let polygon = ElementCoding(.polygon, attributes: .presentation + .core + [.points])
 }
 
 extension SVG.Length {
@@ -248,6 +256,17 @@ private enum Decoders {
   static let float: Decoder<SVG.Float> = {
     SVG.Float($0)
   }
+
+  static func list<T>(
+    _ decoder: @escaping Decoder<T>,
+    separator: Character = " "
+  ) -> Decoder<[T]> {
+    return {
+      $0.split(separator: separator).map {
+        decoder(String($0))
+      }.unwrap()
+    }
+  }
 }
 
 public enum SVGParser {
@@ -287,7 +306,9 @@ public enum SVGParser {
       self.info = info
     }
 
-    func decode<T>(decoder: @escaping Decoder<T>) -> (Attribute) throws -> T? {
+    func decode<T>(
+      _ decoder: @escaping Decoder<T>
+    ) -> (Attribute) throws -> T? {
       return { [attrs, info] a in try attrs[a].map {
         try decoder($0) !! Error.invalidAttributeFormat(
           tag: info.tag.rawValue,
@@ -301,33 +322,37 @@ public enum SVGParser {
     typealias AttributeDecoder<T> = (Attribute) throws -> T?
 
     var len: AttributeDecoder<SVG.Length> {
-      return decode(decoder: Decoders.length)
+      return decode(Decoders.length)
     }
 
     var coord: AttributeDecoder<SVG.Coordinate> {
-      return decode(decoder: Decoders.length)
+      return decode(Decoders.length)
     }
 
     var paint: AttributeDecoder<SVG.Paint> {
-      return decode(decoder: Decoders.paint)
+      return decode(Decoders.paint)
     }
 
     var viewBox: AttributeDecoder<SVG.ViewBox> {
-      return decode(decoder: Decoders.viewBox)
+      return decode(Decoders.viewBox)
     }
 
     var num: AttributeDecoder<SVG.Float> {
-      return decode(decoder: Decoders.float)
+      return decode(Decoders.float)
     }
 
     var id: AttributeDecoder<String> {
-      return decode(decoder: identity)
+      return decode(identity)
+    }
+
+    var numList: AttributeDecoder<[SVG.Float]> {
+      return decode(Decoders.list(Decoders.float))
     }
 
     func presentation() throws -> SVG.PresentationAttributes {
       return try .init(
         fill: paint(.fill),
-        fillRule: decode(decoder: SVG.FillRule.init)(.fillRule),
+        fillRule: decode(SVG.FillRule.init)(.fillRule),
         fillOpacity: num(.fillOpacity),
         stroke: paint(.stroke),
         strokeWidth: len(.strokeWidth)
@@ -387,6 +412,15 @@ public enum SVGParser {
     )
   }
 
+  public static func polygon(from el: XML.Element) throws -> SVG.Polygon {
+    let attr = try Attributes(element: el, info: .polygon)
+    return try .init(
+      core: attr.core(),
+      presentation: attr.presentation(),
+      points: attr.numList(.points)
+    )
+  }
+
   public static func element(from xml: XML) throws -> SVG {
     switch xml {
     case let .el(el):
@@ -412,6 +446,8 @@ public enum SVGParser {
         return .desc(desc)
       case .g:
         return try .group(group(from: el))
+      case .polygon:
+        return try .polygon(polygon(from: el))
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)

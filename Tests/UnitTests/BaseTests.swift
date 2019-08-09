@@ -1,5 +1,5 @@
-import XCTest
 import Base
+import XCTest
 
 class BaseTests: XCTestCase {
   func testConcurrentMap() {

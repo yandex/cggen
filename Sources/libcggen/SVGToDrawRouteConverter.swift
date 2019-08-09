@@ -3,11 +3,14 @@ import CoreGraphics
 
 enum SVGToDrawRouteConverter {
   static func convert(document: SVG.Document) throws -> DrawRoute {
+    let boundingRect = document.boundingRect
+    let height = boundingRect.size.height
     return try .init(
-      boundingRect: document.boundingRect,
+      boundingRect: boundingRect,
       gradients: [:],
       subroutes: [:],
-      steps: document.children.map(drawstep(ctx: .default))
+      steps: [.concatCTM(.invertYAxis(height: height))] +
+        document.children.map(drawstep(ctx: .default))
     )
   }
 }
@@ -36,20 +39,7 @@ private struct Context {
 private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
   switch svg {
   case let .rect(r):
-    let ctx = modified(ctx) {
-      $0.fillRule ?= r.presentation.fillRule.map(CGPathFillRule.init)
-    }
-    var steps = [DrawStep]()
-    if let fillColor = r.presentation.fill {
-      switch fillColor {
-      case .currentColor:
-        break
-      case .none:
-        steps.append(.fillColor(.init(gray: 0, alpha: 0)))
-      case let .rgb(color):
-        steps.append(.fillColor(color.norm().withAlpha(ctx.fillAlpha)))
-      }
-    }
+    let (steps, ctx) = apply(to: ctx, presentation: r.presentation)
     return .composite(steps + [
       .appendRectangle(.init(r)),
       .fill(ctx.fillRule),
@@ -63,8 +53,15 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
     return try .composite(g.children.map(drawstep(ctx: ctx)))
   case .svg:
     fatalError()
-  case .polygon:
-    fatalError()
+  case let .polygon(p):
+    guard let points = p.points, points.count.isMultiple(of: 2) else {
+      return .empty
+    }
+    let (steps, ctx) = apply(to: ctx, presentation: p.presentation)
+    let cgpoints = points.splitBy(subSize: 2).map {
+      CGPoint(x: $0.first!, y: $0.last!)
+    }
+    return .composite(steps + [.polygon(cgpoints), .fill(ctx.fillRule)])
   case .mask:
     fatalError()
   case .use:
@@ -72,6 +69,27 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
   case .defs:
     fatalError()
   }
+}
+
+private func apply(
+  to ctx: Context,
+  presentation: SVG.PresentationAttributes
+) -> ([DrawStep], Context) {
+  let ctx = modified(ctx) {
+    $0.fillRule ?= presentation.fillRule.map(CGPathFillRule.init)
+  }
+  var steps = [DrawStep]()
+  if let fillColor = presentation.fill {
+    switch fillColor {
+    case .currentColor:
+      break
+    case .none:
+      steps.append(.fillColor(.init(gray: 0, alpha: 0)))
+    case let .rgb(color):
+      steps.append(.fillColor(color.norm().withAlpha(ctx.fillAlpha)))
+    }
+  }
+  return (steps, ctx)
 }
 
 private func drawstep(ctx: Context) -> (SVG) throws -> DrawStep {

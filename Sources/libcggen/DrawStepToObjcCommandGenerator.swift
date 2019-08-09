@@ -132,6 +132,16 @@ struct DrawStepToObjcCommandGenerator {
       }
     case let .blendMode(blendMode):
       return [cmd("SetBlendMode", blendMode.objcConstname)]
+    case let .polygon(points):
+      let pointsArray = "points_\(uniqIDProvider())"
+      return ObjcTerm.composite([
+        ObjcTerm.cgPointArray(name: pointsArray, points: points),
+        ObjcTerm.stmnt(.expr(.call(.identifier("CGContextAddLines"), args: [
+          .identifier(contextVarName),
+          .identifier(pointsArray),
+          .identifier(points.count.description),
+        ]))),
+      ]).render(indent: 2)
     }
   }
 
@@ -296,4 +306,78 @@ extension CGColorRenderingIntent {
       fatalError("Uknown CGColorRenderingIntent \(self)")
     }
   }
+}
+
+extension ObjcTerm {
+  static func cgPointArray(name: String, points: [CGPoint]) -> ObjcTerm {
+    let initializers = ObjcTerm.CDecl.Initializer.list(points.map(ObjcTerm.Expr.value))
+    return .cdecl(ObjcTerm.CDecl(
+      specifiers: [.type(.simple("CGPoint"))],
+      declarators: [
+        .declinit(
+          .init(
+            pointer: nil,
+            direct: .array(.identifier(name)),
+            attrs: []
+          ), initializers
+        ),
+      ]
+    ))
+  }
+
+  static func forLoop(idx: String, range: Range<Int>, body: ObjcTerm.Statement) -> ObjcTerm {
+    return .stmnt(.for(
+      init: .variable(type: .int, name: idx, value: "\(range.lowerBound)"),
+      cond: .identifier(idx) < .const(raw: "\(range.upperBound)"),
+      incr: .incr(idx),
+      body: body
+    )
+    )
+  }
+}
+
+extension ObjcTerm.CDecl {
+  static func variable(type: ObjcTerm.TypeName, name: String, value: String) -> ObjcTerm.CDecl {
+    return .init(
+      specifiers: [.type(.simple(type))],
+      declarators: [
+        .declinit(.identifier(name), .expr(ObjcTerm.Expr.const(raw: value))),
+      ]
+    )
+  }
+}
+
+extension ObjcTerm.Expr {
+  static func value(_ value: CGFloat) -> ObjcTerm.Expr {
+    return .cast(to: .CGFloat, .const(raw: value.description))
+  }
+
+  static func value(_ value: CGPoint) -> ObjcTerm.Expr {
+    return .list(type: .CGPoint, [
+      .member("x", .value(value.x)),
+      .member("y", .value(value.y)),
+    ])
+  }
+
+  static func incr(_ variable: String) -> ObjcTerm.Expr {
+    return .postfix(e: .identifier(variable), op: .incr)
+  }
+
+  static func <(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    return .bin(lhs: lhs, op: .less, rhs: rhs)
+  }
+
+  subscript(_ e: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    return .subscript(self, idx: e)
+  }
+}
+
+extension ObjcTerm.TypeName {
+  #if compiler(<5.1)
+    public typealias `Self` = ObjcTerm.TypeName
+  #endif
+  public static let CGPoint: Self = "CGPoint"
+  public static let CGFloat: Self = "CGFloat"
+  public static let CGSize: Self = "CGSize"
+  public static let CGContextRef: Self = "CGContextRef"
 }

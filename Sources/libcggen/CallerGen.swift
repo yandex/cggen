@@ -6,6 +6,7 @@ import Foundation
 struct ObjcCallerGen: CoreGraphicsGenerator {
   let headerImportPath: String
   let scale: CGFloat
+  let allowAntialiasing: Bool
   let prefix: String
   let outputPath: String
   func filePreamble() -> String {
@@ -28,7 +29,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
         CGContextRef ctx =
           CGBitmapContextCreate(NULL, (size_t)contextSize.width, (size_t)contextSize.height, 8, 0,
                                 colorSpace, kCGImageAlphaPremultipliedLast);
-        CGContextSetAllowsAntialiasing(ctx, NO);
+        CGContextSetAllowsAntialiasing(ctx, \(allowAntialiasing ? "YES" : "NO"));
         CGContextScaleCTM(ctx, kScale, kScale);
         f(ctx);
         CGImageRef img = CGBitmapContextCreateImage(ctx);

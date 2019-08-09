@@ -1,10 +1,57 @@
 import Base
 
 enum ObjcTerm {
+  struct TypeName: ExpressibleByStringLiteral, CustomStringConvertible {
+    let name: StaticString
+
+    init(stringLiteral value: StaticString) { name = value }
+    var description: String { return name.description }
+
+    static let int: TypeName = "int"
+    static let void: TypeName = "void"
+  }
+
   typealias NotImplemented = Never
   enum Import {
     case angleBrackets(path: String)
     case doubleQuotes(path: String)
+  }
+
+  indirect enum Expr {
+    enum BinOp: String {
+      case less = "<"
+    }
+
+    enum PostfixOp: String {
+      case incr = "++"
+    }
+
+    enum UnaryOp: String {
+      case address = "&"
+    }
+
+    case cast(to: TypeName, Expr)
+    case member(String, Expr)
+    case call(Expr, args: [Expr])
+    case `subscript`(Expr, idx: Expr)
+    case bin(lhs: Expr, op: BinOp, rhs: Expr)
+    case postfix(e: Expr, op: PostfixOp)
+    case unary(op: UnaryOp, e: Expr)
+
+    case const(raw: String)
+    case identifier(String)
+    case list(type: TypeName, [Expr])
+  }
+
+  enum Statement {
+    enum BlockItem {
+      case decl(CDecl)
+      case stmnt(Statement)
+    }
+
+    indirect case `for`(init: CDecl, cond: Expr, incr: Expr, body: Statement)
+    case expr(Expr)
+    case block([BlockItem])
   }
 
   struct CDecl {
@@ -26,7 +73,7 @@ enum ObjcTerm {
           var decl: [Declarator]
         }
 
-        case simple(String)
+        case simple(TypeName)
         case structOrUnion(StructOrUnion, attributes: [String], identifier: String?, declList: [StructDeclaration])
         case `enum`(NotImplemented)
       }
@@ -41,6 +88,7 @@ enum ObjcTerm {
       enum Direct {
         case identifier(String)
         indirect case braced(Declarator)
+        indirect case array(Direct)
         indirect case parametrList(Declarator, [Specifier])
       }
 
@@ -66,8 +114,18 @@ enum ObjcTerm {
       }
     }
 
+    enum Initializer {
+      case list([Expr])
+      case expr(Expr)
+    }
+
+    enum InitDeclarator {
+      case decl(Declarator)
+      case declinit(Declarator, Initializer)
+    }
+
     var specifiers: [Specifier]
-    var declarators: [Declarator]
+    var declarators: [InitDeclarator]
   }
 
   indirect case composite([ObjcTerm])
@@ -77,6 +135,7 @@ enum ObjcTerm {
   case moduleImport(module: String)
   case compilerDirective(String)
   case cdecl(CDecl)
+  case stmnt(Statement)
 }
 
 extension ObjcTerm.CDecl.Declarator {
@@ -107,16 +166,6 @@ extension ObjcTerm.CDecl.Declarator {
         $0.pointer = .more(typeQual: nil, pointer: pointer)
       }
     }
-  }
-}
-
-extension ObjcTerm.CDecl.Specifier.TypeSpecifier: ExpressibleByStringLiteral {
-  typealias TypeSpecifier = ObjcTerm.CDecl.Specifier.TypeSpecifier
-  static let void: TypeSpecifier = "void"
-  static let CGContextRef: TypeSpecifier = "CGContextRef"
-  static let CGSize: TypeSpecifier = "CGSize"
-  init(stringLiteral value: StaticString) {
-    self = .simple(value.description)
   }
 }
 
@@ -209,10 +258,10 @@ extension ObjcTerm {
         identifier: "\(cPref)\(namespace)", declList: []
       )),
     ], declarators: [
-        .namedInSwift(
+        .decl(.namedInSwift(
           namespace,
           decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
-        ),
+        )),
     ]))
   }
 }

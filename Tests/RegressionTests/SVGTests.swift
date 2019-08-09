@@ -3,6 +3,8 @@ import libcggen
 import WebKit
 import XCTest
 
+let failedSnapshotsDirKey = "FAILED_SNAPSHOTS_DIR"
+
 class SVGTest: XCTestCase {
   func testSnapshotsNotFlacking() throws {
     let snapshot = WKWebViewSnapshoter()
@@ -11,7 +13,8 @@ class SVGTest: XCTestCase {
     measure {
       let snapshot = try! snapshot.take(
         html: blackSquareHTML(size: size),
-        viewport: .init(origin: .zero, size: .square(CGFloat(size)))
+        viewport: .init(origin: .zero, size: .square(CGFloat(size))),
+        scale: 1
       ).cgimg()
       let buffer = RGBABuffer(image: snapshot)
       XCTAssert(buffer.pixels.allSatisfy {
@@ -22,6 +25,10 @@ class SVGTest: XCTestCase {
 
   func testSimpliestSVG() {
     test(svg: "fill")
+  }
+
+  func testLines() {
+    test(svg: "lines")
   }
 }
 
@@ -45,19 +52,30 @@ private func blackSquareHTML(size: Int) -> String {
   return XML.el("html", children: [style, svgHTML]).render()
 }
 
-private func test(svg name: String, tolerance: Double = 0.01) {
+private func test(
+  svg name: String,
+  tolerance: Double = 0.01,
+  scale: Double = 2
+) {
   XCTAssertNoThrow(try {
     let svg = sample(named: name)
     let referenceImg = try WKWebViewSnapshoter()
-      .take(sample: svg, scale: 1).cgimg()
+      .take(sample: svg, scale: CGFloat(scale)).cgimg()
 
-    let images = try cggen(files: [svg])
+    let images = try cggen(files: [svg], scale: scale)
     XCTAssertEqual(images.count, 1)
-    let image = images[0]
+    // Unfortunately, snapshot from web view always comes with white
+    // background color
+    let image = images[0].redraw(with: .white)
     XCTAssertEqual(referenceImg.intSize, image.intSize)
     let diff = compare(referenceImg, image)
 
     XCTAssertLessThan(diff, tolerance)
+    if diff >= tolerance, let dir = ProcessInfo.processInfo.environment[failedSnapshotsDirKey] {
+      let dir = URL(fileURLWithPath: dir)
+      try image.write(fileURL: dir.appendingPathComponent(name + "_got.png") as CFURL)
+      try referenceImg.write(fileURL: dir.appendingPathComponent(name + "_ref.png") as CFURL)
+    }
   }())
 }
 
@@ -92,7 +110,8 @@ private class WKWebViewSnapshoter {
 
   func take(
     html: String,
-    viewport: CGRect
+    viewport: CGRect,
+    scale: CGFloat
   ) throws -> NSImage {
     enum Error: Swift.Error {
       case unknownSnapshotError
@@ -106,7 +125,7 @@ private class WKWebViewSnapshoter {
     webView.frame = .init(origin: .zero, size: size)
     webView.bounds = viewport
     let config = WKSnapshotConfiguration()
-    config.snapshotWidth = NSNumber(value: Double(viewport.size.width / contentScale))
+    config.snapshotWidth = NSNumber(value: Double(viewport.size.width * scale / contentScale))
 
     webView.loadHTMLString(html, baseURL: nil)
     waitCallbackOnMT(delegate.onNavigationFinish)
@@ -129,10 +148,11 @@ private class WKWebViewSnapshoter {
 }
 
 extension WKWebViewSnapshoter {
-  func take(sample: URL, scale _: CGFloat) throws -> NSImage {
+  func take(sample: URL, scale: CGFloat) throws -> NSImage {
     return try take(
       html: String(contentsOf: sample),
-      viewport: .init(x: 8, y: 8, width: 50, height: 50)
+      viewport: .init(x: 8, y: 8, width: 50, height: 50),
+      scale: scale
     )
   }
 }

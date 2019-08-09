@@ -46,7 +46,7 @@ extension String {
   }
 
   @inlinable
-  static public func HEX<T: BinaryInteger>(_ num: T) -> String {
+  public static func HEX<T: BinaryInteger>(_ num: T) -> String {
     return .init(num, radix: 0x10, uppercase: true)
   }
 }
