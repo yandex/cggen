@@ -9,6 +9,7 @@ public struct Args {
   let objcHeaderImportPath: String?
   let objcCallerPath: String?
   let callerScale: Double
+  let callerAllowAntialiasing: Bool
   let callerPngOutputPath: String?
   let generationStyle: String?
   let cggenSupportHeaderPath: String?
@@ -24,6 +25,7 @@ public struct Args {
     objcHeaderImportPath: String?,
     objcCallerPath: String?,
     callerScale: Double,
+    callerAllowAntialiasing: Bool = false,
     callerPngOutputPath: String?,
     generationStyle: String?,
     cggenSupportHeaderPath: String?,
@@ -38,6 +40,7 @@ public struct Args {
     self.objcHeaderImportPath = objcHeaderImportPath
     self.objcCallerPath = objcCallerPath
     self.callerScale = callerScale
+    self.callerAllowAntialiasing = callerAllowAntialiasing
     self.callerPngOutputPath = callerPngOutputPath
     self.generationStyle = generationStyle
     self.cggenSupportHeaderPath = cggenSupportHeaderPath
@@ -94,6 +97,7 @@ public func runCggen(with args: Args) throws {
     let callerGenerator = ObjcCallerGen(
       headerImportPath: headerImportPath,
       scale: args.callerScale.cgfloat,
+      allowAntialiasing: args.callerAllowAntialiasing,
       prefix: objcPrefix,
       outputPath: pngOutputPath
     )

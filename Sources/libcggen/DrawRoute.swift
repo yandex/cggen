@@ -37,6 +37,8 @@ enum DrawStep {
   case closePath
   case endPath
 
+  case polygon([CGPoint])
+
   case clip(CGPathFillRule)
   case clipToRect(CGRect)
   case dash(DashPattern)

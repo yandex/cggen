@@ -77,7 +77,6 @@ extension RGBAPixel {
   }
 }
 
-
 func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
   return zip(buffer1.pixels, buffer2.pixels)
     .concurrentMap { l1, l2 in zip(l1, l2)

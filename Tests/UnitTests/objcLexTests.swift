@@ -32,7 +32,7 @@ final class ObjcLexTests: XCTestCase {
         .storage(.typedef),
         .type(.structOrUnion(.struct, attributes: ["CF_BRIDGED_TYPE(id)"], identifier: "OldT", declList: [])),
       ], declarators: [
-        .namedInSwift("SwiftT", decl: .pointed(.identifier("NewT"))),
+        .decl(.namedInSwift("SwiftT", decl: .pointed(.identifier("NewT")))),
       ]).renderText(),
       """
       typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
@@ -46,12 +46,12 @@ final class ObjcLexTests: XCTestCase {
         .storage(.typedef),
         .type(.structOrUnion(
           .struct, attributes: [], identifier: nil, declList: [
-            .init(spec: [.CGSize], decl: [.identifier("size")]),
-            .init(spec: [.void], decl: [.functionPointer(name: "drawingHandler", .type(.CGContextRef))]),
+            .init(spec: [.simple(.CGSize)], decl: [.identifier("size")]),
+            .init(spec: [.simple(.void)], decl: [.functionPointer(name: "drawingHandler", .type(.simple(.CGContextRef)))]),
           ]
         )),
       ], declarators: [
-        .identifier("Foo"),
+        .decl(.identifier("Foo")),
       ]).renderText(),
       """
       typedef struct {
