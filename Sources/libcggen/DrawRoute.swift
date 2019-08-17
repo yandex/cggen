@@ -4,6 +4,8 @@
 import Base
 import Foundation
 
+typealias RGBACGColor = RGBAColor<CGFloat>
+
 struct Gradient {
   enum Kind {
     case axial

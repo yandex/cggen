@@ -30,6 +30,14 @@ class SVGTest: XCTestCase {
   func testLines() {
     test(svg: "lines")
   }
+
+  func testAlpha() {
+    test(svg: "alpha")
+  }
+
+  func testGroupOpacity() {
+    test(svg: "group_opacity")
+  }
 }
 
 private func blackSquareHTML(size: Int) -> String {
@@ -38,7 +46,10 @@ private func blackSquareHTML(size: Int) -> String {
   let blackRect = SVG.rect(.init(
     x: 0, y: 0,
     width: svgSize, height: svgSize,
-    presentation: .init(fill: .rgb(.black()), fillOpacity: 1)
+    presentation: .construct {
+      $0.fill = .rgb(.black())
+      $0.fillOpacity = 1
+    }
   ))
   let svg = SVG.Document(
     width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),
@@ -55,7 +66,8 @@ private func blackSquareHTML(size: Int) -> String {
 private func test(
   svg name: String,
   tolerance: Double = 0.01,
-  scale: Double = 2
+  scale: Double = 2,
+  file: StaticString = #file, line: UInt = #line
 ) {
   XCTAssertNoThrow(try {
     let svg = sample(named: name)
@@ -63,20 +75,23 @@ private func test(
       .take(sample: svg, scale: CGFloat(scale)).cgimg()
 
     let images = try cggen(files: [svg], scale: scale)
-    XCTAssertEqual(images.count, 1)
+    XCTAssertEqual(images.count, 1, file: file, line: line)
     // Unfortunately, snapshot from web view always comes with white
     // background color
     let image = images[0].redraw(with: .white)
-    XCTAssertEqual(referenceImg.intSize, image.intSize)
+    XCTAssertEqual(referenceImg.intSize, image.intSize, file: file, line: line)
     let diff = compare(referenceImg, image)
 
-    XCTAssertLessThan(diff, tolerance)
+    XCTAssertLessThan(
+      diff, tolerance, "Calculated diff exceeds tolerance",
+      file: file, line: line
+    )
     if diff >= tolerance, let dir = ProcessInfo.processInfo.environment[failedSnapshotsDirKey] {
       let dir = URL(fileURLWithPath: dir)
       try image.write(fileURL: dir.appendingPathComponent(name + "_got.png") as CFURL)
       try referenceImg.write(fileURL: dir.appendingPathComponent(name + "_ref.png") as CFURL)
     }
-  }())
+  }(), file: file, line: line)
 }
 
 private func sample(named name: String) -> URL {
