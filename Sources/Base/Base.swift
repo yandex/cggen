@@ -258,6 +258,27 @@ extension Collection {
   }
 }
 
+extension Result {
+  public var value: Success? {
+    switch self {
+    case let .success(s):
+      return s
+    case .failure:
+      return nil
+    }
+  }
+
+  @inlinable
+  public init(optional: Success?, or error: @autoclosure () -> (Failure)) {
+    switch optional {
+    case let some?:
+      self = .success(some)
+    case nil:
+      self = .failure(error())
+    }
+  }
+}
+
 public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
   return { try f($0, arg2) }
 }

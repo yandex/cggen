@@ -1,4 +1,4 @@
-import Base
+@testable import Base
 import XCTest
 
 class SVGParserTests: XCTestCase {
@@ -7,11 +7,31 @@ class SVGParserTests: XCTestCase {
     XCTAssertEqual(try parse(simpleSVG), SVG.Document(width: dim, height: dim, viewBox: nil, children: [
       .rect(SVG.Rect(
         x: 0, y: 0, width: 50, height: 50,
-        presentation: .init(fill: .rgb(
-          .init(red: 0x50, green: 0xE3, blue: 0xC2)
-        ))
+        presentation: .construct {
+          $0.fill = .rgb(.init(red: 0x50, green: 0xE3, blue: 0xC2))
+        }
       )),
     ]))
+  }
+}
+
+class SVGAttributesParserTest: XCTestCase {
+  func testUtils() {
+    let wsp = SVGAttributesParsers.wsp
+    let commaWsp = SVGAttributesParsers.commaWsp
+    commaWsp.test(",_", expected: ((), "_"))
+    commaWsp.test("  ,_", expected: ((), "_"))
+    commaWsp.test(",  _", expected: ((), "_"))
+    commaWsp.test(" _", expected: ((), "_"))
+    commaWsp.test("_", expected: (nil, "_"))
+    wsp.test(" ", expected: ((), ""))
+    wsp.test("\n", expected: ((), ""))
+    wsp.test("  ", expected: ((), " "))
+  }
+
+  func testTransform() {
+    let p = SVGAttributesParsers.transform
+    p.test("translate(12, 13)", expected: (.translate(tx: 12, ty: 13), ""))
   }
 }
 

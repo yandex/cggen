@@ -32,8 +32,18 @@ private enum Err: Swift.Error {
 
 private struct Context {
   static let `default` = Context()
-  var fillRule: CGPathFillRule = .evenOdd
-  var fillAlpha: CGFloat = 1
+  var fillRule: SVG.FillRule = .evenodd
+  var fillAlpha: SVG.Float = 1
+  var fill: SVG.Paint = .rgb(.black())
+
+  var currentFill: RGBAColorType<UInt8, SVG.Float>?
+
+  mutating func updateCurrentFill() -> DrawStep {
+    guard case let .rgb(color) = fill, currentFill != color.withAlpha(fillAlpha) else {
+      return .empty
+    }
+    return .fillColor(color.norm().withAlpha(fillAlpha.cgfloat))
+  }
 }
 
 private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
@@ -42,15 +52,25 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
     let (steps, ctx) = apply(to: ctx, presentation: r.presentation)
     return .composite(steps + [
       .appendRectangle(.init(r)),
-      .fill(ctx.fillRule),
+      .fill(.init(ctx.fillRule)),
     ])
   case .title, .desc:
     return .empty
   case let .group(g):
     let ctx = modified(ctx) {
-      $0.fillRule ?= g.presentation.fillRule.map(CGPathFillRule.init)
+      $0.fillRule ?= g.presentation.fillRule
     }
-    return try .composite(g.children.map(drawstep(ctx: ctx)))
+    var pre: [DrawStep] = [.saveGState]
+    var post: [DrawStep] = []
+    if let transform = g.transform {
+      pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
+    }
+    if let opacity = g.presentation.opacity {
+      pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
+      post.append(.endTransparencyLayer)
+    }
+    post.append(.restoreGState)
+    return try .composite(pre + g.children.map(drawstep(ctx: ctx)) + post)
   case .svg:
     fatalError()
   case let .polygon(p):
@@ -61,7 +81,7 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
     let cgpoints = points.splitBy(subSize: 2).map {
       CGPoint(x: $0.first!, y: $0.last!)
     }
-    return .composite(steps + [.polygon(cgpoints), .fill(ctx.fillRule)])
+    return .composite(steps + [.polygon(cgpoints), .fill(.init(ctx.fillRule))])
   case .mask:
     fatalError()
   case .use:
@@ -75,20 +95,15 @@ private func apply(
   to ctx: Context,
   presentation: SVG.PresentationAttributes
 ) -> ([DrawStep], Context) {
-  let ctx = modified(ctx) {
-    $0.fillRule ?= presentation.fillRule.map(CGPathFillRule.init)
+  var ctx = modified(ctx) {
+    $0.fillRule ?= presentation.fillRule
+    $0.fillAlpha ?= presentation.fillOpacity
+    $0.fill ?= presentation.fill
   }
+
   var steps = [DrawStep]()
-  if let fillColor = presentation.fill {
-    switch fillColor {
-    case .currentColor:
-      break
-    case .none:
-      steps.append(.fillColor(.init(gray: 0, alpha: 0)))
-    case let .rgb(color):
-      steps.append(.fillColor(color.norm().withAlpha(ctx.fillAlpha)))
-    }
-  }
+  steps.append(ctx.updateCurrentFill())
+
   return (steps, ctx)
 }
 
@@ -118,4 +133,23 @@ extension CGPathFillRule {
 
 extension RGBACGColor {
   static let none = RGBACGColor(red: .zero, green: .zero, blue: .zero, alpha: .zero)
+}
+
+extension CGAffineTransform {
+  init(svgTransform: SVG.Transform) {
+    switch svgTransform {
+    case let .translate(tx: tx, ty: ty):
+      self.init(translationX: CGFloat(tx), y: CGFloat(ty ?? 0))
+    case let .scale(sx: sx, sy: sy):
+      self.init(scaleX: CGFloat(sx), y: CGFloat(sy ?? sx))
+    case let .rotate(angle: angle, anchor: nil):
+      self.init(rotationAngle: CGFloat(angle))
+    case let .rotate(angle: angle, anchor: anchor?):
+      let cx = CGFloat(anchor.cx)
+      let cy = CGFloat(anchor.cy)
+      self = CGAffineTransform(translationX: cx, y: cy)
+        .concatenating(.init(rotationAngle: CGFloat(angle)))
+        .concatenating(.init(translationX: -cx, y: -cy))
+    }
+  }
 }

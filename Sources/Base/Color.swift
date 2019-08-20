@@ -78,7 +78,7 @@ extension RGBAColorType where Alpha == Ø {
   }
 
   @inlinable
-  public func withAlpha(_ alpha: Component) -> RGBAColor<Component> {
+  public func withAlpha<Alpha>(_ alpha: Alpha) -> RGBAColorType<Component, Alpha> {
     return .init(red: red, green: green, blue: blue, alpha: alpha)
   }
 }

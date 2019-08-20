@@ -3,6 +3,9 @@ import Foundation
 
 // https://www.w3.org/TR/SVG11/
 public enum SVG: Equatable {
+  public typealias NotImplemented = Never
+  public typealias NotNeeded = Never
+
   // MARK: Attributes
 
   public typealias Float = Swift.Double
@@ -29,14 +32,28 @@ public enum SVG: Equatable {
 
   public enum Paint: Equatable {
     case none
-    case currentColor
+    case currentColor(NotNeeded) // Used for animations
     case rgb(Color)
-    case funciri(Never)
+    case funciri(NotImplemented)
   }
 
   public enum FillRule: String, Equatable {
     case nonzero
     case evenodd
+  }
+
+  public enum Transform: Equatable {
+    public struct Anchor: Equatable {
+      public var cx: Float
+      public var cy: Float
+    }
+
+    case matrix(NotImplemented)
+    case translate(tx: Float, ty: Float?)
+    case scale(sx: Float, sy: Float?)
+    case rotate(angle: Float, anchor: Anchor?)
+    case skewX(NotImplemented)
+    case skewY(NotImplemented)
   }
 
   // MARK: Attribute group
@@ -51,19 +68,22 @@ public enum SVG: Equatable {
     public var fillOpacity: Float?
     public var stroke: Paint?
     public var strokeWidth: Length?
+    public var opacity: SVG.Float?
 
     public init(
-      fill: Paint? = nil,
-      fillRule: FillRule? = nil,
-      fillOpacity: Float? = nil,
-      stroke: Paint? = nil,
-      strokeWidth: Length? = nil
+      fill: Paint?,
+      fillRule: FillRule?,
+      fillOpacity: Float?,
+      stroke: Paint?,
+      strokeWidth: Length?,
+      opacity: Float?
     ) {
       self.fill = fill
       self.fillRule = fillRule
       self.fillOpacity = fillOpacity
       self.stroke = stroke
       self.strokeWidth = strokeWidth
+      self.opacity = opacity
     }
   }
 
@@ -108,6 +128,7 @@ public enum SVG: Equatable {
   public struct Group: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
+    public var transform: [Transform]?
     public var children: [SVG]
   }
 
@@ -141,11 +162,15 @@ private enum Attribute: String {
   case id
 
   case x, y, width, height
+
+  // Presentation
   case fill, fillRule = "fill-rule", fillOpacity = "fill-opacity"
   case stroke, strokeWidth = "stroke-width"
+  case opacity
 
   case viewBox, version
   case points
+  case transform
 }
 
 private struct AttributeSet: ExpressibleByArrayLiteral {
@@ -163,7 +188,7 @@ private struct AttributeSet: ExpressibleByArrayLiteral {
   static let rect: AttributeSet = [.x, .y, .width, .height]
   static let presentation: AttributeSet = [
     .fill, .fillRule, .fillOpacity,
-    .stroke, .strokeWidth,
+    .stroke, .strokeWidth, .opacity,
   ]
   static let core: AttributeSet = [.id]
 
@@ -186,7 +211,7 @@ private struct ElementCoding {
     .svg, attributes: .rect + [.viewBox, .version, .xmlns, .xmlnsxlink]
   )
   static let rect = ElementCoding(.rect, attributes: .rect + .presentation + .core)
-  static let group = ElementCoding(.g, attributes: .presentation + .core)
+  static let group = ElementCoding(.g, attributes: .presentation + .core + [.transform])
   static let polygon = ElementCoding(.polygon, attributes: .presentation + .core + [.points])
 }
 
@@ -349,13 +374,18 @@ public enum SVGParser {
       return decode(Decoders.list(Decoders.float))
     }
 
+    var transform: AttributeDecoder<[SVG.Transform]> {
+      return decode { SVGAttributesParsers.transformsList.full($0).value }
+    }
+
     func presentation() throws -> SVG.PresentationAttributes {
       return try .init(
         fill: paint(.fill),
         fillRule: decode(SVG.FillRule.init)(.fillRule),
         fillOpacity: num(.fillOpacity),
         stroke: paint(.stroke),
-        strokeWidth: len(.strokeWidth)
+        strokeWidth: len(.strokeWidth),
+        opacity: num(.opacity)
       )
     }
 
@@ -408,6 +438,7 @@ public enum SVGParser {
     return try .init(
       core: attr.core(),
       presentation: attr.presentation(),
+      transform: attr.transform(.transform),
       children: el.children.map(element(from:))
     )
   }
@@ -453,6 +484,39 @@ public enum SVGParser {
       throw Error.unexpectedXMLText(t)
     }
   }
+}
+
+internal enum SVGAttributesParsers {
+  typealias Parser<T> = Base.Parser<Substring, T>
+  internal static let wsp: Parser<Void> = oneOf([0x20, 0x9, 0xD, 0xA]
+    .map(Unicode.Scalar.init).map(Character.init)
+    .map(consume)
+  )
+  internal static let comma: Parser<Void> = ","
+
+  // (wsp+ comma? wsp*) | (comma wsp*)
+  internal static let commaWsp: Parser<Void> =
+    (wsp+ <<~ comma~? <<~ wsp* | comma ~>> wsp*).map { _ in () }
+  internal static let number: Parser<SVG.Float> = double()
+
+  // Has no equivalent in specification, for code deduplication only.
+  // "$name" wsp* "(" inBrackets ")"
+  internal static func transformTemplate<T>(
+    _ name: String,
+    _ inBrackets: Parser<T>
+  ) -> Parser<T> {
+    return (consume(name) ~ " "* ~ "(" ~ wsp*) ~>> inBrackets <<~ (wsp* ~ ")")
+  }
+
+  // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
+  internal static let translate: Parser<SVG.Transform> =
+    transformTemplate("translate", number ~ (commaWsp ~>> number)~?)
+    .map { SVG.Transform.translate(tx: $0.0, ty: $0.1) }
+
+  internal static let transformsList: Parser<[SVG.Transform]> = transform*
+  internal static let transform: Parser<SVG.Transform> = oneOf([
+    translate,
+  ])
 }
 
 // MARK: - Render
@@ -517,5 +581,24 @@ extension SVG.Color {
 extension SVG.ViewBox {
   public func encode() -> String {
     return ""
+  }
+}
+
+// Helpers
+
+extension SVG.PresentationAttributes {
+  public static func construct(
+    _ constructor: (inout SVG.PresentationAttributes) -> Void
+  ) -> SVG.PresentationAttributes {
+    var temp = SVG.PresentationAttributes(
+      fill: nil,
+      fillRule: nil,
+      fillOpacity: nil,
+      stroke: nil,
+      strokeWidth: nil,
+      opacity: nil
+    )
+    constructor(&temp)
+    return temp
   }
 }
