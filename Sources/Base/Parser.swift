@@ -53,7 +53,13 @@ public struct Parser<D, T> {
   }
 
   @inlinable
-  public init(parse: @escaping (inout D) -> Result<T, Error>) {
+  public func run(_ data: D) -> T? {
+    var copy = data
+    return run(&copy)
+  }
+
+  @inlinable
+  public init(_ parse: @escaping (inout D) -> Result<T, Error>) {
     self.parse = parse
   }
 
@@ -65,12 +71,24 @@ public struct Parser<D, T> {
   }
 
   @inlinable
+  public static func always(_ t: T) -> Parser<D, T> {
+    return .init(Base.always(.success(t)))
+  }
+
+  @inlinable
+  public static func never() -> Parser<D, T> {
+    return .init(Base.always(.failure(ParseError.never)))
+  }
+
+  @inlinable
   public func map<T1>(_ t: @escaping (T) -> T1) -> Parser<D, T1> {
     return .init { self.parse(&$0).map(t) }
   }
 
   @inlinable
-  public func flatMap<T1>(_ t: @escaping (T) -> (Parser<D, T1>)) -> Parser<D, T1> {
+  public func flatMap<T1>(
+    _ t: @escaping (T) -> (Parser<D, T1>)
+  ) -> Parser<D, T1> {
     return Parser<D, T1> { data in
       let original = data
       let res = self.parse(&data).flatMap { t($0).parse(&data) }
@@ -81,6 +99,16 @@ public struct Parser<D, T> {
         break
       }
       return res
+    }
+  }
+}
+
+extension Parser where D == T, D: RangeReplaceableCollection {
+  @inlinable
+  public static func identity() -> Parser<D, D> {
+    return .init { data in
+      defer { data.removeAll(keepingCapacity: false) }
+      return .success(data)
     }
   }
 }
@@ -115,24 +143,32 @@ public func zip<A1, A2, A3, A4, D>(
 @inlinable
 public func maybe<D, T>(_ p: Parser<D, T>) -> Parser<D, T?> {
   return .init {
-    p.parse(&$0).map(Optional.some).flatMapError { _ in .success(nil) }
+    p.parse(&$0).map(Optional.some).flatMapError(always(.success(nil)))
   }
 }
 
 @inlinable
 public func maybe<D>(_ p: Parser<D, Void>) -> Parser<D, Void> {
   return .init {
-    p.parse(&$0).flatMapError { _ in .success(()) }
+    p.parse(&$0).flatMapError(always(.success(())))
   }
 }
 
 @inlinable
-public func zeroOrMore<D, A>(_ p: Parser<D, A>) -> Parser<D, [A]> {
+public func zeroOrMore<D, A>(
+  _ p: Parser<D, A>,
+  separator: Parser<D, Void> = .always(())
+) -> Parser<D, [A]> {
   return .init {
     var matches: [A] = []
-    while case let .success(match) = p.parse(&$0) {
+    var lastBeforeSeparator = $0
+    var firstOrHasSeparatorBefore = true
+    while case let .success(match) = p.parse(&$0), firstOrHasSeparatorBefore {
       matches.append(match)
+      lastBeforeSeparator = $0
+      firstOrHasSeparatorBefore = separator.parse(&$0).isSucceed
     }
+    $0 = lastBeforeSeparator
     return .success(matches)
   }
 }
@@ -223,8 +259,29 @@ public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
 }
 
 @inlinable
-public func never<D, V>() -> Parser<D, V> {
-  return .init { _ in .failure(ParseError.never) }
+public func read<D: Collection>(
+  exactly n: Int
+) -> Parser<D, D.SubSequence> where D.SubSequence == D {
+  return .opt { data in
+    let prefix = data.prefix(n)
+    guard prefix.count == n else { return nil }
+    data.removeFirst(n)
+    return prefix
+  }
+}
+
+@inlinable
+public func readOne<D: Collection>(
+) -> Parser<D, D.Element> where D.SubSequence == D {
+  return .opt { $0.popFirst() }
+}
+
+@inlinable
+public func oneOf<D, T: CaseIterable & RawRepresentable>(
+  parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
+  type _: T.Type = T.self
+) -> Parser<D, T> {
+  return oneOf(T.allCases.map { parserFactory($0.rawValue).map(always($0)) })
 }
 
 @inlinable
@@ -301,18 +358,27 @@ extension Parser:
   }
 }
 
-extension Parser where D: StringProtocol {
+extension Parser where D == Substring {
   @inlinable
-  public func full(_ s: String) -> Result<T, Error> {
-    guard var data = D(s) else {
-      return .failure(ParseError.couldntConvertStringTo(type: "\(D.self)"))
+  public func full() -> Parser<String, T> {
+    return .init {
+      var substring = Substring($0)
+      let value = self.parse(&substring)
+      guard substring.count == 0 else {
+        return .failure(ParseError.parsingNotComplete(last: "\(substring)"))
+      }
+      $0 = ""
+      return value
     }
-    let result = parse(&data)
-    guard data.count == 0 else {
-      return .failure(ParseError.parsingNotComplete(last: data.description))
-    }
-    return result
   }
+}
+
+@inlinable
+public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
+  type _: T.Type = T.self
+) -> Parser<D, T>
+  where T.RawValue: StringProtocol, D.SubSequence == D {
+  return oneOf(T.allCases.map { consume(String($0.rawValue)).map(always($0)) })
 }
 
 @inlinable
@@ -336,11 +402,13 @@ public func int<S: StringProtocol>(
   radix: Int32 = 10
 ) -> Parser<S, Int> where S.SubSequence == S {
   return .opt {
+    // Fail on any leading whitespace, as `strtol` skips it.
+    guard let first = $0.first, !first.isWhitespace else { return nil }
     let (res, len) = $0.withCString { (cstr) -> (Int, Int) in
       var endPointer: UnsafeMutablePointer<Int8>?
       let res = strtol(cstr, &endPointer, radix)
-      guard let doubleEndPointee = endPointer else { return (0, 0) }
-      let len = cstr.distance(to: doubleEndPointee)
+      guard let intEndPointee = endPointer else { return (0, 0) }
+      let len = cstr.distance(to: intEndPointee)
       return (res, len)
     }
     guard len > 0 else {
@@ -355,6 +423,8 @@ public func int<S: StringProtocol>(
 public func double<S: StringProtocol>(
 ) -> Parser<S, Double> where S.SubSequence == S {
   return .opt {
+    // Fail on any leading whitespace, as `strtod` skips it.
+    guard let first = $0.first, !first.isWhitespace else { return nil }
     let (res, len) = $0.withCString { (cstr) -> (Double, Int) in
       var endPointer: UnsafeMutablePointer<Int8>?
       let res = strtod(cstr, &endPointer)

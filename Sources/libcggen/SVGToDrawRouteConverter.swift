@@ -74,12 +74,10 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
   case .svg:
     fatalError()
   case let .polygon(p):
-    guard let points = p.points, points.count.isMultiple(of: 2) else {
-      return .empty
-    }
+    guard let points = p.points else { return .empty }
     let (steps, ctx) = apply(to: ctx, presentation: p.presentation)
-    let cgpoints = points.splitBy(subSize: 2).map {
-      CGPoint(x: $0.first!, y: $0.last!)
+    let cgpoints = points.map {
+      CGPoint(x: $0._1, y: $0._2)
     }
     return .composite(steps + [.polygon(cgpoints), .fill(.init(ctx.fillRule))])
   case .mask:

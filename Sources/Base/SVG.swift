@@ -23,6 +23,19 @@ public enum SVG: Equatable {
 
   public typealias Coordinate = SVG.Length
 
+  // Should be tuple, when Equatable synthesys improves
+  // https://bugs.swift.org/browse/SR-1222
+  public struct CoordinatePair: Equatable {
+    public var _1: Float
+    public var _2: Float
+    public init(_ pair: (Float, Float)) {
+      _1 = pair.0
+      _2 = pair.1
+    }
+  }
+
+  public typealias CoordinatePairs = [CoordinatePair]
+
   public struct ViewBox: Equatable {
     public var minx: Float
     public var miny: Float
@@ -37,7 +50,7 @@ public enum SVG: Equatable {
     case funciri(NotImplemented)
   }
 
-  public enum FillRule: String, Equatable {
+  public enum FillRule: String, CaseIterable {
     case nonzero
     case evenodd
   }
@@ -135,7 +148,7 @@ public enum SVG: Equatable {
   public struct Polygon: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
-    public var points: [Float]?
+    public var points: [CoordinatePair]?
   }
 
   case svg(Document)
@@ -244,56 +257,6 @@ extension SVG.ViewBox {
 
 // MARK: - Parser
 
-private typealias Decoder<T> = (String) -> T?
-private enum Decoders {
-  static let paint: Decoder<SVG.Paint> = {
-    switch $0 {
-    case "none":
-      return .some(.none)
-    default:
-      if $0.starts(with: "#"), let hex = UInt32($0.dropFirst(), radix: 0x10) {
-        return withUnsafeBytes(of: hex.littleEndian) {
-          .rgb(.init(
-            red: $0[2], green: $0[1], blue: $0[0]
-          ))
-        }
-      }
-      return nil
-    }
-  }
-
-  static let length: Decoder<SVG.Length> = { string in
-    let unit = SVG.Length.Unit.allCases.first { string.hasSuffix($0.rawValue) }
-    let numberString = string.dropLast(unit.map(\.rawValue.count) ?? 0)
-    guard let number = SVG.Float(numberString) else {
-      return nil
-    }
-    return .init(number: number, unit: unit)
-  }
-
-  static let viewBox: Decoder<SVG.ViewBox> = {
-    let numbers = $0.split(separator: " ")
-    let parts = numbers.compactMap(SVG.Float.init)
-    guard numbers.count == 4, parts.count == 4 else { return nil }
-    return .init(parts[0], parts[1], parts[2], parts[3])
-  }
-
-  static let float: Decoder<SVG.Float> = {
-    SVG.Float($0)
-  }
-
-  static func list<T>(
-    _ decoder: @escaping Decoder<T>,
-    separator: Character = " "
-  ) -> Decoder<[T]> {
-    return {
-      $0.split(separator: separator).map {
-        decoder(String($0))
-      }.unwrap()
-    }
-  }
-}
-
 public enum SVGParser {
   private enum Error: Swift.Error {
     case expectedSVGTag(got: String)
@@ -304,7 +267,8 @@ public enum SVGParser {
       tag: String,
       attribute: String,
       value: String,
-      type: String
+      type: String,
+      parseError: Swift.Error
     )
     case titleHasInvalidFormat(XML)
     case uknownTag(String)
@@ -331,57 +295,60 @@ public enum SVGParser {
       self.info = info
     }
 
-    func decode<T>(
-      _ decoder: @escaping Decoder<T>
-    ) -> (Attribute) throws -> T? {
-      return { [attrs, info] a in try attrs[a].map {
-        try decoder($0) !! Error.invalidAttributeFormat(
-          tag: info.tag.rawValue,
-          attribute: a.rawValue,
-          value: $0,
-          type: "\(T.self)"
-        )
-      } }
-    }
-
     typealias AttributeDecoder<T> = (Attribute) throws -> T?
 
+    func parse<T>(_ p: SVGAttributesParsers.Parser<T>) -> AttributeDecoder<T> {
+      return { [attrs, info] a in
+        guard var data = attrs[a] else { return nil }
+        return try p.full().parse(&data)
+          .mapError { [a] in
+            Error.invalidAttributeFormat(
+              tag: info.tag.rawValue,
+              attribute: a.rawValue,
+              value: data,
+              type: "\(T.self)",
+              parseError: $0
+            )
+          }.get()
+      }
+    }
+
     var len: AttributeDecoder<SVG.Length> {
-      return decode(Decoders.length)
+      return parse(SVGAttributesParsers.length)
     }
 
     var coord: AttributeDecoder<SVG.Coordinate> {
-      return decode(Decoders.length)
+      return parse(SVGAttributesParsers.length)
     }
 
     var paint: AttributeDecoder<SVG.Paint> {
-      return decode(Decoders.paint)
+      return parse(SVGAttributesParsers.paint)
     }
 
     var viewBox: AttributeDecoder<SVG.ViewBox> {
-      return decode(Decoders.viewBox)
+      return parse(SVGAttributesParsers.viewBox)
     }
 
     var num: AttributeDecoder<SVG.Float> {
-      return decode(Decoders.float)
+      return parse(SVGAttributesParsers.number)
     }
 
     var id: AttributeDecoder<String> {
-      return decode(identity)
-    }
-
-    var numList: AttributeDecoder<[SVG.Float]> {
-      return decode(Decoders.list(Decoders.float))
+      return parse(SVGAttributesParsers.identifier)
     }
 
     var transform: AttributeDecoder<[SVG.Transform]> {
-      return decode { SVGAttributesParsers.transformsList.full($0).value }
+      return parse(SVGAttributesParsers.transformsList)
+    }
+
+    var listOfPoints: AttributeDecoder<SVG.CoordinatePairs> {
+      return parse(SVGAttributesParsers.listOfPoints)
     }
 
     func presentation() throws -> SVG.PresentationAttributes {
       return try .init(
         fill: paint(.fill),
-        fillRule: decode(SVG.FillRule.init)(.fillRule),
+        fillRule: parse(oneOf())(.fillRule),
         fillOpacity: num(.fillOpacity),
         stroke: paint(.stroke),
         strokeWidth: len(.strokeWidth),
@@ -448,7 +415,7 @@ public enum SVGParser {
     return try .init(
       core: attr.core(),
       presentation: attr.presentation(),
-      points: attr.numList(.points)
+      points: attr.listOfPoints(.points)
     )
   }
 
@@ -496,11 +463,19 @@ internal enum SVGAttributesParsers {
 
   // (wsp+ comma? wsp*) | (comma wsp*)
   internal static let commaWsp: Parser<Void> =
-    (wsp+ <<~ comma~? <<~ wsp* | comma ~>> wsp*).map { _ in () }
+    (wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp*).map(always(()))
   internal static let number: Parser<SVG.Float> = double()
 
+  internal static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
+  internal static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
+    .map { SVG.Length(number: $0.0, unit: $0.1) }
+
+  internal static let viewBox: Parser<SVG.ViewBox> =
+    zip(number <<~ commaWsp, number <<~ commaWsp, number <<~ commaWsp, number)
+    .map { .init($0.0, $0.1, $0.2, $0.3) }
+
   // Has no equivalent in specification, for code deduplication only.
-  // "$name" wsp* "(" inBrackets ")"
+  // "$name" wsp* "(" wsp* inBrackets wsp* ")"
   internal static func transformTemplate<T>(
     _ name: String,
     _ inBrackets: Parser<T>
@@ -511,12 +486,52 @@ internal enum SVGAttributesParsers {
   // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
   internal static let translate: Parser<SVG.Transform> =
     transformTemplate("translate", number ~ (commaWsp ~>> number)~?)
-    .map { SVG.Transform.translate(tx: $0.0, ty: $0.1) }
+    .map { .translate(tx: $0.0, ty: $0.1) }
 
   internal static let transformsList: Parser<[SVG.Transform]> = transform*
   internal static let transform: Parser<SVG.Transform> = oneOf([
     translate,
   ])
+
+  internal static let hexByteFromSingle: Parser<UInt8> = readOne().flatMap {
+    guard let value = hexFromChar($0) else { return .never() }
+    return .always(value << 4 | value)
+  }
+
+  internal static let hexByte: Parser<UInt8> = (readOne() ~ readOne()).flatMap {
+    guard let v1 = hexFromChar($0.0), let v2 = hexFromChar($0.1) else { return .never() }
+    return .always(v1 << 4 | v2)
+  }
+
+  private static let shortRGB: Parser<SVG.Color> =
+    zip(hexByteFromSingle, hexByteFromSingle, hexByteFromSingle)
+    .map { .init(red: $0.0, green: $0.1, blue: $0.2) }
+  private static let rgb: Parser<SVG.Color> = zip(hexByte, hexByte, hexByte)
+    .map { .init(red: $0.0, green: $0.1, blue: $0.2) }
+  internal static let rgbcolor = "#" ~>> (rgb | shortRGB)
+
+  internal static let paint: Parser<SVG.Paint> =
+    consume("none").map(always(.none)) | rgbcolor.map(SVG.Paint.rgb)
+
+  // coordinate comma-wsp coordinate
+  // | coordinate negative-coordinate
+  private static let coordinatePair: Parser<SVG.CoordinatePair> =
+    (number <<~ commaWsp~? ~ number).map(SVG.CoordinatePair.init)
+
+  // list-of-points:
+  //   wsp* coordinate-pairs? wsp*
+  // coordinate-pairs:
+  //   coordinate-pair
+  //   | coordinate-pair comma-wsp coordinate-pairs
+  internal static let listOfPoints: Parser<SVG.CoordinatePairs> =
+    wsp* ~>> zeroOrMore(coordinatePair, separator: commaWsp) <<~ wsp*
+
+  internal static let identifier: Parser<String> =
+    Parser<Substring>.identity().map(String.init)
+
+  private static func hexFromChar(_ c: Character) -> UInt8? {
+    return c.hexDigitValue.flatMap(UInt8.init(exactly:))
+  }
 }
 
 // MARK: - Render

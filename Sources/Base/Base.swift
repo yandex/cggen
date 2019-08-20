@@ -259,13 +259,15 @@ extension Collection {
 }
 
 extension Result {
+  @inlinable
   public var value: Success? {
-    switch self {
-    case let .success(s):
-      return s
-    case .failure:
-      return nil
-    }
+    guard case let .success(s) = self else { return nil }
+    return s
+  }
+
+  public var isSucceed: Bool {
+    guard case .success = self else { return false }
+    return true
   }
 
   @inlinable
@@ -286,6 +288,16 @@ public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) ->
 @inlinable
 public func identity<T>(_ t: T) -> T {
   return t
+}
+
+@inlinable
+public func always<T, U>(_ value: T) -> (U) -> T {
+  return { _ in value }
+}
+
+@inlinable
+public func always<T, U>(_ value: T) -> (inout U) -> T {
+  return { _ in value }
 }
 
 public func check(_ condition: Bool, _ error: Error) throws {
