@@ -15,6 +15,9 @@ class PareserTests: XCTestCase {
     double.test("2.9e8", expected: (2.9e8, ""))
     double.test("2.9e-8", expected: (2.9e-8, ""))
     double.test("-2.9e-8", expected: (-2.9e-8, ""))
+    double.test("-2.9-8", expected: (-2.9, "-8"))
+    double.test(" -2.0", expected: (nil, " -2.0"))
+    double.test(" ", expected: (nil, " "))
     double.test("abc", expected: (nil, "abc"))
   }
 
@@ -23,6 +26,9 @@ class PareserTests: XCTestCase {
     int.test("45.6", expected: (45, ".6"))
     int.test("7890 hello", expected: (7890, " hello"))
     int.test("-357", expected: (-357, ""))
+    int.test("-45-34", expected: (-45, "-34"))
+    int.test("  2", expected: (nil, "  2"))
+    int.test(" ", expected: (nil, " "))
     int.test("abc", expected: (nil, "abc"))
   }
 
@@ -38,6 +44,13 @@ class PareserTests: XCTestCase {
     p.test("f")
     p.test("fff", expected: ((), "ff"))
     p.test("_f_", expected: (nil, "_f_"))
+  }
+
+  func testReadExactlyParser() {
+    let p: Parser<String> = read(exactly: 3).map { String($0) }
+    p.test("123456", expected: (result: "123", rest: "456"))
+    p.test("12🍏45🍏", expected: (result: "12🍏", rest: "45🍏"))
+    p.test("12", expected: (result: nil, rest: "12"))
   }
 
   func testMap() {
@@ -59,6 +72,14 @@ class PareserTests: XCTestCase {
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: ([], "foobar"))
+  }
+
+  func testZeroOrMoreWithSeparator() {
+    let p: Parser<[Int]> = zeroOrMore(int, separator: " ")
+    p.test("1 2 3", expected: ([1, 2, 3], ""))
+    p.test("12 13 14 ", expected: ([12, 13, 14], " "))
+    p.test("12 13 foo", expected: ([12, 13], " foo"))
+    p.test("-12-13", expected: ([-12], "-13"))
   }
 
   func testOneOrMore() {
@@ -90,6 +111,41 @@ class PareserTests: XCTestCase {
       "{" ~>> int <<~ "}" ~ "{" ~>> double <<~ "}"
     let p: Parser<Pair<Int, Double>> = pair.map { .init(t: $0.0, u: $0.1) }
     p.test("{1}{2.3}{2}", expected: (.init(t: 1, u: 2.3), "{2}"))
+  }
+
+  func testOneOfParser() {
+    let p: Parser<Int> = oneOf(["{" ~>> int <<~ "}", "[" ~>> int <<~ "]"])
+    p.test("{1}", expected: (1, ""))
+    p.test("[2]", expected: (2, ""))
+    p.test("{1}[2]", expected: (1, "[2]"))
+    p.test("[2]{1}", expected: (2, "{1}"))
+    p.test("(2){1}", expected: (nil, "(2){1}"))
+    p.test("{1}(1)", expected: (1, "(1)"))
+  }
+
+  func testOneOfCaseIterableParser() {
+    enum InnerPlanets: String, CaseIterable {
+      case mercury, venus, earth, mars
+    }
+    let p: Parser<InnerPlanets> = oneOf()
+    p.test("mars", expected: (.mars, ""))
+    p.test("earthmars", expected: (.earth, "mars"))
+    p.test("marsearth", expected: (.mars, "earth"))
+  }
+
+  func testIdentityParser() {
+    let p: Parser<Substring> = .identity()
+    p.test("foo bar", expected: ("foo bar", ""))
+  }
+
+  func testAlwaysParser() {
+    let p: Parser<Int> = .always(156)
+    p.test("hello", expected: (156, "hello"))
+  }
+
+  func testNeverParser() {
+    let p: Parser<Int> = .never()
+    p.test("1", expected: (nil, "1"))
   }
 }
 

@@ -19,6 +19,8 @@ class SVGAttributesParserTest: XCTestCase {
   func testUtils() {
     let wsp = SVGAttributesParsers.wsp
     let commaWsp = SVGAttributesParsers.commaWsp
+    let hexFromSingle = SVGAttributesParsers.hexByteFromSingle
+    let rgbcolor = SVGAttributesParsers.rgbcolor
     commaWsp.test(",_", expected: ((), "_"))
     commaWsp.test("  ,_", expected: ((), "_"))
     commaWsp.test(",  _", expected: ((), "_"))
@@ -27,6 +29,10 @@ class SVGAttributesParserTest: XCTestCase {
     wsp.test(" ", expected: ((), ""))
     wsp.test("\n", expected: ((), ""))
     wsp.test("  ", expected: ((), " "))
+    hexFromSingle.test("42", expected: (0x44, "2"))
+    rgbcolor.test("#08EF", expected: (.init(red: 0x00, green: 0x88, blue: 0xEE), "F"))
+    rgbcolor.test("#012 FFF", expected: (.init(red: 0x00, green: 0x11, blue: 0x22), " FFF"))
+    rgbcolor.test("#123456F", expected: (.init(red: 0x12, green: 0x34, blue: 0x56), "F"))
   }
 
   func testTransform() {
