@@ -20,26 +20,31 @@ precedencegroup StreamOptional {
   associativity: right
 }
 
+// Performs zip on two operands with map droping rhs
 infix operator ~>>: StreamRight
+// Performs zip on two operands with map droping lhs
 infix operator <<~: StreamLeft
+// Equivalent to zip(rhs, lhs)
 infix operator ~: StreamAddition
+
+// "Zero or more"
 postfix operator *
+// "One or more"
 postfix operator +
+// "Zero or one"
 postfix operator ~?
 
 public struct Parser<D, T> {
   public struct GenericError: Error {
     public var text: D
-    public var type: T.Type
 
     var localizedDescription: String {
-      return "Couldn't parse \(type) from <\(text)>"
+      return "Couldn't parse \(T.self) from <\(text)>"
     }
 
     @inlinable
     public init(_ text: D) {
       self.text = text
-      type = T.self
     }
   }
 
@@ -53,9 +58,9 @@ public struct Parser<D, T> {
   }
 
   @inlinable
-  public func run(_ data: D) -> T? {
+  public func run(_ data: D) -> Result<T, Error> {
     var copy = data
-    return run(&copy)
+    return parse(&copy)
   }
 
   @inlinable
@@ -101,6 +106,15 @@ public struct Parser<D, T> {
       return res
     }
   }
+
+  @inlinable
+  public func flatMapResult<T1>(
+    _ t: @escaping (T) -> (Result<T1, Error>)
+  ) -> Parser<D, T1> {
+    return Parser<D, T1> { data in
+      self.parse(&data).flatMap(t)
+    }
+  }
 }
 
 extension Parser where D == T, D: RangeReplaceableCollection {
@@ -110,6 +124,18 @@ extension Parser where D == T, D: RangeReplaceableCollection {
       defer { data.removeAll(keepingCapacity: false) }
       return .success(data)
     }
+  }
+}
+
+public func atIndex<D: RangeReplaceableCollection>(idx: D.Index) -> Parser<D, D.Element> {
+  return .opt {
+    $0.remove(at: idx)
+  }
+}
+
+public func key<K, V>(key: K) -> Parser<[K: V], V> {
+  return .opt {
+    $0.removeValue(forKey: key)
   }
 }
 
@@ -138,6 +164,60 @@ public func zip<A1, A2, A3, A4, D>(
   _ p4: Parser<D, A4>
 ) -> Parser<D, (A1, A2, A3, A4)> {
   return zip(p1, zip(p2, p3, p4)).map { ($0.0, $0.1.0, $0.1.1, $0.1.2) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, D>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>
+) -> Parser<D, (A1, A2, A3, A4, A5)> {
+  return zip(p1, zip(p2, p3, p4, p5))
+    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, D>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>
+) -> Parser<D, (A1, A2, A3, A4, A5, A6)> {
+  return zip(p1, zip(p2, p3, p4, p5, p6))
+    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, D>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>
+) -> Parser<D, (A1, A2, A3, A4, A5, A6, A7)> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7))
+    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4, $0.1.5) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, D>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>
+) -> Parser<D, (A1, A2, A3, A4, A5, A6, A7, A8)> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8))
+    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4, $0.1.5, $0.1.6) }
 }
 
 @inlinable
@@ -197,6 +277,17 @@ public func consume<C: Collection>(
     }
     $0.removeFirst()
     return ()
+  }
+}
+
+@inlinable
+public func consume<C: Collection>(
+  while predicate: @escaping (C.Element) -> Bool
+) -> Parser<C, C.SubSequence> where C.SubSequence == C {
+  return .opt {
+    let result = $0.prefix(while: predicate)
+    $0.removeFirst(result.count)
+    return result
   }
 }
 
@@ -279,9 +370,18 @@ public func readOne<D: Collection>(
 @inlinable
 public func oneOf<D, T: CaseIterable & RawRepresentable>(
   parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
-  type _: T.Type = T.self
+  _: T.Type = T.self
 ) -> Parser<D, T> {
   return oneOf(T.allCases.map { parserFactory($0.rawValue).map(always($0)) })
+}
+
+@inlinable
+public func endof<D: Collection>(_: D.Type = D.self) -> Parser<D, Void> {
+  return .init {
+    $0.count == 0 ?
+      .success(()) :
+      .failure(ParseError.parsingNotComplete(last: "\($0)"))
+  }
 }
 
 @inlinable
@@ -360,22 +460,15 @@ extension Parser:
 
 extension Parser where D == Substring {
   @inlinable
-  public func full() -> Parser<String, T> {
-    return .init {
-      var substring = Substring($0)
-      let value = self.parse(&substring)
-      guard substring.count == 0 else {
-        return .failure(ParseError.parsingNotComplete(last: "\(substring)"))
-      }
-      $0 = ""
-      return value
-    }
+  public func whole(_ s: String) -> Result<T, Error> {
+    var copy = D(s)
+    return (self <<~ endof()).parse(&copy)
   }
 }
 
 @inlinable
 public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
-  type _: T.Type = T.self
+  _: T.Type = T.self
 ) -> Parser<D, T>
   where T.RawValue: StringProtocol, D.SubSequence == D {
   return oneOf(T.allCases.map { consume(String($0.rawValue)).map(always($0)) })

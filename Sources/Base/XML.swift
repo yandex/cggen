@@ -18,6 +18,11 @@ public enum XML: Equatable {
     return .el(.init(tag: tag, attrs: attrs, children: children))
   }
 
+  public var el: Element? {
+    guard case let .el(el) = self else { return nil }
+    return el
+  }
+
   public static func parse(
     from data: Data,
     ignoreWhitespaceOnlyLines: Bool = true

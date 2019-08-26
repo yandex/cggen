@@ -38,6 +38,10 @@ class SVGTest: XCTestCase {
   func testGroupOpacity() {
     test(svg: "group_opacity")
   }
+
+  func testGradient() {
+    test(svg: "gradient")
+  }
 }
 
 private func blackSquareHTML(size: Int) -> String {
@@ -49,7 +53,8 @@ private func blackSquareHTML(size: Int) -> String {
     presentation: .construct {
       $0.fill = .rgb(.black())
       $0.fillOpacity = 1
-    }
+    },
+    core: .init(id: nil)
   ))
   let svg = SVG.Document(
     width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),

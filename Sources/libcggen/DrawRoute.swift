@@ -62,7 +62,7 @@ enum DrawStep {
   case strokeColor(RGBACGColor)
   case fillColor(RGBACGColor)
 
-  case paintWithGradient(String)
+  case paintWithGradient(String, start: CGPoint?, end: CGPoint?)
   case subrouteWithName(String)
   case blendMode(CGBlendMode)
 
