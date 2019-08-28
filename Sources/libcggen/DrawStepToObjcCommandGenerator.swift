@@ -52,8 +52,10 @@ struct DrawStepToObjcCommandGenerator {
       return [cmd("SetLineWidth", float: w)]
     case let .colorRenderingIntent(intent):
       return [cmd("SetRenderingIntent", intent.objcConstName)]
-    case let .paintWithGradient(gradientKey):
+    case let .paintWithGradient(gradientKey, startPoint, endPoint):
       let gradient = gradients[gradientKey]!
+      let startPoint = startPoint ?? gradient.startPoint
+      let endPoint = endPoint ?? gradient.endPoint
       let colors = gradient.locationAndColors.map { $0.1 }
       let locations = gradient.locationAndColors.map { $0.0 }
       let lines = with(colors: colors) { (colorNames) -> [String] in
@@ -78,8 +80,8 @@ struct DrawStepToObjcCommandGenerator {
         }
         let optionsVarName = "gradientOptions\(uniqIDProvider())"
         let optionsLine = "  CGGradientDrawingOptions \(optionsVarName) = (CGGradientDrawingOptions)(\(optionsStrings.joined(separator: " | ")));"
-        let startPoint = "CGPointMake((CGFloat)\(gradient.startPoint.x), (CGFloat)\(gradient.startPoint.y))"
-        let endPoint = "CGPointMake((CGFloat)\(gradient.endPoint.x), (CGFloat)\(gradient.endPoint.y))"
+        let startPoint = "CGPointMake((CGFloat)\(startPoint.x), (CGFloat)\(startPoint.y))"
+        let endPoint = "CGPointMake((CGFloat)\(endPoint.x), (CGFloat)\(endPoint.y))"
 
         let drawGradientLine: String
         switch gradient.kind {

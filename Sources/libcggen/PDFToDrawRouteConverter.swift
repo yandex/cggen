@@ -250,7 +250,7 @@ private extension PDFOperator {
     case .iccOrSpecialColorNonstroke:
       fatalError("Not implemented")
     case let .shadingFill(shading):
-      return .paintWithGradient(shading)
+      return .paintWithGradient(shading, start: nil, end: nil)
     case .startNextTextLine:
       fatalError("Not implemented")
     case .characterSpacing:

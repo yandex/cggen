@@ -17,10 +17,10 @@ class SVGParserTests: XCTestCase {
 
 class SVGAttributesParserTest: XCTestCase {
   func testUtils() {
-    let wsp = SVGAttributesParsers.wsp
-    let commaWsp = SVGAttributesParsers.commaWsp
-    let hexFromSingle = SVGAttributesParsers.hexByteFromSingle
-    let rgbcolor = SVGAttributesParsers.rgbcolor
+    let wsp = SVGAttributeParsers.wsp
+    let commaWsp = SVGAttributeParsers.commaWsp
+    let hexFromSingle = SVGAttributeParsers.hexByteFromSingle
+    let rgbcolor = SVGAttributeParsers.rgbcolor
     commaWsp.test(",_", expected: ((), "_"))
     commaWsp.test("  ,_", expected: ((), "_"))
     commaWsp.test(",  _", expected: ((), "_"))
@@ -36,7 +36,7 @@ class SVGAttributesParserTest: XCTestCase {
   }
 
   func testTransform() {
-    let p = SVGAttributesParsers.transform
+    let p = SVGAttributeParsers.transform
     p.test("translate(12, 13)", expected: (.translate(tx: 12, ty: 13), ""))
   }
 }

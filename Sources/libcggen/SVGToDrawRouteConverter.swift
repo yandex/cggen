@@ -5,12 +5,18 @@ enum SVGToDrawRouteConverter {
   static func convert(document: SVG.Document) throws -> DrawRoute {
     let boundingRect = document.boundingRect
     let height = boundingRect.size.height
+    let gradients = try Dictionary(
+      uniqueKeysWithValues: document.children.flatMap(gradients(svg:))
+    )
     return try .init(
       boundingRect: boundingRect,
-      gradients: [:],
+      gradients: gradients.mapValues { $0.0 },
       subroutes: [:],
       steps: [.concatCTM(.invertYAxis(height: height))] +
-        document.children.map(drawstep(ctx: .default))
+        document.children.map(drawstep(ctx: .init(
+          drawingSize: boundingRect.size,
+          gradients: gradients.mapValues { $0.1 }
+        )))
     )
   }
 }
@@ -28,15 +34,24 @@ extension SVG.Document {
 private enum Err: Swift.Error {
   case widthLessThan0(SVG.Rect)
   case heightLessThan0(SVG.Rect)
+  case noStopColor
+  case noStopOffset
+  case gradientNotFound(String)
 }
 
 private struct Context {
-  static let `default` = Context()
   var fillRule: SVG.FillRule = .evenodd
   var fillAlpha: SVG.Float = 1
   var fill: SVG.Paint = .rgb(.black())
 
   var currentFill: RGBAColorType<UInt8, SVG.Float>?
+  var drawingSize: CGSize
+  let gradients: [String: SVG.LinearGradient]
+
+  init(drawingSize: CGSize, gradients: [String: SVG.LinearGradient]) {
+    self.drawingSize = drawingSize
+    self.gradients = gradients
+  }
 
   mutating func updateCurrentFill() -> DrawStep {
     guard case let .rgb(color) = fill, currentFill != color.withAlpha(fillAlpha) else {
@@ -50,10 +65,19 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
   switch svg {
   case let .rect(r):
     let (steps, ctx) = apply(to: ctx, presentation: r.presentation)
+    var post = [DrawStep]()
+    if case let .funciri(grad) = ctx.fill {
+      let g = try ctx.gradients[grad] !! Err.gradientNotFound(grad)
+      post.append(.paintWithGradient(
+        grad,
+        start: g.startPoint(in: ctx.drawingSize),
+        end: g.endPoint(in: ctx.drawingSize))
+      )
+    }
     return .composite(steps + [
       .appendRectangle(.init(r)),
       .fill(.init(ctx.fillRule)),
-    ])
+    ] + post)
   case .title, .desc:
     return .empty
   case let .group(g):
@@ -80,12 +104,48 @@ private func drawstep(svg: SVG, ctx: Context) throws -> DrawStep {
       CGPoint(x: $0._1, y: $0._2)
     }
     return .composite(steps + [.polygon(cgpoints), .fill(.init(ctx.fillRule))])
+  case .linearGradient:
+    fatalError()
   case .mask:
     fatalError()
   case .use:
     fatalError()
   case .defs:
-    fatalError()
+    return .empty
+  }
+}
+
+private func gradients(svg: SVG) throws -> [(String, (Gradient, SVG.LinearGradient))] {
+  switch svg {
+  case let .defs(defs):
+    return try defs.children.flatMap(gradients(svg:))
+  case let .linearGradient(g):
+    guard let id = g.core.id,
+      let startPoint = zip(g.x1, g.y1).map({ CGPoint(x: $0.0.number, y: $0.1.number) }),
+      let endPoint = zip(g.x2, g.y2).map({ CGPoint(x: $0.0.number, y: $0.1.number) })
+    else { return [] }
+    let stops = g.stops
+    let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
+      let color = try $0.presentation.stopColor !! Err.noStopColor
+      let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
+      let offset: CGFloat
+      switch try $0.offset !! Err.noStopOffset {
+      case let .number(num):
+        offset = CGFloat(num)
+      case let .percentage(percentage):
+        offset = CGFloat(percentage) / 100
+      }
+      return (offset, color.norm().withAlpha(opacity))
+    }
+    return [
+      (id, (Gradient(
+        locationAndColors: locandcolors,
+        startPoint: startPoint,
+        endPoint: endPoint, options: [], kind: .axial
+      ), g)),
+    ]
+  default:
+    return []
   }
 }
 
@@ -148,6 +208,35 @@ extension CGAffineTransform {
       self = CGAffineTransform(translationX: cx, y: cy)
         .concatenating(.init(rotationAngle: CGFloat(angle)))
         .concatenating(.init(translationX: -cx, y: -cy))
+    }
+  }
+}
+
+extension SVG.LinearGradient {
+  func startPoint(in drawingSize: CGSize) -> CGPoint? {
+    return zip(x1, y1).map { abs($0.0, $0.1, drawingSize) }
+  }
+
+  func endPoint(in drawingSize: CGSize) -> CGPoint? {
+    return zip(x2, y2).map { abs($0.0, $0.1, drawingSize) }
+  }
+}
+
+private func abs(
+  _ x: SVG.Coordinate,
+  _ y: SVG.Coordinate,
+  _ size: CGSize
+) -> CGPoint {
+  return .init(x: x.abs(in: size.width), y: y.abs(in: size.height))
+}
+
+extension SVG.Coordinate {
+  func abs(in value: CGFloat) -> CGFloat {
+    switch unit {
+    case nil, .pt?, .px?:
+      return value
+    case .percent?:
+      return CGFloat(number / 100) * value
     }
   }
 }

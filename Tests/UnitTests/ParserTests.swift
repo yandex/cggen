@@ -147,6 +147,11 @@ class PareserTests: XCTestCase {
     let p: Parser<Int> = .never()
     p.test("1", expected: (nil, "1"))
   }
+
+  func testConsumeWhile() {
+    let p: Parser<Substring> = consume(while: { $0 != "_" })
+    p.test("123_", expected: ("123", "_"))
+  }
 }
 
 extension Parser where D == Substring, T: Equatable {
