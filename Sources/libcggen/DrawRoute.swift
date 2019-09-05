@@ -36,17 +36,22 @@ enum DrawStep {
   case curveTo(CGPoint, CGPoint, CGPoint)
   case lineTo(CGPoint)
   case appendRectangle(CGRect)
+  case appendRoundedRect(CGRect, rx: CGFloat, ry: CGFloat)
   case closePath
   case endPath
+  case replacePathWithStrokePath
 
-  case polygon([CGPoint])
+  case lines([CGPoint])
 
   case clip(CGPathFillRule)
   case clipToRect(CGRect)
   case dash(DashPattern)
 
   case fill(CGPathFillRule)
+  case fillEllipse(in: CGRect)
   case stroke
+  case drawPath(mode: CGPathDrawingMode)
+  case addEllipse(in: CGRect)
 
   case concatCTM(CGAffineTransform)
 
@@ -72,6 +77,9 @@ enum DrawStep {
   case composite([DrawStep])
 
   static let empty = DrawStep.composite([])
+  static func savingGState(_ steps: DrawStep...) -> DrawStep {
+    return .composite([.saveGState] + steps + [.restoreGState])
+  }
 }
 
 struct DrawRoute {

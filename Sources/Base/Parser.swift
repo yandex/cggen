@@ -140,73 +140,64 @@ public func key<K, V>(key: K) -> Parser<[K: V], V> {
 }
 
 @inlinable
-public func zip<A1, A2, D>(
-  _ p1: Parser<D, A1>,
-  _ p2: Parser<D, A2>
-) -> Parser<D, (A1, A2)> {
-  return p1.flatMap { a in p2.map { b in (a, b) } }
-}
-
-@inlinable
-public func zip<A1, A2, A3, D>(
+public func zip<A1, A2, D, R>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
-  _ p3: Parser<D, A3>
-) -> Parser<D, (A1, A2, A3)> {
-  return zip(p1, zip(p2, p3)).map { ($0.0, $0.1.0, $0.1.1) }
+  with f: @escaping (A1, A2) -> R
+) -> Parser<D, R> {
+  return p1.flatMap { a in p2.map { b in f(a, b) } }
 }
 
 @inlinable
-public func zip<A1, A2, A3, A4, D>(
+public func zip<A1, A2, A3, D, R>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
   _ p3: Parser<D, A3>,
-  _ p4: Parser<D, A4>
-) -> Parser<D, (A1, A2, A3, A4)> {
-  return zip(p1, zip(p2, p3, p4)).map { ($0.0, $0.1.0, $0.1.1, $0.1.2) }
+  with f: @escaping (A1, A2, A3) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, with: identity)) { f($0, $1.0, $1.1) }
 }
 
 @inlinable
-public func zip<A1, A2, A3, A4, A5, D>(
+public func zip<A1, A2, A3, A4, D, R>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
   _ p3: Parser<D, A3>,
   _ p4: Parser<D, A4>,
-  _ p5: Parser<D, A5>
-) -> Parser<D, (A1, A2, A3, A4, A5)> {
-  return zip(p1, zip(p2, p3, p4, p5))
-    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3) }
+  with f: @escaping (A1, A2, A3, A4) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, with: identity)) { f($0, $1.0, $1.1, $1.2) }
 }
 
 @inlinable
-public func zip<A1, A2, A3, A4, A5, A6, D>(
+public func zip<A1, A2, A3, A4, A5, D, R>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
   _ p3: Parser<D, A3>,
   _ p4: Parser<D, A4>,
   _ p5: Parser<D, A5>,
-  _ p6: Parser<D, A6>
-) -> Parser<D, (A1, A2, A3, A4, A5, A6)> {
-  return zip(p1, zip(p2, p3, p4, p5, p6))
-    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4) }
+  with f: @escaping (A1, A2, A3, A4, A5) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3) }
 }
 
 @inlinable
-public func zip<A1, A2, A3, A4, A5, A6, A7, D>(
+public func zip<A1, A2, A3, A4, A5, A6, R, D>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
   _ p3: Parser<D, A3>,
   _ p4: Parser<D, A4>,
   _ p5: Parser<D, A5>,
   _ p6: Parser<D, A6>,
-  _ p7: Parser<D, A7>
-) -> Parser<D, (A1, A2, A3, A4, A5, A6, A7)> {
-  return zip(p1, zip(p2, p3, p4, p5, p6, p7))
-    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4, $0.1.5) }
+  with f: @escaping (A1, A2, A3, A4, A5, A6) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4) }
 }
 
 @inlinable
-public func zip<A1, A2, A3, A4, A5, A6, A7, A8, D>(
+public func zip<A1, A2, A3, A4, A5, A6, A7, D, R>(
   _ p1: Parser<D, A1>,
   _ p2: Parser<D, A2>,
   _ p3: Parser<D, A3>,
@@ -214,10 +205,80 @@ public func zip<A1, A2, A3, A4, A5, A6, A7, A8, D>(
   _ p5: Parser<D, A5>,
   _ p6: Parser<D, A6>,
   _ p7: Parser<D, A7>,
-  _ p8: Parser<D, A8>
-) -> Parser<D, (A1, A2, A3, A4, A5, A6, A7, A8)> {
-  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8))
-    .map { ($0.0, $0.1.0, $0.1.1, $0.1.2, $0.1.3, $0.1.4, $0.1.5, $0.1.6) }
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, D, R>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>,
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7, A8) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5, $1.6) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, A9, D, R>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>,
+  _ p9: Parser<D, A9>,
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7, A8, A9) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8, p9, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5, $1.6, $1.7) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, D, R>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>,
+  _ p9: Parser<D, A9>,
+  _ p10: Parser<D, A10>,
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8, p9, p10, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5, $1.6, $1.7, $1.8) }
+}
+
+@inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, D, R>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>,
+  _ p9: Parser<D, A9>,
+  _ p10: Parser<D, A10>,
+  _ p11: Parser<D, A11>,
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5, $1.6, $1.7, $1.8, $1.9) }
 }
 
 @inlinable
@@ -235,9 +296,9 @@ public func maybe<D>(_ p: Parser<D, Void>) -> Parser<D, Void> {
 }
 
 @inlinable
-public func zeroOrMore<D, A>(
+public func zeroOrMore<D, A, S>(
   _ p: Parser<D, A>,
-  separator: Parser<D, Void> = .always(())
+  separator: Parser<D, S>
 ) -> Parser<D, [A]> {
   return .init {
     var matches: [A] = []
@@ -254,17 +315,35 @@ public func zeroOrMore<D, A>(
 }
 
 @inlinable
-public func oneOrMore<D, A>(_ p: Parser<D, A>) -> Parser<D, [A]> {
-  return .opt {
-    var matches: [A] = []
-    while case let .success(match) = p.parse(&$0) {
-      matches.append(match)
-    }
-    guard matches.count > 0 else {
-      return nil
-    }
-    return matches
+public func zeroOrMore<D, A>(
+  _ p: Parser<D, A>
+) -> Parser<D, [A]> {
+  return zeroOrMore(p, separator: .always(()))
+}
+
+public enum ParseError: Error {
+  case atLeastOneExpected
+  case consume(expected: String, got: String)
+  case never
+  case couldntConvertStringTo(type: String)
+  case parsingNotComplete(last: String)
+}
+
+@inlinable
+public func oneOrMore<D, A, S>(
+  _ p: Parser<D, A>,
+  separator: Parser<D, S>
+) -> Parser<D, [A]> {
+  return zeroOrMore(p, separator: separator).flatMapResult {
+    $0.count == 0 ? .failure(ParseError.atLeastOneExpected) : .success($0)
   }
+}
+
+@inlinable
+public func oneOrMore<D, A>(
+  _ p: Parser<D, A>
+) -> Parser<D, [A]> {
+  return oneOrMore(p, separator: .always(()))
 }
 
 @inlinable
@@ -307,13 +386,6 @@ public func skipZeroOrMore<C: Collection>(
   char: C.Element
 ) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable {
   return skipZeroOrMore(chars: [char])
-}
-
-public enum ParseError: Error {
-  case consume(expected: String, got: String)
-  case never
-  case couldntConvertStringTo(type: String)
-  case parsingNotComplete(last: String)
 }
 
 @inlinable
@@ -388,14 +460,14 @@ public func endof<D: Collection>(_: D.Type = D.self) -> Parser<D, Void> {
 public func ~>> <D, T, T1>(
   lhs: Parser<D, T1>, rhs: Parser<D, T>
 ) -> Parser<D, T> {
-  return zip(lhs, rhs).map { $0.1 }
+  return zip(lhs, rhs) { $1 }
 }
 
 @inlinable
 public func <<~< D, T, T1 > (
   lhs: Parser<D, T>, rhs: Parser<D, T1>
 ) -> Parser<D, T> {
-  return zip(lhs, rhs).map { $0.0 }
+  return zip(lhs, rhs) { lhs, _ in lhs }
 }
 
 @inlinable
@@ -407,7 +479,7 @@ public func | <D, T>(lhs: Parser<D, T>, rhs: Parser<D, T>) -> Parser<D, T> {
 public func ~ <D, T1, T2>(
   lhs: Parser<D, T1>, rhs: Parser<D, T2>
 ) -> Parser<D, (T1, T2)> {
-  return zip(lhs, rhs)
+  return zip(lhs, rhs, with: identity)
 }
 
 @inlinable

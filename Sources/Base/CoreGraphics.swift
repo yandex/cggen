@@ -202,3 +202,11 @@ extension CGImage {
     return ctx.makeImage()!
   }
 }
+
+extension CGPath {
+  public static func make(_ builder: (CGMutablePath) -> Void) -> CGPath {
+    let mutable = CGMutablePath()
+    builder(mutable)
+    return mutable.copy()!
+  }
+}

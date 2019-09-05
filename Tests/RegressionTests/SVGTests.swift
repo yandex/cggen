@@ -42,13 +42,37 @@ class SVGTest: XCTestCase {
   func testGradient() {
     test(svg: "gradient")
   }
+
+  func testShapes() {
+    test(svg: "shapes")
+  }
+
+  func testComplexCurve() {
+    test(svg: "complex_curve")
+  }
+
+  func testGradientStroke() {
+    test(svg: "gradient_stroke")
+  }
+
+  func testGradientFillStrokeCombinations() {
+    test(svg: "gradient_fill_stroke_combinations")
+  }
+
+  func testGradientRelative() {
+    test(svg: "gradient_relative")
+  }
+
+  func testGradientWithAlpha() {
+    test(svg: "gradient_with_alpha")
+  }
 }
 
 private func blackSquareHTML(size: Int) -> String {
   let fsize = SVG.Float(size)
   let svgSize = SVG.Length(fsize)
   let blackRect = SVG.rect(.init(
-    x: 0, y: 0,
+    x: 0, y: 0, rx: nil, ry: nil,
     width: svgSize, height: svgSize,
     presentation: .construct {
       $0.fill = .rgb(.black())
@@ -91,10 +115,11 @@ private func test(
       diff, tolerance, "Calculated diff exceeds tolerance",
       file: file, line: line
     )
-    if diff >= tolerance, let dir = ProcessInfo.processInfo.environment[failedSnapshotsDirKey] {
-      let dir = URL(fileURLWithPath: dir)
-      try image.write(fileURL: dir.appendingPathComponent(name + "_got.png") as CFURL)
-      try referenceImg.write(fileURL: dir.appendingPathComponent(name + "_ref.png") as CFURL)
+    if diff >= tolerance {
+      XCTContext.runActivity(named: "Attached Failure Diff of \(name)") {
+        $0.add(.init(image: image))
+        $0.add(.init(image: referenceImg))
+      }
     }
   }(), file: file, line: line)
 }
@@ -174,5 +199,13 @@ extension WKWebViewSnapshoter {
       viewport: .init(x: 8, y: 8, width: 50, height: 50),
       scale: scale
     )
+  }
+}
+
+extension XCTAttachment {
+  convenience init(image: CGImage) {
+    let size = NSSize(width: image.width, height: image.height)
+    let nsimage = NSImage(cgImage: image, size: size)
+    self.init(image: nsimage)
   }
 }

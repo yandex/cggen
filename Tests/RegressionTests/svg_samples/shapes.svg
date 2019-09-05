@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
     <title>shapes</title>
     <desc>Created with Sketch.</desc>
     <g id="shapes" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <rect id="Rectangle" fill="#0E8539" x="0" y="0" width="50" height="50"></rect>
-        <polygon id="Polygon" fill="#CE8C3A" points="37.5 27 46 33.3282706 42.7532889 43.5676275 32.2467111 43.5676275 29 33.3282706"></polygon>
-        <polygon id="Polygon" fill="#9E0E9B" points="12.5 27 21 33.3282706 17.7532889 43.5676275 7.2467111 43.5676275 4 33.3282706"></polygon>
-        <circle id="Oval" stroke="#160ECD" fill="#160ECD" cx="25" cy="25" r="6"></circle>
-        <polygon id="Star" stroke="#F2F039" points="25 14.0791796 22.527864 15.3315595 23 12.6789763 21 10.8004065 23.763932 10.4133999 25 8 26.236068 10.4133999 29 10.8004065 27 12.6789763 27.472136 15.3315595"></polygon>
-        <path d="M46.5,46.5 L3.5,46.5" id="Line" stroke="#EB1B1B" stroke-linecap="square"></path>
-        <path d="M6.1784006,3.00201722 C15.5711578,10.4992498 18.2316168,3.00201722 25,3.00201722 C31.7683832,3.00201722 33.8679595,9.60163567 43.9824793,3.00201722" id="Path-2" stroke="#979797" stroke-linecap="round"></path>
+        <path id="Line-2" d="M25,27.5 L29.5,36.5 L25.5,36.5 L25.5,45.5 L24.5,45.5 L24.5,36.5 L20.5,36.5 L25,27.5 Z" fill="#979797" fill-rule="nonzero"></path>
+        <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="3" y="29" width="16" height="16" rx="8"></rect>
+        <path d="M6,3 C15.3927572,10.4972325 18.0532162,3 24.8215994,3 C31.5899826,3 33.6895589,9.59961845 43.8040787,3" id="Path-2" stroke="#979797" stroke-linecap="round"></path>
+        <ellipse id="Oval" stroke="#979797" fill="#D8D8D8" cx="14" cy="17.5" rx="11" ry="7.5"></ellipse>
+        <polygon id="Star" stroke="#979797" fill="#D8D8D8" points="38.5 22.25 33.5038254 24.5676275 34.4580098 19.6588137 30.4160196 16.1823725 36.0019127 15.4661863 38.5 11 40.9980873 15.4661863 46.5839804 16.1823725 42.5419902 19.6588137 43.4961746 24.5676275"></polygon>
+        <rect id="Rectangle" stroke="#979797" fill="#D8D8D8" x="32" y="30" width="15" height="15"></rect>
+        <path d="M3,48 L48,48" id="Line" stroke="#979797" stroke-width="2" stroke-linecap="square"></path>
     </g>
 </svg>

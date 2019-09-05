@@ -134,7 +134,7 @@ struct DrawStepToObjcCommandGenerator {
       }
     case let .blendMode(blendMode):
       return [cmd("SetBlendMode", blendMode.objcConstname)]
-    case let .polygon(points):
+    case let .lines(points):
       let pointsArray = "points_\(uniqIDProvider())"
       return ObjcTerm.composite([
         ObjcTerm.cgPointArray(name: pointsArray, points: points),
@@ -144,7 +144,38 @@ struct DrawStepToObjcCommandGenerator {
           .identifier(points.count.description),
         ]))),
       ]).render(indent: 2)
+    case let .fillEllipse(rect):
+      return cmd("CGContextFillEllipseInRect", args: .value(rect))
+        .render(indent: 2)
+    case let .drawPath(mode):
+      return cmd("CGContextDrawPath", args: .value(mode))
+        .render(indent: 2)
+    case let .addEllipse(in: rect):
+      return cmd("CGContextAddEllipseInRect", args: .value(rect))
+        .render(indent: 2)
+    case .replacePathWithStrokePath:
+      return cmd("CGContextReplacePathWithStrokedPath")
+        .render(indent: 2)
+    case let .appendRoundedRect(rect, rx, ry):
+      let (pathInit, path) = ObjcTerm.CDecl.functionCall(
+        type: .CGPathRef, id: "roundedRect_\(uniqIDProvider())",
+        functionName: "CGPathCreateWithRoundedRect",
+        args: .value(rect), .value(rx), .value(ry), .NULL
+      )
+      let append = cmd("CGContextAddPath", args: path)
+      let release = ObjcTerm.Statement.call("CGPathRelease", args: path)
+      return pathInit.render(indent: 2) +
+        append.render(indent: 2) +
+        release.render(indent: 2)
     }
+  }
+
+  private func cmd(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
+    return .expr(.call(
+      .identifier(name),
+      args: [.identifier(contextVarName)] + args
+    )
+    )
   }
 
   private func cmd(_ name: String, _ args: String? = nil) -> String {
@@ -310,6 +341,25 @@ extension CGColorRenderingIntent {
   }
 }
 
+extension CGPathDrawingMode {
+  var objcConstName: String {
+    switch self {
+    case .fill:
+      return "kCGPathFill"
+    case .eoFill:
+      return "kCGPathEOFill"
+    case .stroke:
+      return "kCGPathStroke"
+    case .fillStroke:
+      return "kCGPathFillStroke"
+    case .eoFillStroke:
+      return "kCGPathEOFillStroke"
+    @unknown default:
+      fatalError()
+    }
+  }
+}
+
 extension ObjcTerm {
   static func cgPointArray(name: String, points: [CGPoint]) -> ObjcTerm {
     let initializers = ObjcTerm.CDecl.Initializer.list(points.map(ObjcTerm.Expr.value))
@@ -338,6 +388,13 @@ extension ObjcTerm {
   }
 }
 
+extension ObjcTerm.Statement {
+  static func call(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
+    return .expr(.call(.identifier(name), args: args)
+    )
+  }
+}
+
 extension ObjcTerm.CDecl {
   static func variable(type: ObjcTerm.TypeName, name: String, value: String) -> ObjcTerm.CDecl {
     return .init(
@@ -345,6 +402,26 @@ extension ObjcTerm.CDecl {
       declarators: [
         .declinit(.identifier(name), .expr(ObjcTerm.Expr.const(raw: value))),
       ]
+    )
+  }
+
+  static func functionCall(
+    type _: ObjcTerm.TypeName,
+    id: String,
+    functionName: String,
+    args: ObjcTerm.Expr...
+  ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
+    return (
+      .init(
+        specifiers: [.type(.simple(.CGPathRef))],
+        declarators: [
+          .declinit(
+            .init(identifier: id),
+            .expr(.call(.identifier(functionName), args: args))
+          ),
+        ]
+      ),
+      .identifier(id)
     )
   }
 }
@@ -361,9 +438,29 @@ extension ObjcTerm.Expr {
     ])
   }
 
+  static func value(_ value: CGSize) -> ObjcTerm.Expr {
+    return .list(type: .CGSize, [
+      .member("width", .value(value.width)),
+      .member("height", .value(value.height)),
+    ])
+  }
+
+  static func value(_ value: CGRect) -> ObjcTerm.Expr {
+    return .list(type: .CGRect, [
+      .member("origin", .value(value.origin)),
+      .member("size", .value(value.size)),
+    ])
+  }
+
+  static func value(_ value: CGPathDrawingMode) -> ObjcTerm.Expr {
+    return .identifier(value.objcConstName)
+  }
+
   static func incr(_ variable: String) -> ObjcTerm.Expr {
     return .postfix(e: .identifier(variable), op: .incr)
   }
+
+  static let NULL = ObjcTerm.Expr.identifier("NULL")
 
   static func <(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
     return .bin(lhs: lhs, op: .less, rhs: rhs)
@@ -379,7 +476,9 @@ extension ObjcTerm.TypeName {
     public typealias `Self` = ObjcTerm.TypeName
   #endif
   public static let CGPoint: Self = "CGPoint"
+  public static let CGRect: Self = "CGRect"
   public static let CGFloat: Self = "CGFloat"
   public static let CGSize: Self = "CGSize"
   public static let CGContextRef: Self = "CGContextRef"
+  public static let CGPathRef: Self = "CGPathRef"
 }
