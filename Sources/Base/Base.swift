@@ -353,6 +353,22 @@ public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(
 }
 
 @inlinable
+public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(
+  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
+  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11
+) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11) {
+  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
+}
+
+@inlinable
+public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
+  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
+  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11, _ t12: T12
+) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12) {
+  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12)
+}
+
+@inlinable
 public func always<T, U>(_ value: T) -> (U) -> T {
   return { _ in value }
 }

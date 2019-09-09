@@ -1,45 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <!-- Generator: Sketch 55.2 (78181) - https://sketchapp.com -->
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
     <title>dashes</title>
     <desc>Created with Sketch.</desc>
-    <defs>
-        <path d="M2,0 L8,0 C9.10457,0 10,0.89543 10,2 L10,8 C10,9.10457 9.10457,10 8,10 L2,10 C0.895431,10 0,9.10457 0,8 L0,2 C0,0.89543 0.895431,0 2,0 Z" id="path-1"></path>
-        <polygon id="path-3" points="5 0 9.75528 3.454915 7.93893 9.045085 2.06107 9.045085 0.24472 3.454915"></polygon>
-    </defs>
     <g id="dashes" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="Group-3" fill="#94EDEA">
-            <polygon id="Fill-1" points="0 50 50 50 50 0 0 0"></polygon>
-            <polygon id="Fill-2" points="0 50 50 50 50 0 0 0"></polygon>
-        </g>
-        <g id="Group-10" transform="translate(5.000000, 10.000000)">
-            <path d="M0,1 L40,1" id="Stroke-4" stroke="#F5A623" stroke-width="4" stroke-linecap="round" stroke-dasharray="10,5"></path>
-            <path d="M0,7 L40,7" id="Stroke-6" stroke="#F8E71C" stroke-width="4" stroke-dasharray="1,2"></path>
-            <path d="M0,13 L40,13" id="Stroke-8" stroke="#8B572A" stroke-width="3" stroke-dasharray="1,1"></path>
-        </g>
-        <g id="Group-13" transform="translate(5.000000, 27.000000)">
-            <mask id="mask-2" fill="white">
-                <use xlink:href="#path-1"></use>
-            </mask>
-            <g id="Clip-12"></g>
-            <path d="M2,0 L8,0 C9.104569,0 10,0.8954305 10,2 L10,8 C10,9.104569 9.104569,10 8,10 L2,10 C0.8954305,10 0,9.104569 0,8 L0,2 C0,0.8954305 0.8954305,0 2,0 Z" id="Stroke-11" stroke="#7ED321" stroke-width="2" stroke-dasharray="2,1" mask="url(#mask-2)"></path>
-        </g>
+        <path d="M5,11 L45,11" id="Stroke-4" stroke="#F5A623" stroke-width="4" stroke-linecap="round" stroke-dasharray="10,5"></path>
+        <path d="M5,17 L45,17" id="Stroke-6" stroke="#F8E71C" stroke-width="4" stroke-dasharray="1,2"></path>
+        <path d="M5,23 L45,23" id="Stroke-8" stroke="#8B572A" stroke-width="3" stroke-dasharray="1,1"></path>
+        <path d="M7,27 L13,27 C14.104569,27 15,27.8954305 15,29 L15,35 C15,36.104569 14.104569,37 13,37 L7,37 C5.8954305,37 5,36.104569 5,35 L5,29 C5,27.8954305 5.8954305,27 7,27 Z" id="Stroke-11" stroke="#7ED321" stroke-width="2" stroke-dasharray="2,1"></path>
         <path d="M20,27 L30,27 L30,37 L20,37 L20,27 Z" id="Stroke-14" stroke="#417505" stroke-width="2" stroke-dasharray="2,2"></path>
-        <g id="Group-22" transform="translate(5.000000, 4.000000)">
-            <path d="M36,33 C38.761424,33 41,30.761424 41,28 C41,25.238576 38.761424,23 36,23 C33.238576,23 31,25.238576 31,28 C31,30.761424 33.238576,33 36,33 Z" id="Stroke-16" stroke="#BD10E0" stroke-dasharray="1,1"></path>
-            <path d="M0,1 L40,1" id="Stroke-18" stroke="#D0021B" stroke-width="4" stroke-linecap="round" stroke-dasharray="1,2"></path>
-            <path d="M6,42.5 L3.061074,44.045085 L3.622359,40.772542 L1.2447174,38.454915 L4.530537,37.977458 L6,35 L7.469463,37.977458 L10.755283,38.454915 L8.377641,40.772542 L8.938926,44.045085 L6,42.5 Z" id="Stroke-20" stroke="#979797" stroke-linejoin="round" stroke-dasharray="5,1"></path>
-        </g>
-        <g id="Group-25" transform="translate(20.000000, 39.000000)">
-            <mask id="mask-4" fill="white">
-                <use xlink:href="#path-3"></use>
-            </mask>
-            <g id="Clip-24"></g>
-            <polygon id="Fill-23" fill="#4A90E2" mask="url(#mask-4)" points="-4.75528 14.045085 14.75529 14.045085 14.75529 -4.999995 -4.75528 -4.999995"></polygon>
-        </g>
-        <g id="Group-30" transform="translate(20.000000, 39.000000)">
-            <path d="M5,0 L9.755283,3.454915 L7.938926,9.045085 L2.061074,9.045085 L0.2447174,3.454915 L5,0 Z" id="Stroke-26" stroke="#50E3C2" stroke-dasharray="3,3"></path>
-            <path d="M19,0 L24,10 L14,10 L19,0 Z" id="Stroke-28" stroke="#B8E986" stroke-linecap="square" stroke-linejoin="round" stroke-dasharray="2,3"></path>
-        </g>
+        <path d="M41,37 C43.761424,37 46,34.761424 46,32 C46,29.238576 43.761424,27 41,27 C38.238576,27 36,29.238576 36,32 C36,34.761424 38.238576,37 41,37 Z" id="Stroke-16" stroke="#BD10E0" stroke-dasharray="1,1"></path>
+        <path d="M5,5 L45,5" id="Stroke-18" stroke="#D0021B" stroke-width="4" stroke-linecap="round" stroke-dasharray="1,2"></path>
+        <path d="M11,46.5 L8.061074,48.045085 L8.622359,44.772542 L6.2447174,42.454915 L9.530537,41.977458 L11,39 L12.469463,41.977458 L15.755283,42.454915 L13.377641,44.772542 L13.938926,48.045085 L11,46.5 Z" id="Stroke-20" stroke="#979797" stroke-linejoin="round" stroke-dasharray="5,1"></path>
+        <path d="M25,39 L29.755283,42.454915 L27.938926,48.045085 L22.061074,48.045085 L20.2447174,42.454915 L25,39 Z" id="Stroke-26" stroke="#50E3C2" fill="#7A59CE" stroke-dasharray="3,3"></path>
+        <path d="M39,39 L44,49 L34,49 L39,39 Z" id="Stroke-28" stroke="#B8E986" stroke-linecap="square" stroke-linejoin="round" stroke-dasharray="2,3"></path>
     </g>
 </svg>

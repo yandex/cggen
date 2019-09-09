@@ -43,6 +43,11 @@ private class Context {
   }
 }
 
+private enum PDFGradientDrawingOptions {
+  case linear(DrawStep.LinearGradientDrawingOptions)
+  case radial(DrawStep.RadialGradientDrawingOptions)
+}
+
 enum PDFToDrawRouteConverter {
   static func convert(xobject: PDFXObject) -> DrawRoute {
     let ctm = xobject.matrix ?? .identity
@@ -80,10 +85,14 @@ enum PDFToDrawRouteConverter {
     let gradients = resources.shadings.mapValues { $0.makeGradient() }
     let subroutes = resources.xObjects.mapValues { convert(xobject: $0) }
     precondition(resources.xObjects.count == subroutes.count)
-    let steps = operatorsToSteps(ops: operators, resources: resources)
+    let steps = operatorsToSteps(
+      ops: operators,
+      resources: resources,
+      gradients: gradients.mapValues { $0.1 }
+    )
     let route = DrawRoute(
       boundingRect: bbox,
-      gradients: gradients,
+      gradients: gradients.mapValues { $0.0 },
       subroutes: subroutes,
       steps: prependSteps + steps + appendSteps
     )
@@ -92,15 +101,22 @@ enum PDFToDrawRouteConverter {
 
   private static func operatorsToSteps(
     ops: [PDFOperator],
-    resources: PDFResources
+    resources: PDFResources,
+    gradients: [String: PDFGradientDrawingOptions]
   ) -> [DrawStep] {
     let context = Context()
-    return ops.map { $0.drawStep(resources: resources, context: context) }
+    return ops.map {
+      $0.drawStep(resources: resources, context: context, gradients: gradients)
+    }
   }
 }
 
 private extension PDFOperator {
-  func drawStep(resources: PDFResources, context: Context) -> DrawStep {
+  func drawStep(
+    resources: PDFResources,
+    context: Context,
+    gradients: [String: PDFGradientDrawingOptions]
+  ) -> DrawStep {
     switch self {
     case .closeFillStrokePathWinding:
       fatalError("Not implemented")
@@ -250,7 +266,14 @@ private extension PDFOperator {
     case .iccOrSpecialColorNonstroke:
       fatalError("Not implemented")
     case let .shadingFill(shading):
-      return .paintWithGradient(shading, start: nil, end: nil)
+      switch gradients[shading] {
+      case nil:
+        return .empty
+      case let .linear(linear)?:
+        return .linearGradient(shading, linear)
+      case let .radial(radial)?:
+        return .radialGradient(shading, radial)
+      }
     case .startNextTextLine:
       fatalError("Not implemented")
     case .characterSpacing:
@@ -349,7 +372,7 @@ private extension CGBlendMode {
 }
 
 private extension PDFShading {
-  func makeGradient() -> Gradient {
+  func makeGradient() -> (Gradient, PDFGradientDrawingOptions) {
     let locationAndColors = function.points.map { (point) -> (CGFloat, RGBACGColor) in
       precondition(point.value.count == 3)
       let loc = point.arg
@@ -362,20 +385,7 @@ private extension PDFShading {
       )
       return (loc, color)
     }
-    var options: CGGradientDrawingOptions = []
-    if extend.0 {
-      options.insert(.drawsBeforeStartLocation)
-    }
-    if extend.1 {
-      options.insert(.drawsAfterEndLocation)
-    }
-    return Gradient(
-      locationAndColors: locationAndColors,
-      startPoint: startPoint,
-      endPoint: endPoint,
-      options: options,
-      kind: gradientKind
-    )
+    return (Gradient(locationAndColors: locationAndColors), drawingOptions)
   }
 
   var function: PDFFunction {
@@ -414,15 +424,33 @@ private extension PDFShading {
     }
   }
 
-  var gradientKind: Gradient.Kind {
+  var drawingOptions: PDFGradientDrawingOptions {
     switch kind {
-    case .axial:
-      return .axial
-    case let .radial(radial):
-      return .radial(
-        startRadius: radial.startRadius, endRadius: radial.endRadius
+    case let .axial(axial):
+      return .linear((
+        startPoint: axial.coords.p0,
+        endPoint: axial.coords.p1,
+        options: .init(pdfExtend: axial.extend)
       )
+      )
+    case let .radial(radial):
+      return .radial((
+        startCenter: radial.coords.p0,
+        startRadius: radial.startRadius,
+        endCenter: radial.coords.p1,
+        endRadius: radial.endRadius,
+        options: .init(pdfExtend: radial.extend)
+      ))
     }
+  }
+}
+
+extension CGGradientDrawingOptions {
+  init(pdfExtend: PDFShading.Extend) {
+    let (before, after) = pdfExtend
+    self = []
+    if before { insert(.drawsBeforeStartLocation) }
+    if after { insert(.drawsAfterEndLocation) }
   }
 }
 

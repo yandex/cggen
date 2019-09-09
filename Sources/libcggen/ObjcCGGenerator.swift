@@ -46,7 +46,8 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
   let generator = DrawStepToObjcCommandGenerator(
     uniqIDProvider: acquireUniqID,
     contextVarName: contextName,
-    globalDeviceRGBContextName: rgbColorSpaceVarName
+    globalDeviceRGBContextName: rgbColorSpaceVarName,
+    gDeviceRgbContext: .identifier(rgbColorSpaceVarName)
   )
   let commandsLines = route.steps.flatMap { (step) -> [String] in
     generator.command(
@@ -63,6 +64,8 @@ extension ObjcCGGenerator {
     return [
       params.style.drawingHandlerPrefix + ObjCGen.functionDef(imageName: imageName.upperCamelCase, prefix: params.prefix),
       "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",
+      "  CGContextSetFillColorSpace(context, \(rgbColorSpaceVarName));",
+      "  CGContextSetStrokeColorSpace(context, \(rgbColorSpaceVarName));",
     ]
   }
 }

@@ -47,6 +47,41 @@ extension ObjcTerm: Renderable {
   }
 }
 
+extension ObjcTerm.TypeName.DirectAbstractDeclarator: Renderable {
+  func render() -> String {
+    switch self {
+    case let .array(of: type):
+      return "[" + (type.map { $0.render() } ?? "") + "]"
+    }
+  }
+}
+
+extension ObjcTerm.TypeName.AbstractDeclarator: Renderable {
+  func render() -> String {
+    switch self {
+    case let .direct(direct):
+      return direct.render()
+    case let .pointer(pointer):
+      return pointer.render()
+    case let .pointerTo(pointer, direct):
+      return pointer.render() + direct.render()
+    }
+  }
+}
+
+extension ObjcTerm.TypeName: Renderable {
+  func render() -> [String] {
+    let specifiersLines = specifiers.render()
+    let decl = declarator?.render() ?? ""
+    var lines = specifiersLines.reduce([String]()) {
+      $0.appendFirstToLast($1, separator: " ")
+    }
+    lines.indices.last.map { lines[$0] += decl }
+
+    return lines
+  }
+}
+
 extension ObjcTerm.Statement: Renderable {
   func render() -> [String] {
     switch self {
@@ -100,7 +135,7 @@ extension ObjcTerm.CDecl.Specifier: Renderable {
   }
 }
 
-extension ObjcTerm.CDecl.Declarator: Renderable {
+extension ObjcTerm.Declarator: Renderable {
   func render() -> String {
     return ([(pointer?.render() ?? "") + direct.render()] + attributes)
       .joined(separator: " ")
@@ -130,7 +165,7 @@ extension ObjcTerm.CDecl.InitDeclarator: Renderable {
   }
 }
 
-extension ObjcTerm.CDecl.Declarator.Direct {
+extension ObjcTerm.Declarator.Direct {
   func render() -> String {
     switch self {
     case let .braced(decl):
@@ -146,7 +181,7 @@ extension ObjcTerm.CDecl.Declarator.Direct {
   }
 }
 
-extension ObjcTerm.CDecl.Declarator.Pointer: Renderable {
+extension ObjcTerm.Pointer: Renderable {
   typealias RenderType = String
   func render() -> String {
     switch self {
@@ -158,8 +193,7 @@ extension ObjcTerm.CDecl.Declarator.Pointer: Renderable {
   }
 }
 
-extension ObjcTerm.CDecl.Specifier.TypeSpecifier: Renderable {
-  typealias RenderType = [String]
+extension ObjcTerm.TypeSpecifier: Renderable {
   func render() -> [String] {
     switch self {
     case .enum:
@@ -178,7 +212,7 @@ extension ObjcTerm.CDecl.Specifier.TypeSpecifier: Renderable {
   }
 }
 
-extension ObjcTerm.CDecl.Specifier.TypeSpecifier.StructDeclaration: Renderable {
+extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
   func render() -> String {
     return (spec.render() + [decl.render()])
       .flatMap { $0 }
@@ -206,9 +240,9 @@ extension ObjcTerm.Expr: Renderable {
       return const
     case let .identifier(id):
       return id
-    case let .list(type: type, list):
+    case let .list(of: type, list):
       let initializers = list.map { $0.render() }.joined(separator: ", ")
-      return "(\(type)){ \(initializers) }"
+      return "(\(type.render().joined(separator: " "))){ \(initializers) }"
     case let .member(field, expr):
       return ".\(field) = \(expr.render())"
     case let .bin(lhs, op, rhs):

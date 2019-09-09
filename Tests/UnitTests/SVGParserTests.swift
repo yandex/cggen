@@ -6,10 +6,11 @@ class SVGParserTests: XCTestCase {
     let dim = SVG.Length(50, .px)
     XCTAssertEqual(try parse(simpleSVG), SVG.Document(width: dim, height: dim, viewBox: nil, children: [
       .rect(SVG.Rect(
-        x: 0, y: 0, width: 50, height: 50,
+        x: 0, y: 0, rx: nil, ry: nil, width: 50, height: 50,
         presentation: .construct {
           $0.fill = .rgb(.init(red: 0x50, green: 0xE3, blue: 0xC2))
-        }
+        },
+        core: .init(id: "test_rect")
       )),
     ]))
   }
@@ -48,6 +49,6 @@ private func parse(_ xml: String) throws -> SVG.Document {
 private let simpleSVG = """
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="50px" height="50px">
-  <rect fill="#50E3C2" x="0" y="0" width="50" height="50"></rect>
+  <rect fill="#50E3C2" x="0" y="0" width="50" height="50" id="test_rect"></rect>
 </svg>
 """

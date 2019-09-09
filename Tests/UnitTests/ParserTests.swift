@@ -60,7 +60,7 @@ class PareserTests: XCTestCase {
   }
 
   func testZip() {
-    let p: Parser<Int> = zip(int, "_").map { $0.0 }
+    let p: Parser<Int> = zip(int, "_", with: { int, _ in int })
     p.test("12_", expected: (12, ""))
     p.test("34__", expected: (34, "_"))
     p.test("56", expected: (nil, "56"))
@@ -68,7 +68,7 @@ class PareserTests: XCTestCase {
   }
 
   func testZeroOrMore() {
-    let p: Parser<[Int]> = zip(int, "_").map { $0.0 }*
+    let p: Parser<[Int]> = (int <<~ "_")*
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: ([], "foobar"))
@@ -83,14 +83,14 @@ class PareserTests: XCTestCase {
   }
 
   func testOneOrMore() {
-    let p: Parser<[Int]> = zip(int, "_").map { $0.0 }+
+    let p: Parser<[Int]> = (int <<~ "_")+
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: (nil, "foobar"))
   }
 
   func testMayBe() {
-    let p: Parser<Int?> = zip(int, "_").map { $0.0 }~?
+    let p: Parser<Int?> = (int <<~ "_")~?
     p.test("123_", expected: (123, ""))
     p.test("_", expected: (.some(nil), "_"))
   }

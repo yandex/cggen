@@ -1,17 +1,85 @@
 import Base
 
 enum ObjcTerm {
-  struct TypeName: ExpressibleByStringLiteral, CustomStringConvertible {
+  typealias NotImplemented = Never
+
+  enum Pointer {
+    case last(typeQual: NotImplemented?)
+    indirect case more(typeQual: NotImplemented?, pointer: Pointer)
+  }
+
+  struct TypeName {
+    enum DirectAbstractDeclarator {
+      indirect case braced(AbstractDeclarator, NotImplemented)
+      indirect case array(of: DirectAbstractDeclarator? /* , size: assignment-expression */ )
+      indirect case arrayStar(of: DirectAbstractDeclarator?, NotImplemented)
+      indirect case function(return: DirectAbstractDeclarator?, args: Expr, NotImplemented)
+
+      static let array = DirectAbstractDeclarator.array(of: nil)
+    }
+
+    enum AbstractDeclarator {
+      case pointer(Pointer)
+      case pointerTo(Pointer, DirectAbstractDeclarator)
+      case direct(DirectAbstractDeclarator)
+    }
+
+    var specifiers: [TypeSpecifier]
+    var declarator: AbstractDeclarator?
+  }
+
+  struct TypeIdentifier: ExpressibleByStringLiteral, CustomStringConvertible {
     let name: StaticString
 
     init(stringLiteral value: StaticString) { name = value }
     var description: String { return name.description }
 
-    static let int: TypeName = "int"
-    static let void: TypeName = "void"
+    static let int: TypeIdentifier = "int"
+    static let void: TypeIdentifier = "void"
+//    static func arrayOf(type: StaticString)
   }
 
-  typealias NotImplemented = Never
+  enum TypeSpecifier {
+    enum StructOrUnion: String {
+      case `struct`
+      case union
+    }
+
+    struct StructDeclaration {
+      var spec: [TypeSpecifier]
+      var decl: [Declarator]
+    }
+
+    case simple(TypeIdentifier)
+    case structOrUnion(StructOrUnion, attributes: [String], identifier: String?, declList: [StructDeclaration])
+    case `enum`(NotImplemented)
+  }
+
+  struct Declarator {
+    enum Direct {
+      case identifier(String)
+      indirect case braced(Declarator)
+      indirect case array(Direct)
+      indirect case parametrList(Declarator, [CDecl.Specifier])
+    }
+
+    var pointer: Pointer?
+    var direct: Direct
+    var attributes: [String]
+
+    init(pointer: Pointer?, direct: Direct, attrs: [String]) {
+      self.pointer = pointer
+      self.direct = direct
+      attributes = attrs
+    }
+
+    init(identifier: String) {
+      pointer = nil
+      direct = .identifier(identifier)
+      attributes = []
+    }
+  }
+
   enum Import {
     case angleBrackets(path: String)
     case doubleQuotes(path: String)
@@ -20,6 +88,7 @@ enum ObjcTerm {
   indirect enum Expr {
     enum BinOp: String {
       case less = "<"
+      case bitwiseOr = "|"
     }
 
     enum PostfixOp: String {
@@ -30,7 +99,7 @@ enum ObjcTerm {
       case address = "&"
     }
 
-    case cast(to: TypeName, Expr)
+    case cast(to: TypeIdentifier, Expr)
     case member(String, Expr)
     case call(Expr, args: [Expr])
     case `subscript`(Expr, idx: Expr)
@@ -40,7 +109,21 @@ enum ObjcTerm {
 
     case const(raw: String)
     case identifier(String)
-    case list(type: TypeName, [Expr])
+    case list(of: TypeName, [Expr])
+
+    public static func list(_ type: TypeIdentifier, _ values: [Expr]) -> Expr {
+      return .list(
+        of: .init(specifiers: [.simple(type)], declarator: nil),
+        values
+      )
+    }
+
+    public static func array(of type: TypeIdentifier, _ values: [Expr]) -> Expr {
+      return .list(
+        of: .init(specifiers: [.simple(type)], declarator: .direct(.array)),
+        values
+      )
+    }
   }
 
   enum Statement {
@@ -62,56 +145,10 @@ enum ObjcTerm {
         case extern
       }
 
-      enum TypeSpecifier {
-        enum StructOrUnion: String {
-          case `struct`
-          case union
-        }
-
-        struct StructDeclaration {
-          var spec: [TypeSpecifier]
-          var decl: [Declarator]
-        }
-
-        case simple(TypeName)
-        case structOrUnion(StructOrUnion, attributes: [String], identifier: String?, declList: [StructDeclaration])
-        case `enum`(NotImplemented)
-      }
-
       case storage(StorageClass)
       case type(TypeSpecifier)
       case attribute(String)
       case functionSpecifier(NotImplemented)
-    }
-
-    struct Declarator {
-      enum Direct {
-        case identifier(String)
-        indirect case braced(Declarator)
-        indirect case array(Direct)
-        indirect case parametrList(Declarator, [Specifier])
-      }
-
-      enum Pointer {
-        case last(typeQual: NotImplemented?)
-        indirect case more(typeQual: NotImplemented?, pointer: Pointer)
-      }
-
-      var pointer: Pointer?
-      var direct: Direct
-      var attributes: [String]
-
-      init(pointer: Pointer?, direct: Direct, attrs: [String]) {
-        self.pointer = pointer
-        self.direct = direct
-        attributes = attrs
-      }
-
-      init(identifier: String) {
-        pointer = nil
-        direct = .identifier(identifier)
-        attributes = []
-      }
     }
 
     enum Initializer {
@@ -138,26 +175,26 @@ enum ObjcTerm {
   case stmnt(Statement)
 }
 
-extension ObjcTerm.CDecl.Declarator {
-  static func namedInSwift(_ name: String, decl: ObjcTerm.CDecl.Declarator) -> ObjcTerm.CDecl.Declarator {
+extension ObjcTerm.Declarator {
+  static func namedInSwift(_ name: String, decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
     return modified(decl) {
       $0.attributes.append("CF_SWIFT_NAME(\(name))")
     }
   }
 
-  static func identifier(_ id: String) -> ObjcTerm.CDecl.Declarator {
+  static func identifier(_ id: String) -> ObjcTerm.Declarator {
     return .init(identifier: id)
   }
 
-  static func braced(_ decl: ObjcTerm.CDecl.Declarator) -> ObjcTerm.CDecl.Declarator {
+  static func braced(_ decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
     return .init(pointer: nil, direct: .braced(decl), attrs: [])
   }
 
-  static func parametrList(_ decl: ObjcTerm.CDecl.Declarator, params: [ObjcTerm.CDecl.Specifier]) -> ObjcTerm.CDecl.Declarator {
+  static func parametrList(_ decl: ObjcTerm.Declarator, params: [ObjcTerm.CDecl.Specifier]) -> ObjcTerm.Declarator {
     return .init(pointer: nil, direct: .parametrList(decl, params), attrs: [])
   }
 
-  static func pointed(_ decl: ObjcTerm.CDecl.Declarator) -> ObjcTerm.CDecl.Declarator {
+  static func pointed(_ decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
     return modified(decl) {
       switch $0.pointer {
       case nil:
@@ -169,11 +206,11 @@ extension ObjcTerm.CDecl.Declarator {
   }
 }
 
-extension ObjcTerm.CDecl.Declarator {
+extension ObjcTerm.Declarator {
   static func functionPointer(
     name _: String,
     _ params: ObjcTerm.CDecl.Specifier...
-  ) -> ObjcTerm.CDecl.Declarator {
+  ) -> ObjcTerm.Declarator {
     return .parametrList(
       .braced(.pointed(.identifier("drawingHandler"))),
       params: params
