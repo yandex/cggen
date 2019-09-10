@@ -4,15 +4,19 @@ import XCTest
 class SVGParserTests: XCTestCase {
   func testSimpleSVG() throws {
     let dim = SVG.Length(50, .px)
-    XCTAssertEqual(try parse(simpleSVG), SVG.Document(width: dim, height: dim, viewBox: nil, children: [
-      .rect(SVG.Rect(
-        x: 0, y: 0, rx: nil, ry: nil, width: 50, height: 50,
-        presentation: .construct {
-          $0.fill = .rgb(.init(red: 0x50, green: 0xE3, blue: 0xC2))
-        },
-        core: .init(id: "test_rect")
-      )),
-    ]))
+    XCTAssertEqual(try parse(simpleSVG), SVG.Document(
+      presentation: .empty,
+      width: dim, height: dim, viewBox: nil,
+      children: [
+        .rect(SVG.Rect(
+          x: 0, y: 0, rx: nil, ry: nil, width: 50, height: 50,
+          presentation: .construct {
+            $0.fill = .rgb(.init(red: 0x50, green: 0xE3, blue: 0xC2))
+          },
+          core: .init(id: "test_rect")
+        )),
+      ]
+    ))
   }
 }
 
@@ -22,6 +26,7 @@ class SVGAttributesParserTest: XCTestCase {
     let commaWsp = SVGAttributeParsers.commaWsp
     let hexFromSingle = SVGAttributeParsers.hexByteFromSingle
     let rgbcolor = SVGAttributeParsers.rgbcolor
+    let paint = SVGAttributeParsers.paint
     commaWsp.test(",_", expected: ((), "_"))
     commaWsp.test("  ,_", expected: ((), "_"))
     commaWsp.test(",  _", expected: ((), "_"))
@@ -34,6 +39,7 @@ class SVGAttributesParserTest: XCTestCase {
     rgbcolor.test("#08EF", expected: (.init(red: 0x00, green: 0x88, blue: 0xEE), "F"))
     rgbcolor.test("#012 FFF", expected: (.init(red: 0x00, green: 0x11, blue: 0x22), " FFF"))
     rgbcolor.test("#123456F", expected: (.init(red: 0x12, green: 0x34, blue: 0x56), "F"))
+    paint.test("none", expected: (.some(.none), ""))
   }
 
   func testTransform() {

@@ -81,6 +81,18 @@ extension RGBAColorType where Alpha == Ø {
   public func withAlpha<Alpha>(_ alpha: Alpha) -> RGBAColorType<Component, Alpha> {
     return .init(red: red, green: green, blue: blue, alpha: alpha)
   }
+
+  @inlinable
+  public var components: [Component] {
+    return [red, green, blue]
+  }
+}
+
+extension RGBAColorType where Alpha == Ø, Component: FixedWidthInteger {
+  @inlinable
+  public static func white() -> RGBColor<Component> {
+    return .gray(Component.max)
+  }
 }
 
 extension RGBAColorType where Component == Alpha {

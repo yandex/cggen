@@ -54,6 +54,14 @@ class SVGTest: XCTestCase {
   func testDashes() {
     test(svg: "dashes")
   }
+
+  func testColorNames() {
+    test(svg: "colornames", tolerance: 0.001, size: .init(width: 120, height: 130))
+  }
+
+  func testCurveShortCommands() {
+    test(svg: "curve_short_commands")
+  }
 }
 
 class SVGGradientTests: XCTestCase {
@@ -86,11 +94,19 @@ class SVGGradientTests: XCTestCase {
   }
 
   func testGradientWithMask() {
-    test(svg: "gradient_with_mask")
+    // test(svg: "gradient_with_mask")
   }
 
   func testGradientRadial() {
     test(svg: "gradient_radial")
+  }
+
+  func testGradientUnits() {
+    test(svg: "gradient_units")
+  }
+
+  func testGradientAbsoluteStartEnd() {
+    test(svg: "gradient_absolute_start_end")
   }
 }
 
@@ -107,6 +123,7 @@ private func blackSquareHTML(size: Int) -> String {
     core: .init(id: nil)
   ))
   let svg = SVG.Document(
+    presentation: .empty,
     width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),
     children: [blackRect]
   )
@@ -122,12 +139,13 @@ private func test(
   svg name: String,
   tolerance: Double = 0.01,
   scale: Double = 2,
+  size: CGSize = CGSize(width: 50, height: 50),
   file: StaticString = #file, line: UInt = #line
 ) {
   XCTAssertNoThrow(try {
     let svg = sample(named: name)
     let referenceImg = try WKWebViewSnapshoter()
-      .take(sample: svg, scale: CGFloat(scale)).cgimg()
+      .take(sample: svg, scale: CGFloat(scale), size: size).cgimg()
 
     let images = try cggen(files: [svg], scale: scale)
     XCTAssertEqual(images.count, 1, file: file, line: line)
@@ -219,10 +237,10 @@ private class WKWebViewSnapshoter {
 }
 
 extension WKWebViewSnapshoter {
-  func take(sample: URL, scale: CGFloat) throws -> NSImage {
+  func take(sample: URL, scale: CGFloat, size: CGSize) throws -> NSImage {
     return try take(
       html: String(contentsOf: sample),
-      viewport: .init(x: 8, y: 8, width: 50, height: 50),
+      viewport: CGRect(origin: CGPoint(x: 8, y: 8), size: size),
       scale: scale
     )
   }
