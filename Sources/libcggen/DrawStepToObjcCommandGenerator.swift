@@ -8,6 +8,7 @@ struct DrawStepToObjcCommandGenerator {
   let uniqIDProvider: () -> String
   let contextVarName: String
   let globalDeviceRGBContextName: String
+  let gDeviceRgbContext: ObjcTerm.Expr
 
   func command(
     step: DrawStep,
@@ -39,74 +40,51 @@ struct DrawStepToObjcCommandGenerator {
     case .endPath:
       return []
     case let .flatness(flatness):
-      return [cmd("SetFlatness", float: flatness)]
+      return cmd("CGContextSetFlatness", args: .value(flatness)).render(indent: 2)
     case .fillColorSpace:
       return []
     case let .appendRectangle(rect):
-      return [cmd("AddRect", rect: rect)]
+      return cmd("CGContextAddRect", args: .value(rect)).render(indent: 2)
     case .strokeColorSpace:
       return []
     case let .concatCTM(transform):
       return [cmd("ConcatCTM", "CGAffineTransformMake(\(transform.a), \(transform.b), \(transform.c), \(transform.d), \(transform.tx), \(transform.ty))")]
     case let .lineWidth(w):
-      return [cmd("SetLineWidth", float: w)]
+      return cmd("CGContextSetLineWidth", args: .value(w)).render(indent: 2)
     case let .colorRenderingIntent(intent):
       return [cmd("SetRenderingIntent", intent.objcConstName)]
-    case let .paintWithGradient(gradientKey, startPoint, endPoint):
-      let gradient = gradients[gradientKey]!
-      let startPoint = startPoint ?? gradient.startPoint
-      let endPoint = endPoint ?? gradient.endPoint
-      let colors = gradient.locationAndColors.map { $0.1 }
-      let locations = gradient.locationAndColors.map { $0.0 }
-      let lines = with(colors: colors) { (colorNames) -> [String] in
-        let colorString = colorNames.map { "(__bridge id)\($0)" }.joined(separator: ", ")
-        let colorsArrayVarName = "colors\(uniqIDProvider())"
-        let colorArray = "  CFArrayRef \(colorsArrayVarName) = CFBridgingRetain(@[ \(colorString) ]);"
-        let locationList = locations.map { "(CGFloat)\($0)" }.joined(separator: ", ")
-        let locationArray = "(CGFloat []){\(locationList)}"
-        let gradientName = "gradient\(uniqIDProvider())"
-        let gradientDef = "  CGGradientRef \(gradientName) = CGGradientCreateWithColors(\(globalDeviceRGBContextName), \(colorsArrayVarName), \(locationArray));"
-        let colorArrayRelease = "  CFRelease(\(colorsArrayVarName));"
-
-        var optionsStrings: [String] = []
-        if gradient.options.contains(.drawsBeforeStartLocation) {
-          optionsStrings.append("kCGGradientDrawsBeforeStartLocation")
-        }
-        if gradient.options.contains(.drawsAfterEndLocation) {
-          optionsStrings.append("kCGGradientDrawsAfterEndLocation")
-        }
-        if optionsStrings.isEmpty {
-          optionsStrings.append("0")
-        }
-        let optionsVarName = "gradientOptions\(uniqIDProvider())"
-        let optionsLine = "  CGGradientDrawingOptions \(optionsVarName) = (CGGradientDrawingOptions)(\(optionsStrings.joined(separator: " | ")));"
-        let startPoint = "CGPointMake((CGFloat)\(startPoint.x), (CGFloat)\(startPoint.y))"
-        let endPoint = "CGPointMake((CGFloat)\(endPoint.x), (CGFloat)\(endPoint.y))"
-
-        let drawGradientLine: String
-        switch gradient.kind {
-        case .axial:
-          let args = "\(gradientName), \(startPoint), \(endPoint), \(optionsVarName)"
-          drawGradientLine = cmd("DrawLinearGradient", args)
-        case let .radial(startRadius, endRadius):
-          let args = "\(gradientName), \(startPoint), (CGFloat)\(startRadius), \(endPoint), (CGFloat)\(endRadius), \(optionsVarName)"
-          drawGradientLine = cmd("DrawRadialGradient", args)
-        }
-        let releaseGradient = "  CGGradientRelease(\(gradientName));"
-        return [colorArray, gradientDef, colorArrayRelease, optionsLine, drawGradientLine, releaseGradient]
+    case let .linearGradient(name, (startPoint, endPoint, options)):
+      let drawing = with(gradient: gradients[name]!) { gradient in
+        [
+          .stmnt(cmd(
+            "CGContextDrawLinearGradient",
+            args: gradient, .value(startPoint), .value(endPoint), .value(options)
+          )),
+        ]
       }
-      return lines
+      return drawing.render(indent: 2)
+    case let .radialGradient(name, (startCenter, startRadius, endCenter, endRadius, options)):
+      let drawing = with(gradient: gradients[name]!) { gradient in
+        [
+          .stmnt(cmd(
+            "CGContextDrawRadialGradient",
+            args: gradient, .value(startCenter), .value(startRadius),
+            .value(endCenter), .value(endRadius), .value(options)
+          )),
+        ]
+      }
+      return drawing.render(indent: 2)
     case let .dash(pattern):
       let args = "\(pattern.phase), \(ObjCGen.cgFloatArray(pattern.lengths)), \(pattern.lengths.count)"
       return [cmd("SetLineDash", args)]
     case let .clipToRect(rect):
-      return [cmd("ClipToRect", rect: rect)]
+      return cmd("CGContextClipToRect", args: .value(rect)).render(indent: 2)
     case .beginTransparencyLayer:
-      return [cmd("BeginTransparencyLayer", "NULL")]
+      return cmd("CGContextBeginTransparencyLayer", args: .NULL).render(indent: 2)
     case .endTransparencyLayer:
       return [cmd("EndTransparencyLayer")]
     case let .globalAlpha(a):
-      return [cmd("SetAlpha", float: a)]
+      return cmd("CGContextSetAlpha", args: .value(a)).render(indent: 2)
     case let .fill(rule):
       switch rule {
       case .winding:
@@ -123,11 +101,11 @@ struct DrawStepToObjcCommandGenerator {
     case let .subrouteWithName(name):
       return ["  \(subrouteBlockName(subrouteName: name))(\(contextVarName));"]
     case let .strokeColor(color):
-      return cmd("SetStrokeColorWithColor", color: color)
+      return cmd("CGContextSetStrokeColor", args: .value(color.components)).render(indent: 2)
     case .stroke:
       return [cmd("StrokePath")]
     case let .fillColor(color):
-      return cmd("SetFillColorWithColor", color: color)
+      return cmd("CGContextSetFillColor", args: .value(color.components)).render(indent: 2)
     case let .composite(steps):
       return steps.flatMap {
         command(step: $0, gradients: gradients, subroutes: subroutes)
@@ -135,15 +113,10 @@ struct DrawStepToObjcCommandGenerator {
     case let .blendMode(blendMode):
       return [cmd("SetBlendMode", blendMode.objcConstname)]
     case let .lines(points):
-      let pointsArray = "points_\(uniqIDProvider())"
-      return ObjcTerm.composite([
-        ObjcTerm.cgPointArray(name: pointsArray, points: points),
-        ObjcTerm.stmnt(.expr(.call(.identifier("CGContextAddLines"), args: [
-          .identifier(contextVarName),
-          .identifier(pointsArray),
-          .identifier(points.count.description),
-        ]))),
-      ]).render(indent: 2)
+      let (pointsArray, pointsId) =
+        ObjcTerm.CDecl.cgPointArray("points_\(uniqIDProvider())", points)
+      let lines = cmd("CGContextAddLines", args: pointsId, .value(points.count))
+      return pointsArray.render(indent: 2) + lines.render(indent: 2)
     case let .fillEllipse(rect):
       return cmd("CGContextFillEllipseInRect", args: .value(rect))
         .render(indent: 2)
@@ -192,38 +165,33 @@ struct DrawStepToObjcCommandGenerator {
     return cmd(name, points.map { "(CGFloat)\($0.x), (CGFloat)\($0.y)" }.joined(separator: ", "))
   }
 
-  private func cmd(_ name: String, rect: CGRect) -> String {
-    let w = cmd(name, "CGRectMake((CGFloat)\(rect.x), (CGFloat)\(rect.y), (CGFloat)\(rect.size.width), (CGFloat)\(rect.size.height))")
-    return w
-  }
-
-  private func cmd(_ name: String, float: CGFloat) -> String {
-    return cmd(name, "(CGFloat)\(float)")
-  }
-
-  private func cmd(_ name: String, color: RGBACGColor) -> [String] {
-    let (colorVarName, createColor) = define(color: color)
-    let cmdStr = cmd(name, "\(colorVarName)")
-    let releaseLine = release(colorVarName: colorVarName)
-    return [createColor, cmdStr, releaseLine]
-  }
-
-  private func with(colors: [RGBACGColor], block: ([String]) -> [String]) -> [String] {
-    let colorNamesAndLines = colors.map { define(color: $0) }
-    let colorNames = colorNamesAndLines.map { $0.0 }
-    let colorDefLines = colorNamesAndLines.map { $0.1 }
-    let releaseLines = colorNames.map { release(colorVarName: $0) }
-    return colorDefLines + block(colorNames) + releaseLines
-  }
-
-  private func define(color: RGBACGColor) -> (String, String) {
-    let colorVarName = "color\(uniqIDProvider())"
-    let createColor = "  CGColorRef \(colorVarName) = CGColorCreate(\(globalDeviceRGBContextName), (CGFloat []){(CGFloat)\(color.red), (CGFloat)\(color.green), (CGFloat)\(color.blue), (CGFloat)\(color.alpha)});"
-    return (colorVarName, createColor)
-  }
-
-  private func release(colorVarName: String) -> String {
-    return "  CGColorRelease(\(colorVarName));"
+  func with(
+    gradient: Gradient,
+    _ terms: (ObjcTerm.Expr) -> [ObjcTerm.Statement.BlockItem]
+  ) -> ObjcTerm.Statement {
+    let locAndColors = gradient.locationAndColors
+    let (colors, colorsId) = ObjcTerm.CDecl.cgfloatArray(
+      "colors_\(uniqIDProvider())",
+      locAndColors.flatMap { $0.1.components }
+    )
+    let (locations, locationsId) = ObjcTerm.CDecl.cgfloatArray(
+      "locations_\(uniqIDProvider())",
+      locAndColors.map { $0.0 }
+    )
+    let (gradDecl, gradId) = ObjcTerm.CDecl.functionCall(
+      type: .CGGradientRef,
+      id: "grad_\(uniqIDProvider())",
+      functionName: "CGGradientCreateWithColorComponents",
+      args: gDeviceRgbContext, colorsId, locationsId, .value(locAndColors.count)
+    )
+    let release = ObjcTerm.Statement.call("CGGradientRelease", args: gradId)
+    return .block([
+      .decl(colors),
+      .decl(locations),
+      .decl(gradDecl),
+    ] + terms(gradId) + [
+      .stmnt(release),
+    ])
   }
 }
 
@@ -361,22 +329,6 @@ extension CGPathDrawingMode {
 }
 
 extension ObjcTerm {
-  static func cgPointArray(name: String, points: [CGPoint]) -> ObjcTerm {
-    let initializers = ObjcTerm.CDecl.Initializer.list(points.map(ObjcTerm.Expr.value))
-    return .cdecl(ObjcTerm.CDecl(
-      specifiers: [.type(.simple("CGPoint"))],
-      declarators: [
-        .declinit(
-          .init(
-            pointer: nil,
-            direct: .array(.identifier(name)),
-            attrs: []
-          ), initializers
-        ),
-      ]
-    ))
-  }
-
   static func forLoop(idx: String, range: Range<Int>, body: ObjcTerm.Statement) -> ObjcTerm {
     return .stmnt(.for(
       init: .variable(type: .int, name: idx, value: "\(range.lowerBound)"),
@@ -396,7 +348,27 @@ extension ObjcTerm.Statement {
 }
 
 extension ObjcTerm.CDecl {
-  static func variable(type: ObjcTerm.TypeName, name: String, value: String) -> ObjcTerm.CDecl {
+  static func cgPointArray(
+    _ name: String,
+    _ values: [CGPoint]
+  ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
+    return (
+      .array(name, of: .CGPoint, values.map(ObjcTerm.Expr.value)),
+      .identifier(name)
+    )
+  }
+
+  static func cgfloatArray(
+    _ name: String,
+    _ values: [CGFloat]
+  ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
+    return (
+      .array(name, of: .CGFloat, values.map(ObjcTerm.Expr.value)),
+      .identifier(name)
+    )
+  }
+
+  static func variable(type: ObjcTerm.TypeIdentifier, name: String, value: String) -> ObjcTerm.CDecl {
     return .init(
       specifiers: [.type(.simple(type))],
       declarators: [
@@ -406,14 +378,14 @@ extension ObjcTerm.CDecl {
   }
 
   static func functionCall(
-    type _: ObjcTerm.TypeName,
+    type: ObjcTerm.TypeIdentifier,
     id: String,
     functionName: String,
     args: ObjcTerm.Expr...
   ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
     return (
       .init(
-        specifiers: [.type(.simple(.CGPathRef))],
+        specifiers: [.type(.simple(type))],
         declarators: [
           .declinit(
             .init(identifier: id),
@@ -424,29 +396,56 @@ extension ObjcTerm.CDecl {
       .identifier(id)
     )
   }
+
+  static func array(
+    _ name: String,
+    of type: ObjcTerm.TypeIdentifier,
+    _ values: [ObjcTerm.Expr]
+  ) -> ObjcTerm.CDecl {
+    return .init(
+      specifiers: [.type(.simple(type))],
+      declarators: [
+        .declinit(
+          .init(
+            pointer: nil,
+            direct: .array(.identifier(name)),
+            attrs: []
+          ), ObjcTerm.CDecl.Initializer.list(values)
+        ),
+      ]
+    )
+  }
 }
 
 extension ObjcTerm.Expr {
+  static func value(_ value: Int) -> ObjcTerm.Expr {
+    return .const(raw: value.description)
+  }
+
   static func value(_ value: CGFloat) -> ObjcTerm.Expr {
     return .cast(to: .CGFloat, .const(raw: value.description))
   }
 
+  static func value(_ cgfloats: [CGFloat]) -> ObjcTerm.Expr {
+    return .array(of: .CGFloat, cgfloats.map(value))
+  }
+
   static func value(_ value: CGPoint) -> ObjcTerm.Expr {
-    return .list(type: .CGPoint, [
+    return .list(.CGPoint, [
       .member("x", .value(value.x)),
       .member("y", .value(value.y)),
     ])
   }
 
   static func value(_ value: CGSize) -> ObjcTerm.Expr {
-    return .list(type: .CGSize, [
+    return .list(.CGSize, [
       .member("width", .value(value.width)),
       .member("height", .value(value.height)),
     ])
   }
 
   static func value(_ value: CGRect) -> ObjcTerm.Expr {
-    return .list(type: .CGRect, [
+    return .list(.CGRect, [
       .member("origin", .value(value.origin)),
       .member("size", .value(value.size)),
     ])
@@ -454,6 +453,26 @@ extension ObjcTerm.Expr {
 
   static func value(_ value: CGPathDrawingMode) -> ObjcTerm.Expr {
     return .identifier(value.objcConstName)
+  }
+
+  static func value(_ value: CGGradientDrawingOptions) -> ObjcTerm.Expr {
+    let before: ObjcTerm.Expr? = value.contains(.drawsBeforeStartLocation) ?
+      .identifier("kCGGradientDrawsBeforeStartLocation") : nil
+    let after: ObjcTerm.Expr? = value.contains(.drawsAfterEndLocation) ?
+      .identifier("kCGGradientDrawsAfterEndLocation") : nil
+    let expr: ObjcTerm.Expr
+    switch (before, after) {
+    case (nil, nil):
+      expr = .value(0)
+    case let (before?, nil):
+      expr = before
+    case let (nil, after?):
+      expr = after
+    case let (before?, after?):
+      expr = before | after
+    }
+
+    return .cast(to: .CGGradientDrawingOptions, expr)
   }
 
   static func incr(_ variable: String) -> ObjcTerm.Expr {
@@ -466,14 +485,18 @@ extension ObjcTerm.Expr {
     return .bin(lhs: lhs, op: .less, rhs: rhs)
   }
 
+  static func |(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    return .bin(lhs: lhs, op: .bitwiseOr, rhs: rhs)
+  }
+
   subscript(_ e: ObjcTerm.Expr) -> ObjcTerm.Expr {
     return .subscript(self, idx: e)
   }
 }
 
-extension ObjcTerm.TypeName {
+extension ObjcTerm.TypeIdentifier {
   #if compiler(<5.1)
-    public typealias `Self` = ObjcTerm.TypeName
+    public typealias `Self` = ObjcTerm.TypeIdentifier
   #endif
   public static let CGPoint: Self = "CGPoint"
   public static let CGRect: Self = "CGRect"
@@ -481,4 +504,6 @@ extension ObjcTerm.TypeName {
   public static let CGSize: Self = "CGSize"
   public static let CGContextRef: Self = "CGContextRef"
   public static let CGPathRef: Self = "CGPathRef"
+  public static let CGGradientRef: Self = "CGGradientRef"
+  public static let CGGradientDrawingOptions: Self = "CGGradientDrawingOptions"
 }

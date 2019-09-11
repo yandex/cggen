@@ -2,7 +2,7 @@
 import XCTest
 
 final class ObjcLexTests: XCTestCase {
-  typealias Declarator = ObjcTerm.CDecl.Declarator
+  typealias Declarator = ObjcTerm.Declarator
   func testComments() {
     XCTAssertEqual(
       ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText(),

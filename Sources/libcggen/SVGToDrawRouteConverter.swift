@@ -48,13 +48,15 @@ private struct Context {
   private(set) var strokeAlpha: SVG.Float = 1
   private(set) var stroke: SVG.Paint = .rgb(.black())
   private(set) var strokeWidth: SVG.Length = 1
+  private(set) var strokeDashArray: [SVG.Length] = []
+  private(set) var strokeDashOffset: SVG.Length = 0
 
   var currentFill: RGBAColorType<UInt8, SVG.Float>?
   var currentStroke: RGBAColorType<UInt8, SVG.Float>?
   var drawingArea: CGRect
-  let gradients: [String: SVG.LinearGradient]
+  let gradients: [String: GradientStepsProvider]
 
-  init(drawingArea: CGRect, gradients: [String: SVG.LinearGradient]) {
+  init(drawingArea: CGRect, gradients: [String: GradientStepsProvider]) {
     self.drawingArea = drawingArea
     self.gradients = gradients
   }
@@ -90,6 +92,8 @@ private struct Context {
     stroke ?= presentation.stroke
     strokeAlpha ?= presentation.strokeOpacity
     strokeWidth ?= presentation.strokeWidth
+    strokeDashArray ?= presentation.strokeDashArray
+    strokeDashOffset ?= presentation.strokeDashOffset
     drawingArea ?= area
 
     let strokeWidth = presentation.strokeWidth.map { (l) -> DrawStep in
@@ -102,10 +106,15 @@ private struct Context {
     let strokeLineJoin = presentation.strokeLineJoin.map {
       DrawStep.lineJoinStyle(.init(svgJoin: $0))
     }
+    let needsDashUpdate = presentation.strokeDashOffset != nil ||
+      presentation.strokeDashArray != nil
+    let strokeDash = needsDashUpdate ? currentDash.map(DrawStep.dash) : nil
+
     return .composite([
       strokeWidth,
       strokeLineCap,
       strokeLineJoin,
+      strokeDash,
       updateCurrentFillAndStroke(),
     ].compactMap(identity))
   }
@@ -113,11 +122,7 @@ private struct Context {
   func gradient(for paint: KeyPath<Context, SVG.Paint>) throws -> DrawStep? {
     if case let .funciri(grad) = self[keyPath: paint] {
       let g = try gradients[grad] !! Err.gradientNotFound(grad)
-      return .paintWithGradient(
-        grad,
-        start: g.startPoint(in: drawingArea),
-        end: g.endPoint(in: drawingArea)
-      )
+      return g(drawingArea)
     }
     return nil
   }
@@ -162,6 +167,21 @@ private struct Context {
       return .fillStroke
     case (.some, .some, .evenodd):
       return .eoFillStroke
+    }
+  }
+
+  var currentDash: DashPattern? {
+    let lengths = strokeDashArray.map {
+      CGFloat($0.number)
+    }
+    let phase = CGFloat(strokeDashOffset.number)
+    switch strokeDashArray.count {
+    case 0:
+      return nil
+    case let even where even.isMultiple(of: 2):
+      return .init(phase: phase, lengths: lengths)
+    default:
+      return .init(phase: phase, lengths: lengths + lengths)
     }
   }
 }
@@ -237,7 +257,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
       area: box,
       ctx: ctx
     )
-  case .linearGradient:
+  case .linearGradient, .radialGradient:
     fatalError()
   case .mask:
     fatalError()
@@ -308,15 +328,14 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   }
 }
 
-private func gradients(svg: SVG) throws -> [(String, (Gradient, SVG.LinearGradient))] {
+typealias GradientStepsProvider = (CGRect) -> DrawStep
+
+private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsProvider))] {
   switch svg {
   case let .defs(defs):
     return try defs.children.flatMap(gradients(svg:))
   case let .linearGradient(g):
-    guard let id = g.core.id,
-      let startPoint = zip(g.x1, g.y1).map({ CGPoint(x: $0.0.number, y: $0.1.number) }),
-      let endPoint = zip(g.x2, g.y2).map({ CGPoint(x: $0.0.number, y: $0.1.number) })
-    else { return [] }
+    guard let id = g.core.id else { return [] }
     let stops = g.stops
     let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
       let color = try $0.presentation.stopColor !! Err.noStopColor
@@ -330,14 +349,42 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, SVG.LinearGradie
       }
       return (offset, color.norm().withAlpha(opacity))
     }
+    let steps: GradientStepsProvider = { drawingrect in
+      .linearGradient(id, (
+        startPoint: g.startPoint(in: drawingrect),
+        endPoint: g.endPoint(in: drawingrect),
+        options: g.options
+      ))
+    }
     return [
-      (id, (Gradient(
-        locationAndColors: locandcolors,
-        startPoint: startPoint,
-        endPoint: endPoint,
-        options: [.drawsBeforeStartLocation, .drawsAfterEndLocation],
-        kind: .axial
-      ), g)),
+      (id, (Gradient(locationAndColors: locandcolors), steps)),
+    ]
+  case let .radialGradient(g):
+    guard let id = g.core.id else { return [] }
+    let stops = g.stops
+    let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
+      let color = try $0.presentation.stopColor !! Err.noStopColor
+      let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
+      let offset: CGFloat
+      switch try $0.offset !! Err.noStopOffset {
+      case let .number(num):
+        offset = CGFloat(num)
+      case let .percentage(percentage):
+        offset = CGFloat(percentage) / 100
+      }
+      return (offset, color.norm().withAlpha(opacity))
+    }
+    let steps: GradientStepsProvider = { drawingrect in
+      DrawStep.radialGradient(id, (
+        startCenter: g.startCenter(in: drawingrect),
+        startRadius: 0,
+        endCenter: g.endCenter(in: drawingrect),
+        endRadius: g.endRadius(in: drawingrect),
+        options: g.options
+      ))
+    }
+    return [
+      (id, (Gradient(locationAndColors: locandcolors), steps)),
     ]
   default:
     return []
@@ -433,12 +480,37 @@ extension CGAffineTransform {
 }
 
 extension SVG.LinearGradient {
-  func startPoint(in drawingArea: CGRect) -> CGPoint? {
-    return zip(x1, y1).map { abs($0.0, $0.1, drawingArea) }
+  func startPoint(in drawingArea: CGRect) -> CGPoint {
+    return abs(x1 ?? 0%, y1 ?? 0%, drawingArea)
   }
 
-  func endPoint(in drawingArea: CGRect) -> CGPoint? {
-    return zip(x2, y2).map { abs($0.0, $0.1, drawingArea) }
+  func endPoint(in drawingArea: CGRect) -> CGPoint {
+    return abs(x2 ?? 100%, y2 ?? 0%, drawingArea)
+  }
+
+  var options: CGGradientDrawingOptions {
+    return [.drawsAfterEndLocation, .drawsBeforeStartLocation]
+  }
+}
+
+extension SVG.RadialGradient {
+  private var cxWithDefault: SVG.Coordinate { return cx ?? 50% }
+  private var cyWithDefault: SVG.Coordinate { return cy ?? 50% }
+
+  func startCenter(in drawingAres: CGRect) -> CGPoint {
+    return abs(fx ?? cxWithDefault, fy ?? cyWithDefault, drawingAres)
+  }
+
+  func endCenter(in drawingArea: CGRect) -> CGPoint {
+    return abs(cxWithDefault, cyWithDefault, drawingArea)
+  }
+
+  var options: CGGradientDrawingOptions {
+    return [.drawsAfterEndLocation, .drawsBeforeStartLocation]
+  }
+
+  func endRadius(in drawingArea: CGRect) -> CGFloat {
+    return (r ?? 50%).abs(in: min(drawingArea.width, drawingArea.height))
   }
 }
 
@@ -462,4 +534,9 @@ extension SVG.Coordinate {
       return CGFloat(number / 100) * value
     }
   }
+}
+
+postfix operator %
+postfix func %(percent: SVG.Float) -> SVG.Coordinate {
+  return .init(percent, .percent)
 }

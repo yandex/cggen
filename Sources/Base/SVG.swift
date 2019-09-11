@@ -107,6 +107,8 @@ public enum SVG: Equatable {
     public var strokeWidth: Length?
     public var strokeLineCap: LineCap?
     public var strokeLineJoin: LineJoin?
+    public var strokeDashArray: [Length]?
+    public var strokeDashOffset: Length?
     public var strokeOpacity: Float?
     public var opacity: SVG.Float?
     public var stopColor: SVG.Color?
@@ -120,6 +122,8 @@ public enum SVG: Equatable {
       strokeWidth: Length?,
       strokeLineCap: LineCap?,
       strokeLineJoin: LineJoin?,
+      strokeDashArray: [Length]?,
+      strokeDashOffset: Length?,
       strokeOpacity: Float?,
       opacity: Float?,
       stopColor: SVG.Color?,
@@ -132,6 +136,8 @@ public enum SVG: Equatable {
       self.strokeWidth = strokeWidth
       self.strokeLineCap = strokeLineCap
       self.strokeLineJoin = strokeLineJoin
+      self.strokeDashArray = strokeDashArray
+      self.strokeDashOffset = strokeDashOffset
       self.strokeOpacity = strokeOpacity
       self.opacity = opacity
       self.stopColor = stopColor
@@ -278,6 +284,18 @@ public enum SVG: Equatable {
     public var stops: [Stop]
   }
 
+  public struct RadialGradient: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var cx: Coordinate?
+    public var cy: Coordinate?
+    public var r: Length?
+    public var fx: Coordinate?
+    public var fy: Coordinate?
+    public var gradientTransform: [Transform]?
+    public var stops: [Stop]
+  }
+
   case svg(Document)
   case group(Group)
   case rect(Rect)
@@ -291,13 +309,14 @@ public enum SVG: Equatable {
   case title(String)
   case desc(String)
   case linearGradient(LinearGradient)
+  case radialGradient(RadialGradient)
 }
 
 // MARK: - Serialization
 
 private enum Tag: String {
-  case svg, title, desc, g, defs, linearGradient, stop, path
-  case rect, polygon, circle, ellipse
+  case svg, title, desc, g, defs, linearGradient, radialGradient, stop, path
+  case rect, polygon, circle, ellipse, mask
 }
 
 private enum Attribute: String {
@@ -314,6 +333,9 @@ private enum Attribute: String {
   case opacity
   case stopColor = "stop-color", stopOpacity = "stop-opacity"
   case strokeLinecap = "stroke-linecap", strokeLinejoin = "stroke-linejoin"
+  case strokeDasharray = "stroke-dasharray"
+  case strokeDashoffset = "stroke-dashoffset"
+  case gradientTransform
 
   case viewBox, version
   case points
@@ -321,35 +343,7 @@ private enum Attribute: String {
   case offset
   case x1, y1, x2, y2
   case d, pathLength
-  case cx, cy, r
-}
-
-private struct AttributeSet: ExpressibleByArrayLiteral {
-  var attributes: Set<Attribute>
-
-  init(arrayLiteral elements: Attribute...) {
-    attributes = Set(elements)
-    precondition(attributes.count == elements.count)
-  }
-
-  private init(attributes: Set<Attribute>) {
-    self.attributes = attributes
-  }
-
-  static let rect: AttributeSet = [.x, .y, .width, .height]
-  static let presentation: AttributeSet = [
-    .fill, .fillRule, .fillOpacity,
-    .stroke, .strokeWidth, .opacity,
-    .stopColor, .stopOpacity,
-  ]
-  static let core: AttributeSet = [.id]
-
-  static let group: AttributeSet = .presentation + .core + [.transform]
-
-  static func +(lhs: AttributeSet, rhs: AttributeSet) -> AttributeSet {
-    precondition(lhs.attributes.intersection(rhs.attributes).isEmpty)
-    return .init(attributes: lhs.attributes.union(rhs.attributes))
-  }
+  case cx, cy, r, fx, fy
 }
 
 extension SVG.Length {
@@ -383,6 +377,7 @@ public enum SVGParser {
     case titleHasInvalidFormat(XML)
     case uknownTag(String)
     case invalidVersion(String)
+    case notImplemented
   }
 
   private typealias ParserForAttribute<T> = (Attribute) -> AttributeParser<T>
@@ -449,6 +444,8 @@ public enum SVGParser {
     return zip(identifier(.xmlns), identifier(.xmlnsxlink)) { _, _ in () }
   }
 
+  private static let dashArray = attributeParser(SVGAttributeParsers.dashArray)
+
   private static var presentation: AttributeGroupParser<SVG.PresentationAttributes> {
     return zip(
       paint(.fill),
@@ -458,6 +455,8 @@ public enum SVGParser {
       len(.strokeWidth),
       lineCap(.strokeLinecap),
       lineJoin(.strokeLinejoin),
+      dashArray(.strokeDasharray),
+      len(.strokeDashoffset),
       num(.strokeOpacity),
       num(.opacity),
       color(.stopColor),
@@ -593,6 +592,33 @@ public enum SVGParser {
     )
   }
 
+  public static func radialGradient(from el: XML.Element) throws -> SVG.RadialGradient {
+    let attrs = try (zip(
+      core, presentation, coord(.cx), coord(.cy), len(.r),
+      coord(.fx), coord(.fy), transform(.gradientTransform),
+      with: identity
+    ) <<~ endof()).run(el.attrs).get()
+    let subelements: [XML.Element] = try el.children.map {
+      switch $0 {
+      case let .el(el):
+        return el
+      case let .text(t):
+        throw Error.unexpectedXMLText(t)
+      }
+    }
+    return try .init(
+      core: attrs.0,
+      presentation: attrs.1,
+      cx: attrs.2,
+      cy: attrs.3,
+      r: attrs.4,
+      fx: attrs.5,
+      fy: attrs.6,
+      gradientTransform: attrs.7,
+      stops: subelements.map(stops(from:))
+    )
+  }
+
   private static let path: AttributeGroupParser<SVG.Path> =
     zip(core, presentation, pathData(.d), num(.pathLength), with: SVG.Path.init)
 
@@ -631,6 +657,8 @@ public enum SVGParser {
         return try .defs(defs(from: el))
       case .linearGradient:
         return try .linearGradient(linearGradient(from: el))
+      case .radialGradient:
+        return try .radialGradient(radialGradient(from: el))
       case .stop:
         fatalError()
       case .path:
@@ -639,6 +667,8 @@ public enum SVGParser {
         return try .circle(circle(from: el))
       case .ellipse:
         return try .ellipse(ellipse(from: el))
+      case .mask:
+        throw Error.notImplemented
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -682,22 +712,44 @@ internal enum SVGAttributeParsers {
     )
 
   // Has no equivalent in specification, for code deduplication only.
-  // "$name" wsp* "(" wsp* inBrackets wsp* ")"
-  internal static func transformTemplate<T>(
+  // "$name" wsp* "(" wsp* parser wsp* ")"
+  internal static func namedTransform(
     _ name: String,
-    _ inBrackets: Parser<T>
-  ) -> Parser<T> {
-    return (consume(name) ~ " "* ~ "(" ~ wsp*) ~>> inBrackets <<~ (wsp* ~ ")")
+    _ value: Parser<SVG.Transform>
+  ) -> Parser<SVG.Transform> {
+    return (consume(name) ~ wsp* ~ "(" ~ wsp*) ~>> value <<~ (wsp* ~ ")")
   }
 
   // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
-  internal static let translate: Parser<SVG.Transform> =
-    transformTemplate("translate", number ~ (commaWsp ~>> number)~?)
-    .map { .translate(tx: $0.0, ty: $0.1) }
+  internal static let translate: Parser<SVG.Transform> = namedTransform(
+    "translate",
+    zip(number, (commaWsp ~>> number)~?, with: SVG.Transform.translate)
+  )
 
-  internal static let transformsList: Parser<[SVG.Transform]> = transform*
+  // "scale" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
+  internal static let scale: Parser<SVG.Transform> = namedTransform(
+    "scale",
+    zip(number, (commaWsp ~>> number)~?, with: SVG.Transform.scale)
+  )
+
+  // comma-wsp number comma-wsp number
+  private static let anchor: Parser<SVG.Transform.Anchor> = zip(
+    commaWsp ~>> number, commaWsp ~>> number,
+    with: SVG.Transform.Anchor.init
+  )
+
+  // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp* ")"
+  internal static let rotate: Parser<SVG.Transform> = namedTransform(
+    "rotate",
+    zip(number, anchor~?, with: SVG.Transform.rotate)
+  )
+
+  internal static let transformsList: Parser<[SVG.Transform]> =
+    wsp* ~>> oneOrMore(transform, separator: commaWsp+) <<~ wsp*
   internal static let transform: Parser<SVG.Transform> = oneOf([
     translate,
+    scale,
+    rotate,
   ])
 
   internal static let hexByteFromSingle: Parser<UInt8> = readOne().flatMap {
@@ -817,6 +869,9 @@ internal enum SVGAttributeParsers {
   private static func hexFromChar(_ c: Character) -> UInt8? {
     return c.hexDigitValue.flatMap(UInt8.init(exactly:))
   }
+
+  // Dash Array
+  internal static let dashArray = oneOrMore(length, separator: commaWsp)
 }
 
 // MARK: - Render
@@ -843,7 +898,7 @@ public func renderXML(from svg: SVG) -> XML {
       "fill-opacity": r.presentation.fillOpacity?.description,
     ].compactMapValues(identity))
   case .group, .polygon, .mask, .use, .defs, .title, .desc, .linearGradient,
-       .circle, .path, .ellipse:
+       .circle, .path, .ellipse, .radialGradient:
     fatalError()
   }
 }
@@ -901,6 +956,8 @@ extension SVG.PresentationAttributes {
       strokeWidth: nil,
       strokeLineCap: nil,
       strokeLineJoin: nil,
+      strokeDashArray: nil,
+      strokeDashOffset: nil,
       strokeOpacity: nil,
       opacity: nil,
       stopColor: nil,

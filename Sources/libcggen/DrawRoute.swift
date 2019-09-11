@@ -7,16 +7,7 @@ import Foundation
 typealias RGBACGColor = RGBAColor<CGFloat>
 
 struct Gradient {
-  enum Kind {
-    case axial
-    case radial(startRadius: CGFloat, endRadius: CGFloat)
-  }
-
-  let locationAndColors: [(CGFloat, RGBACGColor)]
-  let startPoint: CGPoint
-  let endPoint: CGPoint
-  let options: CGGradientDrawingOptions
-  let kind: Kind
+  var locationAndColors: [(CGFloat, RGBACGColor)]
 }
 
 struct DashPattern {
@@ -29,6 +20,20 @@ struct DashPattern {
 }
 
 enum DrawStep {
+  typealias RadialGradientDrawingOptions = (
+    startCenter: CGPoint,
+    startRadius: CGFloat,
+    endCenter: CGPoint,
+    endRadius: CGFloat,
+    options: CGGradientDrawingOptions
+  )
+
+  typealias LinearGradientDrawingOptions = (
+    startPoint: CGPoint,
+    endPoint: CGPoint,
+    options: CGGradientDrawingOptions
+  )
+
   case saveGState
   case restoreGState
 
@@ -67,7 +72,8 @@ enum DrawStep {
   case strokeColor(RGBACGColor)
   case fillColor(RGBACGColor)
 
-  case paintWithGradient(String, start: CGPoint?, end: CGPoint?)
+  case linearGradient(String, LinearGradientDrawingOptions)
+  case radialGradient(String, RadialGradientDrawingOptions)
   case subrouteWithName(String)
   case blendMode(CGBlendMode)
 

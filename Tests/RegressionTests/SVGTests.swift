@@ -39,16 +39,30 @@ class SVGTest: XCTestCase {
     test(svg: "group_opacity")
   }
 
-  func testGradient() {
-    test(svg: "gradient")
-  }
-
   func testShapes() {
     test(svg: "shapes")
   }
 
   func testComplexCurve() {
     test(svg: "complex_curve")
+  }
+
+  func testCapsJoins() {
+    test(svg: "caps_joins")
+  }
+
+  func testDashes() {
+    test(svg: "dashes")
+  }
+}
+
+class SVGGradientTests: XCTestCase {
+  func testGradient() {
+    test(svg: "gradient")
+  }
+
+  func testGradientShape() {
+    test(svg: "gradient_shape")
   }
 
   func testGradientStroke() {
@@ -65,6 +79,18 @@ class SVGTest: XCTestCase {
 
   func testGradientWithAlpha() {
     test(svg: "gradient_with_alpha")
+  }
+
+  func testGradientThreeControlPoints() {
+    test(svg: "gradient_three_dots")
+  }
+
+  func testGradientWithMask() {
+    test(svg: "gradient_with_mask")
+  }
+
+  func testGradientRadial() {
+    test(svg: "gradient_radial")
   }
 }
 
