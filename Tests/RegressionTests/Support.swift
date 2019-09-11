@@ -11,6 +11,13 @@ private enum Error: Swift.Error {
 
 extension NSImage {
   func cgimg() throws -> CGImage {
+    // Sometimes NSImage.cgImage has different size than underlying cgimage
+    if representations.count == 1,
+      let repr = representations.first,
+      repr.className == "NSCGImageSnapshotRep" {
+      return try repr.cgImage(forProposedRect: nil, context: nil, hints: nil) !!
+        Error.cgimageCreationFailed
+    }
     return try cgImage(forProposedRect: nil, context: nil, hints: nil) !!
       Error.cgimageCreationFailed
   }

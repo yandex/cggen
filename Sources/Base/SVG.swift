@@ -100,6 +100,7 @@ public enum SVG: Equatable {
   }
 
   public struct PresentationAttributes: Equatable {
+    public var clipRule: FillRule?
     public var fill: Paint?
     public var fillRule: FillRule?
     public var fillOpacity: Float?
@@ -115,6 +116,7 @@ public enum SVG: Equatable {
     public var stopOpacity: SVG.Float?
 
     public init(
+      clipRule: FillRule?,
       fill: Paint?,
       fillRule: FillRule?,
       fillOpacity: Float?,
@@ -129,6 +131,7 @@ public enum SVG: Equatable {
       stopColor: SVG.Color?,
       stopOpacity: SVG.Float?
     ) {
+      self.clipRule = clipRule
       self.fill = fill
       self.fillRule = fillRule
       self.fillOpacity = fillOpacity
@@ -148,12 +151,20 @@ public enum SVG: Equatable {
   // MARK: Elements
 
   public struct Document: Equatable {
+    public var presentation: PresentationAttributes
     public var width: Length?
     public var height: Length?
     public var viewBox: ViewBox?
     public var children: [SVG]
 
-    public init(width: Length?, height: Length?, viewBox: ViewBox?, children: [SVG]) {
+    public init(
+      presentation: PresentationAttributes,
+      width: Length?,
+      height: Length?,
+      viewBox: ViewBox?,
+      children: [SVG]
+    ) {
+      self.presentation = presentation
       self.width = width
       self.height = height
       self.viewBox = viewBox
@@ -274,9 +285,14 @@ public enum SVG: Equatable {
     public var offset: Offset?
   }
 
+  public enum GradientUnits: String, CaseIterable {
+    case userSpaceOnUse, objectBoundingBox
+  }
+
   public struct LinearGradient: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
+    public var unit: GradientUnits?
     public var x1: Coordinate?
     public var y1: Coordinate?
     public var x2: Coordinate?
@@ -287,6 +303,7 @@ public enum SVG: Equatable {
   public struct RadialGradient: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
+    public var unit: GradientUnits?
     public var cx: Coordinate?
     public var cy: Coordinate?
     public var r: Length?
@@ -328,6 +345,7 @@ private enum Attribute: String {
   case x, y, width, height, rx, ry
 
   // Presentation
+  case clipRule = "clip-rule"
   case fill, fillRule = "fill-rule", fillOpacity = "fill-opacity"
   case stroke, strokeWidth = "stroke-width", strokeOpacity = "stroke-opacity"
   case opacity
@@ -335,7 +353,7 @@ private enum Attribute: String {
   case strokeLinecap = "stroke-linecap", strokeLinejoin = "stroke-linejoin"
   case strokeDasharray = "stroke-dasharray"
   case strokeDashoffset = "stroke-dashoffset"
-  case gradientTransform
+  case gradientTransform, gradientUnits
 
   case viewBox, version
   case points
@@ -448,6 +466,7 @@ public enum SVGParser {
 
   private static var presentation: AttributeGroupParser<SVG.PresentationAttributes> {
     return zip(
+      fillRule(.clipRule),
       paint(.fill),
       fillRule(.fillRule),
       num(.fillOpacity),
@@ -487,13 +506,15 @@ public enum SVGParser {
     from el: XML.Element
   ) throws -> SVG.Document {
     let attrs = try (zip(
+      presentation,
       len(.width), len(.height), viewBox(.viewBox),
       with: identity
     ) <<~ version <<~ xml <<~ endof()).run(el.attrs).get()
     return .init(
-      width: attrs.0,
-      height: attrs.1,
-      viewBox: attrs.2,
+      presentation: attrs.0,
+      width: attrs.1,
+      height: attrs.2,
+      viewBox: attrs.3,
       children: try el.children.map(element(from:))
     )
   }
@@ -568,9 +589,12 @@ public enum SVGParser {
     return try (stop <<~ endof()).run(el.attrs).get()
   }
 
+  private static let gradientUnits = attributeParser(oneOf(SVG.GradientUnits.self))
+
   public static func linearGradient(from el: XML.Element) throws -> SVG.LinearGradient {
     let attrs = try (zip(
-      core, presentation, coord(.x1), coord(.y1), coord(.x2), coord(.y2),
+      core, presentation, gradientUnits(.gradientUnits),
+      coord(.x1), coord(.y1), coord(.x2), coord(.y2),
       with: identity
     ) <<~ endof()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
@@ -584,17 +608,19 @@ public enum SVGParser {
     return try .init(
       core: attrs.0,
       presentation: attrs.1,
-      x1: attrs.2,
-      y1: attrs.3,
-      x2: attrs.4,
-      y2: attrs.5,
+      unit: attrs.2,
+      x1: attrs.3,
+      y1: attrs.4,
+      x2: attrs.5,
+      y2: attrs.6,
       stops: subelements.map(stops(from:))
     )
   }
 
   public static func radialGradient(from el: XML.Element) throws -> SVG.RadialGradient {
     let attrs = try (zip(
-      core, presentation, coord(.cx), coord(.cy), len(.r),
+      core, presentation, gradientUnits(.gradientUnits),
+      coord(.cx), coord(.cy), len(.r),
       coord(.fx), coord(.fy), transform(.gradientTransform),
       with: identity
     ) <<~ endof()).run(el.attrs).get()
@@ -609,12 +635,13 @@ public enum SVGParser {
     return try .init(
       core: attrs.0,
       presentation: attrs.1,
-      cx: attrs.2,
-      cy: attrs.3,
-      r: attrs.4,
-      fx: attrs.5,
-      fy: attrs.6,
-      gradientTransform: attrs.7,
+      unit: attrs.2,
+      cx: attrs.3,
+      cy: attrs.4,
+      r: attrs.5,
+      fx: attrs.6,
+      fy: attrs.7,
+      gradientTransform: attrs.8,
       stops: subelements.map(stops(from:))
     )
   }
@@ -687,7 +714,7 @@ private func attributeParser<T>(
   }
 }
 
-internal enum SVGAttributeParsers {
+public enum SVGAttributeParsers {
   typealias Parser<T> = Base.Parser<Substring, T>
   internal static let wsp: Parser<Void> = oneOf([0x20, 0x9, 0xD, 0xA]
     .map(Unicode.Scalar.init).map(Character.init)
@@ -765,7 +792,11 @@ internal enum SVGAttributeParsers {
   private static let shortRGB: Parser<SVG.Color> =
     zip(hexByteFromSingle, hexByteFromSingle, hexByteFromSingle, with: SVG.Color.init)
   private static let rgb: Parser<SVG.Color> = zip(hexByte, hexByte, hexByte, with: SVG.Color.init)
-  internal static let rgbcolor = "#" ~>> (rgb | shortRGB)
+
+  public static let rgbcolor = oneOf([
+    "#" ~>> (rgb | shortRGB),
+    oneOf(SVGColorKeyword.self).map(get(\.color)),
+  ])
 
   internal static let paint: Parser<SVG.Paint> =
     consume("none").map(always(.none)) |
@@ -945,24 +976,27 @@ extension SVG.ViewBox {
 // Helpers
 
 extension SVG.PresentationAttributes {
+  public static let empty = SVG.PresentationAttributes(
+    clipRule: nil,
+    fill: nil,
+    fillRule: nil,
+    fillOpacity: nil,
+    stroke: nil,
+    strokeWidth: nil,
+    strokeLineCap: nil,
+    strokeLineJoin: nil,
+    strokeDashArray: nil,
+    strokeDashOffset: nil,
+    strokeOpacity: nil,
+    opacity: nil,
+    stopColor: nil,
+    stopOpacity: nil
+  )
+
   public static func construct(
     _ constructor: (inout SVG.PresentationAttributes) -> Void
   ) -> SVG.PresentationAttributes {
-    var temp = SVG.PresentationAttributes(
-      fill: nil,
-      fillRule: nil,
-      fillOpacity: nil,
-      stroke: nil,
-      strokeWidth: nil,
-      strokeLineCap: nil,
-      strokeLineJoin: nil,
-      strokeDashArray: nil,
-      strokeDashOffset: nil,
-      strokeOpacity: nil,
-      opacity: nil,
-      stopColor: nil,
-      stopOpacity: nil
-    )
+    var temp = empty
     constructor(&temp)
     return temp
   }

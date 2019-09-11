@@ -369,6 +369,14 @@ public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
 }
 
 @inlinable
+public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(
+  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
+  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11, _ t12: T12, _ t13: T13
+) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13) {
+  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13)
+}
+
+@inlinable
 public func always<T, U>(_ value: T) -> (U) -> T {
   return { _ in value }
 }
@@ -403,6 +411,11 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
   var copy = value
   modifier(&copy)
   return copy
+}
+
+@inlinable
+public func get<T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
+  return { $0[keyPath: kp] }
 }
 
 public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {

@@ -39,7 +39,10 @@ extension GenerationParams {
 
   var cggenSupportHeaderBody: ObjcTerm {
     return supportHeader(
-      importAsModules: importAsModules, prefix: prefix, module: module
+      importAsModules: importAsModules,
+      prefix: prefix,
+      module: module,
+      descriptorTypeName: descriptorTypename
     )
   }
 }
@@ -47,7 +50,8 @@ extension GenerationParams {
 private func supportHeader(
   importAsModules: Bool,
   prefix: String,
-  module: String
+  module: String,
+  descriptorTypeName: String
 ) -> ObjcTerm {
   return ObjcTerm(
     commonHeaderPrefix,
@@ -66,9 +70,10 @@ private func supportHeader(
             ]
           )),
         ], declarators: [
-          .decl(.namedInSwift("\(module)Resources.Descriptor", decl: .identifier("descriptorTypename"))),
+          .decl(.namedInSwift("\(module)Resources.Descriptor", decl: .identifier(descriptorTypeName))),
         ]
       ))
-    )
+    ),
+    .newLine
   )
 }

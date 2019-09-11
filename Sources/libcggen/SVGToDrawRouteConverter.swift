@@ -9,7 +9,8 @@ enum SVGToDrawRouteConverter {
       uniqueKeysWithValues: document.children.flatMap(gradients(svg:))
     )
     var context = Context(
-      drawingArea: boundingRect,
+      objectBoundingBox: boundingRect,
+      drawingBounds: boundingRect,
       gradients: gradients.mapValues { $0.1 }
     )
     return try .init(
@@ -28,7 +29,7 @@ extension SVG.Document {
     return CGRect(
       x: 0.0, y: 0.0,
       width: width?.number ?? 0,
-      height: width?.number ?? 0
+      height: height?.number ?? 0
     )
   }
 }
@@ -39,6 +40,7 @@ private enum Err: Swift.Error {
   case noStopColor
   case noStopOffset
   case gradientNotFound(String)
+  case noPreviousPoint
 }
 
 private struct Context {
@@ -46,18 +48,24 @@ private struct Context {
   private(set) var fillAlpha: SVG.Float = 1
   private(set) var fill: SVG.Paint = .rgb(.black())
   private(set) var strokeAlpha: SVG.Float = 1
-  private(set) var stroke: SVG.Paint = .rgb(.black())
+  private(set) var stroke: SVG.Paint = .none
   private(set) var strokeWidth: SVG.Length = 1
   private(set) var strokeDashArray: [SVG.Length] = []
   private(set) var strokeDashOffset: SVG.Length = 0
 
   var currentFill: RGBAColorType<UInt8, SVG.Float>?
   var currentStroke: RGBAColorType<UInt8, SVG.Float>?
-  var drawingArea: CGRect
+  var objectBoundingBox: CGRect
+  var drawingBounds: CGRect
   let gradients: [String: GradientStepsProvider]
 
-  init(drawingArea: CGRect, gradients: [String: GradientStepsProvider]) {
-    self.drawingArea = drawingArea
+  init(
+    objectBoundingBox: CGRect,
+    drawingBounds: CGRect,
+    gradients: [String: GradientStepsProvider]
+  ) {
+    self.objectBoundingBox = objectBoundingBox
+    self.drawingBounds = drawingBounds
     self.gradients = gradients
   }
 
@@ -68,7 +76,7 @@ private struct Context {
       current: inout RGBAColorType<UInt8, SVG.Float>?,
       additionalCondition: Bool = true
     ) -> RGBACGColor? {
-      guard case let .rgb(color) = paint,
+      guard let color = paint.color,
         case let new = color.withAlpha(opacity),
         current != new, additionalCondition else {
         return nil
@@ -94,7 +102,7 @@ private struct Context {
     strokeWidth ?= presentation.strokeWidth
     strokeDashArray ?= presentation.strokeDashArray
     strokeDashOffset ?= presentation.strokeDashOffset
-    drawingArea ?= area
+    objectBoundingBox ?= area
 
     let strokeWidth = presentation.strokeWidth.map { (l) -> DrawStep in
       precondition(l.unit != .percent)
@@ -122,7 +130,7 @@ private struct Context {
   func gradient(for paint: KeyPath<Context, SVG.Paint>) throws -> DrawStep? {
     if case let .funciri(grad) = self[keyPath: paint] {
       let g = try gradients[grad] !! Err.gradientNotFound(grad)
-      return g(drawingArea)
+      return g((objectBoundingBox, drawingBounds))
     }
     return nil
   }
@@ -280,26 +288,41 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   case let .path(p):
     guard let commands = p.d else { return .empty }
     let cgpath = CGMutablePath()
-    let path: [DrawStep] = commands.flatMap { (command) -> [DrawStep] in
+    var currentPoint: CGPoint?
+    let path: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
       guard let move = command.moveTo.last else { return [DrawStep.empty] }
       let point = CGPoint(svgPair: move.coordinatePair)
       cgpath.move(to: point)
-      return [DrawStep.moveTo(point)] + command.drawTo.map {
+      currentPoint = point
+      return try [DrawStep.moveTo(point)] + command.drawTo.map {
         switch $0 {
         case .closepath:
           cgpath.closeSubpath()
+          currentPoint = nil
           return .closePath
         case let .lineto(_, pair):
           let point = CGPoint(svgPair: pair)
           cgpath.addLine(to: point)
+          currentPoint = point
           return .lineTo(point)
         case let .curveto(_, cp1, cp2, to):
           let cp1 = CGPoint(svgPair: cp1)
           let cp2 = CGPoint(svgPair: cp2)
           let to = CGPoint(svgPair: to)
+          currentPoint = to
           return .curveTo(cp1, cp2, to)
-        case .smoothCurveto, .horizontalLineto, .quadraticBezierCurveto,
-             .smoothQuadraticBezierCurveto, .verticalLineto:
+        case let .horizontalLineto(_, x):
+          guard let current = currentPoint else { throw Err.noPreviousPoint }
+          let point = modified(current) { $0.x = x.cgfloat }
+          currentPoint = point
+          return .lineTo(point)
+        case let .verticalLineto(_, y):
+          guard let current = currentPoint else { throw Err.noPreviousPoint }
+          let point = modified(current) { $0.y = y.cgfloat }
+          currentPoint = point
+          return .lineTo(point)
+        case .smoothCurveto, .quadraticBezierCurveto,
+             .smoothQuadraticBezierCurveto:
           fatalError()
         }
       }
@@ -328,7 +351,10 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   }
 }
 
-typealias GradientStepsProvider = (CGRect) -> DrawStep
+typealias GradientStepsProvider = ((
+  objectBoundingBox: CGRect,
+  drawingBounds: CGRect
+)) -> DrawStep
 
 private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsProvider))] {
   switch svg {
@@ -341,7 +367,7 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       let color = try $0.presentation.stopColor !! Err.noStopColor
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
       let offset: CGFloat
-      switch try $0.offset !! Err.noStopOffset {
+      switch $0.offset ?? .number(0) {
       case let .number(num):
         offset = CGFloat(num)
       case let .percentage(percentage):
@@ -349,10 +375,18 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       }
       return (offset, color.norm().withAlpha(opacity))
     }
-    let steps: GradientStepsProvider = { drawingrect in
-      .linearGradient(id, (
-        startPoint: g.startPoint(in: drawingrect),
-        endPoint: g.endPoint(in: drawingrect),
+    let steps: GradientStepsProvider = { arg in
+      let (objectBox, drawingArea) = arg
+      let coordinates: CGRect
+      switch g.unit ?? .objectBoundingBox {
+      case .objectBoundingBox:
+        coordinates = objectBox
+      case .userSpaceOnUse:
+        coordinates = drawingArea
+      }
+      return .linearGradient(id, (
+        startPoint: g.startPoint(in: coordinates),
+        endPoint: g.endPoint(in: coordinates),
         options: g.options
       ))
     }
@@ -366,7 +400,7 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       let color = try $0.presentation.stopColor !! Err.noStopColor
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
       let offset: CGFloat
-      switch try $0.offset !! Err.noStopOffset {
+      switch $0.offset ?? .number(0) {
       case let .number(num):
         offset = CGFloat(num)
       case let .percentage(percentage):
@@ -374,12 +408,20 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       }
       return (offset, color.norm().withAlpha(opacity))
     }
-    let steps: GradientStepsProvider = { drawingrect in
-      DrawStep.radialGradient(id, (
-        startCenter: g.startCenter(in: drawingrect),
+    let steps: GradientStepsProvider = { arg in
+      let (objectBox, drawingArea) = arg
+      let coordinates: CGRect
+      switch g.unit ?? .objectBoundingBox {
+      case .objectBoundingBox:
+        coordinates = objectBox
+      case .userSpaceOnUse:
+        coordinates = drawingArea
+      }
+      return .radialGradient(id, (
+        startCenter: g.startCenter(in: coordinates),
         startRadius: 0,
-        endCenter: g.endCenter(in: drawingrect),
-        endRadius: g.endRadius(in: drawingrect),
+        endCenter: g.endCenter(in: coordinates),
+        endRadius: g.endRadius(in: coordinates),
         options: g.options
       ))
     }
@@ -529,9 +571,20 @@ extension SVG.Coordinate {
   func abs(in value: CGFloat) -> CGFloat {
     switch unit {
     case nil, .pt?, .px?:
-      return value
+      return CGFloat(number)
     case .percent?:
       return CGFloat(number / 100) * value
+    }
+  }
+}
+
+extension SVG.Paint {
+  var color: SVG.Color? {
+    switch self {
+    case let .rgb(color):
+      return color
+    case .funciri, .none:
+      return nil
     }
   }
 }

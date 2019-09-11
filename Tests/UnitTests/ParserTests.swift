@@ -123,6 +123,15 @@ class PareserTests: XCTestCase {
     p.test("{1}(1)", expected: (1, "(1)"))
   }
 
+  func testLongestOneOf() {
+    let p: Parser<Void> = longestOneOf(["1", "12", "123", .always(())])
+    p.test("1_", expected: ((), "_"))
+    p.test("12_", expected: ((), "_"))
+    p.test("123_", expected: ((), "_"))
+    p.test("1234_", expected: ((), "4_"))
+    p.test("_123", expected: ((), "_123"))
+  }
+
   func testOneOfCaseIterableParser() {
     enum InnerPlanets: String, CaseIterable {
       case mercury, venus, earth, mars
@@ -131,6 +140,15 @@ class PareserTests: XCTestCase {
     p.test("mars", expected: (.mars, ""))
     p.test("earthmars", expected: (.earth, "mars"))
     p.test("marsearth", expected: (.mars, "earth"))
+  }
+
+  func testOneOfCaseIterable_OneIsPrefixToAnother() {
+    enum Colors: String, CaseIterable {
+      case aqua, aquamarine
+    }
+    let p: Parser<Colors> = oneOf()
+    p.test("aqua", expected: (.aqua, ""))
+    p.test("aquamarine", expected: (.aquamarine, ""))
   }
 
   func testIdentityParser() {

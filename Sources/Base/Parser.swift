@@ -323,6 +323,28 @@ public func zip<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, D, R>(
 }
 
 @inlinable
+public func zip<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, D, R>(
+  _ p1: Parser<D, A1>,
+  _ p2: Parser<D, A2>,
+  _ p3: Parser<D, A3>,
+  _ p4: Parser<D, A4>,
+  _ p5: Parser<D, A5>,
+  _ p6: Parser<D, A6>,
+  _ p7: Parser<D, A7>,
+  _ p8: Parser<D, A8>,
+  _ p9: Parser<D, A9>,
+  _ p10: Parser<D, A10>,
+  _ p11: Parser<D, A11>,
+  _ p12: Parser<D, A12>,
+  _ p13: Parser<D, A13>,
+  _ p14: Parser<D, A14>,
+  with f: @escaping (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14) -> R
+) -> Parser<D, R> {
+  return zip(p1, zip(p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, with: identity))
+  { f($0, $1.0, $1.1, $1.2, $1.3, $1.4, $1.5, $1.6, $1.7, $1.8, $1.9, $1.10, $1.11, $1.12) }
+}
+
+@inlinable
 public func maybe<D, T>(_ p: Parser<D, T>) -> Parser<D, T?> {
   return .init {
     p.parse(&$0).map(Optional.some).flatMapError(always(.success(nil)))
@@ -463,6 +485,27 @@ public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
 }
 
 @inlinable
+public func longestOneOf<D: Collection, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
+  return .opt { str in
+    let initial = str
+    let initialLen = str.count
+    var maxlen: Int = -1
+    var resultData = str
+    var result: A?
+    for p in ps {
+      str = initial
+      if case let .success(match) = p.parse(&str), initialLen - str.count > maxlen {
+        maxlen = initialLen - str.count
+        result = match
+        resultData = str
+      }
+    }
+    str = resultData
+    return result
+  }
+}
+
+@inlinable
 public func read<D: Collection>(
   exactly n: Int
 ) -> Parser<D, D.SubSequence> where D.SubSequence == D {
@@ -481,11 +524,21 @@ public func readOne<D: Collection>(
 }
 
 @inlinable
-public func oneOf<D, T: CaseIterable & RawRepresentable>(
+public func oneOf<D: Collection, T: CaseIterable & RawRepresentable>(
   parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
   _: T.Type = T.self
 ) -> Parser<D, T> {
   return oneOf(T.allCases.map { parserFactory($0.rawValue).map(always($0)) })
+}
+
+@inlinable
+public func longestOneOf<D: Collection, T: CaseIterable & RawRepresentable>(
+  parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
+  _: T.Type = T.self
+) -> Parser<D, T> {
+  return longestOneOf(
+    T.allCases.map { parserFactory($0.rawValue).map(always($0)) }
+  )
 }
 
 @inlinable
@@ -584,17 +637,17 @@ public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
   _: T.Type = T.self
 ) -> Parser<D, T>
   where T.RawValue: StringProtocol, D.SubSequence == D {
-  return oneOf(T.allCases.map { consume(String($0.rawValue)).map(always($0)) })
+  return longestOneOf(parserFactory: consume(_:))
 }
 
 @inlinable
-public func consume<S: StringProtocol>(
-  _ s: String
-) -> Parser<S, Void> where S.SubSequence == S {
+public func consume<D: StringProtocol, S: StringProtocol>(
+  _ s: S
+) -> Parser<D, Void> where D.SubSequence == D {
   return .init { (data) -> Result<Void, Error> in
     guard data.hasPrefix(s) else {
       return .failure(
-        ParseError.consume(expected: s, got: data.prefix(s.count).description)
+        ParseError.consume(expected: String(s), got: data.prefix(s.count).description)
       )
     }
     data.removeFirst(s.count)
