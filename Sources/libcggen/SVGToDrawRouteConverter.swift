@@ -8,10 +8,12 @@ enum SVGToDrawRouteConverter {
     let gradients = try Dictionary(
       uniqueKeysWithValues: document.children.flatMap(gradients(svg:))
     )
+    let defenitions = try defs(from: document)
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
-      gradients: gradients.mapValues { $0.1 }
+      gradients: gradients.mapValues { $0.1 },
+      defenitions: defenitions
     )
     return try .init(
       boundingRect: boundingRect,
@@ -41,6 +43,9 @@ private enum Err: Swift.Error {
   case noStopOffset
   case gradientNotFound(String)
   case noPreviousPoint
+  case multipleDefenitionsForId(e1: SVG, e2: SVG)
+  case noDefenitionForId(String)
+  case noRefInUseElement(SVG.Use)
 }
 
 private struct Context {
@@ -58,27 +63,32 @@ private struct Context {
   var objectBoundingBox: CGRect
   var drawingBounds: CGRect
   let gradients: [String: GradientStepsProvider]
+  let defenitions: [String: SVG]
 
   init(
     objectBoundingBox: CGRect,
     drawingBounds: CGRect,
-    gradients: [String: GradientStepsProvider]
+    gradients: [String: GradientStepsProvider],
+    defenitions: [String: SVG]
   ) {
     self.objectBoundingBox = objectBoundingBox
     self.drawingBounds = drawingBounds
     self.gradients = gradients
+    self.defenitions = defenitions
   }
 
   mutating func updateCurrentFillAndStroke() -> DrawStep {
     func color(
       paint: SVG.Paint,
       opacity: SVG.Float,
-      current: inout RGBAColorType<UInt8, SVG.Float>?,
-      additionalCondition: Bool = true
+      current: inout RGBAColorType<UInt8, SVG.Float>?
     ) -> RGBACGColor? {
-      guard let color = paint.color,
-        case let new = color.withAlpha(opacity),
-        current != new, additionalCondition else {
+      guard let color = paint.color else {
+        current = nil
+        return nil
+      }
+      let new = color.withAlpha(opacity)
+      guard current != new else {
         return nil
       }
       current = new
@@ -210,6 +220,22 @@ private func drawShape(
   ])
 }
 
+private func group(ctx: inout Context, presentation: SVG.PresentationAttributes, transform: [SVG.Transform]?, children: [SVG]) throws -> DrawStep {
+  let presentationSteps = ctx.apply(presentation, area: nil)
+  var pre: [DrawStep] = [.saveGState, presentationSteps]
+  var post: [DrawStep] = []
+  if let transform = transform {
+    pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
+  }
+  if let opacity = presentation.opacity {
+    pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
+    post.append(.endTransparencyLayer)
+  }
+  post.append(.restoreGState)
+  var childContext = ctx
+  return try .composite(pre + children.map { try drawstep(svg: $0, ctx: &childContext) } + post)
+}
+
 private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   switch svg {
   case let .rect(r):
@@ -234,19 +260,13 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   case .title, .desc:
     return .empty
   case let .group(g):
-    let presentationSteps = ctx.apply(g.presentation, area: nil)
-    var pre: [DrawStep] = [.saveGState, presentationSteps]
-    var post: [DrawStep] = []
-    if let transform = g.transform {
-      pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
-    }
-    if let opacity = g.presentation.opacity {
-      pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
-      post.append(.endTransparencyLayer)
-    }
-    post.append(.restoreGState)
-    var childContext = ctx
-    return try .composite(pre + g.children.map { try drawstep(svg: $0, ctx: &childContext) } + post)
+    return try group(
+      ctx: &ctx,
+      presentation:
+      g.presentation,
+      transform: g.transform,
+      children: g.children
+    )
   case .svg:
     fatalError()
   case let .polygon(p):
@@ -269,8 +289,22 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     fatalError()
   case .mask:
     fatalError()
-  case .use:
-    fatalError()
+  case let .use(use):
+    let ref = try use.xlinkHref !! Err.noRefInUseElement(use)
+    let def = try ctx.defenitions[ref] !! Err.noDefenitionForId(ref)
+    let translate = zip(use.x, use.y).map { SVG.Transform.translate(tx: $0.0.number, ty: $0.1.number) }
+    let summaryTransform: [SVG.Transform]?
+    switch (use.transform, translate) {
+    case let (use?, translate?):
+      summaryTransform = [translate] + use
+    case let (nil, translate?):
+      summaryTransform = [translate]
+    case let (use?, nil):
+      summaryTransform = use
+    case (nil, nil):
+      summaryTransform = nil
+    }
+    return try group(ctx: &ctx, presentation: use.presentation, transform: summaryTransform, children: [def])
   case .defs:
     return .empty
   case let .circle(circle):
@@ -430,6 +464,54 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
     ]
   default:
     return []
+  }
+}
+
+private func defs(from svg: SVG.Document) throws -> [String:SVG] {
+  return try svg.children.reduce(into: [String:SVG]()) {
+    guard case let .defs(defs) = $1 else { return }
+    let pairs = defs.children.compactMap { (child) -> (String, SVG)? in
+      guard let id = child.core?.id else { return nil }
+      return (id, child)
+    }
+    return try $0.merge(pairs) {
+      throw Err.multipleDefenitionsForId(e1: $0, e2: $1)
+    }
+  }
+}
+
+extension SVG {
+  var core: SVG.CoreAttributes? {
+    switch self {
+    case let .svg(svg):
+      return svg.core
+    case let .group(group):
+      return group.core
+    case let .use(e):
+      return e.core
+    case let .rect(e):
+      return e.core
+    case let .polygon(e):
+      return e.core
+    case let .circle(e):
+      return e.core
+    case let .ellipse(e):
+      return e.core
+    case let .path(e):
+      return e.core
+    case .mask:
+      return nil
+    case let .defs(e):
+      return e.core
+    case .title:
+      return nil
+    case .desc:
+      return nil
+    case let .linearGradient(e):
+      return e.core
+    case let .radialGradient(e):
+      return e.core
+    }
   }
 }
 

@@ -62,6 +62,14 @@ class SVGTest: XCTestCase {
   func testCurveShortCommands() {
     test(svg: "curve_short_commands")
   }
+
+  func testUseTag() {
+    test(svg: "use_tag")
+  }
+
+  func testSimpleMask() {
+//    test(svg: "simple_mask")
+  }
 }
 
 class SVGGradientTests: XCTestCase {
@@ -123,6 +131,7 @@ private func blackSquareHTML(size: Int) -> String {
     core: .init(id: nil)
   ))
   let svg = SVG.Document(
+    core: .init(id: nil),
     presentation: .empty,
     width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),
     children: [blackRect]
