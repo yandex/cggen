@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="49px" viewBox="0 0 50 49" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
+    <title>simple_mask</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M40,27 C44.418278,27 48,30.581722 48,35 L48,40 C48,44.418278 44.418278,48 40,48 L10,48 C5.581722,48 2,44.418278 2,40 L2,35 C2,30.581722 5.581722,27 10,27 L40,27 Z M40,2 C44.418278,2 48,5.581722 48,10 L48,15 C48,19.418278 44.418278,23 40,23 L10,23 C5.581722,23 2,19.418278 2,15 L2,10 C2,5.581722 5.581722,2 10,2 L40,2 Z" id="path-1"></path>
+    </defs>
+    <g id="simple_mask" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <mask id="mask-2" fill="white">
+            <use xlink:href="#path-1"></use>
+        </mask>
+        <use id="Combined-Shape" fill="moccasin" xlink:href="#path-1"></use>
+        <polygon id="Polygon" stroke="seashell" fill="indianred" mask="url(#mask-2)" points="25 5 44.0211303 18.8196601 36.755705 41.1803399 13.244295 41.1803399 5.97886967 18.8196601"></polygon>
+    </g>
+</svg>

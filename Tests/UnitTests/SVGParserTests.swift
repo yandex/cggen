@@ -5,6 +5,7 @@ class SVGParserTests: XCTestCase {
   func testSimpleSVG() throws {
     let dim = SVG.Length(50, .px)
     XCTAssertEqual(try parse(simpleSVG), SVG.Document(
+      core: .init(id: nil),
       presentation: .empty,
       width: dim, height: dim, viewBox: nil,
       children: [

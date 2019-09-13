@@ -151,6 +151,7 @@ public enum SVG: Equatable {
   // MARK: Elements
 
   public struct Document: Equatable {
+    public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var width: Length?
     public var height: Length?
@@ -158,12 +159,14 @@ public enum SVG: Equatable {
     public var children: [SVG]
 
     public init(
+      core: CoreAttributes,
       presentation: PresentationAttributes,
       width: Length?,
       height: Length?,
       viewBox: ViewBox?,
       children: [SVG]
     ) {
+      self.core = core
       self.presentation = presentation
       self.width = width
       self.height = height
@@ -261,6 +264,17 @@ public enum SVG: Equatable {
     public var children: [SVG]
   }
 
+  public struct Use: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var transform: [Transform]?
+    public var x: Coordinate?
+    public var y: Coordinate?
+    public var width: Length?
+    public var height: Length?
+    public var xlinkHref: String?
+  }
+
   public struct Defs: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
@@ -315,13 +329,13 @@ public enum SVG: Equatable {
 
   case svg(Document)
   case group(Group)
+  case use(Use)
   case rect(Rect)
   case polygon(Polygon)
   case circle(Circle)
   case ellipse(Ellipse)
   case path(Path)
   case mask
-  case use
   case defs(Defs)
   case title(String)
   case desc(String)
@@ -332,8 +346,16 @@ public enum SVG: Equatable {
 // MARK: - Serialization
 
 private enum Tag: String {
-  case svg, title, desc, g, defs, linearGradient, radialGradient, stop, path
-  case rect, polygon, circle, ellipse, mask
+  // shape
+  case circle, ellipse, polygon, rect, path
+  // structural
+  case defs, g, svg, use
+  // gradient
+  case linearGradient, radialGradient
+  // descriptive
+  case title, desc
+
+  case stop, mask
 }
 
 private enum Attribute: String {
@@ -362,6 +384,8 @@ private enum Attribute: String {
   case x1, y1, x2, y2
   case d, pathLength
   case cx, cy, r, fx, fy
+
+  case xlinkHref = "xlink:href"
 }
 
 extension SVG.Length {
@@ -506,15 +530,16 @@ public enum SVGParser {
     from el: XML.Element
   ) throws -> SVG.Document {
     let attrs = try (zip(
-      presentation,
+      core, presentation,
       len(.width), len(.height), viewBox(.viewBox),
       with: identity
     ) <<~ version <<~ xml <<~ endof()).run(el.attrs).get()
     return .init(
-      presentation: attrs.0,
-      width: attrs.1,
-      height: attrs.2,
-      viewBox: attrs.3,
+      core: attrs.0,
+      presentation: attrs.1,
+      width: attrs.2,
+      height: attrs.3,
+      viewBox: attrs.4,
       children: try el.children.map(element(from:))
     )
   }
@@ -653,6 +678,18 @@ public enum SVGParser {
     return try (path <<~ endof()).run(el.attrs).get()
   }
 
+  private static let iri: ParserForAttribute<String> = attributeParser(SVGAttributeParsers.iri)
+  private static let use: AttributeGroupParser<SVG.Use> = zip(
+    core, presentation,
+    transform(.transform),
+    coord(.x), coord(.y), len(.width), len(.height),
+    iri(.xlinkHref),
+    with: SVG.Use.init
+  )
+  public static func use(from el: XML.Element) throws -> SVG.Use {
+    return try (use <<~ endof()).run(el.attrs).get()
+  }
+
   public static func element(from xml: XML) throws -> SVG {
     switch xml {
     case let .el(el):
@@ -696,6 +733,8 @@ public enum SVGParser {
         return try .ellipse(ellipse(from: el))
       case .mask:
         throw Error.notImplemented
+      case .use:
+        return try .use(use(from: el))
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -797,6 +836,9 @@ public enum SVGAttributeParsers {
     "#" ~>> (rgb | shortRGB),
     oneOf(SVGColorKeyword.self).map(get(\.color)),
   ])
+
+  internal static let iri: Parser<String> =
+    "#" ~>> consume(while: always(true)).map(String.init)
 
   internal static let paint: Parser<SVG.Paint> =
     consume("none").map(always(.none)) |
