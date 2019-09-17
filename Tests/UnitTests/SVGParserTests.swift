@@ -9,12 +9,15 @@ class SVGParserTests: XCTestCase {
       presentation: .empty,
       width: dim, height: dim, viewBox: nil,
       children: [
-        .rect(SVG.Rect(
-          x: 0, y: 0, rx: nil, ry: nil, width: 50, height: 50,
+        .rect(.init(
+          core: .init(id: "test_rect"),
           presentation: .construct {
             $0.fill = .rgb(.init(red: 0x50, green: 0xE3, blue: 0xC2))
           },
-          core: .init(id: "test_rect")
+          transform: nil,
+          data: .init(
+            x: 0, y: 0, rx: nil, ry: nil, width: 50, height: 50
+          )
         )),
       ]
     ))

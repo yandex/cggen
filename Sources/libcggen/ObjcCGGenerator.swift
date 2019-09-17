@@ -12,7 +12,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   func filePreamble() -> String {
     return ObjcTerm([
       headerImportPath.map { ObjcTerm.import(.doubleQuotes(path: $0)) },
-      .import(.foundation, .coreGraphics, asModule: params.importAsModules),
+      .import(.coreGraphics, asModule: params.importAsModules),
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
   }
 

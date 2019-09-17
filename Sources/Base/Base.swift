@@ -286,97 +286,6 @@ public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) ->
 }
 
 @inlinable
-public func identity<T>(_ t: T) -> T {
-  return t
-}
-
-@inlinable
-public func identity<T1, T2>(_ t1: T1, _ t2: T2) -> (T1, T2) {
-  return (t1, t2)
-}
-
-@inlinable
-public func identity<T1, T2, T3>(_ t1: T1, _ t2: T2, _ t3: T3) -> (T1, T2, T3) {
-  return (t1, t2, t3)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4
-) -> (T1, T2, T3, T4) {
-  return (t1, t2, t3, t4)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5
-) -> (T1, T2, T3, T4, T5) {
-  return (t1, t2, t3, t4, t5)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6
-) -> (T1, T2, T3, T4, T5, T6) {
-  return (t1, t2, t3, t4, t5, t6)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7
-) -> (T1, T2, T3, T4, T5, T6, T7) {
-  return (t1, t2, t3, t4, t5, t6, t7)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8
-) -> (T1, T2, T3, T4, T5, T6, T7, T8) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8, _ t9: T9
-) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8, t9)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8, _ t9: T9, _ t10: T10
-) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11
-) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11, _ t12: T12
-) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12)
-}
-
-@inlinable
-public func identity<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(
-  _ t1: T1, _ t2: T2, _ t3: T3, _ t4: T4, _ t5: T5, _ t6: T6, _ t7: T7,
-  _ t8: T8, _ t9: T9, _ t10: T10, _ t11: T11, _ t12: T12, _ t13: T13
-) -> (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13) {
-  return (t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13)
-}
-
-@inlinable
 public func always<T, U>(_ value: T) -> (U) -> T {
   return { _ in value }
 }
@@ -405,6 +314,15 @@ public func check(_ condition: Bool, _ error: Error) throws {
 
 public func zip<T, U>(_ t: T?, _ u: U?) -> (T, U)? {
   return t.flatMap { t in u.map { u in (t, u) } }
+}
+
+public func zipLongest<T, U>(
+  _ t: T?, _ u: U?,
+  fillFirst: @autoclosure () -> T,
+  fillSecond: @autoclosure () -> U
+) -> (T, U)? {
+  guard t != nil || u != nil else { return nil }
+  return (t ?? fillFirst(), u ?? fillSecond())
 }
 
 public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {

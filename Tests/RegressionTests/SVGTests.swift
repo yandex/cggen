@@ -67,8 +67,12 @@ class SVGTest: XCTestCase {
     test(svg: "use_tag")
   }
 
+  func testUseReferencingNotInDefs() {
+    test(svg: "use_referencing_not_in_defs")
+  }
+
   func testSimpleMask() {
-//    test(svg: "simple_mask")
+    test(svg: "simple_mask")
   }
 }
 
@@ -122,13 +126,13 @@ private func blackSquareHTML(size: Int) -> String {
   let fsize = SVG.Float(size)
   let svgSize = SVG.Length(fsize)
   let blackRect = SVG.rect(.init(
-    x: 0, y: 0, rx: nil, ry: nil,
-    width: svgSize, height: svgSize,
+    core: .init(id: nil),
     presentation: .construct {
       $0.fill = .rgb(.black())
       $0.fillOpacity = 1
     },
-    core: .init(id: nil)
+    transform: nil,
+    data: .init(x: 0, y: 0, rx: nil, ry: nil, width: svgSize, height: svgSize)
   ))
   let svg = SVG.Document(
     core: .init(id: nil),
