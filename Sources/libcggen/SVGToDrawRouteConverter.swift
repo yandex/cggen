@@ -51,6 +51,7 @@ private enum Err: Swift.Error {
   case noRefInUseElement(SVG.Use)
   case emptyMask(SVG.Shape)
   case tooComplexMask(SVG.Mask)
+  case invalidElementInClipPath(SVG)
 }
 
 private struct Context {
@@ -130,15 +131,16 @@ private struct Context {
       DrawStep.lineJoinStyle(.init(svgJoin: $0))
     }
     let mask = try presentation.mask.map { (maskName) -> DrawStep in
-      guard let defs = defenitions[maskName],
-        let element = defenitions[maskName]?.first else {
+      guard case let .mask(svgmask)? = defenitions[maskName]?.firstAndOnly else {
         throw Err.noDefenitionForId(maskName)
       }
-      try check(defs.count == 1, Err.multipleDefenitionsForId(maskName))
-      guard case let .mask(svgmask) = element else {
-        throw Err.invalidTypeForIRI(maskName, expected: "\(SVG.Mask.self)", got: element)
-      }
       return try stepsForMask(svgmask)
+    }
+    let clip = try presentation.clipPath.map { (maskName) -> DrawStep in
+      guard case let .clipPath(clip)? = defenitions[maskName]?.firstAndOnly else {
+        throw Err.noDefenitionForId(maskName)
+      }
+      return try stepsForClip(clip)
     }
     let needsDashUpdate = presentation.strokeDashOffset != nil ||
       presentation.strokeDashArray != nil
@@ -151,6 +153,7 @@ private struct Context {
       strokeDash,
       updateCurrentFillAndStroke(),
       mask,
+      clip,
     ].compactMap(identity))
   }
 
@@ -221,14 +224,40 @@ private struct Context {
   }
 
   func stepsForMask(_ mask: SVG.Mask) throws -> DrawStep {
-    let resolved = try mask.children.map { try $0.resolvingUses(from: defenitions) }
+    return try stepsForClipLike(children: mask.children, transform: mask.transform)
+  }
 
-    if resolved.count == 1, case let .group(group)? = resolved.first,
-      group.children.count == 1, let shape = group.children.first?.shape {
-      let clipPath = try shape.shapeConstruction()?.0 !! Err.emptyMask(shape)
-      return .composite([clipPath, .clip(.init(fillRule))])
+  func stepsForClip(_ clip: SVG.ClipPath) throws -> DrawStep {
+    return try stepsForClipLike(children: clip.children, transform: clip.transform)
+  }
+
+  private func stepsForClipLike(
+    children: [SVG],
+    transform: [SVG.Transform]?
+  ) throws -> DrawStep {
+    let shapes: [SVG.Shape] = try children.map {
+      if let shape = $0.shape {
+        return shape
+      }
+      if case let .use(use) = $0,
+        let ref = use.xlinkHref,
+        let shape = defenitions[ref]?.firstAndOnly?.shape {
+        return shape
+      }
+      throw Err.invalidElementInClipPath($0)
     }
-    throw Err.tooComplexMask(mask)
+    let transform = transform.map {
+      DrawStep.concatCTM($0.reduce(CGAffineTransform.identity) {
+        $0.concatenating(.init(svgTransform: $1))
+      })
+    }
+    return try .composite(
+      [.saveGState] +
+        [transform ?? .empty] +
+        shapes.compactMap { try $0.shapeConstruction()?.0 } +
+        [.saveGState] +
+        [.clip(.init(fillRule))]
+    )
   }
 }
 
@@ -285,7 +314,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     // FIXME: There gotta be more clever way than just inlining everything
     let resolved = try svg.resolvingUses(from: ctx.defenitions)
     return try drawstep(svg: resolved, ctx: &ctx)
-  case .defs, .mask:
+  case .defs, .mask, .clipPath:
     return .empty
   case let .rect(r):
     guard let (steps, box) = pathConstruction(from: r.data) else { return .empty }
@@ -551,6 +580,8 @@ extension SVG {
       return e.core
     case let .radialGradient(e):
       return e.core
+    case let .clipPath(e):
+      return e.core
     }
   }
 
@@ -561,6 +592,8 @@ extension SVG {
     case let .group(e):
       return e.children
     case let .mask(e):
+      return e.children
+    case let .clipPath(e):
       return e.children
     case let .defs(e):
       return e.children
@@ -573,6 +606,15 @@ extension SVG {
 
 extension SVG.Shape {
   func shapeConstruction() throws -> (DrawStep, CGRect)? {
+    return try shapeConstructionWithoutTransform().map { path, box in
+      let transformed = transform.flatMap(DrawStep.concatCTM).map {
+        DrawStep.savingGState($0, path)
+      }
+      return (transformed ?? path, box)
+    }
+  }
+
+  private func shapeConstructionWithoutTransform() throws -> (DrawStep, CGRect)? {
     switch self {
     case let .circle(e):
       return pathConstruction(from: e.data)
@@ -584,6 +626,21 @@ extension SVG.Shape {
       return pathConstruction(from: e.data)
     case let .polygon(e):
       return pathConstruction(from: e.data)
+    }
+  }
+
+  var transform: [SVG.Transform]? {
+    switch self {
+    case let .circle(e):
+      return e.transform
+    case let .path(e):
+      return e.transform
+    case let .rect(e):
+      return e.transform
+    case let .ellipse(e):
+      return e.transform
+    case let .polygon(e):
+      return e.transform
     }
   }
 }
@@ -771,4 +828,14 @@ extension SVG.Paint {
 postfix operator %
 postfix func %(percent: SVG.Float) -> SVG.Coordinate {
   return .init(percent, .percent)
+}
+
+extension DrawStep {
+  fileprivate static func concatCTM(svgTransform: [SVG.Transform]) -> DrawStep? {
+    let t = svgTransform.reduce(CGAffineTransform.identity) {
+      $0.concatenating(.init(svgTransform: $1))
+    }
+    if t == CGAffineTransform.identity { return nil }
+    return .concatCTM(t)
+  }
 }

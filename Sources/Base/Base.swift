@@ -256,6 +256,14 @@ extension Collection {
   public subscript(safe index: Index) -> Element? {
     return startIndex <= index && endIndex > index ? self[index] : nil
   }
+
+  @inlinable
+  public var firstAndOnly: Element? {
+    guard let first = first, count == 1 else {
+      return nil
+    }
+    return first
+  }
 }
 
 extension Result {

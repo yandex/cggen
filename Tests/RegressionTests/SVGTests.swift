@@ -74,6 +74,10 @@ class SVGTest: XCTestCase {
   func testSimpleMask() {
     test(svg: "simple_mask")
   }
+
+  func testClipPath() {
+    test(svg: "clip_path")
+  }
 }
 
 class SVGGradientTests: XCTestCase {
@@ -106,7 +110,7 @@ class SVGGradientTests: XCTestCase {
   }
 
   func testGradientWithMask() {
-    // test(svg: "gradient_with_mask")
+    test(svg: "gradient_with_mask")
   }
 
   func testGradientRadial() {
