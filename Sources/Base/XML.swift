@@ -203,9 +203,9 @@ private class XMLComposer: NSObject, XMLParserDelegate {
   }
 
   func parser(
-    _: XMLParser, parseErrorOccurred _: Error
+    _: XMLParser, parseErrorOccurred error: Error
   ) {
-    fatalError()
+    fatalError("\(error)")
   }
 
   func parser(

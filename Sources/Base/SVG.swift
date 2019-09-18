@@ -104,6 +104,7 @@ public enum SVG: Equatable {
   }
 
   public struct PresentationAttributes: Equatable {
+    public var clipPath: String?
     public var clipRule: FillRule?
     public var mask: String?
     public var fill: Paint?
@@ -121,6 +122,7 @@ public enum SVG: Equatable {
     public var stopOpacity: SVG.Float?
 
     public init(
+      clipPath: String?,
       clipRule: FillRule?,
       mask: String?,
       fill: Paint?,
@@ -137,6 +139,7 @@ public enum SVG: Equatable {
       stopColor: SVG.Color?,
       stopOpacity: SVG.Float?
     ) {
+      self.clipPath = clipPath
       self.clipRule = clipRule
       self.mask = mask
       self.fill = fill
@@ -190,8 +193,10 @@ public enum SVG: Equatable {
 
     @inlinable
     public init(
-      core: CoreAttributes, presentation: PresentationAttributes,
-      transform: [Transform]?, data: T
+      core: CoreAttributes,
+      presentation: PresentationAttributes,
+      transform: [Transform]?,
+      data: T
     ) {
       self.core = core
       self.presentation = presentation
@@ -322,12 +327,21 @@ public enum SVG: Equatable {
   public struct Mask: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
+    public var transform: [Transform]?
     public var x: Coordinate?
     public var y: Coordinate?
     public var width: Length?
     public var height: Length?
     public var maskUnits: Units?
     public var maskContentUnits: Units?
+    public var children: [SVG]
+  }
+
+  public struct ClipPath: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var transform: [Transform]?
+    public var clipPathUnits: Units?
     public var children: [SVG]
   }
 
@@ -379,6 +393,7 @@ public enum SVG: Equatable {
   case polygon(Polygon)
 
   case mask(Mask)
+  case clipPath(ClipPath)
   case defs(Defs)
   case title(String)
   case desc(String)
@@ -433,7 +448,7 @@ private enum Tag: String {
   // descriptive
   case title, desc
 
-  case stop, mask
+  case stop, mask, clipPath
 }
 
 private enum Attribute: String {
@@ -464,7 +479,10 @@ private enum Attribute: String {
 
   case xlinkHref = "xlink:href"
 
-  case maskUnits, maskContentUnits
+  case maskUnits, maskContentUnits, clipPathUnits
+
+  // Ignore
+  case maskType = "mask-type"
 }
 
 extension SVG.Length {
@@ -570,9 +588,14 @@ public enum SVGParser {
     return zip(identifier(.xmlns), identifier(.xmlnsxlink)) { _, _ in () }
   }
 
+  private static let ignoreAttribute = attributeParser(consume(while: always(true)))
+  private static let ignore: AttributeGroupParser<Void> =
+    ignoreAttribute(.maskType).map(always(()))
+
   private static let dashArray = attributeParser(SVGAttributeParsers.dashArray)
 
   private static let presentation = zip(
+    funciri(.clipPath),
     fillRule(.clipRule),
     funciri(.mask),
     paint(.fill),
@@ -591,9 +614,7 @@ public enum SVGParser {
     with: SVG.PresentationAttributes.init
   )
 
-  private static var core: AttributeGroupParser<SVG.CoreAttributes> {
-    return (identifier(.id)).map(SVG.CoreAttributes.init)
-  }
+  private static let core = identifier(.id).map(SVG.CoreAttributes.init)
 
   public static func root(from data: Data) throws -> SVG.Document {
     return try root(from: XML.parse(from: data).get())
@@ -778,19 +799,36 @@ public enum SVGParser {
 
   public static func mask(from el: XML.Element) throws -> SVG.Mask {
     let attrs = try (zip(
-      core, presentation, x, y, width, height,
+      core, presentation,
+      transform(.transform),
+      x, y, width, height,
       units(.maskUnits), units(.maskContentUnits),
+      with: identity
+    ) <<~ ignore <<~ endof()).run(el.attrs).get()
+    return try .init(
+      core: attrs.0,
+      presentation: attrs.1,
+      transform: attrs.2,
+      x: attrs.3,
+      y: attrs.4,
+      width: attrs.5,
+      height: attrs.6,
+      maskUnits: attrs.7,
+      maskContentUnits: attrs.8,
+      children: el.children.map(element(from:))
+    )
+  }
+
+  public static func clipPath(from el: XML.Element) throws -> SVG.ClipPath {
+    let attrs = try (zip(
+      core, presentation, transform(.transform), units(.clipPathUnits),
       with: identity
     ) <<~ endof()).run(el.attrs).get()
     return try .init(
       core: attrs.0,
       presentation: attrs.1,
-      x: attrs.2,
-      y: attrs.3,
-      width: attrs.4,
-      height: attrs.5,
-      maskUnits: attrs.6,
-      maskContentUnits: attrs.7,
+      transform: attrs.2,
+      clipPathUnits: attrs.3,
       children: el.children.map(element(from:))
     )
   }
@@ -807,14 +845,12 @@ public enum SVGParser {
       case .rect:
         return try .rect(rect(from: el))
       case .title:
-        guard el.children.count == 1,
-          let child = el.children.first, case let .text(title) = child else {
+        guard case let .text(title)? = el.children.firstAndOnly else {
           throw Error.titleHasInvalidFormat(xml)
         }
         return .title(title)
       case .desc:
-        guard el.children.count == 1,
-          let child = el.children.first, case let .text(desc) = child else {
+        guard case let .text(desc)? = el.children.firstAndOnly else {
           throw Error.titleHasInvalidFormat(xml)
         }
         return .desc(desc)
@@ -840,6 +876,8 @@ public enum SVGParser {
         return try .mask(mask(from: el))
       case .use:
         return try .use(use(from: el))
+      case .clipPath:
+        return try .clipPath(clipPath(from: el))
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -1078,7 +1116,7 @@ public func renderXML(from svg: SVG) -> XML {
       "fill-opacity": r.presentation.fillOpacity?.description,
     ].compactMapValues(identity))
   case .group, .polygon, .mask, .use, .defs, .title, .desc, .linearGradient,
-       .circle, .path, .ellipse, .radialGradient:
+       .circle, .path, .ellipse, .radialGradient, .clipPath:
     fatalError()
   }
 }
@@ -1126,6 +1164,7 @@ extension SVG.ViewBox {
 
 extension SVG.PresentationAttributes {
   public static let empty = SVG.PresentationAttributes(
+    clipPath: nil,
     clipRule: nil,
     mask: nil,
     fill: nil,
