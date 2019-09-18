@@ -8,7 +8,7 @@ enum SVGToDrawRouteConverter {
     let gradients = try Dictionary(
       uniqueKeysWithValues: document.children.flatMap(gradients(svg:))
     )
-    let defenitions = try defs(from: document)
+    let defenitions = try defs(from: .svg(document))
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
@@ -36,6 +36,8 @@ extension SVG.Document {
   }
 }
 
+private typealias Defenitions = [String: [SVG]]
+
 private enum Err: Swift.Error {
   case widthLessThan0(SVG.Rect)
   case heightLessThan0(SVG.Rect)
@@ -43,9 +45,12 @@ private enum Err: Swift.Error {
   case noStopOffset
   case gradientNotFound(String)
   case noPreviousPoint
-  case multipleDefenitionsForId(e1: SVG, e2: SVG)
+  case multipleDefenitionsForId(String)
   case noDefenitionForId(String)
+  case invalidTypeForIRI(String, expected: String, got: SVG)
   case noRefInUseElement(SVG.Use)
+  case emptyMask(SVG.Shape)
+  case tooComplexMask(SVG.Mask)
 }
 
 private struct Context {
@@ -63,13 +68,13 @@ private struct Context {
   var objectBoundingBox: CGRect
   var drawingBounds: CGRect
   let gradients: [String: GradientStepsProvider]
-  let defenitions: [String: SVG]
+  let defenitions: Defenitions
 
   init(
     objectBoundingBox: CGRect,
     drawingBounds: CGRect,
     gradients: [String: GradientStepsProvider],
-    defenitions: [String: SVG]
+    defenitions: [String: [SVG]]
   ) {
     self.objectBoundingBox = objectBoundingBox
     self.drawingBounds = drawingBounds
@@ -103,7 +108,7 @@ private struct Context {
   mutating func apply(
     _ presentation: SVG.PresentationAttributes,
     area: CGRect?
-  ) -> DrawStep {
+  ) throws -> DrawStep {
     fillRule ?= presentation.fillRule
     fillAlpha ?= presentation.fillOpacity
     fill ?= presentation.fill
@@ -124,6 +129,17 @@ private struct Context {
     let strokeLineJoin = presentation.strokeLineJoin.map {
       DrawStep.lineJoinStyle(.init(svgJoin: $0))
     }
+    let mask = try presentation.mask.map { (maskName) -> DrawStep in
+      guard let defs = defenitions[maskName],
+        let element = defenitions[maskName]?.first else {
+        throw Err.noDefenitionForId(maskName)
+      }
+      try check(defs.count == 1, Err.multipleDefenitionsForId(maskName))
+      guard case let .mask(svgmask) = element else {
+        throw Err.invalidTypeForIRI(maskName, expected: "\(SVG.Mask.self)", got: element)
+      }
+      return try stepsForMask(svgmask)
+    }
     let needsDashUpdate = presentation.strokeDashOffset != nil ||
       presentation.strokeDashArray != nil
     let strokeDash = needsDashUpdate ? currentDash.map(DrawStep.dash) : nil
@@ -134,6 +150,7 @@ private struct Context {
       strokeLineJoin,
       strokeDash,
       updateCurrentFillAndStroke(),
+      mask,
     ].compactMap(identity))
   }
 
@@ -202,6 +219,17 @@ private struct Context {
       return .init(phase: phase, lengths: lengths + lengths)
     }
   }
+
+  func stepsForMask(_ mask: SVG.Mask) throws -> DrawStep {
+    let resolved = try mask.children.map { try $0.resolvingUses(from: defenitions) }
+
+    if resolved.count == 1, case let .group(group)? = resolved.first,
+      group.children.count == 1, let shape = group.children.first?.shape {
+      let clipPath = try shape.shapeConstruction()?.0 !! Err.emptyMask(shape)
+      return .composite([clipPath, .clip(.init(fillRule))])
+    }
+    throw Err.tooComplexMask(mask)
+  }
 }
 
 private func drawShape(
@@ -211,7 +239,7 @@ private func drawShape(
   ctx: Context
 ) throws -> DrawStep {
   var ctx = ctx
-  let strokeAndFill = ctx.apply(presentation, area: area)
+  let strokeAndFill = try ctx.apply(presentation, area: area)
   return try .composite([
     .saveGState,
     strokeAndFill,
@@ -220,8 +248,9 @@ private func drawShape(
   ])
 }
 
-private func group(ctx: inout Context, presentation: SVG.PresentationAttributes, transform: [SVG.Transform]?, children: [SVG]) throws -> DrawStep {
-  let presentationSteps = ctx.apply(presentation, area: nil)
+private func group(ctx: Context, presentation: SVG.PresentationAttributes, transform: [SVG.Transform]?, children: [SVG]) throws -> DrawStep {
+  var ctx = ctx
+  let presentationSteps = try ctx.apply(presentation, area: nil)
   var pre: [DrawStep] = [.saveGState, presentationSteps]
   var post: [DrawStep] = []
   if let transform = transform {
@@ -238,30 +267,11 @@ private func group(ctx: inout Context, presentation: SVG.PresentationAttributes,
 
 private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
   switch svg {
-  case let .rect(r):
-    let rect = CGRect(r)
-    let pathConstruction: DrawStep
-    switch (r.rx.map { CGFloat($0.number) }, r.ry.map { CGFloat($0.number) }) {
-    case (nil, nil):
-      pathConstruction = .appendRectangle(rect)
-    case let (rx?, nil):
-      pathConstruction = .appendRoundedRect(rect, rx: rx, ry: rx)
-    case let (nil, ry?):
-      pathConstruction = .appendRoundedRect(rect, rx: ry, ry: ry)
-    case let (rx?, ry?):
-      pathConstruction = .appendRoundedRect(rect, rx: rx, ry: ry)
-    }
-    return try drawShape(
-      pathConstruction: pathConstruction,
-      presentation: r.presentation,
-      area: rect,
-      ctx: ctx
-    )
   case .title, .desc:
     return .empty
   case let .group(g):
     return try group(
-      ctx: &ctx,
+      ctx: ctx,
       presentation:
       g.presentation,
       transform: g.transform,
@@ -269,120 +279,150 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     )
   case .svg:
     fatalError()
-  case let .polygon(p):
-    guard let points = p.points else { return .empty }
-    let cgpoints = points.map {
-      CGPoint(x: $0._1, y: $0._2)
-    }
-    let box: CGRect = CGPath.make {
-      $0.addLines(between: cgpoints)
-      $0.closeSubpath()
-    }.boundingBox
-
+  case .linearGradient, .radialGradient:
+    return .empty
+  case .use:
+    // FIXME: There gotta be more clever way than just inlining everything
+    let resolved = try svg.resolvingUses(from: ctx.defenitions)
+    return try drawstep(svg: resolved, ctx: &ctx)
+  case .defs, .mask:
+    return .empty
+  case let .rect(r):
+    guard let (steps, box) = pathConstruction(from: r.data) else { return .empty }
     return try drawShape(
-      pathConstruction: .composite([.lines(cgpoints), .closePath]),
-      presentation: p.presentation,
+      pathConstruction: steps,
+      presentation: r.presentation,
       area: box,
       ctx: ctx
     )
-  case .linearGradient, .radialGradient:
-    fatalError()
-  case .mask:
-    fatalError()
-  case let .use(use):
-    let ref = try use.xlinkHref !! Err.noRefInUseElement(use)
-    let def = try ctx.defenitions[ref] !! Err.noDefenitionForId(ref)
-    let translate = zip(use.x, use.y).map { SVG.Transform.translate(tx: $0.0.number, ty: $0.1.number) }
-    let summaryTransform: [SVG.Transform]?
-    switch (use.transform, translate) {
-    case let (use?, translate?):
-      summaryTransform = [translate] + use
-    case let (nil, translate?):
-      summaryTransform = [translate]
-    case let (use?, nil):
-      summaryTransform = use
-    case (nil, nil):
-      summaryTransform = nil
-    }
-    return try group(ctx: &ctx, presentation: use.presentation, transform: summaryTransform, children: [def])
-  case .defs:
-    return .empty
-  case let .circle(circle):
-    guard let cx = circle.cx, let cy = circle.cy, let r = circle.r else { return .empty }
-    let rect = CGRect.square(
-      center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
-      size: r.number.cgfloat * 2
-    )
+  case let .polygon(shape):
+    guard let (steps, box) = pathConstruction(from: shape.data) else { return .empty }
+
     return try drawShape(
-      pathConstruction: .addEllipse(in: rect),
-      presentation: circle.presentation,
-      area: rect,
+      pathConstruction: steps,
+      presentation: shape.presentation,
+      area: box,
       ctx: ctx
     )
-  case let .path(p):
-    guard let commands = p.d else { return .empty }
-    let cgpath = CGMutablePath()
-    var currentPoint: CGPoint?
-    let path: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
-      guard let move = command.moveTo.last else { return [DrawStep.empty] }
-      let point = CGPoint(svgPair: move.coordinatePair)
-      cgpath.move(to: point)
-      currentPoint = point
-      return try [DrawStep.moveTo(point)] + command.drawTo.map {
-        switch $0 {
-        case .closepath:
-          cgpath.closeSubpath()
-          currentPoint = nil
-          return .closePath
-        case let .lineto(_, pair):
-          let point = CGPoint(svgPair: pair)
-          cgpath.addLine(to: point)
-          currentPoint = point
-          return .lineTo(point)
-        case let .curveto(_, cp1, cp2, to):
-          let cp1 = CGPoint(svgPair: cp1)
-          let cp2 = CGPoint(svgPair: cp2)
-          let to = CGPoint(svgPair: to)
-          currentPoint = to
-          return .curveTo(cp1, cp2, to)
-        case let .horizontalLineto(_, x):
-          guard let current = currentPoint else { throw Err.noPreviousPoint }
-          let point = modified(current) { $0.x = x.cgfloat }
-          currentPoint = point
-          return .lineTo(point)
-        case let .verticalLineto(_, y):
-          guard let current = currentPoint else { throw Err.noPreviousPoint }
-          let point = modified(current) { $0.y = y.cgfloat }
-          currentPoint = point
-          return .lineTo(point)
-        case .smoothCurveto, .quadraticBezierCurveto,
-             .smoothQuadraticBezierCurveto:
-          fatalError()
-        }
-      }
-    }
+  case let .circle(shape):
+    guard let (steps, box) = pathConstruction(from: shape.data) else { return .empty }
     return try drawShape(
-      pathConstruction: .composite(path),
-      presentation: p.presentation,
-      area: cgpath.boundingBox,
+      pathConstruction: steps,
+      presentation: shape.presentation,
+      area: box,
       ctx: ctx
     )
-  case let .ellipse(ellipse):
-    guard let cx = ellipse.cx, let cy = ellipse.cy,
-      let rx = ellipse.rx, let ry = ellipse.ry,
-      rx.number != 0, ry.number != 0 else { return .empty }
-    let rect = CGRect(
-      center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
-      width: rx.number.cgfloat * 2,
-      height: ry.number.cgfloat * 2
-    )
+  case let .path(shape):
+    guard let (steps, box) = try pathConstruction(from: shape.data) else { return .empty }
     return try drawShape(
-      pathConstruction: .addEllipse(in: rect),
-      presentation: ellipse.presentation,
-      area: rect,
+      pathConstruction: steps,
+      presentation: shape.presentation,
+      area: box,
+      ctx: ctx
+    )
+  case let .ellipse(shape):
+    guard let (steps, box) = pathConstruction(from: shape.data) else { return .empty }
+    return try drawShape(
+      pathConstruction: steps,
+      presentation: shape.presentation,
+      area: box,
       ctx: ctx
     )
   }
+}
+
+private func pathConstruction(from rect: SVG.RectData) -> (DrawStep, boundingBox: CGRect)? {
+  let cgrect = CGRect(rect)
+  let pathConstruction: DrawStep
+  switch (rect.rx.map { CGFloat($0.number) }, rect.ry.map { CGFloat($0.number) }) {
+  case (nil, nil):
+    pathConstruction = .appendRectangle(cgrect)
+  case let (rx?, nil):
+    pathConstruction = .appendRoundedRect(cgrect, rx: rx, ry: rx)
+  case let (nil, ry?):
+    pathConstruction = .appendRoundedRect(cgrect, rx: ry, ry: ry)
+  case let (rx?, ry?):
+    pathConstruction = .appendRoundedRect(cgrect, rx: rx, ry: ry)
+  }
+  return (pathConstruction, cgrect)
+}
+
+private func pathConstruction(from polygon: SVG.PolygonData) -> (DrawStep, boundingBox: CGRect)? {
+  guard let points = polygon.points else { return nil }
+  let cgpoints = points.map {
+    CGPoint(x: $0._1, y: $0._2)
+  }
+  let box: CGRect = CGPath.make {
+    $0.addLines(between: cgpoints)
+    $0.closeSubpath()
+  }.boundingBox
+  return (.composite([.lines(cgpoints), .closePath]), box)
+}
+
+private func pathConstruction(from ellipse: SVG.EllipseData) -> (DrawStep, boundingBox: CGRect)? {
+  guard let cx = ellipse.cx, let cy = ellipse.cy,
+    let rx = ellipse.rx, let ry = ellipse.ry,
+    rx.number != 0, ry.number != 0 else { return nil }
+  let rect = CGRect(
+    center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
+    width: rx.number.cgfloat * 2,
+    height: ry.number.cgfloat * 2
+  )
+  return (.addEllipse(in: rect), rect)
+}
+
+private func pathConstruction(from circle: SVG.CircleData) -> (DrawStep, boundingBox: CGRect)? {
+  guard let cx = circle.cx, let cy = circle.cy, let r = circle.r else { return nil }
+  let rect = CGRect.square(
+    center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
+    size: r.number.cgfloat * 2
+  )
+  return (.addEllipse(in: rect), rect)
+}
+
+private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boundingBox: CGRect)? {
+  guard let commands = path.d else { return nil }
+  let cgpath = CGMutablePath()
+  var currentPoint: CGPoint?
+  let path: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
+    guard let move = command.moveTo.last else { return [DrawStep.empty] }
+    let point = CGPoint(svgPair: move.coordinatePair)
+    cgpath.move(to: point)
+    currentPoint = point
+    return try [DrawStep.moveTo(point)] + command.drawTo.map {
+      switch $0 {
+      case .closepath:
+        cgpath.closeSubpath()
+        currentPoint = nil
+        return .closePath
+      case let .lineto(_, pair):
+        let point = CGPoint(svgPair: pair)
+        cgpath.addLine(to: point)
+        currentPoint = point
+        return .lineTo(point)
+      case let .curveto(_, cp1, cp2, to):
+        let cp1 = CGPoint(svgPair: cp1)
+        let cp2 = CGPoint(svgPair: cp2)
+        let to = CGPoint(svgPair: to)
+        currentPoint = to
+        return .curveTo(cp1, cp2, to)
+      case let .horizontalLineto(_, x):
+        guard let current = currentPoint else { throw Err.noPreviousPoint }
+        let point = modified(current) { $0.x = x.cgfloat }
+        currentPoint = point
+        return .lineTo(point)
+      case let .verticalLineto(_, y):
+        guard let current = currentPoint else { throw Err.noPreviousPoint }
+        let point = modified(current) { $0.y = y.cgfloat }
+        currentPoint = point
+        return .lineTo(point)
+      case .smoothCurveto, .quadraticBezierCurveto,
+           .smoothQuadraticBezierCurveto:
+        fatalError()
+      }
+    }
+  }
+  return (.composite(path), cgpath.boundingBox)
 }
 
 typealias GradientStepsProvider = ((
@@ -467,17 +507,17 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
   }
 }
 
-private func defs(from svg: SVG.Document) throws -> [String:SVG] {
-  return try svg.children.reduce(into: [String:SVG]()) {
-    guard case let .defs(defs) = $1 else { return }
-    let pairs = defs.children.compactMap { (child) -> (String, SVG)? in
-      guard let id = child.core?.id else { return nil }
-      return (id, child)
-    }
-    return try $0.merge(pairs) {
-      throw Err.multipleDefenitionsForId(e1: $0, e2: $1)
+private func defs(from svg: SVG) throws -> Defenitions {
+  var result = Defenitions()
+  if let parent = svg.core?.id {
+    result[parent] = (result[parent] ?? []) + [svg]
+  }
+  if let children = svg.children {
+    result = try children.map(defs(from:)).reduce(into: result) {
+      $0.merge($1, uniquingKeysWith: +)
     }
   }
+  return result
 }
 
 extension SVG {
@@ -499,8 +539,8 @@ extension SVG {
       return e.core
     case let .path(e):
       return e.core
-    case .mask:
-      return nil
+    case let .mask(e):
+      return e.core
     case let .defs(e):
       return e.core
     case .title:
@@ -511,6 +551,63 @@ extension SVG {
       return e.core
     case let .radialGradient(e):
       return e.core
+    }
+  }
+
+  var children: [SVG]? {
+    switch self {
+    case let .svg(e):
+      return e.children
+    case let .group(e):
+      return e.children
+    case let .mask(e):
+      return e.children
+    case let .defs(e):
+      return e.children
+    case .use, .rect, .polygon, .circle, .ellipse, .path, .title, .desc,
+         .linearGradient, .radialGradient:
+      return nil
+    }
+  }
+}
+
+extension SVG.Shape {
+  func shapeConstruction() throws -> (DrawStep, CGRect)? {
+    switch self {
+    case let .circle(e):
+      return pathConstruction(from: e.data)
+    case let .path(e):
+      return try pathConstruction(from: e.data)
+    case let .rect(e):
+      return pathConstruction(from: e.data)
+    case let .ellipse(e):
+      return pathConstruction(from: e.data)
+    case let .polygon(e):
+      return pathConstruction(from: e.data)
+    }
+  }
+}
+
+extension SVG {
+  fileprivate func resolvingUses(from defenitions: Defenitions) throws -> SVG {
+    switch self {
+    case let .use(use):
+      let ref = try use.xlinkHref !! Err.noRefInUseElement(use)
+      let defs = try defenitions[ref] !! Err.noDefenitionForId(ref)
+      let def = try defs.first !! Err.noDefenitionForId(ref)
+      try check(defs.count == 1, Err.multipleDefenitionsForId(ref))
+      let translate = zipLongest(use.x, use.y, fillFirst: 0, fillSecond: 0)
+        .map { [SVG.Transform.translate(tx: $0.0.number, ty: $0.1.number)] }
+      let summaryTransform =
+        zipLongest(use.transform, translate, fillFirst: [], fillSecond: []).map(+)
+      return .group(.init(
+        core: use.core,
+        presentation: use.presentation,
+        transform: summaryTransform,
+        children: [try def.resolvingUses(from: defenitions)]
+      ))
+    default:
+      return self
     }
   }
 }
@@ -548,8 +645,8 @@ extension CGLineJoin {
 }
 
 extension CGRect {
-  init(_ r: SVG.Rect) {
-    let cg: (KeyPath<SVG.Rect, SVG.Coordinate?>) -> CGFloat = {
+  init(_ r: SVG.RectData) {
+    let cg: (KeyPath<SVG.RectData, SVG.Coordinate?>) -> CGFloat = {
       CGFloat(r[keyPath: $0]?.number ?? 0)
     }
     self.init(x: cg(\.x), y: cg(\.y), width: cg(\.width), height: cg(\.height))

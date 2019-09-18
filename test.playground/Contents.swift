@@ -190,7 +190,7 @@ public enum SVGColorKeyword: String, CaseIterable {
 }
 """
 
-print(generated)
+// print(generated)
 
 let maxColorNameLength = svgColors.map(get(\.name.count)).max(by: <)!
 
@@ -233,3 +233,42 @@ func closest(color: SVG.Color, to list: [NamedColor]) -> (NamedColor, CGColor)? 
 let colorWithName = try closest(color: color("#ED4264"), to: svgColors)
 colorWithName?.0.name
 colorWithName?.1
+
+func zipGen(i: Int) -> String {
+  let genericParams = (1...i).map { "A\($0)" }.joined(separator: ", ")
+  let args = (1...i).map { "  _ p\($0): Parser<D, A\($0)>," }.joined(separator: "\n")
+  let previousZipArgs = (2...i).map { "p\($0)" }.joined(separator: ", ")
+  let functioncall = (2...i).map { "$1.\($0 - 2)" }.joined(separator: ", ")
+  return """
+  @inlinable
+  public func zip<\(genericParams), D, R>(
+  \(args)
+    with f: @escaping (\(genericParams)) -> R
+  ) -> Parser<D, R> {
+    return zip(p1, zip(\(previousZipArgs), with: identity))
+    { f($0, \(functioncall)) }
+  }
+  """
+}
+
+print(
+  (3...42).map(zipGen(i:)).joined(separator: "\n\n")
+)
+
+func identityGen(i: Int) -> String {
+  let genericParams = (1...i).map { "T\($0)" }.joined(separator: ", ")
+  let args = (1...i).map { "_ t\($0): T\($0)" }.joined(separator: ", ")
+  let tuple = (1...i).map { "t\($0)" }.joined(separator: ", ")
+  return """
+  @inlinable
+  public func identity<\(genericParams)>(
+    \(args)
+  ) -> (\(genericParams)) {
+    return (\(tuple))
+  }
+  """
+}
+
+print(
+  (3...42).map(identityGen(i:)).joined(separator: "\n\n")
+)
