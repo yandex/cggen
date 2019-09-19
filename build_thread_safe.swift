@@ -2,13 +2,13 @@
 
 import Foundation
 
-func perform(_ command: String) {
-  perform(command.components(separatedBy: " "))
+func perform(_ command: String) -> Int32 {
+  return perform(command.components(separatedBy: " "))
 }
 
-func perform(_ command: [String]) {
+func perform(_ command: [String]) -> Int32 {
   guard !command.isEmpty else {
-    return
+    return 1
   }
 
   let task = Process()
@@ -17,6 +17,7 @@ func perform(_ command: [String]) {
   task.environment = ProcessInfo.processInfo.environment
   task.launch()
   task.waitUntilExit()
+  return task.terminationStatus
 }
 
 try? FileManager().createDirectory(
@@ -26,6 +27,7 @@ try? FileManager().createDirectory(
 
 let fd = fopen(".build/.build_lock", "w")!
 lockf(Int32(fd.pointee._file), F_LOCK, 0)
-perform("/usr/bin/swift build -c release --product cggen")
+let returnCode = perform("/usr/bin/swift build -c release --product cggen")
 lockf(Int32(fd.pointee._file), F_ULOCK, 0)
 fclose(fd)
+exit(returnCode)
