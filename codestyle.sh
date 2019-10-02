@@ -1,2 +1,2 @@
 swiftformat . --indent 2 --ranges nospace --operatorfunc nospace \
---wraparguments before-first --wrapcollections before-first --swiftversion 5
+--wraparguments before-first --wrapcollections before-first --swiftversion 5.1

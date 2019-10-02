@@ -4,7 +4,7 @@
 import Foundation
 
 public struct Ø: Numeric, Comparable {
-  @inlinable public var magnitude: Ø { return Ø() }
+  @inlinable public var magnitude: Ø { Ø() }
 
   @inlinable public init<T>(exactly _: T) where T: BinaryInteger {}
   @inlinable public init() {}
@@ -14,10 +14,10 @@ public struct Ø: Numeric, Comparable {
   public static func -=(_: inout Ø, _: Ø) {}
   public static func +=(_: inout Ø, _: Ø) {}
   public static func *=(_: inout Ø, _: Ø) {}
-  public static func *(_: Ø, _: Ø) -> Ø { return .init() }
-  public static func +(_: Ø, _: Ø) -> Ø { return .init() }
-  public static func -(_: Ø, _: Ø) -> Ø { return .init() }
-  public static func <(_: Ø, _: Ø) -> Bool { return false }
+  public static func *(_: Ø, _: Ø) -> Ø { .init() }
+  public static func +(_: Ø, _: Ø) -> Ø { .init() }
+  public static func -(_: Ø, _: Ø) -> Ø { .init() }
+  public static func <(_: Ø, _: Ø) -> Bool { false }
 }
 
 public struct RGBAColorType<Component: Numeric, Alpha: Numeric>: Equatable {
@@ -44,7 +44,7 @@ public struct RGBAColorType<Component: Numeric, Alpha: Numeric>: Equatable {
     Component: (Component) -> C,
     alphaT: (Alpha) -> A
   ) -> RGBAColorType<C, A> {
-    return .init(
+    .init(
       red: Component(red),
       green: Component(green),
       blue: Component(blue),
@@ -64,46 +64,46 @@ extension RGBAColorType where Alpha == Ø {
 
   @inlinable
   public static func gray(_ gray: Component) -> RGBColor<Component> {
-    return .init(red: gray, green: gray, blue: gray)
+    .init(red: gray, green: gray, blue: gray)
   }
 
   @inlinable
   public static func black() -> RGBColor<Component> {
-    return .gray(Component.zero)
+    .gray(Component.zero)
   }
 
   @inlinable
   public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBColor<U> {
-    return map(Component: transform, alphaT: identity)
+    map(Component: transform, alphaT: identity)
   }
 
   @inlinable
   public func withAlpha<Alpha>(_ alpha: Alpha) -> RGBAColorType<Component, Alpha> {
-    return .init(red: red, green: green, blue: blue, alpha: alpha)
+    .init(red: red, green: green, blue: blue, alpha: alpha)
   }
 
   @inlinable
   public var components: [Component] {
-    return [red, green, blue]
+    [red, green, blue]
   }
 }
 
 extension RGBAColorType where Alpha == Ø, Component: FixedWidthInteger {
   @inlinable
   public static func white() -> RGBColor<Component> {
-    return .gray(Component.max)
+    .gray(Component.max)
   }
 }
 
 extension RGBAColorType where Component == Alpha {
   @inlinable
   public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBAColor<U> {
-    return map(Component: transform, alphaT: transform)
+    map(Component: transform, alphaT: transform)
   }
 
   @inlinable
   public var components: [Component] {
-    return [red, green, blue, alpha]
+    [red, green, blue, alpha]
   }
 }
 
@@ -112,7 +112,7 @@ extension RGBAColorType where Component: FixedWidthInteger, Alpha == Ø {
   public func norm<F: BinaryFloatingPoint>(
     _: F.Type = F.self
   ) -> RGBColor<F> {
-    return map { F($0) / F(Component.max) }
+    map { F($0) / F(Component.max) }
   }
 }
 
@@ -121,6 +121,6 @@ extension RGBAColorType where Component: FixedWidthInteger, Alpha == Component {
   public func norm<F: BinaryFloatingPoint>(
     _: F.Type = F.self
   ) -> RGBAColor<F> {
-    return map { F($0) / F(Component.max) }
+    map { F($0) / F(Component.max) }
   }
 }

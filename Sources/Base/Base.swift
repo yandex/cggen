@@ -22,16 +22,16 @@ extension String {
   }
 
   private var nameComponents: [String] {
-    return components(separatedBy: CharacterSet(charactersIn: "_-: "))
+    components(separatedBy: CharacterSet(charactersIn: "_-: "))
       .flatMap { $0.camelCaseComponents }
   }
 
   public func capitalizedFirst() -> String {
-    return prefix(1).uppercased() + dropFirst()
+    prefix(1).uppercased() + dropFirst()
   }
 
   public var snakeCase: String {
-    return nameComponents
+    nameComponents
       .map { $0.lowercased() }
       .joined(separator: "_")
   }
@@ -42,12 +42,12 @@ extension String {
   }
 
   public var upperCamelCase: String {
-    return nameComponents.map { $0.capitalized }.joined()
+    nameComponents.map { $0.capitalized }.joined()
   }
 
   @inlinable
   public static func HEX<T: BinaryInteger>(_ num: T) -> String {
-    return .init(num, radix: 0x10, uppercase: true)
+    .init(num, radix: 0x10, uppercase: true)
   }
 }
 
@@ -66,7 +66,7 @@ extension Optional {
   }
 
   public func map<T>(_ kp: KeyPath<Wrapped, T>) -> T? {
-    return map { $0[keyPath: kp] }
+    map { $0[keyPath: kp] }
   }
 }
 
@@ -76,7 +76,7 @@ public protocol OptionalType {
 }
 
 extension Optional: OptionalType {
-  public var optional: Wrapped? { return self }
+  public var optional: Wrapped? { self }
 }
 
 public func ?= <T>(v: inout T, val: T?) {
@@ -87,7 +87,7 @@ public func ?= <T>(v: inout T, val: T?) {
 
 extension Sequence where Iterator.Element: OptionalType {
   public func unwrap() -> [Iterator.Element.Wrapped]? {
-    return reduce([Element.Wrapped]?([])) { acc, e in
+    reduce([Element.Wrapped]?([])) { acc, e in
       acc.flatMap { a in e.optional.map { a + [$0] } }
     }
   }
@@ -95,7 +95,7 @@ extension Sequence where Iterator.Element: OptionalType {
 
 public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
   public func index(after i: Index) -> Index {
-    return i.advanced(by: 1)
+    i.advanced(by: 1)
   }
 
   @inlinable
@@ -124,7 +124,7 @@ public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
 
   @inlinable
   public func makeIterator() -> Iterator {
-    return .init(collection: collection, step: step)
+    .init(collection: collection, step: step)
   }
 
   public struct Iterator: IteratorProtocol {
@@ -159,13 +159,13 @@ public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
 
 extension Collection where Index == Int {
   public func splitBy(subSize: Int) -> Splitted<Self> {
-    return Splitted(collection: self, step: subSize)
+    Splitted(collection: self, step: subSize)
   }
 }
 
 extension Array {
   public func appendToAll<T>(a: T) -> [(T, Element)] {
-    return map { (a, $0) }
+    map { (a, $0) }
   }
 
   public func concurrentMap<T>(_ transform: (Element) throws -> T) throws -> [T] {
@@ -188,15 +188,16 @@ extension Array {
   }
 
   public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
-    var result = [T?](repeating: nil, count: count)
-    let resultQueue = DispatchQueue(label: "result_queue")
-    DispatchQueue.concurrentPerform(iterations: count) { i in
-      let val = transform(self[i])
-      resultQueue.async {
-        result[i] = val
+    return [T](unsafeUninitializedCapacity: count) { (buffer, finalCount) in
+      finalCount = count
+      let bufferAccess = NSLock()
+      DispatchQueue.concurrentPerform(iterations: count) { i in
+        let val = transform(self[i])
+        bufferAccess.locked {
+          buffer[i] = val
+        }
       }
     }
-    return resultQueue.sync { result.map { $0! } }
   }
 
   public mutating func modifyLast(_ modifier: (inout Element) -> Void) {
@@ -247,14 +248,14 @@ extension Sequence {
   }
 
   public func insertSeparator(_ separator: Element) -> JoinedSequence<[[Self.Element]]> {
-    return map { [$0] }.joined(separator: [separator])
+    map { [$0] }.joined(separator: [separator])
   }
 }
 
 extension Collection {
   @inlinable
   public subscript(safe index: Index) -> Element? {
-    return startIndex <= index && endIndex > index ? self[index] : nil
+    startIndex <= index && endIndex > index ? self[index] : nil
   }
 
   @inlinable
@@ -290,29 +291,29 @@ extension Result {
 }
 
 public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
-  return { try f($0, arg2) }
+  { try f($0, arg2) }
 }
 
 @inlinable
 public func always<T, U>(_ value: T) -> (U) -> T {
-  return { _ in value }
+  { _ in value }
 }
 
 @inlinable
 public func always<T, U1, U2>(_ value: T) -> (U1, U2) -> T {
-  return { _, _ in value }
+  { _, _ in value }
 }
 
 @inlinable
 public func always<T, U>(_ value: T) -> (inout U) -> T {
-  return { _ in value }
+  { _ in value }
 }
 
 @inlinable
-public func absurd<T>(_ value: Never) -> T { switch value {} }
+public func absurd<T>(_: Never) -> T {}
 
 @inlinable
-public func absurd<T, A>(_: A, _ value: Never) -> T { switch value {} }
+public func absurd<T, A>(_: A, _: Never) -> T {}
 
 public func check(_ condition: Bool, _ error: Error) throws {
   if !condition {
@@ -321,7 +322,7 @@ public func check(_ condition: Bool, _ error: Error) throws {
 }
 
 public func zip<T, U>(_ t: T?, _ u: U?) -> (T, U)? {
-  return t.flatMap { t in u.map { u in (t, u) } }
+  t.flatMap { t in u.map { u in (t, u) } }
 }
 
 public func zipLongest<T, U>(
@@ -341,7 +342,7 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
 
 @inlinable
 public func get<T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
-  return { $0[keyPath: kp] }
+  { $0[keyPath: kp] }
 }
 
 public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {
@@ -376,12 +377,12 @@ extension RunLoop {
 }
 
 public func apply<T>(_ f: () -> T) -> T {
-  return f()
+  f()
 }
 
 extension CaseIterable where Self: RawRepresentable, RawValue: Hashable {
   public static var rawValues: Set<AllCases.Element.RawValue> {
-    return Set(allCases.map { $0.rawValue })
+    Set(allCases.map { $0.rawValue })
   }
 }
 
@@ -395,7 +396,7 @@ extension NSLock {
 
 @inlinable
 public func hex<T>(_ bytes: T) -> String {
-  return withUnsafeBytes(of: bytes) {
+  withUnsafeBytes(of: bytes) {
     $0.map(String.HEX).joined()
   }
 }

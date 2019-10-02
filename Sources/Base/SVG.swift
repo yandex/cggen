@@ -524,53 +524,53 @@ public enum SVGParser {
   private typealias AttributeGroupParser<T> = Base.Parser<[String: String], T>
 
   private static var len: ParserForAttribute<SVG.Length> {
-    return attributeParser(SVGAttributeParsers.length)
+    attributeParser(SVGAttributeParsers.length)
   }
 
   private static var coord: ParserForAttribute<SVG.Coordinate> {
-    return attributeParser(SVGAttributeParsers.length)
+    attributeParser(SVGAttributeParsers.length)
   }
 
   private static var color: ParserForAttribute<SVG.Color> {
-    return attributeParser(SVGAttributeParsers.rgbcolor)
+    attributeParser(SVGAttributeParsers.rgbcolor)
   }
 
   private static var paint: ParserForAttribute<SVG.Paint> {
-    return attributeParser(SVGAttributeParsers.paint)
+    attributeParser(SVGAttributeParsers.paint)
   }
 
   private static var viewBox: ParserForAttribute<SVG.ViewBox> {
-    return attributeParser(SVGAttributeParsers.viewBox)
+    attributeParser(SVGAttributeParsers.viewBox)
   }
 
   private static var num: ParserForAttribute<SVG.Float> {
-    return attributeParser(SVGAttributeParsers.number)
+    attributeParser(SVGAttributeParsers.number)
   }
 
   private static var identifier: ParserForAttribute<String> {
-    return attributeParser(SVGAttributeParsers.identifier)
+    attributeParser(SVGAttributeParsers.identifier)
   }
 
   private static var transform: ParserForAttribute<[SVG.Transform]> {
-    return attributeParser(SVGAttributeParsers.transformsList)
+    attributeParser(SVGAttributeParsers.transformsList)
   }
 
   private static var listOfPoints: ParserForAttribute<SVG.CoordinatePairs> {
-    return attributeParser(SVGAttributeParsers.listOfPoints)
+    attributeParser(SVGAttributeParsers.listOfPoints)
   }
 
   private static let pathData = attributeParser(SVGAttributeParsers.pathData)
 
   private static var stopOffset: ParserForAttribute<SVG.Stop.Offset> {
-    return attributeParser(SVGAttributeParsers.stopOffset)
+    attributeParser(SVGAttributeParsers.stopOffset)
   }
 
   private static var fillRule: ParserForAttribute<SVG.FillRule> {
-    return attributeParser(oneOf(SVG.FillRule.self))
+    attributeParser(oneOf(SVG.FillRule.self))
   }
 
   private static var version: AttributeGroupParser<Void> {
-    return identifier(.version).flatMapResult {
+    identifier(.version).flatMapResult {
       $0.map { $0 == "1.1" ? .success(()) : .failure(Error.invalidVersion($0))
       } ?? .success(())
     }
@@ -585,7 +585,7 @@ public enum SVGParser {
   private static let height = len(.height)
 
   private static var xml: AttributeGroupParser<Void> {
-    return zip(identifier(.xmlns), identifier(.xmlnsxlink)) { _, _ in () }
+    zip(identifier(.xmlns), identifier(.xmlnsxlink)) { _, _ in () }
   }
 
   private static let ignoreAttribute = attributeParser(consume(while: always(true)))
@@ -617,7 +617,7 @@ public enum SVGParser {
   private static let core = identifier(.id).map(SVG.CoreAttributes.init)
 
   public static func root(from data: Data) throws -> SVG.Document {
-    return try root(from: XML.parse(from: data).get())
+    try root(from: XML.parse(from: data).get())
   }
 
   public static func root(from xml: XML) throws -> SVG.Document {
@@ -651,7 +651,7 @@ public enum SVGParser {
   private static func shape<T>(
     _ parser: AttributeGroupParser<T>
   ) -> AttributeGroupParser<SVG.ShapeElement<T>> {
-    return zip(
+    zip(
       core, presentation, transform(.transform), parser,
       with: SVG.ShapeElement<T>.init
     )
@@ -678,7 +678,7 @@ public enum SVGParser {
   ))
 
   public static func rect(from el: XML.Element) throws -> SVG.Rect {
-    return try (rect <<~ endof()).run(el.attrs).get()
+    try (rect <<~ endof()).run(el.attrs).get()
   }
 
   public static func group(from el: XML.Element) throws -> SVG.Group {
@@ -705,23 +705,23 @@ public enum SVGParser {
   }
 
   public static func polygon(from el: XML.Element) throws -> SVG.Polygon {
-    return try (polygon <<~ endof()).run(el.attrs).get()
+    try (polygon <<~ endof()).run(el.attrs).get()
   }
 
   public static func circle(from el: XML.Element) throws -> SVG.Circle {
-    return try (circle <<~ endof()).run(el.attrs).get()
+    try (circle <<~ endof()).run(el.attrs).get()
   }
 
   public static func ellipse(from el: XML.Element) throws -> SVG.Ellipse {
-    return try (ellipse <<~ endof()).run(el.attrs).get()
+    try (ellipse <<~ endof()).run(el.attrs).get()
   }
 
   private static var stop: AttributeGroupParser<SVG.Stop> {
-    return zip(core, presentation, stopOffset(.offset), with: SVG.Stop.init)
+    zip(core, presentation, stopOffset(.offset), with: SVG.Stop.init)
   }
 
   public static func stops(from el: XML.Element) throws -> SVG.Stop {
-    return try (stop <<~ endof()).run(el.attrs).get()
+    try (stop <<~ endof()).run(el.attrs).get()
   }
 
   private static let units = attributeParser(oneOf(SVG.Units.self))
@@ -782,7 +782,7 @@ public enum SVGParser {
   }
 
   public static func path(from el: XML.Element) throws -> SVG.Path {
-    return try (path <<~ endof()).run(el.attrs).get()
+    try (path <<~ endof()).run(el.attrs).get()
   }
 
   private static let iri: ParserForAttribute<String> = attributeParser(SVGAttributeParsers.iri)
@@ -794,7 +794,7 @@ public enum SVGParser {
     with: SVG.Use.init
   )
   public static func use(from el: XML.Element) throws -> SVG.Use {
-    return try (use <<~ endof()).run(el.attrs).get()
+    try (use <<~ endof()).run(el.attrs).get()
   }
 
   public static func mask(from el: XML.Element) throws -> SVG.Mask {
@@ -878,6 +878,8 @@ public enum SVGParser {
         return try .use(use(from: el))
       case .clipPath:
         return try .clipPath(clipPath(from: el))
+      case .filter:
+        throw Error.notImplemented
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -888,7 +890,7 @@ public enum SVGParser {
 private func attributeParser<T>(
   _ parser: SVGAttributeParsers.Parser<T>
 ) -> (Attribute) -> Parser<[String: String], T?> {
-  return {
+  {
     key(key: $0.rawValue)~?.flatMapResult {
       guard let value = $0 else { return .success(nil) }
       return parser.map(Optional.some).whole(value)
@@ -926,7 +928,7 @@ public enum SVGAttributeParsers {
     _ name: String,
     _ value: Parser<SVG.Transform>
   ) -> Parser<SVG.Transform> {
-    return (consume(name) ~ wsp* ~ "(" ~ wsp*) ~>> value <<~ (wsp* ~ ")")
+    (consume(name) ~ wsp* ~ "(" ~ wsp*) ~>> value <<~ (wsp* ~ ")")
   }
 
   // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
@@ -1057,7 +1059,7 @@ public enum SVGAttributeParsers {
     arg: Parser<T>,
     builder: @escaping (SVG.PathData.Positioning, T) -> V
   ) -> Parser<[V]> {
-    return zip(
+    zip(
       positioning(of: cmd) <<~ wsp*,
       argumentSequence(arg)
     ) { pos, args in
@@ -1070,22 +1072,22 @@ public enum SVGAttributeParsers {
     arg: Parser<T>,
     builder: @escaping (SVG.PathData.Positioning, T) -> SVG.PathData.DrawTo
   ) -> Parser<[SVG.PathData.DrawTo]> {
-    return command(cmd, arg: arg, builder: builder)
+    command(cmd, arg: arg, builder: builder)
   }
 
   private static func positioning(
     of cmd: Character
   ) -> Parser<SVG.PathData.Positioning> {
-    return consume(cmd.lowercased()).map(always(.relative))
+    consume(cmd.lowercased()).map(always(.relative))
       | consume(cmd.uppercased()).map(always(.absolute))
   }
 
   private static func argumentSequence<T>(_ p: Parser<T>) -> Parser<[T]> {
-    return oneOrMore(p, separator: commaWsp~?)
+    oneOrMore(p, separator: commaWsp~?)
   }
 
   private static func hexFromChar(_ c: Character) -> UInt8? {
-    return c.hexDigitValue.flatMap(UInt8.init(exactly:))
+    c.hexDigitValue.flatMap(UInt8.init(exactly:))
   }
 
   // Dash Array
@@ -1095,7 +1097,7 @@ public enum SVGAttributeParsers {
 // MARK: - Render
 
 public func renderXML(from document: SVG.Document) -> XML {
-  return .el("svg", attrs: [
+  .el("svg", attrs: [
     "width": document.width?.encode(),
     "height": document.height?.encode(),
     "viewBox": document.viewBox?.encode(),
@@ -1123,13 +1125,13 @@ public func renderXML(from svg: SVG) -> XML {
 
 extension SVG.Float {
   public func encode() -> String {
-    return description
+    description
   }
 }
 
 extension SVG.Length {
   public func encode() -> String {
-    return "\(number)\(unit?.rawValue ?? "")"
+    "\(number)\(unit?.rawValue ?? "")"
   }
 }
 
@@ -1150,13 +1152,13 @@ extension SVG.Paint {
 
 extension SVG.Color {
   var hexString: String {
-    return hex((red, green, blue))
+    hex((red, green, blue))
   }
 }
 
 extension SVG.ViewBox {
   public func encode() -> String {
-    return ""
+    ""
   }
 }
 
@@ -1167,6 +1169,7 @@ extension SVG.PresentationAttributes {
     clipPath: nil,
     clipRule: nil,
     mask: nil,
+    filter: nil,
     fill: nil,
     fillRule: nil,
     fillOpacity: nil,

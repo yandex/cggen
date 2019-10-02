@@ -7,7 +7,7 @@ public struct StopWatch {
   public struct Result: CustomStringConvertible {
     public let time: TimeInterval
     public var description: String {
-      return "\(time)"
+      "\(time)"
     }
   }
 
@@ -15,7 +15,7 @@ public struct StopWatch {
   public init() {}
 
   public func lap() -> Result {
-    return Result(time: Date().timeIntervalSince(started))
+    Result(time: Date().timeIntervalSince(started))
   }
 
   public mutating func reset() -> Result {

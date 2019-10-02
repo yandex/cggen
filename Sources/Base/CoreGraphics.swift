@@ -61,19 +61,19 @@ public struct CGIntSize: Equatable {
   public let width: Int
   public let height: Int
   public static func size(w: Int, h: Int) -> CGIntSize {
-    return CGIntSize(width: w, height: h)
+    CGIntSize(width: w, height: h)
   }
 
   public var rect: CGRect {
-    return CGRect(x: 0, y: 0, width: width, height: height)
+    CGRect(x: 0, y: 0, width: width, height: height)
   }
 
   public static func from(cgsize: CGSize) -> CGIntSize {
-    return CGIntSize(width: Int(cgsize.width), height: Int(cgsize.height))
+    CGIntSize(width: Int(cgsize.width), height: Int(cgsize.height))
   }
 
   public static func union(lhs: CGIntSize, rhs: CGIntSize) -> CGIntSize {
-    return CGIntSize(
+    CGIntSize(
       width: max(lhs.width, rhs.width),
       height: max(lhs.height, rhs.height)
     )
@@ -82,33 +82,33 @@ public struct CGIntSize: Equatable {
 
 extension CGRect {
   public var x: CGFloat {
-    return origin.x
+    origin.x
   }
 
   public var y: CGFloat {
-    return origin.y
+    origin.y
   }
 }
 
 extension CGSize {
   public static func square(_ dim: CGFloat) -> CGSize {
-    return .init(width: dim, height: dim)
+    .init(width: dim, height: dim)
   }
 }
 
 extension CGAffineTransform {
   public static func scale(_ scale: CGFloat) -> CGAffineTransform {
-    return CGAffineTransform(scaleX: scale, y: scale)
+    CGAffineTransform(scaleX: scale, y: scale)
   }
 
   public static func invertYAxis(height: CGFloat) -> CGAffineTransform {
-    return CGAffineTransform(scaleX: 1, y: -1).concatenating(.init(translationX: 0, y: height))
+    CGAffineTransform(scaleX: 1, y: -1).concatenating(.init(translationX: 0, y: height))
   }
 }
 
 extension Double {
   public var cgfloat: CGFloat {
-    return CGFloat(self)
+    CGFloat(self)
   }
 }
 
@@ -116,7 +116,7 @@ extension Double {
 
 extension CGPDFDocument {
   public var pages: [CGPDFPage] {
-    return (1...numberOfPages).compactMap(page(at:))
+    (1...numberOfPages).compactMap(page(at:))
   }
 }
 
@@ -136,7 +136,7 @@ extension CGPDFPage {
 
 extension CGColorSpace {
   public static var deviceRGB: CGColorSpace {
-    return CGColorSpaceCreateDeviceRGB()
+    CGColorSpaceCreateDeviceRGB()
   }
 }
 
@@ -144,11 +144,11 @@ extension CGColorSpace {
 
 extension CGContext {
   public static func bitmapRGBContext(size: CGSize) -> CGContext {
-    return bitmapRGBContext(size: .from(cgsize: size))
+    bitmapRGBContext(size: .from(cgsize: size))
   }
 
   public static func bitmapRGBContext(size: CGIntSize) -> CGContext {
-    return CGContext(
+    CGContext(
       data: nil,
       width: size.width,
       height: size.height,
@@ -164,7 +164,7 @@ extension CGContext {
 
 extension CGImage {
   public var intSize: CGIntSize {
-    return .size(w: width, h: height)
+    .size(w: width, h: height)
   }
 
   public static func diff(lhs: CGImage, rhs: CGImage) -> CGImage {

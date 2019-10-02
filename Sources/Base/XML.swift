@@ -15,7 +15,7 @@ public enum XML: Equatable {
     attrs: [String: String] = [:],
     children: [XML] = []
   ) -> XML {
-    return .el(.init(tag: tag, attrs: attrs, children: children))
+    .el(.init(tag: tag, attrs: attrs, children: children))
   }
 
   public var el: Element? {

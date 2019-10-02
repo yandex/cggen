@@ -495,9 +495,6 @@ extension ObjcTerm.Expr {
 }
 
 extension ObjcTerm.TypeIdentifier {
-  #if compiler(<5.1)
-    public typealias `Self` = ObjcTerm.TypeIdentifier
-  #endif
   public static let CGPoint: Self = "CGPoint"
   public static let CGRect: Self = "CGRect"
   public static let CGFloat: Self = "CGFloat"
