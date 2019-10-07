@@ -34,6 +34,13 @@ public enum SVG: Equatable {
     }
   }
 
+  // Should be tuple, when Equatable synthesys improves
+  // https://bugs.swift.org/browse/SR-1222
+  public struct NumberOptionalNumber: Equatable {
+    public var _1: Float
+    public var _2: Float?
+  }
+
   public typealias CoordinatePairs = [CoordinatePair]
 
   public struct ViewBox: Equatable {
@@ -85,6 +92,28 @@ public enum SVG: Equatable {
     case userSpaceOnUse, objectBoundingBox
   }
 
+  public enum FilterPrimitiveIn: Equatable {
+    public enum Predefined: String, CaseIterable {
+      case sourcegraphic = "SourceGraphic"
+      case sourcealpha = "SourceAlpha"
+      case backgroundimage = "BackgroundImage"
+      case backgroundalpha = "BackgroundAlpha"
+      case fillpaint = "FillPaint"
+      case strokepaint = "StrokePaint"
+    }
+
+    case predefined(Predefined)
+    case previous(String)
+  }
+
+  public enum BlendMode: String, CaseIterable {
+    case normal, multiply, screen, darken, lighten
+  }
+
+  public enum ColorInterpolation: String, CaseIterable {
+    case sRGB, linearRGB
+  }
+
   // MARK: Attribute group
 
   public struct CoreAttributes: Equatable {
@@ -107,6 +136,7 @@ public enum SVG: Equatable {
     public var clipPath: String?
     public var clipRule: FillRule?
     public var mask: String?
+    public var filter: String?
     public var fill: Paint?
     public var fillRule: FillRule?
     public var fillOpacity: Float?
@@ -120,11 +150,13 @@ public enum SVG: Equatable {
     public var opacity: SVG.Float?
     public var stopColor: SVG.Color?
     public var stopOpacity: SVG.Float?
+    public var colorInterpolationFilters: ColorInterpolation?
 
     public init(
       clipPath: String?,
       clipRule: FillRule?,
       mask: String?,
+      filter: String?,
       fill: Paint?,
       fillRule: FillRule?,
       fillOpacity: Float?,
@@ -137,11 +169,13 @@ public enum SVG: Equatable {
       strokeOpacity: Float?,
       opacity: Float?,
       stopColor: SVG.Color?,
-      stopOpacity: SVG.Float?
+      stopOpacity: SVG.Float?,
+      colorInterpolationFilters: ColorInterpolation?
     ) {
       self.clipPath = clipPath
       self.clipRule = clipRule
       self.mask = mask
+      self.filter = filter
       self.fill = fill
       self.fillRule = fillRule
       self.fillOpacity = fillOpacity
@@ -155,7 +189,37 @@ public enum SVG: Equatable {
       self.opacity = opacity
       self.stopColor = stopColor
       self.stopOpacity = stopOpacity
+      self.colorInterpolationFilters = colorInterpolationFilters
     }
+  }
+
+  public struct FilterPrimitiveAttributes: Equatable {
+    var result: String?
+    var height: Length?
+    var width: Length?
+    var x: Coordinate?
+    var y: Coordinate?
+  }
+
+  // MARK: Content group
+
+  public enum FilterPrimitiveContent: Equatable {
+    case feBlend(FeBlend)
+    case feColorMatrix(FeColorMatrix)
+    case feComponentTransfer(NotImplemented)
+    case feComposite(NotImplemented)
+    case feConvolveMatrix(NotImplemented)
+    case feDiffuseLighting(NotImplemented)
+    case feDisplacementMap(NotImplemented)
+    case feFlood(FeFlood)
+    case feGaussianBlur(FeGaussianBlur)
+    case feImage(NotImplemented)
+    case feMerge(NotImplemented)
+    case feMorphology(NotImplemented)
+    case feOffset(FeOffset)
+    case feSpecularLighting(NotImplemented)
+    case feTile(NotImplemented)
+    case feTurbulence(NotImplemented)
   }
 
   // MARK: Elements
@@ -380,6 +444,100 @@ public enum SVG: Equatable {
     public var stops: [Stop]
   }
 
+  @dynamicMemberLookup
+  public struct FilterPrimitiveElement<T: Equatable>: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var filterPrimitive: FilterPrimitiveAttributes
+    public var data: T
+
+    @inlinable
+    public init(
+      core: CoreAttributes,
+      presentation: PresentationAttributes,
+      filterPrimitive: FilterPrimitiveAttributes,
+      data: T
+    ) {
+      self.core = core
+      self.presentation = presentation
+      self.filterPrimitive = filterPrimitive
+      self.data = data
+    }
+
+    @inlinable
+    public subscript<U>(dynamicMember kp: KeyPath<T, U>) -> U {
+      data[keyPath: kp]
+    }
+  }
+
+  public struct FilterPrimitiveFeBlend: Equatable {
+    var `in`: FilterPrimitiveIn?
+    var in2: FilterPrimitiveIn?
+    var mode: BlendMode?
+  }
+
+  public typealias FeBlend = FilterPrimitiveElement<FilterPrimitiveFeBlend>
+
+  public struct FilterPrimitiveFeColorMatrix: Equatable {
+    public enum Kind: String, CaseIterable {
+      case matrix
+      case saturate
+      case hueRotate
+      case luminanceToAlpha
+    }
+
+    var `in`: FilterPrimitiveIn?
+    var type: Kind?
+    var values: [Float]?
+  }
+
+  public typealias FeColorMatrix = FilterPrimitiveElement<FilterPrimitiveFeColorMatrix>
+
+  public struct FilterPrimitiveFeFlood: Equatable {
+    var floodColor: Color?
+    var floodOpacity: Float?
+  }
+
+  public typealias FeFlood = FilterPrimitiveElement<FilterPrimitiveFeFlood>
+
+  public struct FilterPrimitiveFeGaussianBlur: Equatable {
+    public var `in`: FilterPrimitiveIn?
+    public var stdDeviation: NumberOptionalNumber?
+  }
+
+  public typealias FeGaussianBlur = FilterPrimitiveElement<FilterPrimitiveFeGaussianBlur>
+
+  public struct FilterPrimitiveFeOffset: Equatable {
+    public var `in`: FilterPrimitiveIn?
+    public var dx: Float?
+    public var dy: Float?
+  }
+
+  public typealias FeOffset = FilterPrimitiveElement<FilterPrimitiveFeOffset>
+
+  @dynamicMemberLookup
+  public struct ElementWithChildren<Attributes: Equatable, Child: Equatable>: Equatable {
+    public var attributes: Attributes
+    public var children: [Child]
+
+    @inlinable
+    public subscript<T>(dynamicMember kp: KeyPath<Attributes, T>) -> T {
+      attributes[keyPath: kp]
+    }
+  }
+
+  public struct FilterAttributes: Equatable {
+    public var core: CoreAttributes
+    public var presentation: PresentationAttributes
+    public var x: Coordinate?
+    public var y: Coordinate?
+    public var width: Length?
+    public var height: Length?
+    public var filterUnits: Units?
+  }
+
+  public typealias Filter = ElementWithChildren<FilterAttributes, FilterPrimitiveContent>
+
   case svg(Document)
   case group(Group)
   case use(Use)
@@ -399,6 +557,7 @@ public enum SVG: Equatable {
   case desc(String)
   case linearGradient(LinearGradient)
   case radialGradient(RadialGradient)
+  case filter(Filter)
 }
 
 // MARK: - Categories
@@ -448,7 +607,24 @@ private enum Tag: String {
   // descriptive
   case title, desc
 
-  case stop, mask, clipPath
+  case stop, mask, clipPath, filter
+
+  case feBlend
+  case feColorMatrix
+  case feComponentTransfer
+  case feComposite
+  case feConvolveMatrix
+  case feDiffuseLighting
+  case feDisplacementMap
+  case feFlood
+  case feGaussianBlur
+  case feImage
+  case feMerge
+  case feMorphology
+  case feOffset
+  case feSpecularLighting
+  case feTile
+  case feTurbulence
 }
 
 private enum Attribute: String {
@@ -459,15 +635,33 @@ private enum Attribute: String {
 
   case x, y, width, height, rx, ry
 
-  // Presentation
+  // Filters
+  case result, `in`, in2, mode
+
+  // - Presentation
   case clipRule = "clip-rule", clipPath = "clip-path", mask, opacity
-  case fill, fillRule = "fill-rule", fillOpacity = "fill-opacity"
-  case stroke, strokeWidth = "stroke-width", strokeOpacity = "stroke-opacity"
+  case filter
   case stopColor = "stop-color", stopOpacity = "stop-opacity"
-  case strokeLinecap = "stroke-linecap", strokeLinejoin = "stroke-linejoin"
+  case gradientTransform, gradientUnits
+  // Color and Painting
+  case colorInterpolation = "color-interpolation"
+  case colorInterpolationFilters = "color-interpolation-filters"
+  case colorProfile = "color-profile"
+  case colorRendering = "color-rendering"
+  case fill
+  case fillOpacity = "fill-opacity", fillRule = "fill-rule"
+  case imageRendering = "image-rendering"
+  case marker
+  case markerEnd = "marker-end", markerMid = "marker-mid"
+  case markerStart = "marker-start"
+  case shapeRendering = "shape-rendering"
+  case stroke
   case strokeDasharray = "stroke-dasharray"
   case strokeDashoffset = "stroke-dashoffset"
-  case gradientTransform, gradientUnits
+  case strokeLinecap = "stroke-linecap", strokeLinejoin = "stroke-linejoin"
+  case strokeMiterlimit = "stroke-miterlimit", strokeOpacity = "stroke-opacity"
+  case strokeWidth = "stroke-width"
+  case textRendering = "text-rendering"
 
   case viewBox, version
   case points
@@ -478,6 +672,10 @@ private enum Attribute: String {
   case cx, cy, r, fx, fy
 
   case xlinkHref = "xlink:href"
+  case filterUnits
+  case type, values, floodColor = "flood-color", floodOpacity = "flood-opacity"
+  case stdDeviation
+  case dx, dy
 
   case maskUnits, maskContentUnits, clipPathUnits
 
@@ -543,9 +741,11 @@ public enum SVGParser {
     attributeParser(SVGAttributeParsers.viewBox)
   }
 
-  private static var num: ParserForAttribute<SVG.Float> {
-    attributeParser(SVGAttributeParsers.number)
-  }
+  private static let num = attributeParser(SVGAttributeParsers.number)
+  private static let numList =
+    attributeParser(SVGAttributeParsers.listOfNumbers)
+  private static let numberOptionalNumber =
+    attributeParser(SVGAttributeParsers.numberOptionalNumber)
 
   private static var identifier: ParserForAttribute<String> {
     attributeParser(SVGAttributeParsers.identifier)
@@ -583,6 +783,8 @@ public enum SVGParser {
   private static let y = coord(.y)
   private static let width = len(.width)
   private static let height = len(.height)
+  private static let colorInterpolation =
+    attributeParser(oneOf(SVG.ColorInterpolation.self))
 
   private static var xml: AttributeGroupParser<Void> {
     zip(identifier(.xmlns), identifier(.xmlnsxlink)) { _, _ in () }
@@ -598,6 +800,7 @@ public enum SVGParser {
     funciri(.clipPath),
     fillRule(.clipRule),
     funciri(.mask),
+    funciri(.filter),
     paint(.fill),
     fillRule(.fillRule),
     num(.fillOpacity),
@@ -611,6 +814,7 @@ public enum SVGParser {
     num(.opacity),
     color(.stopColor),
     num(.stopOpacity),
+    colorInterpolation(.colorInterpolationFilters),
     with: SVG.PresentationAttributes.init
   )
 
@@ -833,6 +1037,107 @@ public enum SVGParser {
     )
   }
 
+  private static let filterAttributes: AttributeGroupParser<SVG.FilterAttributes> = zip(
+    core, presentation,
+    x, y, width, height, units(.filterUnits),
+    with: SVG.FilterAttributes.init
+  )
+
+  private static func elementWithChildren<Attributes, Child>(
+    attributes: AttributeGroupParser<Attributes>,
+    child: Parser<XML, Child>
+  ) -> Parser<XML, SVG.ElementWithChildren<Attributes, Child>> {
+    let childParser = Parser<ArraySlice<XML>, Child>.next { child.run($0) }
+    let childrenParser: Parser<[XML], [Child]> =
+      (childParser* <<~ endof())
+      .pullback(get: { $0[...] }, set: { $0 = Array($1) })
+    let attrs = (attributes <<~ endof())
+    return zip(
+      attrs.pullback(\XML.Element.attrs),
+      childrenParser.pullback(\XML.Element.children),
+      with: SVG.ElementWithChildren.init
+    ).optional.pullback(\XML.el)
+  }
+
+  private static func element<Attributes>(
+    tag: Tag
+  ) -> (AttributeGroupParser<Attributes>) -> Parser<XML, Attributes> {
+    let tag: Parser<XML.Element, Void> =
+      consume(tag.rawValue)
+      .pullback(get: { $0[...] }, set: { $0 = String($1) })
+      .pullback(\XML.Element.tag)
+    return { attributes in
+      (tag ~>> (attributes <<~ endof()).pullback(\.attrs))
+        .optional.pullback(\.el)
+    }
+  }
+
+  private static let filterPrimitiveAttributes = zip(
+    identifier(.result),
+    height, width, x, y,
+    with: SVG.FilterPrimitiveAttributes.init
+  )
+
+  private static func filterPrimitive<T>(
+    _ data: AttributeGroupParser<T>
+  ) -> AttributeGroupParser<SVG.FilterPrimitiveElement<T>> {
+    zip(
+      core, presentation, filterPrimitiveAttributes, data,
+      with: SVG.FilterPrimitiveElement.init
+    )
+  }
+
+  private static let filterPrimitiveIn =
+    attributeParser(SVGAttributeParsers.filterPrimitiveIn)
+  private static let blendMode = attributeParser(SVGAttributeParsers.blendMode)
+  private static let feColorMatrixType =
+    attributeParser(oneOf(SVG.FilterPrimitiveFeColorMatrix.Kind.self))
+
+  private static let feBlend = zip(
+    filterPrimitiveIn(.in),
+    filterPrimitiveIn(.in2),
+    blendMode(.mode),
+    with: SVG.FilterPrimitiveFeBlend.init
+  ) |> filterPrimitive >>> element(tag: .feBlend)
+
+  private static let feColorMatrix = zip(
+    filterPrimitiveIn(.in),
+    feColorMatrixType(.type),
+    numList(.values),
+    with: SVG.FilterPrimitiveFeColorMatrix.init
+  ) |> filterPrimitive >>> element(tag: .feColorMatrix)
+
+  private static let feFlood = zip(
+    color(.floodColor),
+    num(.floodOpacity),
+    with: SVG.FilterPrimitiveFeFlood.init
+  ) |> filterPrimitive >>> element(tag: .feFlood)
+
+  private static let feGaussianBlur = zip(
+    filterPrimitiveIn(.in),
+    numberOptionalNumber(.stdDeviation),
+    with: SVG.FilterPrimitiveFeGaussianBlur.init
+  ) |> filterPrimitive >>> element(tag: .feGaussianBlur)
+
+  private static let feOffset = zip(
+    filterPrimitiveIn(.in),
+    num(.dx),
+    num(.dy),
+    with: SVG.FilterPrimitiveFeOffset.init
+  ) |> filterPrimitive >>> element(tag: .feOffset)
+
+  private static let filterPrimitiveContent: Parser<XML, SVG.FilterPrimitiveContent> = oneOf([
+    feBlend.map(SVG.FilterPrimitiveContent.feBlend),
+    feColorMatrix.map(SVG.FilterPrimitiveContent.feColorMatrix),
+    feFlood.map(SVG.FilterPrimitiveContent.feFlood),
+    feGaussianBlur.map(SVG.FilterPrimitiveContent.feGaussianBlur),
+    feOffset.map(SVG.FilterPrimitiveContent.feOffset),
+  ])
+
+  private static let filter: Parser<XML, SVG.Filter> = elementWithChildren(
+    attributes: filterAttributes, child: filterPrimitiveContent
+  )
+
   public static func element(from xml: XML) throws -> SVG {
     switch xml {
     case let .el(el):
@@ -879,7 +1184,24 @@ public enum SVGParser {
       case .clipPath:
         return try .clipPath(clipPath(from: el))
       case .filter:
-        throw Error.notImplemented
+        return try .filter(filter.run(xml).get())
+      case .feColorMatrix,
+           .feComponentTransfer,
+           .feComposite,
+           .feConvolveMatrix,
+           .feDiffuseLighting,
+           .feDisplacementMap,
+           .feBlend,
+           .feFlood,
+           .feGaussianBlur,
+           .feImage,
+           .feMerge,
+           .feMorphology,
+           .feOffset,
+           .feSpecularLighting,
+           .feTile,
+           .feTurbulence:
+        fatalError()
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
@@ -910,6 +1232,8 @@ public enum SVGAttributeParsers {
   internal static let commaWsp: Parser<Void> =
     (wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp*).map(always(()))
   internal static let number: Parser<SVG.Float> = double()
+  internal static let listOfNumbers = zeroOrMore(number, separator: commaWsp)
+  internal static let numberOptionalNumber = zip(number, (commaWsp ~>> number)~?, with: SVG.NumberOptionalNumber.init)
   internal static let coord: Parser<SVG.Float> = number
 
   internal static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
@@ -1092,6 +1416,18 @@ public enum SVGAttributeParsers {
 
   // Dash Array
   internal static let dashArray = oneOrMore(length, separator: commaWsp)
+
+  private static let filterPrimitiveInPredefined:
+    Parser<SVG.FilterPrimitiveIn.Predefined> = oneOf()
+
+  internal static let filterPrimitiveIn: Parser<SVG.FilterPrimitiveIn> = Parser<Substring>.identity()
+    .map {
+      let value = String($0)
+      return SVG.FilterPrimitiveIn.Predefined(rawValue: value)
+        .map(SVG.FilterPrimitiveIn.predefined) ?? .previous(value)
+    }
+
+  internal static let blendMode: Parser<SVG.BlendMode> = oneOf()
 }
 
 // MARK: - Render
@@ -1118,7 +1454,7 @@ public func renderXML(from svg: SVG) -> XML {
       "fill-opacity": r.presentation.fillOpacity?.description,
     ].compactMapValues(identity))
   case .group, .polygon, .mask, .use, .defs, .title, .desc, .linearGradient,
-       .circle, .path, .ellipse, .radialGradient, .clipPath:
+       .circle, .path, .ellipse, .radialGradient, .clipPath, .filter:
     fatalError()
   }
 }
@@ -1182,7 +1518,8 @@ extension SVG.PresentationAttributes {
     strokeOpacity: nil,
     opacity: nil,
     stopColor: nil,
-    stopOpacity: nil
+    stopOpacity: nil,
+    colorInterpolationFilters: nil
   )
 
   public static func construct(

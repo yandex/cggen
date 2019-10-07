@@ -126,6 +126,12 @@ class SVGGradientTests: XCTestCase {
   }
 }
 
+class SVGShadowTests: XCTestCase {
+  func testSimpleShadow() {
+    test(svg: "simple_shadow")
+  }
+}
+
 private func blackSquareHTML(size: Int) -> String {
   let fsize = SVG.Float(size)
   let svgSize = SVG.Length(fsize)
@@ -222,7 +228,7 @@ private class WKWebViewSnapshoter {
     enum Error: Swift.Error {
       case unknownSnapshotError
     }
-    let contentScale = webView.layer.map(\.contentsScale) ?? 1
+    let contentScale = webView.layer.map(^\.contentsScale) ?? 1
     let origin = viewport.origin
     let size = modified(viewport.size) {
       $0.width += origin.x * 2

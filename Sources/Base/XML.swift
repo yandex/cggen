@@ -19,8 +19,14 @@ public enum XML: Equatable {
   }
 
   public var el: Element? {
-    guard case let .el(el) = self else { return nil }
-    return el
+    get {
+      guard case let .el(el) = self else { return nil }
+      return el
+    }
+    set {
+      guard case .el = self, let new = newValue else { return }
+      self = .el(new)
+    }
   }
 
   public static func parse(
