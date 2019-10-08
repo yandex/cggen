@@ -308,7 +308,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     )
   case .svg:
     fatalError()
-  case .linearGradient, .radialGradient:
+  case .linearGradient, .radialGradient, .filter:
     return .empty
   case .use:
     // FIXME: There gotta be more clever way than just inlining everything
@@ -582,6 +582,8 @@ extension SVG {
       return e.core
     case let .clipPath(e):
       return e.core
+    case let .filter(e):
+      return e.core
     }
   }
 
@@ -598,7 +600,7 @@ extension SVG {
     case let .defs(e):
       return e.children
     case .use, .rect, .polygon, .circle, .ellipse, .path, .title, .desc,
-         .linearGradient, .radialGradient:
+         .linearGradient, .radialGradient, .filter:
       return nil
     }
   }

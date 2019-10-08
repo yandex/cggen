@@ -86,6 +86,17 @@ public struct Parser<D, T> {
   }
 
   @inlinable
+  public var optional: Parser<D?, T> {
+    .init {
+      guard var datum = $0 else {
+        return .failure(ParseError.gotNilExpected(type: D.self))
+      }
+      let result = self.parse(&datum)
+      return result
+    }
+  }
+
+  @inlinable
   public func map<T1>(_ t: @escaping (T) -> T1) -> Parser<D, T1> {
     .init { self.parse(&$0).map(t) }
   }
@@ -97,12 +108,7 @@ public struct Parser<D, T> {
     Parser<D, T1> { data in
       let original = data
       let res = self.parse(&data).flatMap { t($0).parse(&data) }
-      switch res {
-      case .failure:
-        data = original
-      case .success:
-        break
-      }
+      res.onFailure { data = original }
       return res
     }
   }
@@ -115,6 +121,26 @@ public struct Parser<D, T> {
       self.parse(&data).flatMap(t)
     }
   }
+
+  @inlinable
+  public func pullback<D1>(
+    get: @escaping (D1) -> D,
+    set: @escaping (inout D1, D) -> Void
+  ) -> Parser<D1, T> {
+    return .init {
+      var d = get($0)
+      let result = self.parse(&d)
+      set(&$0, d)
+      return result
+    }
+  }
+
+  @inlinable
+  public func pullback<D1>(
+    _ kp: WritableKeyPath<D1, D>
+  ) -> Parser<D1, T> {
+    return pullback(get: ^kp, set: ^kp)
+  }
 }
 
 extension Parser where D == T, D: RangeReplaceableCollection {
@@ -124,6 +150,28 @@ extension Parser where D == T, D: RangeReplaceableCollection {
       defer { data.removeAll(keepingCapacity: false) }
       return .success(data)
     }
+  }
+}
+
+extension Parser where D: Collection, D.SubSequence == D {
+  static func next(
+    _ parse: @escaping (D.Element) -> Result<T, Error>
+  ) -> Parser<D, T> {
+    .init { data in
+      let initial = data
+      guard let next = data.popFirst() else {
+        return .failure(ParseError.atLeastOneExpected)
+      }
+      let result = parse(next)
+      result.onFailure { data = initial }
+      return result
+    }
+  }
+}
+
+extension Parser where D == T? {
+  static func unwrap() -> Parser<D, T> {
+    fatalError()
   }
 }
 
@@ -185,6 +233,12 @@ public enum ParseError: Error {
   case never
   case couldntConvertStringTo(type: String)
   case parsingNotComplete(last: String)
+  case gotNilExpected(String)
+
+  @inlinable
+  public static func gotNilExpected<T>(type: T.Type) -> ParseError {
+    return .gotNilExpected(String(describing: type))
+  }
 }
 
 @inlinable
@@ -431,7 +485,7 @@ extension Parser where D == Substring {
 public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
   _: T.Type = T.self
 ) -> Parser<D, T>
-where T.RawValue: StringProtocol, D.SubSequence == D {
+  where T.RawValue: StringProtocol, D.SubSequence == D {
   longestOneOf(parserFactory: consume(_:))
 }
 

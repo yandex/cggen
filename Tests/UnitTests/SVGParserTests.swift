@@ -31,6 +31,7 @@ class SVGAttributesParserTest: XCTestCase {
     let hexFromSingle = SVGAttributeParsers.hexByteFromSingle
     let rgbcolor = SVGAttributeParsers.rgbcolor
     let paint = SVGAttributeParsers.paint
+    let filterIn = SVGAttributeParsers.filterPrimitiveIn
     commaWsp.test(",_", expected: ((), "_"))
     commaWsp.test("  ,_", expected: ((), "_"))
     commaWsp.test(",  _", expected: ((), "_"))
@@ -44,6 +45,14 @@ class SVGAttributesParserTest: XCTestCase {
     rgbcolor.test("#012 FFF", expected: (.init(red: 0x00, green: 0x11, blue: 0x22), " FFF"))
     rgbcolor.test("#123456F", expected: (.init(red: 0x12, green: 0x34, blue: 0x56), "F"))
     paint.test("none", expected: (.some(.none), ""))
+    filterIn.test("BackgroundImageFix", expected: (
+      result: SVG.FilterPrimitiveIn.previous("BackgroundImageFix"),
+      rest: ""
+    ))
+    filterIn.test("BackgroundImage", expected: (
+      result: SVG.FilterPrimitiveIn.predefined(.backgroundimage),
+      rest: ""
+    ))
   }
 
   func testTransform() {

@@ -5,9 +5,21 @@ import CoreGraphics
 import Dispatch
 import Foundation
 
+precedencegroup Application {
+  associativity: left
+}
+
+precedencegroup ForwardComposition {
+  associativity: left
+  higherThan: Application
+}
+
 infix operator !!
 infix operator ^^
 infix operator ?=
+infix operator >>>: ForwardComposition
+infix operator |>: Application
+prefix operator ^
 
 extension String {
   private var camelCaseComponents: [String] {
@@ -63,10 +75,6 @@ extension Optional {
   public static func ^^ <T: Error>(v: Optional, e: T) -> Result<Wrapped, T> {
     guard let unwrapped = v else { return .failure(e) }
     return .success(unwrapped)
-  }
-
-  public func map<T>(_ kp: KeyPath<Wrapped, T>) -> T? {
-    map { $0[keyPath: kp] }
   }
 }
 
@@ -188,7 +196,7 @@ extension Array {
   }
 
   public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
-    return [T](unsafeUninitializedCapacity: count) { (buffer, finalCount) in
+    return [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
       finalCount = count
       let bufferAccess = NSLock()
       DispatchQueue.concurrentPerform(iterations: count) { i in
@@ -288,6 +296,34 @@ extension Result {
       self = .failure(error())
     }
   }
+
+  @inlinable
+  public func takeAction(onSuccess: (Success) -> Void, onFailure: (Failure) -> Void) {
+    switch self {
+    case let .success(val): onSuccess(val)
+    case let .failure(err): onFailure(err)
+    }
+  }
+
+  @inlinable
+  public func onSuccess(_ action: () -> Void) {
+    onSuccess { _ in action() }
+  }
+
+  @inlinable
+  public func onSuccess(_ action: (Success) -> Void) {
+    takeAction(onSuccess: action, onFailure: always(()))
+  }
+
+  @inlinable
+  public func onFailure(_ action: () -> Void) {
+    onFailure { _ in action() }
+  }
+
+  @inlinable
+  public func onFailure(_ action: (Error) -> Void) {
+    takeAction(onSuccess: always(()), onFailure: action)
+  }
 }
 
 public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
@@ -314,6 +350,22 @@ public func absurd<T>(_: Never) -> T {}
 
 @inlinable
 public func absurd<T, A>(_: A, _: Never) -> T {}
+
+@inlinable
+public func >>> <A, B, C>(
+  lhs: @escaping (A) -> B,
+  rhs: @escaping (B) -> C
+) -> (A) -> C {
+  return { rhs(lhs($0)) }
+}
+
+@inlinable
+public func |> <A, B>(
+  lhs: A,
+  rhs: (A) -> B
+) -> B {
+  return rhs(lhs)
+}
 
 public func check(_ condition: Bool, _ error: Error) throws {
   if !condition {
@@ -343,6 +395,21 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
 @inlinable
 public func get<T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
   { $0[keyPath: kp] }
+}
+
+@inlinable
+public func set<T, U>(_ kp: WritableKeyPath<T, U>) -> (inout T, U) -> Void {
+  { $0[keyPath: kp] = $1 }
+}
+
+@inlinable
+public prefix func ^ <T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
+  get(kp)
+}
+
+@inlinable
+public prefix func ^ <T, U>(_ kp: WritableKeyPath<T, U>) -> (inout T, U) -> Void {
+  set(kp)
 }
 
 public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {
