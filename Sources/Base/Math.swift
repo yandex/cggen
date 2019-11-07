@@ -60,3 +60,60 @@ extension Sequence where Element: FloatingPoint {
     return (sumOfSquares / Element(count)).squareRoot()
   }
 }
+
+public enum Matrix {
+  public struct Column5<T: Equatable>: Equatable {
+    public var c1: T
+    public var c2: T
+    public var c3: T
+    public var c4: T
+    public var c5: T
+
+    @inlinable
+    public init(c1: T, c2: T, c3: T, c4: T, c5: T) {
+      self.c1 = c1
+      self.c2 = c2
+      self.c3 = c3
+      self.c4 = c4
+      self.c5 = c5
+    }
+
+    @inlinable
+    public var components: [T] { [c1, c2, c3, c4, c5] }
+  }
+
+  public struct Row4<T: Equatable>: Equatable {
+    public var r1: T
+    public var r2: T
+    public var r3: T
+    public var r4: T
+
+    @inlinable
+    public init(r1: T, r2: T, r3: T, r4: T) {
+      self.r1 = r1
+      self.r2 = r2
+      self.r3 = r3
+      self.r4 = r4
+    }
+
+    @inlinable
+    public var components: [T] { [r1, r2, r3, r4] }
+  }
+
+  public typealias D4x5<T: Equatable> = Row4<Column5<T>>
+
+  @inlinable
+  public static func diagonal4x5<T: Equatable>(r1c1: T, r2c2: T, r3c3: T, r4c4: T, zero: T) -> D4x5<T> {
+    .init(
+      r1: .init(c1: r1c1, c2: zero, c3: zero, c4: zero, c5: zero),
+      r2: .init(c1: zero, c2: r2c2, c3: zero, c4: zero, c5: zero),
+      r3: .init(c1: zero, c2: zero, c3: r3c3, c4: zero, c5: zero),
+      r4: .init(c1: zero, c2: zero, c3: zero, c4: r4c4, c5: zero)
+    )
+  }
+
+  @inlinable
+  public static func scalar4x5<T: Equatable>(λ: T, zero: T) -> D4x5<T> {
+    diagonal4x5(r1c1: λ, r2c2: λ, r3c3: λ, r4c4: λ, zero: zero)
+  }
+}

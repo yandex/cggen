@@ -362,9 +362,9 @@ public func >>> <A, B, C>(
 @inlinable
 public func |> <A, B>(
   lhs: A,
-  rhs: (A) -> B
-) -> B {
-  return rhs(lhs)
+  rhs: (A) throws -> B
+) rethrows -> B {
+  return try rhs(lhs)
 }
 
 public func check(_ condition: Bool, _ error: Error) throws {
