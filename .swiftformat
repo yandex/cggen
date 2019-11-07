@@ -1,0 +1,9 @@
+--indent 2
+--ranges nospace
+--operatorfunc nospace
+--ifdef noindent
+--hexgrouping 2
+--wraparguments before-first
+--wrapcollections before-first
+--swiftversion 5.1
+--symlinks ignore

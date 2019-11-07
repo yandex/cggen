@@ -8,11 +8,15 @@ enum SVGToDrawRouteConverter {
     let gradients = try Dictionary(
       uniqueKeysWithValues: document.children.flatMap(gradients(svg:))
     )
+    let filters = try Dictionary(
+      uniqueKeysWithValues: document.children.flatMap(filters(svg:))
+    )
     let defenitions = try defs(from: .svg(document))
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
       gradients: gradients.mapValues { $0.1 },
+      filters: filters,
       defenitions: defenitions
     )
     return try .init(
@@ -51,6 +55,7 @@ private enum Err: Swift.Error {
   case noRefInUseElement(SVG.Use)
   case emptyMask(SVG.Shape)
   case tooComplexMask(SVG.Mask)
+  case tooComplexFilter(SVGFilterNode)
   case invalidElementInClipPath(SVG)
 }
 
@@ -69,17 +74,20 @@ private struct Context {
   var objectBoundingBox: CGRect
   var drawingBounds: CGRect
   let gradients: [String: GradientStepsProvider]
+  let filters: [String: SVGFilterNode]
   let defenitions: Defenitions
 
   init(
     objectBoundingBox: CGRect,
     drawingBounds: CGRect,
     gradients: [String: GradientStepsProvider],
+    filters: [String:SVGFilterNode],
     defenitions: [String: [SVG]]
   ) {
     self.objectBoundingBox = objectBoundingBox
     self.drawingBounds = drawingBounds
     self.gradients = gradients
+    self.filters = filters
     self.defenitions = defenitions
   }
 
@@ -142,6 +150,10 @@ private struct Context {
       }
       return try stepsForClip(clip)
     }
+    let filter = try presentation.filter.map { (filterName) -> DrawStep in
+      let filter = try filters[filterName] !! Err.noDefenitionForId(filterName)
+      return try .shadow(filter.simpleShadow !! Err.tooComplexFilter(filter))
+    }
     let needsDashUpdate = presentation.strokeDashOffset != nil ||
       presentation.strokeDashArray != nil
     let strokeDash = needsDashUpdate ? currentDash.map(DrawStep.dash) : nil
@@ -154,6 +166,7 @@ private struct Context {
       updateCurrentFillAndStroke(),
       mask,
       clip,
+      filter,
     ].compactMap(identity))
   }
 
@@ -401,7 +414,9 @@ private func pathConstruction(from ellipse: SVG.EllipseData) -> (DrawStep, bound
 }
 
 private func pathConstruction(from circle: SVG.CircleData) -> (DrawStep, boundingBox: CGRect)? {
-  guard let cx = circle.cx, let cy = circle.cy, let r = circle.r else { return nil }
+  guard let r = circle.r else { return nil }
+  let cx = circle.cx ?? 0
+  let cy = circle.cy ?? 0
   let rect = CGRect.square(
     center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
     size: r.number.cgfloat * 2
@@ -531,6 +546,19 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
     return [
       (id, (Gradient(locationAndColors: locandcolors), steps)),
     ]
+  default:
+    return []
+  }
+}
+
+private func filters(svg: SVG) throws -> [(String, SVGFilterNode)] {
+  switch svg {
+  case let .defs(defs):
+    return try defs.children.flatMap(filters(svg:))
+  case let .filter(f):
+    let node = try SVGFilterNode(raw: f)
+    guard let id = f.attributes.core.id else { return [] }
+    return [(id, node)]
   default:
     return []
   }
@@ -839,5 +867,91 @@ extension DrawStep {
     }
     if t == CGAffineTransform.identity { return nil }
     return .concatCTM(t)
+  }
+}
+
+extension SVGFilterNode {
+  fileprivate var simpleShadow: Shadow? {
+    guard case let .blend(in1: .sourceGraphic, in2: preShadow, .normal) = self,
+      var shadow = preShadow.meaningfulPart
+      else { return nil }
+
+    var offset: CGSize?
+    var blur: CGFloat?
+    var alpha: CGFloat?
+    var alphaClamped = false
+
+    outer: while true {
+      switch shadow {
+      case .sourceAlpha, .sourceGraphic:
+        break outer
+      case let .colorMatrix(in: input, type: .matrix(matrix)):
+        guard let alphaMultiplier = matrix.ifAlphaMultiplication else {
+          return nil
+        }
+        if alpha == nil {
+          alpha = CGFloat(alphaMultiplier)
+        } else if !alphaClamped, alphaMultiplier >= 100 {
+          alphaClamped = true
+        } else {
+          return nil
+        }
+        shadow = input
+      case let .offset(in: input, dx: dx, dy: dy):
+        guard offset == nil else { return nil }
+        offset = CGSize(width: dx, height: dy)
+        shadow = input
+      case let .gaussianBlur(in: input, stddevX: stddevX, stddevY: stddevY):
+        guard !alphaClamped, blur == nil, stddevX == stddevY else { return nil }
+        // FIXME: Figure out a way to transform svg stdDeviation to
+        // core graphics blur radius. Now it is just a eyeballed coefficient
+        // that works best on small radiuses (<5)
+        blur = CGFloat(stddevX) * 2.8
+        shadow = input
+      default:
+        return nil
+      }
+    }
+    guard alphaClamped else { return nil }
+    return zip(blur, alpha).map { (arg) -> Shadow in
+      let (blur, alpha) = arg
+      return .init(offset: offset ?? .zero, blur: blur, color: .init(gray: 0, alpha: alpha))
+    }
+  }
+
+  private var meaningfulPart: SVGFilterNode? {
+    guard self.isMeaningful else { return nil }
+    if case let .blend(in1: in1, in2: in2, .normal) = self {
+      switch (in1.meaningfulPart, in2.meaningfulPart) {
+      case (_?, _?): // Both inputs are meaningfull
+        return self
+      case let (in1?, nil):
+        return in1
+      case let (nil, in2?):
+        return in2
+      case (nil, nil):
+        return nil
+      }
+    }
+
+    return self
+  }
+
+  private var isMeaningful: Bool {
+    if case .flood(color: _, opacity: 0) = self {
+      return false
+    }
+
+    return true
+  }
+}
+
+extension SVGFilterNode.ColorMatrix {
+  var ifAlphaMultiplication: SVG.Float? {
+    guard r1.components.allSatisfy({ $0 == 0 }),
+      r2.components.allSatisfy({ $0 == 0 }),
+      r3.components.allSatisfy({ $0 == 0 }),
+      r4.c1 == 0, r4.c2 == 0, r4.c3 == 0, r4.c5 == 0 else { return nil }
+    return r4.c4
   }
 }

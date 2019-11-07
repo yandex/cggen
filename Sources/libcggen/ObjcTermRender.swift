@@ -243,7 +243,7 @@ extension ObjcTerm.Expr: Renderable {
     case let .list(of: type, list):
       let initializers = list.map { $0.render() }.joined(separator: ", ")
       return "(\(type.render().joined(separator: " "))){ \(initializers) }"
-    case let .member(field, expr):
+    case let .memberInit(field, expr):
       return ".\(field) = \(expr.render())"
     case let .bin(lhs, op, rhs):
       return [lhs.render(), op.rawValue, rhs.render()].joined(separator: " ")
@@ -255,6 +255,8 @@ extension ObjcTerm.Expr: Renderable {
       return e.render() + "[" + idx.render() + "]"
     case let .unary(op, e):
       return op.rawValue + e.render()
+    case let .member(value, field):
+      return value.render() + "." + field
     }
   }
 }

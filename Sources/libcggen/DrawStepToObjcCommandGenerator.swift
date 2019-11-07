@@ -140,6 +140,42 @@ struct DrawStepToObjcCommandGenerator {
       return pathInit.render(indent: 2) +
         append.render(indent: 2) +
         release.render(indent: 2)
+    case let .shadow(shadow):
+      let (getCtm, ctm) = ObjcTerm.CDecl.functionCall(
+        type: .CGAffineTransform, id: "ctm",
+        functionName: "CGContextGetCTM", args: .identifier(contextVarName)
+      )
+      let (getOffset, offset) = ObjcTerm.CDecl.functionCall(
+        type: .CGSize, id: "offset_\(uniqIDProvider())",
+        functionName: "CGSizeApplyAffineTransform",
+        args: .value(shadow.offset), ctm
+      )
+      let a = ObjcTerm.Expr.member(ctm, "a")
+      let c = ObjcTerm.Expr.member(ctm, "c")
+      let scaleX = ObjcTerm.Expr.cast(to: .CGFloat, .call(.identifier("sqrt"), args: [a * a + c * c]))
+      let (getBlur, blur) = ObjcTerm.CDecl.expression(
+        type: .CGFloat, id: "blur_\(uniqIDProvider())",
+        expr: .value(shadow.blur) * scaleX
+      )
+      let color = shadow.color
+      let (colorInit, colorVar) = ObjcTerm.CDecl.functionCall(
+        type: .CGColorRef, id: "color_\(uniqIDProvider())",
+        functionName: "CGColorCreateGenericRGB",
+        args: .value(color.red), .value(color.green), .value(color.blue), .value(color.alpha)
+      )
+      let setShadow = cmd(
+        "CGContextSetShadowWithColor",
+        args: offset, blur, colorVar
+      )
+      let release = ObjcTerm.Statement.call("CGColorRelease", args: colorVar)
+      return ObjcTerm.Statement.block([
+        .decl(colorInit),
+        .decl(getCtm),
+        .decl(getOffset),
+        .decl(getBlur),
+        .stmnt(setShadow),
+        .stmnt(release)
+      ]).render(indent: 2)
     }
   }
 
@@ -383,19 +419,32 @@ extension ObjcTerm.CDecl {
     functionName: String,
     args: ObjcTerm.Expr...
   ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
+    expression(
+      type: type,
+      id: id,
+      expr: .call(.identifier(functionName), args: args)
+    )
+  }
+
+  static func expression(
+    type: ObjcTerm.TypeIdentifier,
+    id: String,
+    expr: ObjcTerm.Expr
+  ) -> (ObjcTerm.CDecl, ObjcTerm.Expr) {
     return (
       .init(
         specifiers: [.type(.simple(type))],
         declarators: [
           .declinit(
             .init(identifier: id),
-            .expr(.call(.identifier(functionName), args: args))
+            .expr(expr)
           ),
         ]
       ),
       .identifier(id)
     )
   }
+
 
   static func array(
     _ name: String,
@@ -432,22 +481,22 @@ extension ObjcTerm.Expr {
 
   static func value(_ value: CGPoint) -> ObjcTerm.Expr {
     return .list(.CGPoint, [
-      .member("x", .value(value.x)),
-      .member("y", .value(value.y)),
+      .memberInit("x", .value(value.x)),
+      .memberInit("y", .value(value.y)),
     ])
   }
 
   static func value(_ value: CGSize) -> ObjcTerm.Expr {
     return .list(.CGSize, [
-      .member("width", .value(value.width)),
-      .member("height", .value(value.height)),
+      .memberInit("width", .value(value.width)),
+      .memberInit("height", .value(value.height)),
     ])
   }
 
   static func value(_ value: CGRect) -> ObjcTerm.Expr {
     return .list(.CGRect, [
-      .member("origin", .value(value.origin)),
-      .member("size", .value(value.size)),
+      .memberInit("origin", .value(value.origin)),
+      .memberInit("size", .value(value.size)),
     ])
   }
 
@@ -489,6 +538,14 @@ extension ObjcTerm.Expr {
     return .bin(lhs: lhs, op: .bitwiseOr, rhs: rhs)
   }
 
+  static func *(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    return .bin(lhs: lhs, op: .multiply, rhs: rhs)
+  }
+
+  static func +(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    return .bin(lhs: lhs, op: .addition, rhs: rhs)
+  }
+
   subscript(_ e: ObjcTerm.Expr) -> ObjcTerm.Expr {
     return .subscript(self, idx: e)
   }
@@ -499,8 +556,10 @@ extension ObjcTerm.TypeIdentifier {
   public static let CGRect: Self = "CGRect"
   public static let CGFloat: Self = "CGFloat"
   public static let CGSize: Self = "CGSize"
+  public static let CGColorRef: Self = "CGColorRef"
   public static let CGContextRef: Self = "CGContextRef"
   public static let CGPathRef: Self = "CGPathRef"
   public static let CGGradientRef: Self = "CGGradientRef"
   public static let CGGradientDrawingOptions: Self = "CGGradientDrawingOptions"
+  public static let CGAffineTransform: Self = "CGAffineTransform"
 }

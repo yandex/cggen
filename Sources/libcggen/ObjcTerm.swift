@@ -34,9 +34,9 @@ enum ObjcTerm {
     init(stringLiteral value: StaticString) { name = value }
     var description: String { return name.description }
 
-    static let int: TypeIdentifier = "int"
-    static let void: TypeIdentifier = "void"
-//    static func arrayOf(type: StaticString)
+    static let int: Self = "int"
+    static let void: Self = "void"
+    static let double: Self = "double"
   }
 
   enum TypeSpecifier {
@@ -89,6 +89,8 @@ enum ObjcTerm {
     enum BinOp: String {
       case less = "<"
       case bitwiseOr = "|"
+      case multiply = "*"
+      case addition = "+"
     }
 
     enum PostfixOp: String {
@@ -100,7 +102,8 @@ enum ObjcTerm {
     }
 
     case cast(to: TypeIdentifier, Expr)
-    case member(String, Expr)
+    case memberInit(String, Expr)
+    case member(Expr, String)
     case call(Expr, args: [Expr])
     case `subscript`(Expr, idx: Expr)
     case bin(lhs: Expr, op: BinOp, rhs: Expr)

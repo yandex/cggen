@@ -193,7 +193,7 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct FilterPrimitiveAttributes: Equatable {
+  public struct FilterPrimitiveCommonAttributes: Equatable {
     var result: String?
     var height: Length?
     var width: Length?
@@ -448,19 +448,19 @@ public enum SVG: Equatable {
   public struct FilterPrimitiveElement<T: Equatable>: Equatable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
-    public var filterPrimitive: FilterPrimitiveAttributes
+    public var common: FilterPrimitiveCommonAttributes
     public var data: T
 
     @inlinable
     public init(
       core: CoreAttributes,
       presentation: PresentationAttributes,
-      filterPrimitive: FilterPrimitiveAttributes,
+      common: FilterPrimitiveCommonAttributes,
       data: T
     ) {
       self.core = core
       self.presentation = presentation
-      self.filterPrimitive = filterPrimitive
+      self.common = common
       self.data = data
     }
 
@@ -1075,7 +1075,7 @@ public enum SVGParser {
   private static let filterPrimitiveAttributes = zip(
     identifier(.result),
     height, width, x, y,
-    with: SVG.FilterPrimitiveAttributes.init
+    with: SVG.FilterPrimitiveCommonAttributes.init
   )
 
   private static func filterPrimitive<T>(

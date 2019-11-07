@@ -10,6 +10,12 @@ struct Gradient {
   var locationAndColors: [(CGFloat, RGBACGColor)]
 }
 
+struct Shadow {
+  var offset: CGSize
+  var blur: CGFloat
+  var color: RGBACGColor
+}
+
 struct DashPattern {
   let phase: CGFloat
   let lengths: [CGFloat]
@@ -75,6 +81,7 @@ enum DrawStep {
   case linearGradient(String, LinearGradientDrawingOptions)
   case radialGradient(String, RadialGradientDrawingOptions)
   case subrouteWithName(String)
+  case shadow(Shadow)
   case blendMode(CGBlendMode)
 
   case beginTransparencyLayer

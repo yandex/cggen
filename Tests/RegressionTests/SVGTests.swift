@@ -128,7 +128,11 @@ class SVGGradientTests: XCTestCase {
 
 class SVGShadowTests: XCTestCase {
   func testSimpleShadow() {
-    test(svg: "simple_shadow")
+    test(svg: "simple_shadow", tolerance: 0.015)
+  }
+
+  func testDifferentBlurRadiuses() {
+    test(svg: "different_blur_radius", tolerance: 0.031)
   }
 }
 
