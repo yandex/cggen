@@ -13,11 +13,11 @@ private class Context {
   var strokeColor: PDFColor = .black()
 
   var fillColorWithAlpha: RGBACGColor {
-    return fillColor.withAlpha(fillAlpha)
+    fillColor.withAlpha(fillAlpha)
   }
 
   var strokeColorWithAlpha: RGBACGColor {
-    return strokeColor.withAlpha(strokeAlpha)
+    strokeColor.withAlpha(strokeAlpha)
   }
 
   func save() {
@@ -68,7 +68,7 @@ enum PDFToDrawRouteConverter {
   }
 
   static func convert(page: PDFPage) -> DrawRoute {
-    return convert(
+    convert(
       resources: page.resources,
       bbox: page.bbox,
       operators: page.operators
@@ -456,14 +456,14 @@ extension CGGradientDrawingOptions {
 
 private extension DrawStep {
   static func fillWithColor(context: Context, rule: CGPathFillRule) -> DrawStep {
-    return .composite([
+    .composite([
       .fillColor(context.fillColorWithAlpha),
       .fill(rule),
     ])
   }
 
   static func strokeWithColor(_ context: Context) -> DrawStep {
-    return .composite([
+    .composite([
       .strokeColor(context.strokeColorWithAlpha),
       .stroke,
     ])

@@ -17,6 +17,6 @@ public enum PDFParser {
 
 extension CGPDFDocument {
   var pages: [CGPDFPage] {
-    return (1...numberOfPages).map { page(at: $0)! }
+    (1...numberOfPages).map { page(at: $0)! }
   }
 }

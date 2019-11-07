@@ -121,7 +121,7 @@ public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
   public typealias SubSequence = Slice<Splitted<Collection>>
   public typealias Element = Collection.SubSequence
 
-  public var startIndex: Int { return 0 }
+  public var startIndex: Int { 0 }
   public var endIndex: Int {
     precondition(step > 0)
     return collection.count / step
@@ -196,7 +196,7 @@ extension Array {
   }
 
   public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
-    return [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
+    [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
       finalCount = count
       let bufferAccess = NSLock()
       DispatchQueue.concurrentPerform(iterations: count) { i in
@@ -356,7 +356,7 @@ public func >>> <A, B, C>(
   lhs: @escaping (A) -> B,
   rhs: @escaping (B) -> C
 ) -> (A) -> C {
-  return { rhs(lhs($0)) }
+  { rhs(lhs($0)) }
 }
 
 @inlinable
@@ -364,7 +364,7 @@ public func |> <A, B>(
   lhs: A,
   rhs: (A) throws -> B
 ) rethrows -> B {
-  return try rhs(lhs)
+  try rhs(lhs)
 }
 
 public func check(_ condition: Bool, _ error: Error) throws {

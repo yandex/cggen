@@ -12,7 +12,7 @@ struct Point: Equatable, LinearInterpolatable {
   typealias DistanceType = Double
 
   public var abscissa: AbscissaType {
-    return x
+    x
   }
 
   func distanceTo(_ other: Point) -> DistanceType {
@@ -36,7 +36,7 @@ struct Point: Equatable, LinearInterpolatable {
 
 private let delta = Double.ulpOfOne * 100
 private func line(k: Double, b: Double) -> (Double) -> Point {
-  return { Point(x: $0, y: k * $0 + b) }
+  { Point(x: $0, y: k * $0 + b) }
 }
 
 final class RemoveIntermediatesTests: XCTestCase {

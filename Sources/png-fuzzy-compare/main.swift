@@ -73,12 +73,12 @@ func symbolForRelativeDeviation(_ deviation: Double) -> String {
 
 extension RGBAPixel {
   var normComponents: [Double] {
-    return norm().components
+    norm().components
   }
 }
 
 func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
-  return zip(buffer1.pixels, buffer2.pixels)
+  zip(buffer1.pixels, buffer2.pixels)
     .concurrentMap { l1, l2 in zip(l1, l2)
       .map { p1, p2 in
         let deviation = zip(p1.normComponents, p2.normComponents)

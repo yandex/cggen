@@ -83,7 +83,7 @@ public struct PDFFunction {
 extension PDFFunction.Point: LinearInterpolatable {
   public typealias DistanceType = CGFloat
   public typealias AbscissaType = CGFloat
-  public var abscissa: CGFloat { return arg }
+  public var abscissa: CGFloat { arg }
 
   public func distanceTo(_ other: PDFFunction.Point) -> CGFloat {
     let squareDistance = zip(value, other.value)

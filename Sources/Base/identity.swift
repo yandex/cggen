@@ -1,6 +1,6 @@
 @inlinable
 public func identity<T>(_ t: T) -> T {
-  return t
+  t
 }
 
 @inlinable

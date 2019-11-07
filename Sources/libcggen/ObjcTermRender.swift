@@ -7,17 +7,17 @@ protocol Renderable {
 
 extension Renderable where RenderType == [String] {
   func renderText() -> String {
-    return render().joined(separator: "\n")
+    render().joined(separator: "\n")
   }
 
   func render(indent: Int) -> RenderType {
-    return render().map { String(repeating: " ", count: indent) + $0 }
+    render().map { String(repeating: " ", count: indent) + $0 }
   }
 }
 
 extension Collection where Element: Renderable {
   func render() -> [Element.RenderType] {
-    return map { $0.render() }
+    map { $0.render() }
   }
 }
 
@@ -137,7 +137,7 @@ extension ObjcTerm.CDecl.Specifier: Renderable {
 
 extension ObjcTerm.Declarator: Renderable {
   func render() -> String {
-    return ([(pointer?.render() ?? "") + direct.render()] + attributes)
+    ([(pointer?.render() ?? "") + direct.render()] + attributes)
       .joined(separator: " ")
   }
 }
@@ -214,7 +214,7 @@ extension ObjcTerm.TypeSpecifier: Renderable {
 
 extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
   func render() -> String {
-    return (spec.render() + [decl.render()])
+    (spec.render() + [decl.render()])
       .flatMap { $0 }
       .joined(separator: " ")
   }

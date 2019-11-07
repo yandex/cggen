@@ -3,7 +3,7 @@
 import Foundation
 
 func perform(_ command: String) -> Int32 {
-  return perform(command.components(separatedBy: " "))
+  perform(command.components(separatedBy: " "))
 }
 
 func perform(_ command: [String]) -> Int32 {

@@ -10,7 +10,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   let headerImportPath: String?
 
   func filePreamble() -> String {
-    return ObjcTerm([
+    ObjcTerm([
       headerImportPath.map { ObjcTerm.import(.doubleQuotes(path: $0)) },
       .import(.coreGraphics, asModule: params.importAsModules),
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
@@ -30,7 +30,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   }
 
   func fileEnding() -> String {
-    return ""
+    ""
   }
 }
 
@@ -61,7 +61,7 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
 
 extension ObjcCGGenerator {
   private func funcStart(imageName: String) -> [String] {
-    return [
+    [
       params.style.drawingHandlerPrefix + ObjCGen.functionDef(imageName: imageName.upperCamelCase, prefix: params.prefix),
       "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",
       "  CGContextSetFillColorSpace(context, \(rgbColorSpaceVarName));",
@@ -83,7 +83,7 @@ private extension GenerationParams.Style {
 
 private extension GenerationParams {
   private func funcName(imageName: String) -> String {
-    return ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
+    ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
   }
 
   func descriptorLines(for image: Image) -> [String] {
@@ -113,7 +113,7 @@ private func cmd(_ name: String, _ args: String? = nil) -> String {
 }
 
 func subrouteBlockName(subrouteName: String) -> String {
-  return "subrouteNamed\(subrouteName)"
+  "subrouteNamed\(subrouteName)"
 }
 
 private var uniqColorID = 0

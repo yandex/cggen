@@ -127,7 +127,7 @@ public struct Parser<D, T> {
     get: @escaping (D1) -> D,
     set: @escaping (inout D1, D) -> Void
   ) -> Parser<D1, T> {
-    return .init {
+    .init {
       var d = get($0)
       let result = self.parse(&d)
       set(&$0, d)
@@ -139,7 +139,7 @@ public struct Parser<D, T> {
   public func pullback<D1>(
     _ kp: WritableKeyPath<D1, D>
   ) -> Parser<D1, T> {
-    return pullback(get: ^kp, set: ^kp)
+    pullback(get: ^kp, set: ^kp)
   }
 }
 
@@ -237,7 +237,7 @@ public enum ParseError: Error {
 
   @inlinable
   public static func gotNilExpected<T>(type: T.Type) -> ParseError {
-    return .gotNilExpected(String(describing: type))
+    .gotNilExpected(String(describing: type))
   }
 }
 

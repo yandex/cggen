@@ -132,7 +132,7 @@ private let generator: Generator = {
 }
 
 private func generateImages(from files: [URL], generator: Generator = generator) throws -> [Image] {
-  return try zip(files, files.concurrentMap(generator)).map {
+  try zip(files, files.concurrentMap(generator)).map {
     Image(
       name: $0.0.deletingPathExtension().lastPathComponent,
       route: $0.1

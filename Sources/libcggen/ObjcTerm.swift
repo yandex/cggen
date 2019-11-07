@@ -32,7 +32,7 @@ enum ObjcTerm {
     let name: StaticString
 
     init(stringLiteral value: StaticString) { name = value }
-    var description: String { return name.description }
+    var description: String { name.description }
 
     static let int: Self = "int"
     static let void: Self = "void"
@@ -115,14 +115,14 @@ enum ObjcTerm {
     case list(of: TypeName, [Expr])
 
     public static func list(_ type: TypeIdentifier, _ values: [Expr]) -> Expr {
-      return .list(
+      .list(
         of: .init(specifiers: [.simple(type)], declarator: nil),
         values
       )
     }
 
     public static func array(of type: TypeIdentifier, _ values: [Expr]) -> Expr {
-      return .list(
+      .list(
         of: .init(specifiers: [.simple(type)], declarator: .direct(.array)),
         values
       )
@@ -180,25 +180,25 @@ enum ObjcTerm {
 
 extension ObjcTerm.Declarator {
   static func namedInSwift(_ name: String, decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
-    return modified(decl) {
+    modified(decl) {
       $0.attributes.append("CF_SWIFT_NAME(\(name))")
     }
   }
 
   static func identifier(_ id: String) -> ObjcTerm.Declarator {
-    return .init(identifier: id)
+    .init(identifier: id)
   }
 
   static func braced(_ decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
-    return .init(pointer: nil, direct: .braced(decl), attrs: [])
+    .init(pointer: nil, direct: .braced(decl), attrs: [])
   }
 
   static func parametrList(_ decl: ObjcTerm.Declarator, params: [ObjcTerm.CDecl.Specifier]) -> ObjcTerm.Declarator {
-    return .init(pointer: nil, direct: .parametrList(decl, params), attrs: [])
+    .init(pointer: nil, direct: .parametrList(decl, params), attrs: [])
   }
 
   static func pointed(_ decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
-    return modified(decl) {
+    modified(decl) {
       switch $0.pointer {
       case nil:
         $0.pointer = .last(typeQual: nil)
@@ -214,7 +214,7 @@ extension ObjcTerm.Declarator {
     name _: String,
     _ params: ObjcTerm.CDecl.Specifier...
   ) -> ObjcTerm.Declarator {
-    return .parametrList(
+    .parametrList(
       .braced(.pointed(.identifier("drawingHandler"))),
       params: params
     )
@@ -226,7 +226,7 @@ extension ObjcTerm {
 
   struct SystemModule: ExpressibleByStringLiteral {
     var value: StaticString
-    var name: String { return value.description }
+    var name: String { value.description }
     init(stringLiteral value: StaticString) {
       self.value = value
     }
@@ -247,7 +247,7 @@ extension ObjcTerm {
     _ systemModules: SystemModule...,
     asModule: Bool
   ) -> ObjcTerm {
-    return .init(systemModules.map { .import($0, asModule: asModule) })
+    .init(systemModules.map { .import($0, asModule: asModule) })
   }
 
   // MARK: Composite
@@ -269,7 +269,7 @@ extension ObjcTerm {
     startRegion: String,
     endRegion: String
   ) -> ObjcTerm {
-    return .init(
+    .init(
       .compilerDirective(startRegion),
       .newLine,
       lexems,
@@ -279,7 +279,7 @@ extension ObjcTerm {
   }
 
   static func inCFNonnullRegion(_ lexems: ObjcTerm...) -> ObjcTerm {
-    return inAuditedRegion(
+    inAuditedRegion(
       .init(lexems),
       startRegion: "CF_ASSUME_NONNULL_BEGIN",
       endRegion: "CF_ASSUME_NONNULL_END"
@@ -290,7 +290,7 @@ extension ObjcTerm {
 
   // typedef struct CF_BRIDGED_TYPE(id) objcName *objcNameRef CF_SWIFT_NAME(namespace);
   static func swiftNamespace(_ namespace: String, cPref: String) -> ObjcTerm {
-    return .cdecl(.init(specifiers: [
+    .cdecl(.init(specifiers: [
       .storage(.typedef),
       .type(.structOrUnion(
         .struct,

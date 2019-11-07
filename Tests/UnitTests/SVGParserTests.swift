@@ -62,7 +62,7 @@ class SVGAttributesParserTest: XCTestCase {
 }
 
 private func parse(_ xml: String) throws -> SVG.Document {
-  return try SVGParser.root(from: xml.data(using: .utf8).unsafelyUnwrapped)
+  try SVGParser.root(from: xml.data(using: .utf8).unsafelyUnwrapped)
 }
 
 private let simpleSVG = """

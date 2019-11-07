@@ -91,7 +91,7 @@ enum DrawStep {
 
   static let empty = DrawStep.composite([])
   static func savingGState(_ steps: DrawStep...) -> DrawStep {
-    return .composite([.saveGState] + steps + [.restoreGState])
+    .composite([.saveGState] + steps + [.restoreGState])
   }
 }
 

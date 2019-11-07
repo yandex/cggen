@@ -5,21 +5,21 @@ import Foundation
 
 enum ObjCGen {
   static func functionName(imageName: String, prefix: String) -> String {
-    return "\(prefix)Draw\(imageName)ImageInContext"
+    "\(prefix)Draw\(imageName)ImageInContext"
   }
 
   static func functionWithArgs(imageName: String, prefix: String) -> String {
-    return "void "
+    "void "
       .appending(functionName(imageName: imageName, prefix: prefix))
       .appending("(CGContextRef context)")
   }
 
   static func functionDecl(imageName: String, prefix: String) -> String {
-    return functionWithArgs(imageName: imageName, prefix: prefix).appending(";")
+    functionWithArgs(imageName: imageName, prefix: prefix).appending(";")
   }
 
   static func functionDef(imageName: String, prefix: String) -> String {
-    return functionWithArgs(imageName: imageName, prefix: prefix).appending(" {")
+    functionWithArgs(imageName: imageName, prefix: prefix).appending(" {")
   }
 
   static func cgFloatArray(_ array: [CGFloat]) -> String {
@@ -30,15 +30,15 @@ enum ObjCGen {
 
 extension GenerationParams {
   var descriptorTypename: String {
-    return prefix + module + "GeneratedImageDescriptor"
+    prefix + module + "GeneratedImageDescriptor"
   }
 
   func descriptorName(for image: Image) -> String {
-    return "k" + prefix + module + image.name.upperCamelCase + "Descriptor"
+    "k" + prefix + module + image.name.upperCamelCase + "Descriptor"
   }
 
   var cggenSupportHeaderBody: ObjcTerm {
-    return supportHeader(
+    supportHeader(
       importAsModules: importAsModules,
       prefix: prefix,
       module: module,
@@ -53,7 +53,7 @@ private func supportHeader(
   module: String,
   descriptorTypeName: String
 ) -> ObjcTerm {
-  return ObjcTerm(
+  ObjcTerm(
     commonHeaderPrefix,
     .newLine,
     .import(.coreGraphics, .coreFoundation, asModule: importAsModules),

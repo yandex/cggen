@@ -32,7 +32,7 @@ enum SVGToDrawRouteConverter {
 
 extension SVG.Document {
   var boundingRect: CGRect {
-    return CGRect(
+    CGRect(
       x: 0.0, y: 0.0,
       width: width?.number ?? 0,
       height: height?.number ?? 0
@@ -81,7 +81,7 @@ private struct Context {
     objectBoundingBox: CGRect,
     drawingBounds: CGRect,
     gradients: [String: GradientStepsProvider],
-    filters: [String:SVGFilterNode],
+    filters: [String: SVGFilterNode],
     defenitions: [String: [SVG]]
   ) {
     self.objectBoundingBox = objectBoundingBox
@@ -179,7 +179,7 @@ private struct Context {
   }
 
   func drawPath(path: DrawStep) throws -> DrawStep {
-    return try .composite([
+    try .composite([
       gradient(for: \.fill).map {
         DrawStep.savingGState(
           path,
@@ -237,11 +237,11 @@ private struct Context {
   }
 
   func stepsForMask(_ mask: SVG.Mask) throws -> DrawStep {
-    return try stepsForClipLike(children: mask.children, transform: mask.transform)
+    try stepsForClipLike(children: mask.children, transform: mask.transform)
   }
 
   func stepsForClip(_ clip: SVG.ClipPath) throws -> DrawStep {
-    return try stepsForClipLike(children: clip.children, transform: clip.transform)
+    try stepsForClipLike(children: clip.children, transform: clip.transform)
   }
 
   private func stepsForClipLike(
@@ -636,7 +636,7 @@ extension SVG {
 
 extension SVG.Shape {
   func shapeConstruction() throws -> (DrawStep, CGRect)? {
-    return try shapeConstructionWithoutTransform().map { path, box in
+    try shapeConstructionWithoutTransform().map { path, box in
       let transformed = transform.flatMap(DrawStep.concatCTM).map {
         DrawStep.savingGState($0, path)
       }
@@ -749,7 +749,7 @@ extension CGRect {
   }
 
   static func square(center: CGPoint, size: CGFloat) -> CGRect {
-    return CGRect(center: center, width: size, height: size)
+    CGRect(center: center, width: size, height: size)
   }
 }
 
@@ -789,36 +789,36 @@ extension CGAffineTransform {
 
 extension SVG.LinearGradient {
   func startPoint(in drawingArea: CGRect) -> CGPoint {
-    return abs(x1 ?? 0%, y1 ?? 0%, drawingArea)
+    abs(x1 ?? 0%, y1 ?? 0%, drawingArea)
   }
 
   func endPoint(in drawingArea: CGRect) -> CGPoint {
-    return abs(x2 ?? 100%, y2 ?? 0%, drawingArea)
+    abs(x2 ?? 100%, y2 ?? 0%, drawingArea)
   }
 
   var options: CGGradientDrawingOptions {
-    return [.drawsAfterEndLocation, .drawsBeforeStartLocation]
+    [.drawsAfterEndLocation, .drawsBeforeStartLocation]
   }
 }
 
 extension SVG.RadialGradient {
-  private var cxWithDefault: SVG.Coordinate { return cx ?? 50% }
-  private var cyWithDefault: SVG.Coordinate { return cy ?? 50% }
+  private var cxWithDefault: SVG.Coordinate { cx ?? 50% }
+  private var cyWithDefault: SVG.Coordinate { cy ?? 50% }
 
   func startCenter(in drawingAres: CGRect) -> CGPoint {
-    return abs(fx ?? cxWithDefault, fy ?? cyWithDefault, drawingAres)
+    abs(fx ?? cxWithDefault, fy ?? cyWithDefault, drawingAres)
   }
 
   func endCenter(in drawingArea: CGRect) -> CGPoint {
-    return abs(cxWithDefault, cyWithDefault, drawingArea)
+    abs(cxWithDefault, cyWithDefault, drawingArea)
   }
 
   var options: CGGradientDrawingOptions {
-    return [.drawsAfterEndLocation, .drawsBeforeStartLocation]
+    [.drawsAfterEndLocation, .drawsBeforeStartLocation]
   }
 
   func endRadius(in drawingArea: CGRect) -> CGFloat {
-    return (r ?? 50%).abs(in: min(drawingArea.width, drawingArea.height))
+    (r ?? 50%).abs(in: min(drawingArea.width, drawingArea.height))
   }
 }
 
@@ -827,7 +827,7 @@ private func abs(
   _ y: SVG.Coordinate,
   _ area: CGRect
 ) -> CGPoint {
-  return .init(
+  .init(
     x: area.origin.x + x.abs(in: area.size.width),
     y: area.origin.y + y.abs(in: area.size.height)
   )
@@ -857,7 +857,7 @@ extension SVG.Paint {
 
 postfix operator %
 postfix func %(percent: SVG.Float) -> SVG.Coordinate {
-  return .init(percent, .percent)
+  .init(percent, .percent)
 }
 
 extension DrawStep {
@@ -874,7 +874,7 @@ extension SVGFilterNode {
   fileprivate var simpleShadow: Shadow? {
     guard case let .blend(in1: .sourceGraphic, in2: preShadow, .normal) = self,
       var shadow = preShadow.meaningfulPart
-      else { return nil }
+    else { return nil }
 
     var offset: CGSize?
     var blur: CGFloat?
@@ -920,7 +920,7 @@ extension SVGFilterNode {
   }
 
   private var meaningfulPart: SVGFilterNode? {
-    guard self.isMeaningful else { return nil }
+    guard isMeaningful else { return nil }
     if case let .blend(in1: in1, in2: in2, .normal) = self {
       switch (in1.meaningfulPart, in2.meaningfulPart) {
       case (_?, _?): // Both inputs are meaningfull

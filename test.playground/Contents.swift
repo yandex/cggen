@@ -167,11 +167,11 @@ let svgColors = try colorsParser.whole(svgColorsString).get()
 
 extension NamedColor {
   var caseDecl: String {
-    return "  case \(name)"
+    "  case \(name)"
   }
 
   var caseHandling: String {
-    return """
+    """
         case .\(name):
           return SVG.Color(red: \(value.red), green: \(value.green), blue: \(value.blue))
     """
@@ -204,7 +204,7 @@ let svgrects = svgColors.enumerated().map {
 // print(svgrects)
 
 func color(_ hex: String) throws -> SVG.Color {
-  return try SVGAttributeParsers.rgbcolor.whole(hex).get()
+  try SVGAttributeParsers.rgbcolor.whole(hex).get()
 }
 
 extension SVG.Color {
@@ -215,7 +215,7 @@ extension SVG.Color {
 }
 
 func len(_ c1: SVG.Color, _ c2: SVG.Color) -> Int {
-  return zip(c1.components, c2.components)
+  zip(c1.components, c2.components)
     .map { abs(Int($0.0) - Int($0.1)) }
     .reduce(0, +)
 }

@@ -34,7 +34,7 @@ extension SVGFilterNode {
 
 private struct FilterPrimitiveProcessAccumulator {
   var prev: SVGFilterNode
-  var preceding: [String:SVGFilterNode]
+  var preceding: [String: SVGFilterNode]
 
   static let initial =
     FilterPrimitiveProcessAccumulator(prev: .sourceGraphic, preceding: [:])
@@ -129,8 +129,7 @@ private func node(acc: FilterPrimitiveProcessAccumulator) -> (SVG.FilterPrimitiv
   case .none:
     return acc.prev
   }
-}}
-
+} }
 
 private func node(from predefinedInput: SVG.FilterPrimitiveIn.Predefined) -> SVGFilterNode {
   switch predefinedInput {

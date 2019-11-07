@@ -10,46 +10,45 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   let prefix: String
   let outputPath: String
   func filePreamble() -> String {
-    return
-      """
-      #import <CoreGraphics/CoreGraphics.h>
-      #import <Foundation/Foundation.h>
+    """
+    #import <CoreGraphics/CoreGraphics.h>
+    #import <Foundation/Foundation.h>
 
-      #import "\(headerImportPath)"
+    #import "\(headerImportPath)"
 
-      typedef void (*DrawingFunction)(CGContextRef);
-      static const CGFloat kScale = \(scale);
+    typedef void (*DrawingFunction)(CGContextRef);
+    static const CGFloat kScale = \(scale);
 
-      static int WriteImageToFile(DrawingFunction f,
-                                  CGSize s,
-                                  NSString* outputFilePath) {
-        CGSize contextSize =
-        CGSizeApplyAffineTransform(s, CGAffineTransformMakeScale(kScale, kScale));
-        CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-        CGContextRef ctx =
-          CGBitmapContextCreate(NULL, (size_t)contextSize.width, (size_t)contextSize.height, 8, 0,
-                                colorSpace, kCGImageAlphaPremultipliedLast);
-        CGContextSetAllowsAntialiasing(ctx, \(allowAntialiasing ? "YES" : "NO"));
-        CGContextScaleCTM(ctx, kScale, kScale);
-        f(ctx);
-        CGImageRef img = CGBitmapContextCreateImage(ctx);
-        NSURL* url = [NSURL fileURLWithPath:outputFilePath];
-        CGImageDestinationRef destination = CGImageDestinationCreateWithURL(
-          (__bridge CFURLRef)url, kUTTypePNG, 1, nil);
-        CGImageDestinationAddImage(destination, img, nil);
-        BOOL t = CGImageDestinationFinalize(destination);
+    static int WriteImageToFile(DrawingFunction f,
+                                CGSize s,
+                                NSString* outputFilePath) {
+      CGSize contextSize =
+      CGSizeApplyAffineTransform(s, CGAffineTransformMakeScale(kScale, kScale));
+      CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+      CGContextRef ctx =
+        CGBitmapContextCreate(NULL, (size_t)contextSize.width, (size_t)contextSize.height, 8, 0,
+                              colorSpace, kCGImageAlphaPremultipliedLast);
+      CGContextSetAllowsAntialiasing(ctx, \(allowAntialiasing ? "YES" : "NO"));
+      CGContextScaleCTM(ctx, kScale, kScale);
+      f(ctx);
+      CGImageRef img = CGBitmapContextCreateImage(ctx);
+      NSURL* url = [NSURL fileURLWithPath:outputFilePath];
+      CGImageDestinationRef destination = CGImageDestinationCreateWithURL(
+        (__bridge CFURLRef)url, kUTTypePNG, 1, nil);
+      CGImageDestinationAddImage(destination, img, nil);
+      BOOL t = CGImageDestinationFinalize(destination);
 
-        CGColorSpaceRelease(colorSpace);
-        CGContextRelease(ctx);
-        CGImageRelease(img);
-        CFRelease(destination);
-        return t ? 0 : 1;
-      }
+      CGColorSpaceRelease(colorSpace);
+      CGContextRelease(ctx);
+      CGImageRelease(img);
+      CFRelease(destination);
+      return t ? 0 : 1;
+    }
 
-      int main(int __attribute__((unused)) argc, const char* __attribute__((unused)) argv[]) {
-        int retCode = 0;
+    int main(int __attribute__((unused)) argc, const char* __attribute__((unused)) argv[]) {
+      int retCode = 0;
 
-      """
+    """
   }
 
   func generateImageFunction(image: Image) -> String {
@@ -64,6 +63,6 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   }
 
   func fileEnding() -> String {
-    return "  return retCode;\n}"
+    "  return retCode;\n}"
   }
 }

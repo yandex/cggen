@@ -22,7 +22,7 @@ class XMLParserTests: XCTestCase {
 }
 
 private func parse(_ xml: String) throws -> XML {
-  return try XML.parse(from: xml.data(using: .utf8).unsafelyUnwrapped).get()
+  try XML.parse(from: xml.data(using: .utf8).unsafelyUnwrapped).get()
 }
 
 private let simpleXML = """

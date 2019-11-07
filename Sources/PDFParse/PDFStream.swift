@@ -21,7 +21,7 @@ struct PDFStream {
   }
 
   var rawDict: CGPDFDictionaryRef {
-    return CGPDFStreamGetDictionary(raw)!
+    CGPDFStreamGetDictionary(raw)!
   }
 }
 
@@ -45,6 +45,6 @@ private extension CGPDFStreamRef {
   }
 
   var dictionary: CGPDFDictionaryRef? {
-    return CGPDFStreamGetDictionary(self)
+    CGPDFStreamGetDictionary(self)
   }
 }

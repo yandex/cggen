@@ -196,7 +196,7 @@ private func test(
 }
 
 private func sample(named name: String) -> URL {
-  return samplesPath.appendingPathComponent(name).appendingPathExtension("svg")
+  samplesPath.appendingPathComponent(name).appendingPathExtension("svg")
 }
 
 private let samplesPath =
@@ -265,7 +265,7 @@ private class WKWebViewSnapshoter {
 
 extension WKWebViewSnapshoter {
   func take(sample: URL, scale: CGFloat, size: CGSize) throws -> NSImage {
-    return try take(
+    try take(
       html: String(contentsOf: sample),
       viewport: CGRect(origin: CGPoint(x: 8, y: 8), size: size),
       scale: scale

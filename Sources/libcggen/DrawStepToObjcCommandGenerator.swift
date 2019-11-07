@@ -174,13 +174,13 @@ struct DrawStepToObjcCommandGenerator {
         .decl(getOffset),
         .decl(getBlur),
         .stmnt(setShadow),
-        .stmnt(release)
+        .stmnt(release),
       ]).render(indent: 2)
     }
   }
 
   private func cmd(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
-    return .expr(.call(
+    .expr(.call(
       .identifier(name),
       args: [.identifier(contextVarName)] + args
     )
@@ -198,7 +198,7 @@ struct DrawStepToObjcCommandGenerator {
   }
 
   private func cmd(_ name: String, points: [CGPoint]) -> String {
-    return cmd(name, points.map { "(CGFloat)\($0.x), (CGFloat)\($0.y)" }.joined(separator: ", "))
+    cmd(name, points.map { "(CGFloat)\($0.x), (CGFloat)\($0.y)" }.joined(separator: ", "))
   }
 
   func with(
@@ -366,7 +366,7 @@ extension CGPathDrawingMode {
 
 extension ObjcTerm {
   static func forLoop(idx: String, range: Range<Int>, body: ObjcTerm.Statement) -> ObjcTerm {
-    return .stmnt(.for(
+    .stmnt(.for(
       init: .variable(type: .int, name: idx, value: "\(range.lowerBound)"),
       cond: .identifier(idx) < .const(raw: "\(range.upperBound)"),
       incr: .incr(idx),
@@ -378,7 +378,7 @@ extension ObjcTerm {
 
 extension ObjcTerm.Statement {
   static func call(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
-    return .expr(.call(.identifier(name), args: args)
+    .expr(.call(.identifier(name), args: args)
     )
   }
 }
@@ -405,7 +405,7 @@ extension ObjcTerm.CDecl {
   }
 
   static func variable(type: ObjcTerm.TypeIdentifier, name: String, value: String) -> ObjcTerm.CDecl {
-    return .init(
+    .init(
       specifiers: [.type(.simple(type))],
       declarators: [
         .declinit(.identifier(name), .expr(ObjcTerm.Expr.const(raw: value))),
@@ -445,13 +445,12 @@ extension ObjcTerm.CDecl {
     )
   }
 
-
   static func array(
     _ name: String,
     of type: ObjcTerm.TypeIdentifier,
     _ values: [ObjcTerm.Expr]
   ) -> ObjcTerm.CDecl {
-    return .init(
+    .init(
       specifiers: [.type(.simple(type))],
       declarators: [
         .declinit(
@@ -468,40 +467,40 @@ extension ObjcTerm.CDecl {
 
 extension ObjcTerm.Expr {
   static func value(_ value: Int) -> ObjcTerm.Expr {
-    return .const(raw: value.description)
+    .const(raw: value.description)
   }
 
   static func value(_ value: CGFloat) -> ObjcTerm.Expr {
-    return .cast(to: .CGFloat, .const(raw: value.description))
+    .cast(to: .CGFloat, .const(raw: value.description))
   }
 
   static func value(_ cgfloats: [CGFloat]) -> ObjcTerm.Expr {
-    return .array(of: .CGFloat, cgfloats.map(value))
+    .array(of: .CGFloat, cgfloats.map(value))
   }
 
   static func value(_ value: CGPoint) -> ObjcTerm.Expr {
-    return .list(.CGPoint, [
+    .list(.CGPoint, [
       .memberInit("x", .value(value.x)),
       .memberInit("y", .value(value.y)),
     ])
   }
 
   static func value(_ value: CGSize) -> ObjcTerm.Expr {
-    return .list(.CGSize, [
+    .list(.CGSize, [
       .memberInit("width", .value(value.width)),
       .memberInit("height", .value(value.height)),
     ])
   }
 
   static func value(_ value: CGRect) -> ObjcTerm.Expr {
-    return .list(.CGRect, [
+    .list(.CGRect, [
       .memberInit("origin", .value(value.origin)),
       .memberInit("size", .value(value.size)),
     ])
   }
 
   static func value(_ value: CGPathDrawingMode) -> ObjcTerm.Expr {
-    return .identifier(value.objcConstName)
+    .identifier(value.objcConstName)
   }
 
   static func value(_ value: CGGradientDrawingOptions) -> ObjcTerm.Expr {
@@ -525,29 +524,29 @@ extension ObjcTerm.Expr {
   }
 
   static func incr(_ variable: String) -> ObjcTerm.Expr {
-    return .postfix(e: .identifier(variable), op: .incr)
+    .postfix(e: .identifier(variable), op: .incr)
   }
 
   static let NULL = ObjcTerm.Expr.identifier("NULL")
 
   static func <(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
-    return .bin(lhs: lhs, op: .less, rhs: rhs)
+    .bin(lhs: lhs, op: .less, rhs: rhs)
   }
 
   static func |(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
-    return .bin(lhs: lhs, op: .bitwiseOr, rhs: rhs)
+    .bin(lhs: lhs, op: .bitwiseOr, rhs: rhs)
   }
 
   static func *(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
-    return .bin(lhs: lhs, op: .multiply, rhs: rhs)
+    .bin(lhs: lhs, op: .multiply, rhs: rhs)
   }
 
   static func +(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
-    return .bin(lhs: lhs, op: .addition, rhs: rhs)
+    .bin(lhs: lhs, op: .addition, rhs: rhs)
   }
 
   subscript(_ e: ObjcTerm.Expr) -> ObjcTerm.Expr {
-    return .subscript(self, idx: e)
+    .subscript(self, idx: e)
   }
 }
 

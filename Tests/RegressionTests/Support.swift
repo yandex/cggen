@@ -58,7 +58,7 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
 }
 
 func getCurentFilePath(_ file: StaticString = #file) -> URL {
-  return URL(fileURLWithPath: file.description, isDirectory: false)
+  URL(fileURLWithPath: file.description, isDirectory: false)
     .deletingLastPathComponent()
 }
 
@@ -172,7 +172,7 @@ private func checkStatus(bin: URL) throws {
 
 extension FileManager {
   fileprivate func contentsOfDirectory(at url: URL) throws -> [URL] {
-    return try contentsOfDirectory(
+    try contentsOfDirectory(
       at: url,
       includingPropertiesForKeys: nil,
       options: []

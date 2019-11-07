@@ -20,7 +20,7 @@ enum PDFContentStreamParser {
   }
 
   private static func ctx(_ info: UnsafeMutableRawPointer?) -> Context {
-    return info!.load(as: Context.self)
+    info!.load(as: Context.self)
   }
 
   private static func makeOperatorTable() -> CGPDFOperatorTableRef {
