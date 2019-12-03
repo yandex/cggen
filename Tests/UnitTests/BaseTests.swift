@@ -5,6 +5,15 @@ class BaseTests: XCTestCase {
   func testConcurrentMap() {
     XCTAssertEqual((0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
     XCTAssertEqual(Array(0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
+
+    class Test {
+      var i: Int
+      init(_ i: Int) { self.i = i }
+    }
+    let referenceCountedEntities = Array(0..<100).concurrentMap(Test.init)
+    for (i, entity) in referenceCountedEntities.enumerated() {
+      XCTAssertEqual(entity.i, i)
+    }
   }
 
   func testThrowingConcurrentmap() throws {

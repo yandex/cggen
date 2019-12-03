@@ -197,12 +197,13 @@ extension Array {
 
   public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
     [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
+      let low = buffer.baseAddress!
       finalCount = count
       let bufferAccess = NSLock()
       DispatchQueue.concurrentPerform(iterations: count) { i in
         let val = transform(self[i])
         bufferAccess.locked {
-          buffer[i] = val
+          low.advanced(by: i).initialize(to: val)
         }
       }
     }
