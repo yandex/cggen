@@ -127,3 +127,53 @@ swift:
 let img = UIImage.makeImage(size: kYYIconImageSize,
                             function: YYDrawIconImageInContext)
 ```
+
+## Swift-friendly protocol-oriented way
+
+* Add generation arguments:
+
+```
+--generation-style=swift-friendly
+--cggen-support-header-path=/path/to/generated/sources/cggen_support.h
+--module-name=YourResourcesModule
+```
+
+* Make a protocol in your code:
+
+```
+public protocol ImageDescriptor {
+  var drawingHandler: @convention(c) (CGContext) -> Void { get }
+  var size: CGSize { get }
+}
+```
+
+* Add an implementation:
+
+```
+extension ImageDescriptor {
+  public var image: Image {
+    return UIImage.makeImage(size: size, function: function)
+  }
+}
+```
+
+* For each generated module, add drawing support with just one line of code: 
+
+```
+extension YourResourcesModule.ImageDescriptor: ImageDescriptor {}
+```
+
+* Now you can use generated resources in a bit more convenient way: `let icon: UIImage = YourResourcesModule.ImageDescriptor.yourIconName.image`.
+
+Feel free to add some typealiases and/or extensions for the code which uses resources! Example for `UIImageView`:
+
+```
+extension UIImageView {
+  func setIcon(_ icon: YourResourcesModule.ImageDescriptor)  {
+    image = icon.image
+  }
+}
+
+let view = UIImageView()
+view.setIcon(.yourIconName)
+```
