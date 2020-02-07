@@ -232,7 +232,7 @@ public enum ParseError: Error {
   case consume(expected: String, got: String)
   case never
   case couldntConvertStringTo(type: String)
-  case parsingNotComplete(last: String)
+  case parsingNotComplete(left: String)
   case gotNilExpected(String)
 
   @inlinable
@@ -334,6 +334,11 @@ public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
 }
 
 @inlinable
+public func oneOf<D, A>(_ ps: Parser<D, A>...) -> Parser<D, A> {
+  oneOf(ps)
+}
+
+@inlinable
 public func longestOneOf<D: Collection, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
   .opt { str in
     let initial = str
@@ -395,7 +400,7 @@ public func endof<D: Collection>(_: D.Type = D.self) -> Parser<D, Void> {
   .init {
     $0.count == 0 ?
       .success(()) :
-      .failure(ParseError.parsingNotComplete(last: "\($0)"))
+      .failure(ParseError.parsingNotComplete(left: "\($0)"))
   }
 }
 

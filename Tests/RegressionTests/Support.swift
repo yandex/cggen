@@ -2,6 +2,7 @@ import AppKit
 import Base
 import CoreGraphics
 import libcggen
+import os.log
 
 private enum Error: Swift.Error {
   case compilationError
@@ -78,6 +79,7 @@ func cggen(files: [URL], scale: Double) throws -> [CGImage] {
       fatalError("Unable to clean up dir: \(tmpdir), error: \(error)")
     }
   }
+  let cggenRegionFinish = testLog.signpost("runCggen")
   let header = tmpdir.appendingPathComponent("gen.h").path
   let impl = tmpdir.appendingPathComponent("gen.m")
   let caller = tmpdir.appendingPathComponent("main.m")
@@ -97,13 +99,18 @@ func cggen(files: [URL], scale: Double) throws -> [CGImage] {
       generationStyle: nil,
       cggenSupportHeaderPath: nil,
       module: nil,
-      importAsModules: false,
       verbose: false,
       files: files.map { $0.path }
     )
   )
-  try clang(out: genBin, files: [impl, caller])
-  try checkStatus(bin: genBin)
+  cggenRegionFinish()
+  try testLog.signpostRegion("clang invoc") {
+    try clang(out: genBin, files: [impl, caller])
+  }
+
+  try testLog.signpostRegion("img gen bin") {
+    try checkStatus(bin: genBin)
+  }
 
   let pngPaths = files.map {
     "\(outputPngs)/\($0.deletingPathExtension().lastPathComponent).png"
@@ -148,6 +155,7 @@ private func clang(out: URL, files: [URL]) throws {
       "clang",
       "-Weverything",
       "-Werror",
+      "-fmodules",
       "-isysroot",
       sdkPath,
       "-framework",
@@ -178,4 +186,17 @@ extension FileManager {
       options: []
     )
   }
+}
+
+let testLog = OSLog(
+  subsystem: "cggen.regression_tests",
+  category: .pointsOfInterest
+)
+
+internal let signpost = testLog.signpost
+internal func signpostRegion<T>(
+  _ desc: StaticString,
+  _ region: () throws -> T
+) rethrows -> T {
+  try testLog.signpostRegion(desc, region)
 }

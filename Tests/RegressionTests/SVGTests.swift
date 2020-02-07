@@ -1,5 +1,6 @@
 import Base
 import libcggen
+import os.log
 import WebKit
 import XCTest
 
@@ -78,6 +79,10 @@ class SVGTest: XCTestCase {
   func testClipPath() {
     test(svg: "clip_path")
   }
+
+  func testSmoothCurve() {
+    test(svg: "smooth_curve")
+  }
 }
 
 class SVGGradientTests: XCTestCase {
@@ -128,11 +133,11 @@ class SVGGradientTests: XCTestCase {
 
 class SVGShadowTests: XCTestCase {
   func testSimpleShadow() {
-    test(svg: "simple_shadow", tolerance: 0.015)
+    test(svg: "simple_shadow", tolerance: 0.019)
   }
 
   func testDifferentBlurRadiuses() {
-    test(svg: "different_blur_radius", tolerance: 0.031)
+    test(svg: "different_blur_radius", tolerance: 0.022)
   }
 }
 
@@ -171,8 +176,13 @@ private func test(
 ) {
   XCTAssertNoThrow(try {
     let svg = sample(named: name)
+
+    let snapshoting = signpost("snapshot")
+
     let referenceImg = try WKWebViewSnapshoter()
       .take(sample: svg, scale: CGFloat(scale), size: size).cgimg()
+
+    snapshoting()
 
     let images = try cggen(files: [svg], scale: scale)
     XCTAssertEqual(images.count, 1, file: file, line: line)
@@ -180,7 +190,9 @@ private func test(
     // background color
     let image = images[0].redraw(with: .white)
     XCTAssertEqual(referenceImg.intSize, image.intSize, file: file, line: line)
-    let diff = compare(referenceImg, image)
+    let diff = signpostRegion("image comparision") {
+      compare(referenceImg, image)
+    }
 
     XCTAssertLessThan(
       diff, tolerance, "Calculated diff exceeds tolerance",
@@ -188,8 +200,8 @@ private func test(
     )
     if diff >= tolerance {
       XCTContext.runActivity(named: "Attached Failure Diff of \(name)") {
-        $0.add(.init(image: image))
-        $0.add(.init(image: referenceImg))
+        $0.add(.init(image: image, name: "result"))
+        $0.add(.init(image: referenceImg, name: "webkitsnapshot"))
       }
     }
   }(), file: file, line: line)
@@ -239,9 +251,10 @@ private class WKWebViewSnapshoter {
       $0.height += origin.y * 2
     }
     webView.frame = .init(origin: .zero, size: size)
-    webView.bounds = viewport
+    webView.bounds = webView.frame
     let config = WKSnapshotConfiguration()
     config.snapshotWidth = NSNumber(value: Double(viewport.size.width * scale / contentScale))
+    config.rect = viewport
 
     webView.loadHTMLString(html, baseURL: nil)
     waitCallbackOnMT(delegate.onNavigationFinish)
@@ -274,9 +287,10 @@ extension WKWebViewSnapshoter {
 }
 
 extension XCTAttachment {
-  convenience init(image: CGImage) {
+  convenience init(image: CGImage, name: String) {
     let size = NSSize(width: image.width, height: image.height)
     let nsimage = NSImage(cgImage: image, size: size)
     self.init(image: nsimage)
+    self.name = name
   }
 }

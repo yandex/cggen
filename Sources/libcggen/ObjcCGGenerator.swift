@@ -11,8 +11,10 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
 
   func filePreamble() -> String {
     ObjcTerm([
-      headerImportPath.map { ObjcTerm.import(.doubleQuotes(path: $0)) },
-      .import(.coreGraphics, asModule: params.importAsModules),
+      .hasFeatureSupport,
+      headerImportPath.map { ObjcTerm.import($0) },
+      .import(.coreGraphics),
+      .newLine,
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
   }
 
@@ -35,7 +37,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
 }
 
 private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> [String] {
-  let subroutes = route.subroutes.flatMap { (key, route) -> [String] in
+  let subroutes = route.subroutes.flatMap { (key: String, route: DrawRoute) -> [String] in
     let contextName = "context_\(acquireUniqID())"
     let blockName = subrouteBlockName(subrouteName: key)
     let blockStart = "void (^\(blockName))(CGContextRef) = ^(CGContextRef \(contextName)) {"
@@ -49,14 +51,14 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
     globalDeviceRGBContextName: rgbColorSpaceVarName,
     gDeviceRgbContext: .identifier(rgbColorSpaceVarName)
   )
-  let commandsLines = route.steps.flatMap { (step) -> [String] in
+  let commandsLines = route.steps.compactMap { (step) -> ObjcTerm.Statement? in
     generator.command(
       step: step,
       gradients: route.gradients,
       subroutes: route.subroutes
     )
   }
-  return subroutes + commandsLines
+  return subroutes + commandsLines.render().flatMap(identity)
 }
 
 extension ObjcCGGenerator {
@@ -100,16 +102,6 @@ private extension GenerationParams {
       ]
     }
   }
-}
-
-private func cmd(_ name: String, _ args: String? = nil) -> String {
-  let argStr: String
-  if let args = args {
-    argStr = ", \(args)"
-  } else {
-    argStr = ""
-  }
-  return "  CGContext\(name)(context\(argStr));"
 }
 
 func subrouteBlockName(subrouteName: String) -> String {

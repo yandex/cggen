@@ -8,7 +8,6 @@ struct GenerationParams {
   }
 
   let style: Style
-  let importAsModules: Bool
   let prefix: String
   let module: String
 }

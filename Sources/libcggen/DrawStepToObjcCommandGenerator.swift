@@ -14,45 +14,60 @@ struct DrawStepToObjcCommandGenerator {
     step: DrawStep,
     gradients: [String: Gradient],
     subroutes: [String: DrawRoute]
-  ) -> [String] {
+  ) -> ObjcTerm.Statement? {
     switch step {
     case .saveGState:
-      return [cmd("SaveGState")]
+      return cmd("CGContextSaveGState")
     case .restoreGState:
-      return [cmd("RestoreGState")]
+      return cmd("CGContextRestoreGState")
     case let .moveTo(p):
-      return [cmd("MoveToPoint", points: [p])]
+      return cmd("CGContextMoveToPoint", args: .value(p.x), .value(p.y))
     case let .curveTo(c1, c2, end):
-      return [cmd("AddCurveToPoint", points: [c1, c2, end])]
+      return cmd(
+        "CGContextAddCurveToPoint",
+        args: .value(c1.x), .value(c1.y), .value(c2.x), .value(c2.y),
+        .value(end.x), .value(end.y)
+      )
     case let .lineTo(p):
-      return [cmd("AddLineToPoint", points: [p])]
+      return cmd("CGContextAddLineToPoint", args: .value(p.x), .value(p.y))
     case .closePath:
-      return [cmd("ClosePath")]
+      return cmd("CGContextClosePath")
     case let .clip(rule):
       switch rule {
       case .winding:
-        return [cmd("Clip")]
+        return cmd("CGContextClip")
       case .evenOdd:
-        return [cmd("EOClip")]
+        return cmd("CGContextEOClip")
       @unknown default:
         fatalError()
       }
     case .endPath:
-      return []
+      return nil
     case let .flatness(flatness):
-      return cmd("CGContextSetFlatness", args: .value(flatness)).render(indent: 2)
+      return cmd("CGContextSetFlatness", args: .value(flatness))
     case .fillColorSpace:
-      return []
+      return nil
     case let .appendRectangle(rect):
-      return cmd("CGContextAddRect", args: .value(rect)).render(indent: 2)
+      return cmd("CGContextAddRect", args: .value(rect))
     case .strokeColorSpace:
-      return []
+      return nil
     case let .concatCTM(transform):
-      return [cmd("ConcatCTM", "CGAffineTransformMake(\(transform.a), \(transform.b), \(transform.c), \(transform.d), \(transform.tx), \(transform.ty))")]
+      let affineTransform = ObjcTerm.Expr.call(
+        .identifier("CGAffineTransformMake"),
+        args: [
+          .value(transform.a),
+          .value(transform.b),
+          .value(transform.c),
+          .value(transform.d),
+          .value(transform.tx),
+          .value(transform.ty),
+        ]
+      )
+      return cmd("CGContextConcatCTM", args: affineTransform)
     case let .lineWidth(w):
-      return cmd("CGContextSetLineWidth", args: .value(w)).render(indent: 2)
+      return cmd("CGContextSetLineWidth", args: .value(w))
     case let .colorRenderingIntent(intent):
-      return [cmd("SetRenderingIntent", intent.objcConstName)]
+      return cmd("CGContextSetRenderingIntent", args: .value(intent))
     case let .linearGradient(name, (startPoint, endPoint, options)):
       let drawing = with(gradient: gradients[name]!) { gradient in
         [
@@ -62,7 +77,7 @@ struct DrawStepToObjcCommandGenerator {
           )),
         ]
       }
-      return drawing.render(indent: 2)
+      return drawing
     case let .radialGradient(name, (startCenter, startRadius, endCenter, endRadius, options)):
       let drawing = with(gradient: gradients[name]!) { gradient in
         [
@@ -73,62 +88,57 @@ struct DrawStepToObjcCommandGenerator {
           )),
         ]
       }
-      return drawing.render(indent: 2)
+      return drawing
     case let .dash(pattern):
-      let args = "\(pattern.phase), \(ObjCGen.cgFloatArray(pattern.lengths)), \(pattern.lengths.count)"
-      return [cmd("SetLineDash", args)]
+      return cmd(
+        "CGContextSetLineDash",
+        args: .value(pattern.phase), .value(pattern.lengths), .value(pattern.lengths.count)
+      )
     case let .clipToRect(rect):
-      return cmd("CGContextClipToRect", args: .value(rect)).render(indent: 2)
+      return cmd("CGContextClipToRect", args: .value(rect))
     case .beginTransparencyLayer:
-      return cmd("CGContextBeginTransparencyLayer", args: .NULL).render(indent: 2)
+      return cmd("CGContextBeginTransparencyLayer", args: .NULL)
     case .endTransparencyLayer:
-      return [cmd("EndTransparencyLayer")]
+      return cmd("CGContextEndTransparencyLayer")
     case let .globalAlpha(a):
-      return cmd("CGContextSetAlpha", args: .value(a)).render(indent: 2)
+      return cmd("CGContextSetAlpha", args: .value(a))
     case let .fill(rule):
       switch rule {
       case .winding:
-        return [cmd("FillPath")]
+        return cmd("CGContextFillPath")
       case .evenOdd:
-        return [cmd("EOFillPath")]
+        return cmd("CGContextEOFillPath")
       @unknown default:
         fatalError()
       }
     case let .lineJoinStyle(style):
-      return [cmd("SetLineJoin", style.objcConstName)]
+      return cmd("CGContextSetLineJoin", args: .value(style))
     case let .lineCapStyle(style):
-      return [cmd("SetLineCap", style.objcConstName)]
+      return cmd("CGContextSetLineCap", args: .value(style))
     case let .subrouteWithName(name):
-      return ["  \(subrouteBlockName(subrouteName: name))(\(contextVarName));"]
+      return cmd(subrouteBlockName(subrouteName: name))
     case let .strokeColor(color):
-      return cmd("CGContextSetStrokeColor", args: .value(color.components)).render(indent: 2)
+      return cmd("CGContextSetStrokeColor", args: .value(color.components))
     case .stroke:
-      return [cmd("StrokePath")]
+      return cmd("CGContextStrokePath")
     case let .fillColor(color):
-      return cmd("CGContextSetFillColor", args: .value(color.components)).render(indent: 2)
+      return cmd("CGContextSetFillColor", args: .value(color.components))
     case let .composite(steps):
-      return steps.flatMap {
+      return .multiple(steps.compactMap {
         command(step: $0, gradients: gradients, subroutes: subroutes)
-      }
+      })
     case let .blendMode(blendMode):
-      return [cmd("SetBlendMode", blendMode.objcConstname)]
+      return cmd("CGContextSetBlendMode", args: .value(blendMode))
     case let .lines(points):
-      let (pointsArray, pointsId) =
-        ObjcTerm.CDecl.cgPointArray("points_\(uniqIDProvider())", points)
-      let lines = cmd("CGContextAddLines", args: pointsId, .value(points.count))
-      return pointsArray.render(indent: 2) + lines.render(indent: 2)
+      return cmd("CGContextAddLines", args: .value(points), .value(points.count))
     case let .fillEllipse(rect):
       return cmd("CGContextFillEllipseInRect", args: .value(rect))
-        .render(indent: 2)
     case let .drawPath(mode):
       return cmd("CGContextDrawPath", args: .value(mode))
-        .render(indent: 2)
     case let .addEllipse(in: rect):
       return cmd("CGContextAddEllipseInRect", args: .value(rect))
-        .render(indent: 2)
     case .replacePathWithStrokePath:
       return cmd("CGContextReplacePathWithStrokedPath")
-        .render(indent: 2)
     case let .appendRoundedRect(rect, rx, ry):
       let (pathInit, path) = ObjcTerm.CDecl.functionCall(
         type: .CGPathRef, id: "roundedRect_\(uniqIDProvider())",
@@ -137,9 +147,11 @@ struct DrawStepToObjcCommandGenerator {
       )
       let append = cmd("CGContextAddPath", args: path)
       let release = ObjcTerm.Statement.call("CGPathRelease", args: path)
-      return pathInit.render(indent: 2) +
-        append.render(indent: 2) +
-        release.render(indent: 2)
+      return .block([
+        .decl(pathInit),
+        .stmnt(append),
+        .stmnt(release),
+      ])
     case let .shadow(shadow):
       let (getCtm, ctm) = ObjcTerm.CDecl.functionCall(
         type: .CGAffineTransform, id: "ctm",
@@ -150,12 +162,19 @@ struct DrawStepToObjcCommandGenerator {
         functionName: "CGSizeApplyAffineTransform",
         args: .value(shadow.offset), ctm
       )
-      let a = ObjcTerm.Expr.member(ctm, "a")
-      let c = ObjcTerm.Expr.member(ctm, "c")
-      let scaleX = ObjcTerm.Expr.cast(to: .CGFloat, .call(.identifier("sqrt"), args: [a * a + c * c]))
+      let a = ObjcTerm.Expr.cast(to: .double, .member(ctm, "a"))
+      let c = ObjcTerm.Expr.cast(to: .double, .member(ctm, "c"))
+      let scaleX = ObjcTerm.Expr.call(.identifier("sqrt"), args: [a * a + c * c])
+      let blurExpression = ObjcTerm.Expr.cast(
+        to: .CGFloat,
+        .call(
+          .identifier("floor"),
+          args: [.value(shadow.blur) * scaleX + .const(raw: "0.5")]
+        )
+      )
       let (getBlur, blur) = ObjcTerm.CDecl.expression(
         type: .CGFloat, id: "blur_\(uniqIDProvider())",
-        expr: .value(shadow.blur) * scaleX
+        expr: blurExpression
       )
       let color = shadow.color
       let (colorInit, colorVar) = ObjcTerm.CDecl.functionCall(
@@ -168,14 +187,20 @@ struct DrawStepToObjcCommandGenerator {
         args: offset, blur, colorVar
       )
       let release = ObjcTerm.Statement.call("CGColorRelease", args: colorVar)
-      return ObjcTerm.Statement.block([
+      return .block([
         .decl(colorInit),
         .decl(getCtm),
         .decl(getOffset),
         .decl(getBlur),
         .stmnt(setShadow),
         .stmnt(release),
-      ]).render(indent: 2)
+      ])
+    case let .addArc(center, radius, startAngle, endAngle, clockwise):
+      return cmd(
+        "CGContextAddArc",
+        args: .value(center.x), .value(center.x), .value(radius),
+        .value(startAngle), .value(endAngle), .value(clockwise)
+      )
     }
   }
 
@@ -185,20 +210,6 @@ struct DrawStepToObjcCommandGenerator {
       args: [.identifier(contextVarName)] + args
     )
     )
-  }
-
-  private func cmd(_ name: String, _ args: String? = nil) -> String {
-    let argStr: String
-    if let args = args {
-      argStr = ", \(args)"
-    } else {
-      argStr = ""
-    }
-    return "  CGContext\(name)(\(contextVarName)\(argStr));"
-  }
-
-  private func cmd(_ name: String, points: [CGPoint]) -> String {
-    cmd(name, points.map { "(CGFloat)\($0.x), (CGFloat)\($0.y)" }.joined(separator: ", "))
   }
 
   func with(
@@ -231,8 +242,13 @@ struct DrawStepToObjcCommandGenerator {
   }
 }
 
-private extension CGBlendMode {
-  var objcConstname: String {
+private protocol ObjcConstNameExpressible {
+  associatedtype Dummy = Self
+  var objcConstName: String { get }
+}
+
+extension CGBlendMode: ObjcConstNameExpressible {
+  var objcConstName: String {
     switch self {
     case .normal:
       return "kCGBlendModeNormal"
@@ -296,7 +312,7 @@ private extension CGBlendMode {
   }
 }
 
-extension CGLineCap {
+extension CGLineCap: ObjcConstNameExpressible {
   var objcConstName: String {
     switch self {
     case .butt:
@@ -311,7 +327,7 @@ extension CGLineCap {
   }
 }
 
-extension CGLineJoin {
+extension CGLineJoin: ObjcConstNameExpressible {
   var objcConstName: String {
     switch self {
     case .bevel:
@@ -326,7 +342,7 @@ extension CGLineJoin {
   }
 }
 
-extension CGColorRenderingIntent {
+extension CGColorRenderingIntent: ObjcConstNameExpressible {
   var objcConstName: String {
     switch self {
     case .absoluteColorimetric:
@@ -345,7 +361,7 @@ extension CGColorRenderingIntent {
   }
 }
 
-extension CGPathDrawingMode {
+extension CGPathDrawingMode: ObjcConstNameExpressible {
   var objcConstName: String {
     switch self {
     case .fill:
@@ -485,6 +501,10 @@ extension ObjcTerm.Expr {
     ])
   }
 
+  static func value(_ values: [CGPoint]) -> ObjcTerm.Expr {
+    .array(of: .CGPoint, values.map(value))
+  }
+
   static func value(_ value: CGSize) -> ObjcTerm.Expr {
     .list(.CGSize, [
       .memberInit("width", .value(value.width)),
@@ -499,7 +519,9 @@ extension ObjcTerm.Expr {
     ])
   }
 
-  static func value(_ value: CGPathDrawingMode) -> ObjcTerm.Expr {
+  fileprivate static func value<T: ObjcConstNameExpressible>(
+    _ value: T
+  ) -> ObjcTerm.Expr {
     .identifier(value.objcConstName)
   }
 
@@ -523,6 +545,10 @@ extension ObjcTerm.Expr {
     return .cast(to: .CGGradientDrawingOptions, expr)
   }
 
+  static func value(_ value: Bool) -> ObjcTerm.Expr {
+    .const(raw: value ? "YES" : "NO")
+  }
+
   static func incr(_ variable: String) -> ObjcTerm.Expr {
     .postfix(e: .identifier(variable), op: .incr)
   }
@@ -539,6 +565,14 @@ extension ObjcTerm.Expr {
 
   static func *(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
     .bin(lhs: lhs, op: .multiply, rhs: rhs)
+  }
+
+  static func /(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
+    .bin(lhs: lhs, op: .multiply, rhs: rhs)
+  }
+
+  static func /(lhs: ObjcTerm.Expr, rhs: Int) -> ObjcTerm.Expr {
+    lhs / .const(raw: rhs.description)
   }
 
   static func +(lhs: ObjcTerm.Expr, rhs: ObjcTerm.Expr) -> ObjcTerm.Expr {
