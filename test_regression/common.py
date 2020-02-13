@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# Copyright (c) 2018 Yandex LLC. All rights reserved.
-# Author: Alfred Zien <zienag@yandex-team.ru>
 
 import argparse
 import os

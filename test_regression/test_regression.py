@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# Copyright (c) 2017 Yandex LLC. All rights reserved.
-# Author: Alfred Zien <zienag@yandex-team.ru>
 
 import common
 import os
