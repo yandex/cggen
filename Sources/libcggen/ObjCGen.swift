@@ -39,7 +39,6 @@ extension GenerationParams {
 
   var cggenSupportHeaderBody: ObjcTerm {
     supportHeader(
-      importAsModules: importAsModules,
       prefix: prefix,
       module: module,
       descriptorTypeName: descriptorTypename
@@ -48,7 +47,6 @@ extension GenerationParams {
 }
 
 private func supportHeader(
-  importAsModules: Bool,
   prefix: String,
   module: String,
   descriptorTypeName: String
@@ -56,7 +54,7 @@ private func supportHeader(
   ObjcTerm(
     commonHeaderPrefix,
     .newLine,
-    .import(.coreGraphics, .coreFoundation, asModule: importAsModules),
+    .import(.coreGraphics, .coreFoundation),
     .newLine,
     .inCFNonnullRegion(
       .swiftNamespace("\(module)Resources", cPref: prefix),

@@ -55,9 +55,14 @@ extension Array where Element: LinearInterpolatable {
 }
 
 extension Sequence where Element: FloatingPoint {
+  @inlinable
   public func rootMeanSquare() -> Element {
-    let (count, sumOfSquares) = reduce((0, 0)) { ($0.0 + 1, $0.1 + $1 * $1) }
-    return (sumOfSquares / Element(count)).squareRoot()
+    // difficult typecheck avoidance
+    typealias Acc = (count: Int, sum: Element)
+    let (count, sum): Acc = reduce((0, 0) as Acc) { (acc: Acc, next: Element) in
+      (acc.count + 1, acc.sum + next * next)
+    }
+    return (sum / Element(count)).squareRoot()
   }
 }
 
@@ -116,4 +121,14 @@ public enum Matrix {
   public static func scalar4x5<T: Equatable>(λ: T, zero: T) -> D4x5<T> {
     diagonal4x5(r1c1: λ, r2c2: λ, r3c3: λ, r4c4: λ, zero: zero)
   }
+}
+
+@inlinable
+public func areApproximatelyEqual<T: BinaryFloatingPoint>(
+  _ lhs: T, _ rhs: T,
+  maxDev: T = 0.001
+) -> Bool {
+  precondition(maxDev >= T.zero)
+  guard lhs != rhs else { return true }
+  return abs(lhs - rhs) / min(lhs, rhs) <= maxDev
 }

@@ -14,7 +14,6 @@ public struct Args {
   let generationStyle: String?
   let cggenSupportHeaderPath: String?
   let module: String?
-  let importAsModules: Bool
   let verbose: Bool
   let files: [String]
 
@@ -30,7 +29,6 @@ public struct Args {
     generationStyle: String?,
     cggenSupportHeaderPath: String?,
     module: String?,
-    importAsModules: Bool,
     verbose: Bool,
     files: [String]
   ) {
@@ -45,7 +43,6 @@ public struct Args {
     self.generationStyle = generationStyle
     self.cggenSupportHeaderPath = cggenSupportHeaderPath
     self.module = module
-    self.importAsModules = importAsModules
     self.verbose = verbose
     self.files = files
   }
@@ -62,7 +59,6 @@ public func runCggen(with args: Args) throws {
   let style = args.generationStyle.flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
   let params = GenerationParams(
     style: style,
-    importAsModules: args.importAsModules,
     prefix: objcPrefix,
     module: args.module ?? ""
   )

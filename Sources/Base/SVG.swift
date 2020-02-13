@@ -313,6 +313,54 @@ public enum SVG: Equatable {
       case absolute
     }
 
+    /*
+     8.3.8 The elliptical arc curve commands
+
+     The elliptical arc command draws a section of an ellipse which meets the
+     following constraints:
+     • the arc starts at the current point
+     • the arc ends at point (x, y)
+     • the ellipse has the two radii (rx, ry)
+     • the x-axis of the ellipse is rotated by x-axis-rotation relative to the
+        x-axis of the current coordinate system.
+     For most situations, there are actually four different arcs (two
+     different ellipses, each with two different arc sweeps) that satisfy
+     these constraints. large-arc-flag and sweep-flag indicate which one of
+     the four arcs are drawn, as follows:
+     • Of the four candidate arc sweeps, two will represent an arc sweep of
+        greater than or equal to 180 degrees (the "large-arc"), and two will
+        represent an arc sweep of less than or equal to 180 degrees
+        (the "small-arc"). If large-arc-flag is '1', then one of the two
+        larger arc sweeps will be chosen; otherwise, if large-arc-flag is '0',
+        one of the smaller arc sweeps will be chosen,
+     •  If sweep-flag is '1', then the arc will be drawn in a "positive-angle"
+        direction (i.e., the ellipse formula x=cx+rx*cos(theta) and
+        y=cy+ry*sin(theta) is evaluated such that theta starts at an angle
+        corresponding to the current point and increases positively until the
+        arc reaches (x,y)). A value of 0 causes the arc to be drawn in
+        a "negative-angle" direction (i.e., theta starts at an angle value
+        corresponding to the current point and de- creases until the arc
+        reaches (x,y)).
+     */
+    public struct EllipticalArcArgument: Equatable {
+      public var rx: Float
+      public var ry: Float
+      public var xAxisRotation: Float
+      public var largeArcFlag: Bool
+      public var sweepFlag: Bool
+      public var end: CoordinatePair
+
+      public typealias Destructed = (
+        rx: Float, ry: Float, xAxisRotation: Float,
+        largeArcFlag: Bool, sweepFlag: Bool,
+        end: CoordinatePair
+      )
+      @inlinable
+      public func destruct() -> Destructed {
+        (rx, ry, xAxisRotation, largeArcFlag, sweepFlag, end)
+      }
+    }
+
     public enum DrawTo: Equatable {
       case closepath
       case lineto(Positioning, CoordinatePair)
@@ -322,7 +370,7 @@ public enum SVG: Equatable {
       case smoothCurveto(Positioning, cp2: CoordinatePair, to: CoordinatePair)
       case quadraticBezierCurveto(Positioning, cp1: CoordinatePair, to: CoordinatePair)
       case smoothQuadraticBezierCurveto(Positioning, to: CoordinatePair)
-      case ellepticalArc(NotImplemented)
+      case ellipticalArc(Positioning, EllipticalArcArgument)
     }
 
     public struct MoveTo: Equatable {
@@ -1064,8 +1112,8 @@ public enum SVGParser {
   ) -> (AttributeGroupParser<Attributes>) -> Parser<XML, Attributes> {
     let tag: Parser<XML.Element, Void> =
       consume(tag.rawValue)
-      .pullback(get: { $0[...] }, set: { $0 = String($1) })
-      .pullback(\XML.Element.tag)
+        .pullback(get: { $0[...] }, set: { $0 = String($1) })
+        .pullback(\XML.Element.tag)
     return { attributes in
       (tag ~>> (attributes <<~ endof()).pullback(\.attrs))
         .optional.pullback(\.el)
@@ -1239,6 +1287,8 @@ public enum SVGAttributeParsers {
   internal static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
   internal static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
     .map { SVG.Length(number: $0.0, unit: $0.1) }
+  internal static let flag: Parser<Bool> =
+    oneOf(consume("0").map(always(false)), consume("1").map(always(true)))
 
   internal static let viewBox: Parser<SVG.ViewBox> =
     zip(
@@ -1329,6 +1379,17 @@ public enum SVGAttributeParsers {
   internal static let listOfPoints: Parser<SVG.CoordinatePairs> =
     wsp* ~>> zeroOrMore(coordinatePair, separator: commaWsp) <<~ wsp*
 
+  // elliptical-arc-argument:
+  //   nonnegative-number comma-wsp? nonnegative-number comma-wsp?
+  //     number comma-wsp flag comma-wsp? flag comma-wsp? coordinate-pair
+  internal static let ellipticalArcArg: Parser<SVG.PathData.EllipticalArcArgument> =
+    zip(
+      number <<~ commaWsp~?, number <<~ commaWsp~?,
+      number <<~ commaWsp, flag <<~ commaWsp~?, flag <<~ commaWsp~?,
+      coordinatePair,
+      with: SVG.PathData.EllipticalArcArgument.init
+    )
+
   internal static let identifier: Parser<String> =
     Parser<Substring>.identity().map(String.init)
 
@@ -1355,7 +1416,7 @@ public enum SVGAttributeParsers {
     drawto("S", arg: twoCoordinatePairs) { .smoothCurveto($0, cp2: $1.0, to: $1.1) },
     drawto("Q", arg: twoCoordinatePairs) { .quadraticBezierCurveto($0, cp1: $1.0, to: $1.1) },
     drawto("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto($0, to: $1) },
-    drawto("A", arg: Parser<Never>.never(), builder: absurd),
+    drawto("A", arg: ellipticalArcArg) { .ellipticalArc($0, $1) },
   ])
 
   private static let pathCommandGroup: Parser<SVG.PathData.Group> =

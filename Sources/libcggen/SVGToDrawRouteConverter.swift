@@ -57,6 +57,7 @@ private enum Err: Swift.Error {
   case tooComplexMask(SVG.Mask)
   case tooComplexFilter(SVGFilterNode)
   case invalidElementInClipPath(SVG)
+  case ellipsesAreNotSupportedInPathsYet
 }
 
 private struct Context {
@@ -264,13 +265,10 @@ private struct Context {
         $0.concatenating(.init(svgTransform: $1))
       })
     }
-    return try .composite(
-      [.saveGState] +
-        [transform ?? .empty] +
-        shapes.compactMap { try $0.shapeConstruction()?.0 } +
-        [.saveGState] +
-        [.clip(.init(fillRule))]
-    )
+    let comps: [DrawStep?] = try [.saveGState, transform] +
+      shapes.map { try $0.shapeConstruction()?.0 } +
+      [.saveGState, .clip(.init(fillRule))]
+    return .composite(comps.compactMap(identity))
   }
 }
 
@@ -433,7 +431,35 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
     let point = CGPoint(svgPair: move.coordinatePair)
     cgpath.move(to: point)
     currentPoint = point
+
+    // Adhoc helper to reset last control points, because it is annoying to
+    // reset them before every return statement, so reseting done via defer,
+    // but if control point was set – avoid reseting.
+    struct Resetable<T> {
+      private var ignoreNextReset = false
+      private var valuePrivate: T?
+      var value: T? {
+        get {
+          valuePrivate
+        }
+        set {
+          ignoreNextReset = true
+          valuePrivate = newValue
+        }
+      }
+
+      mutating func reset() {
+        guard !ignoreNextReset else { return ignoreNextReset = false }
+        valuePrivate = nil
+      }
+    }
+
+    var prevCurveControlPoint = Resetable<CGPoint>()
+
     return try [DrawStep.moveTo(point)] + command.drawTo.map {
+      defer {
+        prevCurveControlPoint.reset()
+      }
       switch $0 {
       case .closepath:
         cgpath.closeSubpath()
@@ -449,6 +475,24 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
         let cp2 = CGPoint(svgPair: cp2)
         let to = CGPoint(svgPair: to)
         currentPoint = to
+        prevCurveControlPoint.value = cp2
+        return .curveTo(cp1, cp2, to)
+      /*
+        8.3.6 The cubic Bézier curve commands
+       Draws a cubic Bézier curve from the current point to (x,y). The first
+       control point is assumed to be the reflection of the second control
+       point on the previous command relative to the current point.
+       (If there is no previous command or if the previous command
+       was not an C, c, S or s, assume the first control point is coincident
+       with the current point.)
+       */
+      case let .smoothCurveto(_, cp2, to):
+        guard let current = currentPoint else { throw Err.noPreviousPoint }
+        let cp1 = prevCurveControlPoint.value?.reflected(across: current) ?? current
+        let cp2 = CGPoint(svgPair: cp2)
+        let to = CGPoint(svgPair: to)
+        currentPoint = to
+        prevCurveControlPoint.value = cp2
         return .curveTo(cp1, cp2, to)
       case let .horizontalLineto(_, x):
         guard let current = currentPoint else { throw Err.noPreviousPoint }
@@ -460,9 +504,26 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
         let point = modified(current) { $0.y = y.cgfloat }
         currentPoint = point
         return .lineTo(point)
-      case .smoothCurveto, .quadraticBezierCurveto,
+      case let .ellipticalArc(_, arg):
+        let (r, ry, xAxisRot, largeArcFlag, sweepFlag, to) = arg.destruct()
+        try check(areApproximatelyEqual(r, ry), Err.ellipsesAreNotSupportedInPathsYet)
+        _ = xAxisRot // Applies only to ellipses, that are not supported yet
+        guard let current = currentPoint else { throw Err.noPreviousPoint }
+        // FIXME: Convert svg representation to core graphics
+        _ = (largeArcFlag, sweepFlag, to, current)
+        fatalError("Not implemented")
+      /*
+       return .addArc(
+         center: current,
+         radius: CGFloat(arg.rx),
+         startAngle: 0,
+         endAngle: 0,
+         clockwise: false
+       )
+       */
+      case .quadraticBezierCurveto,
            .smoothQuadraticBezierCurveto:
-        fatalError()
+        fatalError("Not implemented")
       }
     }
   }
@@ -903,10 +964,10 @@ extension SVGFilterNode {
         shadow = input
       case let .gaussianBlur(in: input, stddevX: stddevX, stddevY: stddevY):
         guard !alphaClamped, blur == nil, stddevX == stddevY else { return nil }
-        // FIXME: Figure out a way to transform svg stdDeviation to
-        // core graphics blur radius. Now it is just a eyeballed coefficient
-        // that works best on small radiuses (<5)
-        blur = CGFloat(stddevX) * 2.8
+        // See `15.17 Filter primitive ‘feGaussianBlur’` in specs.
+        // Here we don't know the resulting ctm yet, so we can't add 0.5 and
+        // floor it. That is done on codegen level for now.
+        blur = CGFloat(stddevX) * 3 * sqrt(2 * .pi) / 4
         shadow = input
       default:
         return nil

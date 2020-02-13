@@ -33,8 +33,8 @@ extension ObjcTerm: Renderable {
       return [""]
     case let .comment(comment):
       return ["// \(comment)"]
-    case let .import(importStatement):
-      return [importStatement.render()]
+    case let .preprocessorDirective(preprocessor):
+      return [preprocessor.render()]
     case let .moduleImport(module):
       return ["@import \(module);"]
     case let .compilerDirective(directive):
@@ -43,6 +43,32 @@ extension ObjcTerm: Renderable {
       return decl.render()
     case let .stmnt(s):
       return s.render()
+    }
+  }
+}
+
+extension ObjcTerm.PreprocessorDirective: Renderable {
+  func render() -> String {
+    switch self {
+    case let .define(new, to: old):
+      return "#define \(new) \(old)"
+    case let .if(cond: cond):
+      return "#if \(cond)"
+    case let .ifdef(identifier):
+      return "#ifdef \(identifier)"
+    case let .ifndef(identifier):
+      return "#ifndef \(identifier)"
+    case let .else(cond):
+      return "#else  // \(cond)"
+    case let .endif(cond):
+      return "#endif  // \(cond)"
+    case let .import(type):
+      switch type {
+      case let .angleBrackets(path: path):
+        return "#import <\(path)>"
+      case let .doubleQuotes(path: path):
+        return "#import \"\(path)\""
+      }
     }
   }
 }
@@ -93,6 +119,8 @@ extension ObjcTerm.Statement: Renderable {
       return ["for ("].appendFirstToLast(initDecl.render(), separator: "")
         .appendFirstToLast(["\(cond.render()); \(incr.render()))"], separator: " ")
         .appendFirstToLast(body.render(), separator: " ")
+    case let .multiple(stmnts):
+      return stmnts.flatMap { $0.render() }
     }
   }
 }
@@ -201,8 +229,8 @@ extension ObjcTerm.TypeSpecifier: Renderable {
     case let .simple(typeName):
       return [typeName.description]
     case let .structOrUnion(type, attrs, id, declList):
-      let structDecl = ([type.rawValue] + attrs + [id])
-        .compactMap(identity).joined(separator: " ")
+      let comps: [String?] = [type.rawValue] + attrs + [id]
+      let structDecl: String = comps.compactMap(identity).joined(separator: " ")
       guard declList.count > 0 else {
         return [structDecl]
       }
@@ -217,17 +245,6 @@ extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
     (spec.render() + [decl.render()])
       .flatMap { $0 }
       .joined(separator: " ")
-  }
-}
-
-extension ObjcTerm.Import: Renderable {
-  func render() -> String {
-    switch self {
-    case let .angleBrackets(path: path):
-      return "#import <\(path)>"
-    case let .doubleQuotes(path: path):
-      return "#import \"\(path)\""
-    }
   }
 }
 

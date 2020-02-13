@@ -21,7 +21,6 @@ func parseArgs() -> Args {
   let generationStyleKey = "generation-style"
   let cggenSupportHeaderPathKey = "cggen-support-header-path"
   let moduleKey = "module-name"
-  let importAsModulesKey = "import-as-modules"
   let verboseFlagKey = "verbose"
   parser.newString(objcHeaderKey)
   parser.newString(objcImplKey)
@@ -33,7 +32,6 @@ func parseArgs() -> Args {
   parser.newString(generationStyleKey)
   parser.newString(cggenSupportHeaderPathKey)
   parser.newString(moduleKey)
-  parser.newFlag(importAsModulesKey)
   parser.newFlag(verboseFlagKey)
   parser.parse()
   return Args(
@@ -47,7 +45,6 @@ func parseArgs() -> Args {
     generationStyle: parser.string(at: generationStyleKey),
     cggenSupportHeaderPath: parser.string(at: cggenSupportHeaderPathKey),
     module: parser.string(at: moduleKey),
-    importAsModules: parser.getFlag(importAsModulesKey),
     verbose: parser.getFlag(verboseFlagKey),
     files: parser.getArgs()
   )

@@ -138,6 +138,7 @@ enum ObjcTerm {
     indirect case `for`(init: CDecl, cond: Expr, incr: Expr, body: Statement)
     case expr(Expr)
     case block([BlockItem])
+    case multiple([Statement])
   }
 
   struct CDecl {
@@ -168,14 +169,24 @@ enum ObjcTerm {
     var declarators: [InitDeclarator]
   }
 
+  enum PreprocessorDirective {
+    case define(String, to: String)
+    case `if`(cond: String)
+    case ifdef(identifier: String)
+    case ifndef(identifier: String)
+    case `else`(cond: String)
+    case endif(cond: String)
+    case `import`(Import)
+  }
+
   indirect case composite([ObjcTerm])
-  case `import`(Import)
   case newLine
   case comment(String)
   case moduleImport(module: String)
   case compilerDirective(String)
   case cdecl(CDecl)
   case stmnt(Statement)
+  case preprocessorDirective(PreprocessorDirective)
 }
 
 extension ObjcTerm.Declarator {
@@ -222,6 +233,54 @@ extension ObjcTerm.Declarator {
 }
 
 extension ObjcTerm {
+  // MARK: Preprocessor
+
+  static func ifndef(
+    _ identifier: String,
+    _ trueTerms: ObjcTerm,
+    else elseTerms: ObjcTerm? = nil
+  ) -> ObjcTerm {
+    conditionalPreprocessor(
+      condition: .ifndef(identifier: identifier), desc: identifier, trueTerms,
+      else: elseTerms
+    )
+  }
+
+  static func ifPreprocessor(
+    _ cond: String,
+    _ trueTerms: ObjcTerm,
+    else elseTerms: ObjcTerm? = nil
+  ) -> ObjcTerm {
+    conditionalPreprocessor(
+      condition: .if(cond: cond), desc: cond, trueTerms, else: elseTerms
+    )
+  }
+
+  private static func conditionalPreprocessor(
+    condition: PreprocessorDirective,
+    desc: String,
+    _ trueTerms: ObjcTerm,
+    else elseTerms: ObjcTerm?
+  ) -> ObjcTerm {
+    var terms: [ObjcTerm] = [
+      .preprocessorDirective(condition),
+      trueTerms,
+    ]
+    if let elseTerms = elseTerms {
+      terms += [
+        .preprocessorDirective(.else(cond: desc)),
+        elseTerms,
+      ]
+    }
+    terms.append(.preprocessorDirective(.endif(cond: desc)))
+    return .composite(terms)
+  }
+
+  static let hasFeatureSupport: ObjcTerm = .ifndef(
+    "__has_feature",
+    .preprocessorDirective(.define("__has_feature(x)", to: "0"))
+  )
+
   // MARK: imports
 
   struct SystemModule: ExpressibleByStringLiteral {
@@ -236,18 +295,27 @@ extension ObjcTerm {
     static let coreFoundation: SystemModule = "CoreFoundation"
   }
 
-  static func `import`(_ systemModule: SystemModule, asModule: Bool) -> ObjcTerm {
+  static func `import`(_ path: String) -> ObjcTerm {
+    .preprocessorDirective(.import(.doubleQuotes(path: path)))
+  }
+
+  static func `import`(_ systemModule: SystemModule) -> ObjcTerm {
     let name = systemModule.name
-    return asModule ?
-      .moduleImport(module: name) :
-      .import(.doubleQuotes(path: "\(name)/\(name).h"))
+    return .ifPreprocessor(
+      "__has_feature(modules)",
+      .moduleImport(module: name),
+      else: .import("\(name)/\(name).h")
+    )
   }
 
   static func `import`(
-    _ systemModules: SystemModule...,
-    asModule: Bool
+    _ modules: SystemModule...
   ) -> ObjcTerm {
-    .init(systemModules.map { .import($0, asModule: asModule) })
+    .ifPreprocessor(
+      "__has_feature(modules)",
+      .composite(modules.map { .moduleImport(module: $0.name) }),
+      else: .composite(modules.map { .import("\($0.name)/\($0.name).h") })
+    )
   }
 
   // MARK: Composite

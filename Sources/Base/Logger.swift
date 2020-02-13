@@ -1,5 +1,4 @@
-// Copyright (c) 2017 Yandex LLC. All rights reserved.
-// Author: Alfred Zien <zienag@yandex-team.ru>
+import os.log
 
 public struct Logger {
   public static var shared = Logger()
@@ -18,4 +17,48 @@ public struct Logger {
 
 public func log(_ s: String) {
   Logger.shared.log(s)
+}
+
+extension OSLog {
+  @usableFromInline
+  internal class Guard {
+    var expectDealloc = false
+    var reentranceGuard = true
+
+    @usableFromInline
+    init() {}
+
+    @usableFromInline
+    func enter() {
+      precondition(reentranceGuard)
+      reentranceGuard = false
+      expectDealloc = true
+    }
+
+    deinit {
+      precondition(expectDealloc)
+    }
+  }
+
+  @inlinable
+  public func signpost(_ desc: StaticString) -> () -> Void {
+    let g = Guard()
+    os_signpost(.begin, log: self, name: desc)
+    return {
+      os_signpost(.end, log: self, name: desc)
+      g.enter()
+    }
+  }
+
+  @inlinable
+  public func signpostRegion<T>(
+    _ desc: StaticString,
+    _ region: () throws -> T
+  ) rethrows -> T {
+    os_signpost(.begin, log: self, name: desc)
+    defer {
+      os_signpost(.end, log: self, name: desc)
+    }
+    return try region()
+  }
 }

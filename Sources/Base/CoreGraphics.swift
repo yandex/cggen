@@ -60,18 +60,29 @@ public class RGBABuffer {
 public struct CGIntSize: Equatable {
   public let width: Int
   public let height: Int
+
+  @inlinable
+  public init(width: Int, height: Int) {
+    self.width = width
+    self.height = height
+  }
+
+  @inlinable
   public static func size(w: Int, h: Int) -> CGIntSize {
     CGIntSize(width: w, height: h)
   }
 
+  @inlinable
   public var rect: CGRect {
     CGRect(x: 0, y: 0, width: width, height: height)
   }
 
+  @inlinable
   public static func from(cgsize: CGSize) -> CGIntSize {
     CGIntSize(width: Int(cgsize.width), height: Int(cgsize.height))
   }
 
+  @inlinable
   public static func union(lhs: CGIntSize, rhs: CGIntSize) -> CGIntSize {
     CGIntSize(
       width: max(lhs.width, rhs.width),
@@ -81,26 +92,48 @@ public struct CGIntSize: Equatable {
 }
 
 extension CGRect {
+  @inlinable
   public var x: CGFloat {
     origin.x
   }
 
+  @inlinable
   public var y: CGFloat {
     origin.y
   }
 }
 
 extension CGSize {
+  @inlinable
   public static func square(_ dim: CGFloat) -> CGSize {
     .init(width: dim, height: dim)
   }
 }
 
+extension CGPoint {
+  @inlinable
+  public static func *(lhs: CGFloat, rhs: CGPoint) -> CGPoint {
+    .init(x: lhs * rhs.x, y: lhs * rhs.y)
+  }
+
+  @inlinable
+  public static func -(lhs: CGPoint, rhs: CGPoint) -> CGPoint {
+    .init(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
+  }
+
+  @inlinable
+  public func reflected(across p: CGPoint) -> CGPoint {
+    2 * p - self
+  }
+}
+
 extension CGAffineTransform {
+  @inlinable
   public static func scale(_ scale: CGFloat) -> CGAffineTransform {
     CGAffineTransform(scaleX: scale, y: scale)
   }
 
+  @inlinable
   public static func invertYAxis(height: CGFloat) -> CGAffineTransform {
     CGAffineTransform(scaleX: 1, y: -1).concatenating(.init(translationX: 0, y: height))
   }

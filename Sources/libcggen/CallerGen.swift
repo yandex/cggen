@@ -9,13 +9,18 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   let allowAntialiasing: Bool
   let prefix: String
   let outputPath: String
-  func filePreamble() -> String {
+  func filePreambleNew() -> ObjcTerm {
+    ObjcTerm(
+      .hasFeatureSupport,
+      .import(.coreGraphics, .foundation),
+      .newLine,
+      .import(headerImportPath),
+      .newLine
+    )
+  }
+
+  func filePreambleLegacy() -> String {
     """
-    #import <CoreGraphics/CoreGraphics.h>
-    #import <Foundation/Foundation.h>
-
-    #import "\(headerImportPath)"
-
     typedef void (*DrawingFunction)(CGContextRef);
     static const CGFloat kScale = \(scale);
 
@@ -49,6 +54,10 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       int retCode = 0;
 
     """
+  }
+
+  func filePreamble() -> String {
+    filePreambleNew().render(indent: 2).joined(separator: "\n") + filePreambleLegacy()
   }
 
   func generateImageFunction(image: Image) -> String {
