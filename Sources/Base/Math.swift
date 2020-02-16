@@ -120,12 +120,82 @@ public enum Matrix {
   }
 }
 
+extension BinaryFloatingPoint {
+  // https://github.com/apple/swift-evolution/blob/master/proposals/0259-approximately-equal.md
+  @inlinable
+  public func isAlmostEqual(
+    _ other: Self,
+    maxRelDev: Self = 0.001
+  ) -> Bool {
+    precondition(maxRelDev >= Self.zero)
+    precondition(isFinite && other.isFinite)
+    guard self != other else { return true }
+    guard !isZero else { return other.isAlmostZero() }
+    guard !other.isZero else { return isAlmostZero() }
+    let scale = max(abs(self), abs(other), .leastNormalMagnitude)
+    return abs(self - other) < scale * maxRelDev
+  }
+
+  @inlinable
+  public func isAlmostZero(
+    absoluteTolerance tolerance: Self = Self.ulpOfOne.squareRoot()
+  ) -> Bool {
+    assert(tolerance > 0)
+    return abs(self) < tolerance
+  }
+}
+
 @inlinable
-public func areApproximatelyEqual<T: BinaryFloatingPoint>(
-  _ lhs: T, _ rhs: T,
-  maxDev: T = 0.001
-) -> Bool {
-  precondition(maxDev >= T.zero)
-  guard lhs != rhs else { return true }
-  return abs(lhs - rhs) / min(lhs, rhs) <= maxDev
+public func findCathetus<T: BinaryFloatingPoint>(
+  otherCathetus: T,
+  hypotenuse: T
+) -> T {
+  sqrt(hypotenuse * hypotenuse - otherCathetus * otherCathetus)
+}
+
+public protocol Point2D {
+  associatedtype Coordinate
+  var x: Coordinate { get set }
+  var y: Coordinate { get set }
+  init(x: Coordinate, y: Coordinate)
+}
+
+public protocol Vector2D {
+  associatedtype Coordinate
+  var dx: Coordinate { get set }
+  var dy: Coordinate { get set }
+  init(dx: Coordinate, dy: Coordinate)
+}
+
+extension Vector2D where Coordinate: BinaryFloatingPoint {
+  @inlinable
+  public init<PointType: Point2D>(
+    from: PointType, to: PointType
+  ) where PointType.Coordinate == Coordinate {
+    self.init(dx: to.x - from.x, dy: to.y - from.y)
+  }
+
+  @inlinable
+  public var length: Coordinate {
+    sqrt(dx * dx + dy * dy)
+  }
+
+  @inlinable
+  public static func *(lhs: Coordinate, rhs: Self) -> Self {
+    .init(dx: lhs * rhs.dx, dy: lhs * rhs.dy)
+  }
+
+  @inlinable
+  public func normalized() -> Self {
+    let len = length
+    precondition(len > 0)
+    return .init(dx: dx / len, dy: dy / len)
+  }
+
+  @inlinable
+  public func terminal<Point: Point2D>(
+    pointType _: Point.Type = Point.self
+  ) -> Point where Point.Coordinate == Coordinate {
+    .init(x: dx, y: dy)
+  }
 }

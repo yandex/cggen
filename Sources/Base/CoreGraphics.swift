@@ -107,7 +107,7 @@ extension CGSize {
   }
 }
 
-extension CGPoint {
+extension CGPoint: Point2D {
   @inlinable
   public static func *(lhs: CGFloat, rhs: CGPoint) -> CGPoint {
     .init(x: lhs * rhs.x, y: lhs * rhs.y)
@@ -119,8 +119,31 @@ extension CGPoint {
   }
 
   @inlinable
+  public static func +(lhs: CGPoint, rhs: CGPoint) -> CGPoint {
+    .init(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
+  }
+
+  @inlinable
   public func reflected(across p: CGPoint) -> CGPoint {
     2 * p - self
+  }
+}
+
+extension CGVector: Vector2D {
+  @inlinable
+  public var terminal: CGPoint {
+    terminal(pointType: CGPoint.self)
+  }
+
+  @inlinable
+  public var angle: CGFloat {
+    precondition(dy != 0 || dx != 0)
+    return atan2(dy, dx)
+  }
+
+  @inlinable
+  public func transform(by transform: CGAffineTransform) -> CGVector {
+    .init(from: .zero, to: terminal.applying(transform))
   }
 }
 
@@ -239,4 +262,24 @@ extension CGPath {
     builder(mutable)
     return mutable.copy()!
   }
+}
+
+@inlinable
+public func solveCircleCenter(
+  pointsOnCircle points: (CGPoint, CGPoint),
+  radius: CGFloat, anticlockwise: Bool
+) -> CGPoint {
+  let v = CGVector(from: points.0, to: points.1)
+  let length = v.length
+  let direction = v.normalized()
+  let midPoint = 0.5 * (points.1 + points.0)
+
+  let rangeFromMidpointToCenter =
+    findCathetus(otherCathetus: length / 2, hypotenuse: radius)
+  let rotationTransform: CGAffineTransform = anticlockwise ?
+    .init(rotationAngle: .pi / 2) : .init(rotationAngle: -.pi / 2)
+
+  let midPointToCenter = rangeFromMidpointToCenter *
+    direction.transform(by: rotationTransform)
+  return midPoint + midPointToCenter.terminal
 }

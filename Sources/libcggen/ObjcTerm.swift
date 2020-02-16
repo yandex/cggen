@@ -295,7 +295,7 @@ extension ObjcTerm {
     static let coreFoundation: SystemModule = "CoreFoundation"
   }
 
-  static func `import`(_ path: String) -> ObjcTerm {
+  static func quotedImport(_ path: String) -> ObjcTerm {
     .preprocessorDirective(.import(.doubleQuotes(path: path)))
   }
 
@@ -304,7 +304,9 @@ extension ObjcTerm {
     return .ifPreprocessor(
       "__has_feature(modules)",
       .moduleImport(module: name),
-      else: .import("\(name)/\(name).h")
+      else: .preprocessorDirective(.import(.angleBrackets(
+        path: "\(name)/\(name).h"
+      )))
     )
   }
 
@@ -314,7 +316,11 @@ extension ObjcTerm {
     .ifPreprocessor(
       "__has_feature(modules)",
       .composite(modules.map { .moduleImport(module: $0.name) }),
-      else: .composite(modules.map { .import("\($0.name)/\($0.name).h") })
+      else: .composite(modules.map {
+        .preprocessorDirective(.import(.angleBrackets(
+          path: "\($0.name)/\($0.name).h"
+        )))
+      })
     )
   }
 

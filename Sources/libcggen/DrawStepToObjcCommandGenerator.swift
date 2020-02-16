@@ -195,7 +195,7 @@ struct DrawStepToObjcCommandGenerator {
     case let .addArc(center, radius, startAngle, endAngle, clockwise):
       return cmd(
         "CGContextAddArc",
-        args: .value(center.x), .value(center.x), .value(radius),
+        args: .value(center.x), .value(center.y), .value(radius),
         .value(startAngle), .value(endAngle), .value(clockwise)
       )
     }

@@ -16,11 +16,19 @@ final class ObjcLexTests: XCTestCase {
   func testImports() {
     XCTAssertEqual(
       ObjcTerm.composite([
-        .import(.angleBrackets(path: "Foundation/Foundation.h")),
-        .import(.doubleQuotes(path: "foo/bar/baz.h")),
+        .import(.coreFoundation, .foundation),
+        .preprocessorDirective(.import(.angleBrackets(path: "System.h"))),
+        .preprocessorDirective(.import(.doubleQuotes(path: "foo/bar/baz.h"))),
       ]).renderText(),
       """
+      #if __has_feature(modules)
+      @import CoreFoundation;
+      @import Foundation;
+      #else  // __has_feature(modules)
+      #import <CoreFoundation/CoreFoundation.h>
       #import <Foundation/Foundation.h>
+      #endif  // __has_feature(modules)
+      #import <System.h>
       #import "foo/bar/baz.h"
       """
     )

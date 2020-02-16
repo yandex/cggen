@@ -11,7 +11,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       .hasFeatureSupport,
       .import(.coreGraphics, .foundation),
       .newLine,
-      .import(headerImportPath),
+      .quotedImport(headerImportPath),
       .newLine
     )
   }
