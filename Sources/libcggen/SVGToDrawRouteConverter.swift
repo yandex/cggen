@@ -505,22 +505,30 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
         currentPoint = point
         return .lineTo(point)
       case let .ellipticalArc(_, arg):
-        let (r, ry, xAxisRot, largeArcFlag, sweepFlag, to) = arg.destruct()
-        try check(areApproximatelyEqual(r, ry), Err.ellipsesAreNotSupportedInPathsYet)
+        // See `8.3.8 The elliptical arc curve commands`
+        let (rx, ry, xAxisRot, largeArcFlag, sweepFlag, toSVG) = arg.destruct()
         _ = xAxisRot // Applies only to ellipses, that are not supported yet
+        let to = CGPoint(svgPair: toSVG)
+
+        try check(rx.isAlmostEqual(ry), Err.ellipsesAreNotSupportedInPathsYet)
         guard let current = currentPoint else { throw Err.noPreviousPoint }
-        // FIXME: Convert svg representation to core graphics
-        _ = (largeArcFlag, sweepFlag, to, current)
-        fatalError("Not implemented")
-      /*
-       return .addArc(
-         center: current,
-         radius: CGFloat(arg.rx),
-         startAngle: 0,
-         endAngle: 0,
-         clockwise: false
-       )
-       */
+
+        let r = CGFloat(rx)
+        let center = solveCircleCenter(
+          pointsOnCircle: (current, to),
+          radius: r,
+          anticlockwise: sweepFlag != largeArcFlag
+        )
+        let startAngle = CGVector(from: center, to: current).angle
+        let endAngle = CGVector(from: center, to: to).angle
+
+        return .addArc(
+          center: center,
+          radius: r,
+          startAngle: startAngle,
+          endAngle: endAngle,
+          clockwise: !sweepFlag
+        )
       case .quadraticBezierCurveto,
            .smoothQuadraticBezierCurveto:
         fatalError("Not implemented")

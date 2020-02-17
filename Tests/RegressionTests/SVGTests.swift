@@ -83,6 +83,10 @@ class SVGTest: XCTestCase {
   func testSmoothCurve() {
     test(svg: "smooth_curve")
   }
+
+  func testCurveCircleCommands() {
+    test(svg: "curve_circle_commands")
+  }
 }
 
 class SVGGradientTests: XCTestCase {

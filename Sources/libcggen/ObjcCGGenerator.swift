@@ -9,7 +9,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   func filePreamble() -> String {
     ObjcTerm([
       .hasFeatureSupport,
-      headerImportPath.map { ObjcTerm.import($0) },
+      headerImportPath.map { ObjcTerm.quotedImport($0) },
       .import(.coreGraphics),
       .newLine,
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
