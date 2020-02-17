@@ -27,7 +27,7 @@ try? FileManager().createDirectory(
 
 let fd = fopen(".build/.build_lock", "w")!
 lockf(Int32(fd.pointee._file), F_LOCK, 0)
-let returnCode = perform("/usr/bin/swift build -c release --product cggen")
+let returnCode = perform("/usr/bin/swift build -c debug --product cggen")
 lockf(Int32(fd.pointee._file), F_ULOCK, 0)
 fclose(fd)
 exit(returnCode)
