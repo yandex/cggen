@@ -1,6 +1,7 @@
 import CoreGraphics
 import CoreServices
 import ImageIO
+import simd
 
 public typealias RGBAPixel = RGBAColor<UInt8>
 
@@ -88,6 +89,11 @@ public struct CGIntSize: Equatable {
   }
 }
 
+extension CGFloat {
+  // Explicit initializer for not to accidently fall into conversion
+  @inlinable public init(native val: NativeType) { self.init(val) }
+}
+
 extension CGRect {
   @inlinable
   public var x: CGFloat {
@@ -109,23 +115,36 @@ extension CGSize {
 
 extension CGPoint: Point2D {
   @inlinable
+  public init(_ simdVec: SIMD2<CGFloat.NativeType>) {
+    self.init(x: .init(native: simdVec.x), y: .init(native: simdVec.y))
+  }
+
+  @inlinable
   public static func *(lhs: CGFloat, rhs: CGPoint) -> CGPoint {
-    .init(x: lhs * rhs.x, y: lhs * rhs.y)
+    .init(lhs.native * rhs.simdVec)
   }
 
   @inlinable
   public static func -(lhs: CGPoint, rhs: CGPoint) -> CGPoint {
-    .init(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
+    .init(rhs.simdVec - lhs.simdVec)
   }
 
   @inlinable
   public static func +(lhs: CGPoint, rhs: CGPoint) -> CGPoint {
-    .init(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
+    .init(rhs.simdVec + lhs.simdVec)
   }
 
   @inlinable
   public func reflected(across p: CGPoint) -> CGPoint {
-    2 * p - self
+    .init(2 * p.simdVec - simdVec)
+  }
+
+  @inlinable
+  public var simdVec: SIMD2<CGFloat.NativeType> { .init(x.native, y.native) }
+
+  @inlinable
+  public func distance(to point: CGPoint) -> CGFloat {
+    .init(native: simd_distance(simdVec, point.simdVec))
   }
 }
 

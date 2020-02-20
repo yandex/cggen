@@ -29,13 +29,12 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
          <TestableReference
-            skipped = "NO"
-            parallelizable = "YES">
+            skipped = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "RegressionTests"
-               BuildableName = "RegressionTests"
-               BlueprintName = "RegressionTests"
+               BlueprintIdentifier = "UnitTests"
+               BuildableName = "UnitTests"
+               BlueprintName = "UnitTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>
@@ -44,9 +43,9 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "UnitTests"
-               BuildableName = "UnitTests"
-               BlueprintName = "UnitTests"
+               BlueprintIdentifier = "RegressionTests"
+               BuildableName = "RegressionTests"
+               BlueprintName = "RegressionTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

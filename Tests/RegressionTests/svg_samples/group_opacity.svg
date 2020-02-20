@@ -1,15 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <!-- Generator: Sketch 56.3 (81716) - https://sketch.com -->
-    <title>group_opacity</title>
-    <desc>Created with Sketch.</desc>
-    <g id="group_opacity" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <rect id="Rectangle" fill="#FF4C4C" x="0" y="0" width="50" height="50"></rect>
-        <rect id="Rectangle" fill-opacity="0.5" fill="#71FF7B" x="3" y="3" width="15" height="15"></rect>
-        <rect id="Rectangle" fill-opacity="0.5" fill="#24D7FF" x="10" y="10" width="15" height="15"></rect>
-        <g id="Group" opacity="0.500046503" transform="translate(25.000000, 25.000000)">
-            <rect id="Rectangle" fill="#71FF7B" x="0" y="0" width="15" height="15"></rect>
-            <rect id="Rectangle" fill="#24D7FF" x="7" y="7" width="15" height="15"></rect>
+    <g stroke="none" fill="none">
+        <rect x="0" y="0" width="50" height="50" fill="lightsalmon" />
+        <rect x="3" y="3" width="15" height="15" fill-opacity="0.5" fill="chartreuse" />
+        <rect x="10" y="10" width="15" height="15" fill-opacity="0.5" fill="deepskyblue" />
+        <g opacity="0.5" transform="translate(25, 25)">
+            <rect x="0" y="0" width="15" height="15" fill="chartreuse" />
+            <rect x="7" y="7" width="15" height="15" fill="deepskyblue" />
         </g>
+        <rect  x="3" y="27" width="20" height="20" fill="chartreuse" opacity="0.8"/>
     </g>
 </svg>

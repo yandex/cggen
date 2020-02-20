@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g fill="none" stroke-linejoin="round" stroke-width="1" stroke="black">
+        <circle r="10" cx="25" cy="15"/>
+        <circle r="10" cx="15" cy="25"/>
+    </g>
+    <g fill="none" stroke-width="5" stroke-opacity="0.7">
+        <!-- All combinations of large-arc-flag ans sweep-flag -->
+        <path d="M15,15 A10,10 0 0,0 25,25" stroke="red"/>
+        <path d="M15,15 A10,10 0 0,1 25,25" stroke="green"/>
+        <path d="M15,15 A10,10 0 1,0 25,25" stroke="yellow"/>
+        <path d="M15,15 A10,10 0 1,1 25,25" stroke="magenta"/>
+    </g>
+    <g fill="none" stroke-linejoin="round" stroke-width="1" stroke="black">
+        <!-- range between points is bigger that radius -->
+        <path d="M2,2 a1,1 0 0,0 10,5"/>
+    </g>
+</svg>

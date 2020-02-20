@@ -150,7 +150,8 @@ public func findCathetus<T: BinaryFloatingPoint>(
   otherCathetus: T,
   hypotenuse: T
 ) -> T {
-  sqrt(hypotenuse * hypotenuse - otherCathetus * otherCathetus)
+  precondition(hypotenuse >= otherCathetus)
+  return sqrt(hypotenuse * hypotenuse - otherCathetus * otherCathetus)
 }
 
 public protocol Point2D {
