@@ -44,10 +44,6 @@ class SVGTest: XCTestCase {
     test(svg: "shapes")
   }
 
-  func testComplexCurve() {
-    test(svg: "complex_curve")
-  }
-
   func testCapsJoins() {
     test(svg: "caps_joins")
   }
@@ -58,10 +54,6 @@ class SVGTest: XCTestCase {
 
   func testColorNames() {
     test(svg: "colornames", tolerance: 0.001, size: .init(width: 120, height: 130))
-  }
-
-  func testCurveShortCommands() {
-    test(svg: "curve_short_commands")
   }
 
   func testUseTag() {
@@ -83,9 +75,27 @@ class SVGTest: XCTestCase {
   func testSmoothCurve() {
     test(svg: "smooth_curve")
   }
+}
 
-  func testCurveCircleCommands() {
-    test(svg: "curve_circle_commands")
+class SVGPathTests: XCTestCase {
+  func testMoveToCommands() {
+    test(svg: "path_move_to_commands")
+  }
+
+  func testComplexCurve() {
+    test(svg: "path_complex_curve")
+  }
+
+  func testCircleCommands() {
+    test(svg: "path_circle_commands")
+  }
+
+  func testShortCommands() {
+    test(svg: "path_short_commands")
+  }
+
+  func testRelativeCommands() {
+    test(svg: "path_relative_commands")
   }
 }
 
@@ -145,6 +155,21 @@ class SVGShadowTests: XCTestCase {
   }
 }
 
+// Sometimes it is usefull to pass some arbitrary svg to check that it is
+// correctly handled.
+class SVGCustomCheckTests: XCTestCase {
+  static let sizeParser: Parser<Substring, CGSize> =
+    (int() <<~ "x" ~ int()).map(CGSize.init)
+  func testSvgFromArgs() {
+    let args = CommandLine.arguments
+    guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
+      let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> ^\.value)
+    else { return }
+
+    test(svg: path, size: size)
+  }
+}
+
 private func blackSquareHTML(size: Int) -> String {
   let fsize = SVG.Float(size)
   let svgSize = SVG.Length(fsize)
@@ -178,17 +203,30 @@ private func test(
   size: CGSize = CGSize(width: 50, height: 50),
   file: StaticString = #file, line: UInt = #line
 ) {
-  XCTAssertNoThrow(try {
-    let svg = sample(named: name)
+  test(
+    svg: sample(named: name),
+    tolerance: tolerance,
+    scale: scale, size: size,
+    file: file, line: line
+  )
+}
 
+private func test(
+  svg path: URL,
+  tolerance: Double = 0.01,
+  scale: Double = 2,
+  size: CGSize = CGSize(width: 50, height: 50),
+  file: StaticString = #file, line: UInt = #line
+) {
+  XCTAssertNoThrow(try {
     let snapshoting = signpost("snapshot")
 
     let referenceImg = try WKWebViewSnapshoter()
-      .take(sample: svg, scale: CGFloat(scale), size: size).cgimg()
+      .take(sample: path, scale: CGFloat(scale), size: size).cgimg()
 
     snapshoting()
 
-    let images = try cggen(files: [svg], scale: scale)
+    let images = try cggen(files: [path], scale: scale)
     XCTAssertEqual(images.count, 1, file: file, line: line)
     // Unfortunately, snapshot from web view always comes with white
     // background color
@@ -203,7 +241,7 @@ private func test(
       file: file, line: line
     )
     if diff >= tolerance {
-      XCTContext.runActivity(named: "Attached Failure Diff of \(name)") {
+      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
         $0.add(.init(image: image, name: "result"))
         $0.add(.init(image: referenceImg, name: "webkitsnapshot"))
       }

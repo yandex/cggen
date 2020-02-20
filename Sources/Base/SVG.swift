@@ -313,34 +313,24 @@ public enum SVG: Equatable {
       case absolute
     }
 
+    public struct CurveArgument: Equatable {
+      public var cp1: CoordinatePair
+      public var cp2: CoordinatePair
+      public var to: CoordinatePair
+    }
+
+    public struct SmoothCurveArgument: Equatable {
+      public var cp2: CoordinatePair
+      public var to: CoordinatePair
+    }
+
+    public struct QuadraticCurveArgument: Equatable {
+      public var cp1: CoordinatePair
+      public var to: CoordinatePair
+    }
+
     /*
      8.3.8 The elliptical arc curve commands
-
-     The elliptical arc command draws a section of an ellipse which meets the
-     following constraints:
-     • the arc starts at the current point
-     • the arc ends at point (x, y)
-     • the ellipse has the two radii (rx, ry)
-     • the x-axis of the ellipse is rotated by x-axis-rotation relative to the
-        x-axis of the current coordinate system.
-     For most situations, there are actually four different arcs (two
-     different ellipses, each with two different arc sweeps) that satisfy
-     these constraints. large-arc-flag and sweep-flag indicate which one of
-     the four arcs are drawn, as follows:
-     • Of the four candidate arc sweeps, two will represent an arc sweep of
-        greater than or equal to 180 degrees (the "large-arc"), and two will
-        represent an arc sweep of less than or equal to 180 degrees
-        (the "small-arc"). If large-arc-flag is '1', then one of the two
-        larger arc sweeps will be chosen; otherwise, if large-arc-flag is '0',
-        one of the smaller arc sweeps will be chosen,
-     •  If sweep-flag is '1', then the arc will be drawn in a "positive-angle"
-        direction (i.e., the ellipse formula x=cx+rx*cos(theta) and
-        y=cy+ry*sin(theta) is evaluated such that theta starts at an angle
-        corresponding to the current point and increases positively until the
-        arc reaches (x,y)). A value of 0 causes the arc to be drawn in
-        a "negative-angle" direction (i.e., theta starts at an angle value
-        corresponding to the current point and de- creases until the arc
-        reaches (x,y)).
      */
     public struct EllipticalArcArgument: Equatable {
       public var rx: Float
@@ -361,29 +351,25 @@ public enum SVG: Equatable {
       }
     }
 
-    public enum DrawTo: Equatable {
+    public enum CommandKind: Equatable {
       case closepath
-      case lineto(Positioning, CoordinatePair)
-      case horizontalLineto(Positioning, Float)
-      case verticalLineto(Positioning, Float)
-      case curveto(Positioning, cp1: CoordinatePair, cp2: CoordinatePair, to: CoordinatePair)
-      case smoothCurveto(Positioning, cp2: CoordinatePair, to: CoordinatePair)
-      case quadraticBezierCurveto(Positioning, cp1: CoordinatePair, to: CoordinatePair)
-      case smoothQuadraticBezierCurveto(Positioning, to: CoordinatePair)
-      case ellipticalArc(Positioning, EllipticalArcArgument)
+      case moveto([CoordinatePair])
+      case lineto([CoordinatePair])
+      case horizontalLineto([Float])
+      case verticalLineto([Float])
+      case curveto([CurveArgument])
+      case smoothCurveto([SmoothCurveArgument])
+      case quadraticBezierCurveto([QuadraticCurveArgument])
+      case smoothQuadraticBezierCurveto(to: [CoordinatePair])
+      case ellipticalArc([EllipticalArcArgument])
     }
 
-    public struct MoveTo: Equatable {
-      public var pos: Positioning
-      public var coordinatePair: CoordinatePair
+    public struct Command: Equatable {
+      public var positioning: Positioning
+      public var kind: CommandKind
     }
 
-    public struct Group: Equatable {
-      public var moveTo: [MoveTo]
-      public var drawTo: [DrawTo]
-    }
-
-    public var d: [Group]?
+    public var d: [Command]?
     public var pathLength: Float?
   }
 
@@ -795,27 +781,22 @@ public enum SVGParser {
   private static let numberOptionalNumber =
     attributeParser(SVGAttributeParsers.numberOptionalNumber)
 
-  private static var identifier: ParserForAttribute<String> {
+  private static let identifier: ParserForAttribute<String> =
     attributeParser(SVGAttributeParsers.identifier)
-  }
 
-  private static var transform: ParserForAttribute<[SVG.Transform]> {
+  private static let transform: ParserForAttribute<[SVG.Transform]> =
     attributeParser(SVGAttributeParsers.transformsList)
-  }
 
-  private static var listOfPoints: ParserForAttribute<SVG.CoordinatePairs> {
+  private static let listOfPoints: ParserForAttribute<SVG.CoordinatePairs> =
     attributeParser(SVGAttributeParsers.listOfPoints)
-  }
 
   private static let pathData = attributeParser(SVGAttributeParsers.pathData)
 
-  private static var stopOffset: ParserForAttribute<SVG.Stop.Offset> {
+  private static let stopOffset: ParserForAttribute<SVG.Stop.Offset> =
     attributeParser(SVGAttributeParsers.stopOffset)
-  }
 
-  private static var fillRule: ParserForAttribute<SVG.FillRule> {
+  private static let fillRule: ParserForAttribute<SVG.FillRule> =
     attributeParser(oneOf(SVG.FillRule.self))
-  }
 
   private static var version: AttributeGroupParser<Void> {
     identifier(.version).flatMapResult {
@@ -1404,60 +1385,52 @@ public enum SVGAttributeParsers {
 
   // MARK: Path
 
-  private static let moveto: Parser<[SVG.PathData.MoveTo]> =
-    command("M", arg: coordinatePair) { .init(pos: $0, coordinatePair: $1) }
-
-  private static let drawToCommand: Parser<[SVG.PathData.DrawTo]> = oneOf([
-    (positioning(of: "Z") <<~ wsp*).map(always([.closepath])),
-    drawto("L", arg: coordinatePair, builder: SVG.PathData.DrawTo.lineto),
-    drawto("H", arg: coord) { .horizontalLineto($0, $1) },
-    drawto("V", arg: coord) { .verticalLineto($0, $1) },
-    drawto("C", arg: threeCoordinatePairs) { .curveto($0, cp1: $1.0, cp2: $1.1, to: $1.2) },
-    drawto("S", arg: twoCoordinatePairs) { .smoothCurveto($0, cp2: $1.0, to: $1.1) },
-    drawto("Q", arg: twoCoordinatePairs) { .quadraticBezierCurveto($0, cp1: $1.0, to: $1.1) },
-    drawto("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto($0, to: $1) },
-    drawto("A", arg: ellipticalArcArg) { .ellipticalArc($0, $1) },
+  private static let anyCommand: Parser<SVG.PathData.Command> = oneOf([
+    command("M", arg: coordinatePair) { .moveto($0) },
+    command("L", arg: coordinatePair) { .lineto($0) },
+    command("H", arg: coord) { .horizontalLineto($0) },
+    command("V", arg: coord) { .verticalLineto($0) },
+    command("C", arg: curveArgument) { .curveto($0) },
+    command("S", arg: smoothCurveArgument) { .smoothCurveto($0) },
+    command("Q", arg: quadraticCurveArgument) { .quadraticBezierCurveto($0) },
+    command("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto(to: $0) },
+    command("A", arg: ellipticalArcArg) { .ellipticalArc($0) },
+    positioning(of: "Z").map { .init(positioning: $0, kind: .closepath) },
   ])
 
-  private static let pathCommandGroup: Parser<SVG.PathData.Group> =
-    (moveto <<~ wsp* ~ zeroOrMore(drawToCommand, separator: wsp*)).map {
-      SVG.PathData.Group(moveTo: $0.0, drawTo: $0.1.flatMap(identity))
-    }
-
   internal static let pathData =
-    wsp* ~>> oneOrMore(pathCommandGroup, separator: wsp*) <<~ wsp*
+    wsp* ~>> oneOrMore(anyCommand, separator: wsp*) <<~ wsp*
 
-  private static let twoCoordinatePairs = zip(
+  private static let quadraticCurveArgument = zip(
     coordinatePair <<~ commaWsp~?,
     coordinatePair,
-    with: identity
+    with: SVG.PathData.QuadraticCurveArgument.init
   )
-  private static let threeCoordinatePairs = zip(
+
+  private static let smoothCurveArgument = zip(
+    coordinatePair <<~ commaWsp~?,
+    coordinatePair,
+    with: SVG.PathData.SmoothCurveArgument.init
+  )
+
+  private static let curveArgument = zip(
     coordinatePair <<~ commaWsp~?,
     coordinatePair <<~ commaWsp~?,
     coordinatePair,
-    with: identity
+    with: SVG.PathData.CurveArgument.init
   )
 
-  private static func command<T, V>(
+  private static func command<T>(
     _ cmd: Character,
     arg: Parser<T>,
-    builder: @escaping (SVG.PathData.Positioning, T) -> V
-  ) -> Parser<[V]> {
+    builder: @escaping ([T]) -> SVG.PathData.CommandKind
+  ) -> Parser<SVG.PathData.Command> {
     zip(
       positioning(of: cmd) <<~ wsp*,
       argumentSequence(arg)
     ) { pos, args in
-      args.map { builder(pos, $0) }
+      SVG.PathData.Command(positioning: pos, kind: builder(args))
     }
-  }
-
-  private static func drawto<T>(
-    _ cmd: Character,
-    arg: Parser<T>,
-    builder: @escaping (SVG.PathData.Positioning, T) -> SVG.PathData.DrawTo
-  ) -> Parser<[SVG.PathData.DrawTo]> {
-    command(cmd, arg: arg, builder: builder)
   }
 
   private static func positioning(

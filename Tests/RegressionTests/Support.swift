@@ -79,31 +79,34 @@ func cggen(files: [URL], scale: Double) throws -> [CGImage] {
       fatalError("Unable to clean up dir: \(tmpdir), error: \(error)")
     }
   }
-  let cggenRegionFinish = testLog.signpost("runCggen")
   let header = tmpdir.appendingPathComponent("gen.h").path
   let impl = tmpdir.appendingPathComponent("gen.m")
   let caller = tmpdir.appendingPathComponent("main.m")
   let genBin = tmpdir.appendingPathComponent("bin")
   let outputPngs = tmpdir.appendingPathComponent("pngs").path
-  try fm.createDirectory(atPath: outputPngs, withIntermediateDirectories: true)
-  try runCggen(
-    with: .init(
-      objcHeader: header,
-      objcPrefix: "SVGTests",
-      objcImpl: impl.path,
-      objcHeaderImportPath: header,
-      objcCallerPath: caller.path,
-      callerScale: scale,
-      callerAllowAntialiasing: true,
-      callerPngOutputPath: outputPngs,
-      generationStyle: nil,
-      cggenSupportHeaderPath: nil,
-      module: nil,
-      verbose: false,
-      files: files.map { $0.path }
+
+  try testLog.signpostRegion("runCggen") {
+    try fm.createDirectory(
+      atPath: outputPngs, withIntermediateDirectories: true
     )
-  )
-  cggenRegionFinish()
+    try runCggen(
+      with: .init(
+        objcHeader: header,
+        objcPrefix: "SVGTests",
+        objcImpl: impl.path,
+        objcHeaderImportPath: header,
+        objcCallerPath: caller.path,
+        callerScale: scale,
+        callerAllowAntialiasing: true,
+        callerPngOutputPath: outputPngs,
+        generationStyle: nil,
+        cggenSupportHeaderPath: nil,
+        module: nil,
+        verbose: false,
+        files: files.map { $0.path }
+      )
+    )
+  }
   try testLog.signpostRegion("clang invoc") {
     try clang(out: genBin, files: [impl, caller])
   }

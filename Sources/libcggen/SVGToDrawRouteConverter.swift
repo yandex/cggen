@@ -280,12 +280,15 @@ private func drawShape(
 ) throws -> DrawStep {
   var ctx = ctx
   let strokeAndFill = try ctx.apply(presentation, area: area)
-  return try .composite([
-    .saveGState,
-    strokeAndFill,
-    ctx.drawPath(path: pathConstruction),
-    .restoreGState,
-  ])
+  // FIXME: Merge with same code in group
+  var pre: [DrawStep] = [.saveGState, strokeAndFill]
+  var post: [DrawStep] = []
+  if let opacity = presentation.opacity {
+    pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
+    post.append(.endTransparencyLayer)
+  }
+  post.append(.restoreGState)
+  return try .composite(pre + [ctx.drawPath(path: pathConstruction)] + post)
 }
 
 private func group(ctx: Context, presentation: SVG.PresentationAttributes, transform: [SVG.Transform]?, children: [SVG]) throws -> DrawStep {
@@ -422,120 +425,205 @@ private func pathConstruction(from circle: SVG.CircleData) -> (DrawStep, boundin
   return (.addEllipse(in: rect), rect)
 }
 
+// Adhoc helper to reset last control points, because it is annoying to
+// reset them before every return statement, so reseting done via defer,
+// but if control point was set – avoid reseting.
+private struct Resetable<T> {
+  private var ignoreNextReset = false
+  private var valuePrivate: T?
+  var value: T? {
+    get {
+      valuePrivate
+    }
+    set {
+      ignoreNextReset = true
+      valuePrivate = newValue
+    }
+  }
+
+  mutating func reset() {
+    guard !ignoreNextReset else { return ignoreNextReset = false }
+    valuePrivate = nil
+  }
+}
+
 private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boundingBox: CGRect)? {
   guard let commands = path.d else { return nil }
   let cgpath = CGMutablePath()
   var currentPoint: CGPoint?
-  let path: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
-    guard let move = command.moveTo.last else { return [DrawStep.empty] }
-    let point = CGPoint(svgPair: move.coordinatePair)
-    cgpath.move(to: point)
-    currentPoint = point
-
-    // Adhoc helper to reset last control points, because it is annoying to
-    // reset them before every return statement, so reseting done via defer,
-    // but if control point was set – avoid reseting.
-    struct Resetable<T> {
-      private var ignoreNextReset = false
-      private var valuePrivate: T?
-      var value: T? {
-        get {
-          valuePrivate
-        }
-        set {
-          ignoreNextReset = true
-          valuePrivate = newValue
-        }
-      }
-
-      mutating func reset() {
-        guard !ignoreNextReset else { return ignoreNextReset = false }
-        valuePrivate = nil
-      }
+  var prevCurveControlPoint = Resetable<CGPoint>()
+  let steps: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
+    defer {
+      prevCurveControlPoint.reset()
     }
+    return try processCommandKind(
+      command,
+      cgPathAccumulator: cgpath,
+      currentPoint: &currentPoint,
+      prevCurveControlPoint: &prevCurveControlPoint
+    )
+  }
+  return (.composite(steps), cgpath.boundingBox)
+}
 
-    var prevCurveControlPoint = Resetable<CGPoint>()
-
-    return try [DrawStep.moveTo(point)] + command.drawTo.map {
-      defer {
-        prevCurveControlPoint.reset()
-      }
-      switch $0 {
-      case .closepath:
-        cgpath.closeSubpath()
-        currentPoint = nil
-        return .closePath
-      case let .lineto(_, pair):
-        let point = CGPoint(svgPair: pair)
-        cgpath.addLine(to: point)
-        currentPoint = point
-        return .lineTo(point)
-      case let .curveto(_, cp1, cp2, to):
-        let cp1 = CGPoint(svgPair: cp1)
-        let cp2 = CGPoint(svgPair: cp2)
-        let to = CGPoint(svgPair: to)
-        currentPoint = to
-        prevCurveControlPoint.value = cp2
-        return .curveTo(cp1, cp2, to)
-      /*
-        8.3.6 The cubic Bézier curve commands
-       Draws a cubic Bézier curve from the current point to (x,y). The first
-       control point is assumed to be the reflection of the second control
-       point on the previous command relative to the current point.
-       (If there is no previous command or if the previous command
-       was not an C, c, S or s, assume the first control point is coincident
-       with the current point.)
-       */
-      case let .smoothCurveto(_, cp2, to):
-        guard let current = currentPoint else { throw Err.noPreviousPoint }
-        let cp1 = prevCurveControlPoint.value?.reflected(across: current) ?? current
-        let cp2 = CGPoint(svgPair: cp2)
-        let to = CGPoint(svgPair: to)
-        currentPoint = to
-        prevCurveControlPoint.value = cp2
-        return .curveTo(cp1, cp2, to)
-      case let .horizontalLineto(_, x):
-        guard let current = currentPoint else { throw Err.noPreviousPoint }
-        let point = modified(current) { $0.x = x.cgfloat }
-        currentPoint = point
-        return .lineTo(point)
-      case let .verticalLineto(_, y):
-        guard let current = currentPoint else { throw Err.noPreviousPoint }
-        let point = modified(current) { $0.y = y.cgfloat }
-        currentPoint = point
-        return .lineTo(point)
-      case let .ellipticalArc(_, arg):
-        // See `8.3.8 The elliptical arc curve commands`
-        let (rx, ry, xAxisRot, largeArcFlag, sweepFlag, toSVG) = arg.destruct()
-        _ = xAxisRot // Applies only to ellipses, that are not supported yet
-        let to = CGPoint(svgPair: toSVG)
-
-        try check(rx.isAlmostEqual(ry), Err.ellipsesAreNotSupportedInPathsYet)
-        guard let current = currentPoint else { throw Err.noPreviousPoint }
-
-        let r = CGFloat(rx)
-        let center = solveCircleCenter(
-          pointsOnCircle: (current, to),
-          radius: r,
-          anticlockwise: sweepFlag != largeArcFlag
-        )
-        let startAngle = CGVector(from: center, to: current).angle
-        let endAngle = CGVector(from: center, to: to).angle
-
-        return .addArc(
-          center: center,
-          radius: r,
-          startAngle: startAngle,
-          endAngle: endAngle,
-          clockwise: !sweepFlag
-        )
-      case .quadraticBezierCurveto,
-           .smoothQuadraticBezierCurveto:
-        fatalError("Not implemented")
-      }
+private func processCommandKind(
+  _ command: SVG.PathData.Command,
+  cgPathAccumulator cgpath: CGMutablePath,
+  currentPoint: inout CGPoint?,
+  prevCurveControlPoint: inout Resetable<CGPoint>
+) throws -> [DrawStep] {
+  func point(for pair: SVG.CoordinatePair, _ currentPoint: CGPoint?) throws -> CGPoint {
+    let cgPoint = CGPoint(svgPair: pair)
+    switch command.positioning {
+    case .absolute:
+      return cgPoint
+    case .relative:
+      guard let currentPoint = currentPoint else { throw Err.noPreviousPoint }
+      return cgPoint + currentPoint
     }
   }
-  return (.composite(path), cgpath.boundingBox)
+
+  switch command.kind {
+  case .closepath:
+    cgpath.closeSubpath()
+    currentPoint = nil
+    return [.closePath]
+  case let .moveto(pairs):
+    // Nonemptiness guaranteed by parser
+    let first = CGPoint(svgPair: pairs.first!)
+    let moveToPoint: CGPoint
+    if command.positioning == .relative, let currentPoint = currentPoint {
+      moveToPoint = currentPoint + first
+    } else {
+      moveToPoint = first
+    }
+    let moveToStep = DrawStep.moveTo(moveToPoint)
+    currentPoint = moveToPoint
+    cgpath.move(to: moveToPoint)
+
+    return try [moveToStep] + pairs.dropFirst().map {
+      let toPoint = try point(for: $0, currentPoint)
+      cgpath.move(to: toPoint)
+      currentPoint = toPoint
+      return .lineTo(toPoint)
+    }
+  case let .lineto(pairs):
+    return try pairs.map {
+      let p = try point(for: $0, currentPoint)
+      cgpath.addLine(to: p)
+      currentPoint = p
+      return .lineTo(p)
+    }
+  case let .curveto(args):
+    return try args.map {
+      let (cp1, cp2, to) = try (
+        point(for: $0.cp1, currentPoint),
+        point(for: $0.cp2, currentPoint),
+        point(for: $0.to, currentPoint)
+      )
+      currentPoint = to
+      prevCurveControlPoint.value = cp2
+      return .curveTo(cp1, cp2, to)
+    }
+  /*
+    8.3.6 The cubic Bézier curve commands
+   Draws a cubic Bézier curve from the current point to (x,y). The first
+   control point is assumed to be the reflection of the second control
+   point on the previous command relative to the current point.
+   (If there is no previous command or if the previous command
+   was not an C, c, S or s, assume the first control point is coincident
+   with the current point.)
+   */
+  case let .smoothCurveto(args):
+    return try args.map {
+      guard let current = currentPoint else { throw Err.noPreviousPoint }
+      let cp1 = prevCurveControlPoint.value?.reflected(across: current) ?? current
+      let (cp2, to) = try (
+        point(for: $0.cp2, currentPoint),
+        point(for: $0.to, currentPoint)
+      )
+      currentPoint = to
+      prevCurveControlPoint.value = cp2
+      return .curveTo(cp1, cp2, to)
+    }
+  case let .horizontalLineto(xs):
+    return try xs.map { x in
+      guard let current = currentPoint else { throw Err.noPreviousPoint }
+      let modificator: (inout CGPoint) -> Void
+      switch command.positioning {
+      case .absolute:
+        modificator = { $0.x = x.cgfloat }
+      case .relative:
+        modificator = { $0.x += x.cgfloat }
+      }
+      let point = modified(current, modificator)
+      currentPoint = point
+      return .lineTo(point)
+    }
+  case let .verticalLineto(ys):
+    return try ys.map { y in
+      guard let current = currentPoint else { throw Err.noPreviousPoint }
+      let modificator: (inout CGPoint) -> Void
+      switch command.positioning {
+      case .absolute:
+        modificator = { $0.y = y.cgfloat }
+      case .relative:
+        modificator = { $0.y += y.cgfloat }
+      }
+      let point = modified(current, modificator)
+      currentPoint = point
+      return .lineTo(point)
+    }
+  case let .ellipticalArc(args):
+    return try args.map { arg in
+      // See `8.3.8 The elliptical arc curve commands`
+      let (rx, ry, xAxisRot, largeArcFlag, sweepFlag, toSVG) = arg.destruct()
+      _ = xAxisRot // Applies only to ellipses, that are not supported yet
+      let to = try point(for: toSVG, currentPoint)
+
+      guard let current = currentPoint else { throw Err.noPreviousPoint }
+      guard current != to else { return .empty }
+      guard rx != 0 || ry != 0 else {
+        // treat as line to
+        cgpath.addLine(to: to)
+        currentPoint = to
+        return .lineTo(to)
+      }
+      try check(rx.isAlmostEqual(ry), Err.ellipsesAreNotSupportedInPathsYet)
+
+      let rGiven = CGFloat(abs(rx))
+      let fromToDistance = current.distance(to: to)
+      let r = fromToDistance <= 2 * rGiven ? rGiven : fromToDistance / 2
+
+      let center = solveCircleCenter(
+        pointsOnCircle: (current, to),
+        radius: r,
+        anticlockwise: sweepFlag != largeArcFlag
+      )
+      let startAngle = CGVector(from: center, to: current).angle
+      let endAngle = CGVector(from: center, to: to).angle
+
+      cgpath.addArc(
+        center: center,
+        radius: r,
+        startAngle: startAngle,
+        endAngle: endAngle,
+        clockwise: !sweepFlag
+      )
+      currentPoint = to
+
+      return .addArc(
+        center: center,
+        radius: r,
+        startAngle: startAngle,
+        endAngle: endAngle,
+        clockwise: !sweepFlag
+      )
+    }
+  case .quadraticBezierCurveto,
+       .smoothQuadraticBezierCurveto:
+    fatalError("Not implemented")
+  }
 }
 
 typealias GradientStepsProvider = ((

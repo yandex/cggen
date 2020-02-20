@@ -17,6 +17,8 @@ class PareserTests: XCTestCase {
     double.test("-2.9e-8", expected: (-2.9e-8, ""))
     double.test("-2.9-8", expected: (-2.9, "-8"))
     double.test(" -2.0", expected: (nil, " -2.0"))
+    double.test(".78", expected: (0.78, ""))
+    double.test(".1.78", expected: (0.1, ".78"))
     double.test(" ", expected: (nil, " "))
     double.test("abc", expected: (nil, "abc"))
   }
