@@ -41,6 +41,10 @@ public enum SVG: Equatable {
     public var _2: Float?
   }
 
+  public struct Angle: Equatable {
+    public var degrees: Float
+  }
+
   public typealias CoordinatePairs = [CoordinatePair]
 
   public struct ViewBox: Equatable {
@@ -80,12 +84,12 @@ public enum SVG: Equatable {
       public var cy: Float
     }
 
-    case matrix(NotImplemented)
+    case matrix(a: Float, b: Float, c: Float, d: Float, e: Float, f: Float)
     case translate(tx: Float, ty: Float?)
     case scale(sx: Float, sy: Float?)
-    case rotate(angle: Float, anchor: Anchor?)
-    case skewX(NotImplemented)
-    case skewY(NotImplemented)
+    case rotate(angle: Angle, anchor: Anchor?)
+    case skewX(Angle)
+    case skewY(Angle)
   }
 
   public enum Units: String, CaseIterable {
@@ -1304,10 +1308,42 @@ public enum SVGAttributeParsers {
     with: SVG.Transform.Anchor.init
   )
 
+  private static let angle: Parser<SVG.Angle> = number.map(SVG.Angle.init)
+
   // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp* ")"
   internal static let rotate: Parser<SVG.Transform> = namedTransform(
     "rotate",
-    zip(number, anchor~?, with: SVG.Transform.rotate)
+    zip(angle, anchor~?, with: SVG.Transform.rotate)
+  )
+
+  // "skewX" wsp* "(" wsp* number wsp* ")"
+  internal static let skewX: Parser<SVG.Transform> = namedTransform(
+    "skewX", angle.map(SVG.Transform.skewX)
+  )
+  // "skewX" wsp* "(" wsp* number wsp* ")"
+  internal static let skewY: Parser<SVG.Transform> = namedTransform(
+    "skewY", angle.map(SVG.Transform.skewY)
+  )
+
+  /*
+   "matrix" wsp* "(" wsp*
+      number comma-wsp
+      number comma-wsp
+      number comma-wsp
+      number comma-wsp
+      number comma-wsp
+      number wsp* ")"
+   */
+  internal static let matrix: Parser<SVG.Transform> = namedTransform(
+    "matrix", zip(
+      number <<~ commaWsp,
+      number <<~ commaWsp,
+      number <<~ commaWsp,
+      number <<~ commaWsp,
+      number <<~ commaWsp,
+      number,
+      with: SVG.Transform.matrix
+    )
   )
 
   internal static let transformsList: Parser<[SVG.Transform]> =
@@ -1316,6 +1352,9 @@ public enum SVGAttributeParsers {
     translate,
     scale,
     rotate,
+    skewX,
+    skewY,
+    matrix,
   ])
 
   internal static let hexByteFromSingle: Parser<UInt8> = readOne().flatMap {

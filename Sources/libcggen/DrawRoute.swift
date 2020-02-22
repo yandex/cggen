@@ -78,6 +78,8 @@ enum DrawStep {
 
   case linearGradient(String, LinearGradientDrawingOptions)
   case radialGradient(String, RadialGradientDrawingOptions)
+  case linearGradientInlined(Gradient, LinearGradientDrawingOptions)
+  case radialGradientInlined(Gradient, RadialGradientDrawingOptions)
   case subrouteWithName(String)
   case shadow(Shadow)
   case blendMode(CGBlendMode)

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path stroke-width="0.5" fill="peachpuff" stroke-linejoin="round" stroke="burlywood" id="a" d="M-1,-3 -1,0 -3,0 0,3 3,0 1,0 1,-3Z"></path>
+        <g id="row" stroke="red" stroke-width="0.5" fill="none" stroke-linejoin="round">
+            <rect width="10" height="10" x="0"/>
+            <rect width="10" height="10" x="10"/>
+            <rect width="10" height="10" x="20"/>
+            <rect width="10" height="10" x="30"/>
+            <rect width="10" height="10" x="40"/>
+        </g>
+    </defs>
+    <use xlink:href="#row"/>
+    <use xlink:href="#row" y="10"/>
+    <use xlink:href="#row" y="20"/>
+    <use xlink:href="#row" y="30"/>
+    <use xlink:href="#row" y="40"/>
+    <g>
+        <use transform="translate(5,5) translate(-1,-1)" xlink:href="#a"/>
+        <use transform="translate(15,5) scale(1.3,1.3)" xlink:href="#a"/>
+        <use transform="translate(25, 5) rotate(45)" xlink:href="#a"/>
+        <use transform="translate(35, 5) skewX(45)" xlink:href="#a"/>
+        <use transform="translate(45, 5) skewY(45)" xlink:href="#a"/>
+    </g>
+    <g>
+        <use transform="translate(5,15) translate(-1.5,1.5)" xlink:href="#a"/>
+        <use transform="translate(15,15) scale(1.3,-1.3) rotate(25)" xlink:href="#a"/>
+        <use transform="translate(25, 15) rotate(-135)" xlink:href="#a"/>
+        <use transform="translate(35, 15) skewX(-45)" xlink:href="#a"/>
+        <use transform="translate(45, 15) rotate(90) skewY(-45)" xlink:href="#a"/>
+    </g>
+    <g>
+        <use transform="matrix(1.1 0.1 0.2 0.9 5 25)" xlink:href="#a"/>
+        <use transform="translate(15,25) scale(-1.3,1.3) rotate(25)" xlink:href="#a"/>
+        <use transform="translate(25,25) rotate(30 0,3)" xlink:href="#a"/>
+        <use transform="translate(35,25) rotate(-30) skewX(-30)" xlink:href="#a"/>
+        <use transform="translate(45,25) rotate(90) skewY(40)" xlink:href="#a"/>
+    </g>
+    <g>
+        <use transform="translate(5,35) translate(-1.5,1.5)" xlink:href="#a"/>
+        <use transform="translate(15,35) scale(-1.3,-1.3) rotate(25)" xlink:href="#a"/>
+        <use transform="translate(25,35) rotate(30 0,-2)" xlink:href="#a"/>
+        <use transform="translate(35,35) rotate(-30 0,-2)" xlink:href="#a"/>
+        <use transform="translate(45,35) rotate(90)" xlink:href="#a"/>
+    </g>
+    <g>
+        <use transform="translate(5,45) rotate(90)" xlink:href="#a"/>
+        <use transform="translate(15,45) rotate(180)" xlink:href="#a"/>
+        <use transform="translate(25,45) rotate(270)" xlink:href="#a"/>
+        <use transform="translate(35,45) rotate(360)" xlink:href="#a"/>
+        <use transform="translate(45,45) rotate(-360)" xlink:href="#a"/>
+    </g>
+</svg>
