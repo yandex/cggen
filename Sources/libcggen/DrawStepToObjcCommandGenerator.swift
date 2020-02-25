@@ -65,27 +65,14 @@ struct DrawStepToObjcCommandGenerator {
       return cmd("CGContextSetLineWidth", args: .value(w))
     case let .colorRenderingIntent(intent):
       return cmd("CGContextSetRenderingIntent", args: .value(intent))
-    case let .linearGradient(name, (startPoint, endPoint, options)):
-      let drawing = with(gradient: gradients[name]!) { gradient in
-        [
-          .stmnt(cmd(
-            "CGContextDrawLinearGradient",
-            args: gradient, .value(startPoint), .value(endPoint), .value(options)
-          )),
-        ]
-      }
-      return drawing
-    case let .radialGradient(name, (startCenter, startRadius, endCenter, endRadius, options)):
-      let drawing = with(gradient: gradients[name]!) { gradient in
-        [
-          .stmnt(cmd(
-            "CGContextDrawRadialGradient",
-            args: gradient, .value(startCenter), .value(startRadius),
-            .value(endCenter), .value(endRadius), .value(options)
-          )),
-        ]
-      }
-      return drawing
+    case let .linearGradient(name, opts):
+      return drawLinearGradient(gradients[name]!, options: opts)
+    case let .radialGradient(name, opts):
+      return drawRadialGradient(gradients[name]!, options: opts)
+    case let .linearGradientInlined(grad, opts):
+      return drawLinearGradient(grad, options: opts)
+    case let .radialGradientInlined(grad, opts):
+      return drawRadialGradient(grad, options: opts)
     case let .dash(pattern):
       return cmd(
         "CGContextSetLineDash",
@@ -209,33 +196,52 @@ struct DrawStepToObjcCommandGenerator {
     )
   }
 
-  func with(
+  private func with(
     gradient: Gradient,
-    _ terms: (ObjcTerm.Expr) -> [ObjcTerm.Statement.BlockItem]
+    _ terms: (ObjcTerm.Expr) -> ObjcTerm.Statement.BlockItem
   ) -> ObjcTerm.Statement {
     let locAndColors = gradient.locationAndColors
-    let (colors, colorsId) = ObjcTerm.CDecl.cgfloatArray(
-      "colors_\(uniqIDProvider())",
-      locAndColors.flatMap { $0.1.components }
-    )
-    let (locations, locationsId) = ObjcTerm.CDecl.cgfloatArray(
-      "locations_\(uniqIDProvider())",
-      locAndColors.map { $0.0 }
-    )
     let (gradDecl, gradId) = ObjcTerm.CDecl.functionCall(
       type: .CGGradientRef,
       id: "grad_\(uniqIDProvider())",
       functionName: "CGGradientCreateWithColorComponents",
-      args: gDeviceRgbContext, colorsId, locationsId, .value(locAndColors.count)
+      args: gDeviceRgbContext,
+      .value(locAndColors.flatMap { $0.1.components }),
+      .value(locAndColors.map { $0.0 }),
+      .value(locAndColors.count)
     )
     let release = ObjcTerm.Statement.call("CGGradientRelease", args: gradId)
     return .block([
-      .decl(colors),
-      .decl(locations),
       .decl(gradDecl),
-    ] + terms(gradId) + [
+      terms(gradId),
       .stmnt(release),
     ])
+  }
+
+  private func drawLinearGradient(
+    _ grad: Gradient,
+    options opts: DrawStep.LinearGradientDrawingOptions
+  ) -> ObjcTerm.Statement {
+    with(gradient: grad) { gradient in
+      .stmnt(cmd(
+        "CGContextDrawLinearGradient",
+        args: gradient,
+        .value(opts.startPoint), .value(opts.endPoint), .value(opts.options)
+      ))
+    }
+  }
+
+  private func drawRadialGradient(
+    _ grad: Gradient,
+    options opts: DrawStep.RadialGradientDrawingOptions
+  ) -> ObjcTerm.Statement {
+    with(gradient: grad) { gradient in
+      .stmnt(cmd(
+        "CGContextDrawRadialGradient",
+        args: gradient, .value(opts.startCenter), .value(opts.startRadius),
+        .value(opts.endCenter), .value(opts.endRadius), .value(opts.options)
+      ))
+    }
   }
 }
 

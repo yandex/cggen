@@ -15,13 +15,13 @@ enum SVGToDrawRouteConverter {
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
-      gradients: gradients.mapValues { $0.1 },
+      gradients: gradients,
       filters: filters,
       defenitions: defenitions
     )
     return try .init(
       boundingRect: boundingRect,
-      gradients: gradients.mapValues { $0.0 },
+      gradients: [:],
       subroutes: [:],
       steps: [.concatCTM(.invertYAxis(height: height))] +
         document.children.map { try drawstep(svg: $0, ctx: &context)
@@ -171,17 +171,20 @@ private struct Context {
     ].compactMap(identity))
   }
 
-  func gradient(for paint: KeyPath<Context, SVG.Paint>) throws -> DrawStep? {
+  func gradient(
+    for paint: KeyPath<Context, SVG.Paint>,
+    opacity: SVG.Float
+  ) throws -> DrawStep? {
     if case let .funciri(grad) = self[keyPath: paint] {
       let g = try gradients[grad] !! Err.gradientNotFound(grad)
-      return g((objectBoundingBox, drawingBounds))
+      return g((objectBoundingBox, drawingBounds, opacity))
     }
     return nil
   }
 
   func drawPath(path: DrawStep) throws -> DrawStep {
     try .composite([
-      gradient(for: \.fill).map {
+      gradient(for: \.fill, opacity: fillAlpha).map {
         DrawStep.savingGState(
           path,
           DrawStep.clip(.init(fillRule)),
@@ -194,7 +197,7 @@ private struct Context {
           $0,
         ])
       },
-      gradient(for: \.stroke).map {
+      gradient(for: \.stroke, opacity: strokeAlpha).map {
         DrawStep.savingGState(
           path,
           DrawStep.replacePathWithStrokePath,
@@ -275,6 +278,7 @@ private struct Context {
 private func drawShape(
   pathConstruction: DrawStep,
   presentation: SVG.PresentationAttributes,
+  transform: [SVG.Transform]?,
   area: CGRect,
   ctx: Context
 ) throws -> DrawStep {
@@ -283,6 +287,9 @@ private func drawShape(
   // FIXME: Merge with same code in group
   var pre: [DrawStep] = [.saveGState, strokeAndFill]
   var post: [DrawStep] = []
+  if let transform = transform {
+    pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
+  }
   if let opacity = presentation.opacity {
     pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
     post.append(.endTransparencyLayer)
@@ -291,7 +298,12 @@ private func drawShape(
   return try .composite(pre + [ctx.drawPath(path: pathConstruction)] + post)
 }
 
-private func group(ctx: Context, presentation: SVG.PresentationAttributes, transform: [SVG.Transform]?, children: [SVG]) throws -> DrawStep {
+private func group(
+  ctx: Context,
+  presentation: SVG.PresentationAttributes,
+  transform: [SVG.Transform]?,
+  children: [SVG]
+) throws -> DrawStep {
   var ctx = ctx
   let presentationSteps = try ctx.apply(presentation, area: nil)
   var pre: [DrawStep] = [.saveGState, presentationSteps]
@@ -335,6 +347,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     return try drawShape(
       pathConstruction: steps,
       presentation: r.presentation,
+      transform: r.transform,
       area: box,
       ctx: ctx
     )
@@ -344,6 +357,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     return try drawShape(
       pathConstruction: steps,
       presentation: shape.presentation,
+      transform: shape.transform,
       area: box,
       ctx: ctx
     )
@@ -352,6 +366,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     return try drawShape(
       pathConstruction: steps,
       presentation: shape.presentation,
+      transform: shape.transform,
       area: box,
       ctx: ctx
     )
@@ -360,6 +375,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     return try drawShape(
       pathConstruction: steps,
       presentation: shape.presentation,
+      transform: shape.transform,
       area: box,
       ctx: ctx
     )
@@ -368,6 +384,7 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
     return try drawShape(
       pathConstruction: steps,
       presentation: shape.presentation,
+      transform: shape.transform,
       area: box,
       ctx: ctx
     )
@@ -628,10 +645,11 @@ private func processCommandKind(
 
 typealias GradientStepsProvider = ((
   objectBoundingBox: CGRect,
-  drawingBounds: CGRect
+  drawingBounds: CGRect,
+  opacity: SVG.Float
 )) -> DrawStep
 
-private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsProvider))] {
+private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
   switch svg {
   case let .defs(defs):
     return try defs.children.flatMap(gradients(svg:))
@@ -651,7 +669,7 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       return (offset, color.norm().withAlpha(opacity))
     }
     let steps: GradientStepsProvider = { arg in
-      let (objectBox, drawingArea) = arg
+      let (objectBox, drawingArea, opacity) = arg
       let coordinates: CGRect
       switch g.unit ?? .objectBoundingBox {
       case .objectBoundingBox:
@@ -659,15 +677,19 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
-      return .linearGradient(id, (
-        startPoint: g.startPoint(in: coordinates),
-        endPoint: g.endPoint(in: coordinates),
-        options: g.options
-      ))
+      let locAndColorsWithOpacity = locandcolors.map {
+        ($0.0, modified($0.1) { $0.alpha *= CGFloat(opacity) })
+      }
+      return .linearGradientInlined(
+        .init(locationAndColors: locAndColorsWithOpacity),
+        (
+          startPoint: g.startPoint(in: coordinates),
+          endPoint: g.endPoint(in: coordinates),
+          options: g.options
+        )
+      )
     }
-    return [
-      (id, (Gradient(locationAndColors: locandcolors), steps)),
-    ]
+    return [(id, steps)]
   case let .radialGradient(g):
     guard let id = g.core.id else { return [] }
     let stops = g.stops
@@ -684,7 +706,7 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       return (offset, color.norm().withAlpha(opacity))
     }
     let steps: GradientStepsProvider = { arg in
-      let (objectBox, drawingArea) = arg
+      let (objectBox, drawingArea, opacity) = arg
       let coordinates: CGRect
       switch g.unit ?? .objectBoundingBox {
       case .objectBoundingBox:
@@ -692,17 +714,21 @@ private func gradients(svg: SVG) throws -> [(String, (Gradient, GradientStepsPro
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
-      return .radialGradient(id, (
-        startCenter: g.startCenter(in: coordinates),
-        startRadius: 0,
-        endCenter: g.endCenter(in: coordinates),
-        endRadius: g.endRadius(in: coordinates),
-        options: g.options
-      ))
+      let locAndColorsWithOpacity = locandcolors.map {
+        ($0.0, modified($0.1) { $0.alpha *= CGFloat(opacity) })
+      }
+      return .radialGradientInlined(
+        .init(locationAndColors: locAndColorsWithOpacity),
+        (
+          startCenter: g.startCenter(in: coordinates),
+          startRadius: 0,
+          endCenter: g.endCenter(in: coordinates),
+          endRadius: g.endRadius(in: coordinates),
+          options: g.options
+        )
+      )
     }
-    return [
-      (id, (Gradient(locationAndColors: locandcolors), steps)),
-    ]
+    return [(id, steps)]
   default:
     return []
   }
@@ -933,13 +959,26 @@ extension CGAffineTransform {
     case let .scale(sx: sx, sy: sy):
       self.init(scaleX: CGFloat(sx), y: CGFloat(sy ?? sx))
     case let .rotate(angle: angle, anchor: nil):
-      self.init(rotationAngle: CGFloat(angle))
+      self.init(rotationAngle: angle.radians)
     case let .rotate(angle: angle, anchor: anchor?):
       let cx = CGFloat(anchor.cx)
       let cy = CGFloat(anchor.cy)
-      self = CGAffineTransform(translationX: cx, y: cy)
-        .concatenating(.init(rotationAngle: CGFloat(angle)))
-        .concatenating(.init(translationX: -cx, y: -cy))
+      self = CGAffineTransform(translationX: -cx, y: -cy)
+        .concatenating(.init(rotationAngle: angle.radians))
+        .concatenating(.init(translationX: cx, y: cy))
+    case let .skewX(val):
+      self.init(a: 1, b: 0, c: tan(val.radians), d: 1, tx: 0, ty: 0)
+    case let .skewY(val):
+      self.init(a: 1, b: tan(val.radians), c: 0, d: 1, tx: 0, ty: 0)
+    case let .matrix(a, b, c, d, e, f):
+      self.init(
+        a: CGFloat(a),
+        b: CGFloat(c),
+        c: CGFloat(b),
+        d: CGFloat(d),
+        tx: CGFloat(e),
+        ty: CGFloat(f)
+      )
     }
   }
 }
@@ -999,6 +1038,10 @@ extension SVG.Coordinate {
       return CGFloat(number / 100) * value
     }
   }
+}
+
+extension SVG.Angle {
+  var radians: CGFloat { CGFloat(degrees) * .pi / 180 }
 }
 
 extension SVG.Paint {

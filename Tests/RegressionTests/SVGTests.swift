@@ -72,8 +72,8 @@ class SVGTest: XCTestCase {
     test(svg: "clip_path")
   }
 
-  func testSmoothCurve() {
-    test(svg: "smooth_curve")
+  func testTransforms() {
+    test(svg: "transforms")
   }
 }
 
@@ -96,6 +96,10 @@ class SVGPathTests: XCTestCase {
 
   func testRelativeCommands() {
     test(svg: "path_relative_commands")
+  }
+
+  func testSmoothCurve() {
+    test(svg: "path_smooth_curve")
   }
 }
 
@@ -142,6 +146,10 @@ class SVGGradientTests: XCTestCase {
 
   func testGradientAbsoluteStartEnd() {
     test(svg: "gradient_absolute_start_end")
+  }
+
+  func testGradientOpacity() {
+    test(svg: "gradient_opacity")
   }
 }
 
@@ -221,8 +229,9 @@ private func test(
   XCTAssertNoThrow(try {
     let snapshoting = signpost("snapshot")
 
-    let referenceImg = try WKWebViewSnapshoter()
+    let referenceImg = try signpostRegion("snapshot") { try WKWebViewSnapshoter()
       .take(sample: path, scale: CGFloat(scale), size: size).cgimg()
+    }
 
     snapshoting()
 
