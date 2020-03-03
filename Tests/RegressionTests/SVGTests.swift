@@ -53,7 +53,7 @@ class SVGTest: XCTestCase {
   }
 
   func testColorNames() {
-    test(svg: "colornames", tolerance: 0.001, size: .init(width: 120, height: 130))
+    test(svg: "colornames", size: .init(width: 120, height: 130))
   }
 
   func testUseTag() {
@@ -100,6 +100,10 @@ class SVGPathTests: XCTestCase {
 
   func testSmoothCurve() {
     test(svg: "path_smooth_curve")
+  }
+
+  func testFillRule() {
+    test(svg: "path_fill_rule")
   }
 }
 
@@ -204,10 +208,13 @@ private func blackSquareHTML(size: Int) -> String {
   return XML.el("html", children: [style, svgHTML]).render()
 }
 
+private let defaultTolerance = 0.002
+private let defaultScale = 2.0
+
 private func test(
   svg name: String,
-  tolerance: Double = 0.01,
-  scale: Double = 2,
+  tolerance: Double = defaultTolerance,
+  scale: Double = defaultScale,
   size: CGSize = CGSize(width: 50, height: 50),
   file: StaticString = #file, line: UInt = #line
 ) {
@@ -221,9 +228,9 @@ private func test(
 
 private func test(
   svg path: URL,
-  tolerance: Double = 0.01,
-  scale: Double = 2,
-  size: CGSize = CGSize(width: 50, height: 50),
+  tolerance: Double = defaultTolerance,
+  scale: Double = defaultScale,
+  size: CGSize,
   file: StaticString = #file, line: UInt = #line
 ) {
   XCTAssertNoThrow(try {
@@ -253,6 +260,7 @@ private func test(
       XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
         $0.add(.init(image: image, name: "result"))
         $0.add(.init(image: referenceImg, name: "webkitsnapshot"))
+        $0.add(.init(image: .diff(lhs: referenceImg, rhs: image), name: "diff"))
       }
     }
   }(), file: file, line: line)

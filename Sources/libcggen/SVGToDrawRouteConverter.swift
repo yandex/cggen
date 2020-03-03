@@ -468,6 +468,7 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
   guard let commands = path.d else { return nil }
   let cgpath = CGMutablePath()
   var currentPoint: CGPoint?
+  var subPathStartPoint: CGPoint?
   var prevCurveControlPoint = Resetable<CGPoint>()
   let steps: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
     defer {
@@ -476,7 +477,7 @@ private func pathConstruction(from path: SVG.PathData) throws -> (DrawStep, boun
     return try processCommandKind(
       command,
       cgPathAccumulator: cgpath,
-      currentPoint: &currentPoint,
+      currentPoint: &currentPoint, subPathStartPoint: &subPathStartPoint,
       prevCurveControlPoint: &prevCurveControlPoint
     )
   }
@@ -487,6 +488,7 @@ private func processCommandKind(
   _ command: SVG.PathData.Command,
   cgPathAccumulator cgpath: CGMutablePath,
   currentPoint: inout CGPoint?,
+  subPathStartPoint: inout CGPoint?,
   prevCurveControlPoint: inout Resetable<CGPoint>
 ) throws -> [DrawStep] {
   func point(for pair: SVG.CoordinatePair, _ currentPoint: CGPoint?) throws -> CGPoint {
@@ -503,7 +505,7 @@ private func processCommandKind(
   switch command.kind {
   case .closepath:
     cgpath.closeSubpath()
-    currentPoint = nil
+    currentPoint = subPathStartPoint
     return [.closePath]
   case let .moveto(pairs):
     // Nonemptiness guaranteed by parser
@@ -516,6 +518,7 @@ private func processCommandKind(
     }
     let moveToStep = DrawStep.moveTo(moveToPoint)
     currentPoint = moveToPoint
+    subPathStartPoint = moveToPoint
     cgpath.move(to: moveToPoint)
 
     return try [moveToStep] + pairs.dropFirst().map {
@@ -973,8 +976,8 @@ extension CGAffineTransform {
     case let .matrix(a, b, c, d, e, f):
       self.init(
         a: CGFloat(a),
-        b: CGFloat(c),
-        c: CGFloat(b),
+        b: CGFloat(b),
+        c: CGFloat(c),
         d: CGFloat(d),
         tx: CGFloat(e),
         ty: CGFloat(f)

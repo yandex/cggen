@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreImage
 import CoreServices
 import ImageIO
 import simd
@@ -240,16 +241,25 @@ extension CGImage {
   }
 
   public static func diff(lhs: CGImage, rhs: CGImage) -> CGImage {
-    let size = CGIntSize.union(lhs: lhs.intSize, rhs: rhs.intSize)
-    let ctx = CGContext.bitmapRGBContext(size: size)
-    ctx.draw(lhs, in: lhs.intSize.rect)
-    ctx.setAlpha(0.5)
-    ctx.setBlendMode(.difference)
-    ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-    ctx.draw(rhs, in: rhs.intSize.rect)
-    ctx.setFillColor(.white)
-    ctx.endTransparencyLayer()
-    return ctx.makeImage()!
+    let rect = CGRect(x: 0, y: 0, width: lhs.width, height: rhs.width)
+    let lhs = CIImage(cgImage: lhs)
+    let rhs = CIImage(cgImage: rhs)
+    let blended = rhs.applyingFilter(
+      "CIDifferenceBlendMode",
+      parameters: [kCIInputBackgroundImageKey: lhs]
+    )
+    let autoadjustments =
+      blended.autoAdjustmentFilters(options: [.enhance: true])
+    let diff = autoadjustments.reduce(blended) {
+      $1.setValue($0, forKey: kCIInputImageKey)
+      return $1.outputImage!
+    }
+    let transparentDiff = diff.applyingFilter(
+      "CIColorMatrix",
+      parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0.95)]
+    )
+    return CIContext()
+      .createCGImage(transparentDiff.composited(over: lhs), from: rect)!
   }
 
   public enum CGImageWriteError: Error {

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g stroke="none" fill="darkred">
+        <rect fill="white" x="0" y="0" width="50" height="50"/>
+        <path d="
+            M3,13 a10,10 0 0,0 20,0 a10,10 0 0,0 -20,0z
+            m5,0 a5,5, 0, 0,1 10,0 a5,5, 0, 0,1 -10,0z
+            m2,0 a2,2, 0, 0,0 6,0 a2,2, 0, 0,0 -6,0
+            " fill-rule="nonzero"/>
+        <path d="
+            M27,13 a10,10 0 0,0 20,0 a10,10 0 0,0 -20,0z
+            m5,0 a5,5, 0, 0,1 10,0 a5,5, 0, 0,1 -10,0z
+            m2,0 a2,2, 0, 0,0 6,0 a2,2, 0, 0,0 -6,0
+            " fill-rule="evenodd"/>
+        <path d="
+            M3,37 a10,10 0 0,0 20,0 a10,10 0 0,0 -20,0z
+            m5,0 a5,5, 0, 0,0 10,0 a5,5, 0, 0,0 -10,0z
+            m2,0 a2,2, 0, 0,0 6,0 a2,2, 0, 0,0 -6,0
+            " fill-rule="nonzero"/>
+        <path d="
+            M27,37 a10,10 0 0,0 20,0 a10,10 0 0,0 -20,0z
+            m5,0 a5,5, 0, 0,0 10,0 a5,5, 0, 0,0 -10,0z
+            m2,0 a2,2, 0, 0,0 6,0 a2,2, 0, 0,0 -6,0
+            " fill-rule="evenodd"/>
+    </g>
+</svg>
