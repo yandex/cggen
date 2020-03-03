@@ -241,7 +241,7 @@ extension CGImage {
   }
 
   public static func diff(lhs: CGImage, rhs: CGImage) -> CGImage {
-    let rect = CGRect(x: 0, y: 0, width: lhs.width, height: rhs.width)
+    let rect = CGRect(x: 0, y: 0, width: lhs.width, height: rhs.height)
     let lhs = CIImage(cgImage: lhs)
     let rhs = CIImage(cgImage: rhs)
     let blended = rhs.applyingFilter(
