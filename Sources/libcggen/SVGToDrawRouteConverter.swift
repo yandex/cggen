@@ -19,11 +19,13 @@ enum SVGToDrawRouteConverter {
       filters: filters,
       defenitions: defenitions
     )
+    let initialContextPrep =
+      try context.apply(document.presentation, area: boundingRect)
     return try .init(
       boundingRect: boundingRect,
       gradients: [:],
       subroutes: [:],
-      steps: [.concatCTM(.invertYAxis(height: height))] +
+      steps: [.concatCTM(.invertYAxis(height: height)), initialContextPrep] +
         document.children.map { try drawstep(svg: $0, ctx: &context)
         }
     )
