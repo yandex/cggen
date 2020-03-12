@@ -75,6 +75,10 @@ class SVGTest: XCTestCase {
   func testTransforms() {
     test(svg: "transforms")
   }
+
+  func testTopmostPresentationAttributes() {
+    test(svg: "topmost_presentation_attributes")
+  }
 }
 
 class SVGPathTests: XCTestCase {
@@ -177,7 +181,7 @@ class SVGCustomCheckTests: XCTestCase {
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
       let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> ^\.value)
     else { return }
-
+    print("Checking svg at \(path.path)")
     test(svg: path, size: size)
   }
 }

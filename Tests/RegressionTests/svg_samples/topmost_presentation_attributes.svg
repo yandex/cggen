@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" stroke="pink" stroke-width="2" fill="red" fill-rule="evenodd">
+    <rect width="40" height="10" x="5" y="5" fill="yellow"/>
+    <rect width="40" height="10" x="5" y="20" stroke="green"/>
+    <rect width="40" height="10" x="5" y="35"/>
+</svg>
