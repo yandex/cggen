@@ -1,5 +1,6 @@
-import Base
 import Foundation
+
+import Base
 
 struct DrawStepToObjcCommandGenerator {
   let uniqIDProvider: () -> String

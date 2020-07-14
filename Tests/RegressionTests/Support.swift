@@ -1,8 +1,9 @@
 import AppKit
-import Base
 import CoreGraphics
-import libcggen
 import os.log
+
+import Base
+import libcggen
 
 private enum Error: Swift.Error {
   case compilationError

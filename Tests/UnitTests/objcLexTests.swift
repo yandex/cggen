@@ -1,4 +1,5 @@
 @testable import libcggen
+
 import XCTest
 
 final class ObjcLexTests: XCTestCase {

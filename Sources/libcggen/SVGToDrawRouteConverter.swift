@@ -1,5 +1,6 @@
-import Base
 import CoreGraphics
+
+import Base
 
 enum SVGToDrawRouteConverter {
   static func convert(document: SVG.Document) throws -> DrawRoute {

@@ -1,5 +1,6 @@
-import Base
 import Foundation
+
+import Base
 
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) -> [PDFOperator] {

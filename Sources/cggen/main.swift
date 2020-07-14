@@ -1,6 +1,7 @@
+import Foundation
+
 import ArgParse
 import Base
-import Foundation
 import libcggen
 
 func parseArgs() -> Args {

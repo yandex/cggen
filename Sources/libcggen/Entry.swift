@@ -1,5 +1,6 @@
-import Base
 import Foundation
+
+import Base
 import PDFParse
 
 public struct Args {

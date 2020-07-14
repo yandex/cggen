@@ -1,6 +1,7 @@
+import Foundation
+
 import ArgParse
 import Base
-import Foundation
 
 struct Args {
   let outDir: String

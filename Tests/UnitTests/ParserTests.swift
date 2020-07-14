@@ -1,5 +1,6 @@
-import Base
 import XCTest
+
+import Base
 
 class PareserTests: XCTestCase {
   typealias Parser<T> = Base.Parser<Substring, T>
