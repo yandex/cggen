@@ -15,7 +15,6 @@
 
 import Foundation
 
-
 /// Write a string to standard error.
 private func writeStderr(_ string: String) {
     if let data = string.data(using: .utf8) {

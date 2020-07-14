@@ -1,5 +1,6 @@
-import Base
 import CoreGraphics
+
+import Base
 import PDFParse
 
 struct ObjcCGGenerator: CoreGraphicsGenerator {

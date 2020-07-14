@@ -1,5 +1,6 @@
-import Base
 import CoreGraphics
+
+import Base
 
 let svgColorsString = """
 aliceblue #F0F8FF

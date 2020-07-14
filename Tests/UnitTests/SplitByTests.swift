@@ -1,5 +1,6 @@
-import Base
 import XCTest
+
+import Base
 
 class SplitByTests: XCTestCase {
   func testSplitBy() {

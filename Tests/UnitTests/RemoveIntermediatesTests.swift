@@ -1,4 +1,5 @@
 @testable import Base
+
 import XCTest
 
 struct Point: Equatable, LinearInterpolatable {

@@ -1,6 +1,7 @@
-import Base
 import CoreGraphics
 import Foundation
+
+import Base
 
 public enum PDFOperator {
   // b

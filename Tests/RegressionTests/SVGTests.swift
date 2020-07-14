@@ -1,8 +1,9 @@
-import Base
-import libcggen
 import os.log
 import WebKit
 import XCTest
+
+import Base
+import libcggen
 
 let failedSnapshotsDirKey = "FAILED_SNAPSHOTS_DIR"
 

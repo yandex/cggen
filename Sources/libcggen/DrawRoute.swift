@@ -1,5 +1,6 @@
-import Base
 import Foundation
+
+import Base
 
 typealias RGBACGColor = RGBAColor<CGFloat>
 

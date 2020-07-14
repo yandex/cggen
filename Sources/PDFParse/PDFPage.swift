@@ -1,5 +1,6 @@
-import Base
 import CoreGraphics
+
+import Base
 
 public typealias PDFColor = RGBColor<CGPDFReal>
 
