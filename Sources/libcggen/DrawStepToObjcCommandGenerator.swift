@@ -164,8 +164,13 @@ struct DrawStepToObjcCommandGenerator {
       let color = shadow.color
       let (colorInit, colorVar) = ObjcTerm.CDecl.functionCall(
         type: .CGColorRef, id: "color_\(uniqIDProvider())",
-        functionName: "CGColorCreateGenericRGB",
-        args: .value(color.red), .value(color.green), .value(color.blue), .value(color.alpha)
+        functionName: "CGColorCreate",
+        args:
+          .identifier(globalDeviceRGBContextName),
+          .array(
+            of: .CGFloat,
+            [color.red, color.green, color.blue, color.alpha].map(ObjcTerm.Expr.value)
+          )
       )
       let setShadow = cmd(
         "CGContextSetShadowWithColor",

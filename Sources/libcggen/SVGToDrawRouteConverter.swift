@@ -663,7 +663,7 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
     guard let id = g.core.id else { return [] }
     let stops = g.stops
     let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
-      let color = try $0.presentation.stopColor !! Err.noStopColor
+      let color = $0.presentation.stopColor ?? SVG.Color(gray: 0, alpha: .zero)
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
       let offset: CGFloat
       switch $0.offset ?? .number(0) {
