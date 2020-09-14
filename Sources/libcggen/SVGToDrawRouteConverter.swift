@@ -273,7 +273,7 @@ private struct Context {
     }
     let comps: [DrawStep?] = try [.saveGState, transform] +
       shapes.map { try $0.shapeConstruction()?.0 } +
-      [.saveGState, .clip(.init(fillRule))]
+      [.restoreGState, .clip(.init(fillRule))]
     return .composite(comps.compactMap(identity))
   }
 }
@@ -294,7 +294,10 @@ private func drawShape(
     pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
   }
   if let opacity = presentation.opacity {
-    pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
+    pre.append(.globalAlpha(CGFloat(opacity)))
+  }
+  if presentation.opacity != nil || presentation.filter != nil {
+    pre.append(.beginTransparencyLayer)
     post.append(.endTransparencyLayer)
   }
   post.append(.restoreGState)
@@ -315,7 +318,10 @@ private func group(
     pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
   }
   if let opacity = presentation.opacity {
-    pre += [.globalAlpha(CGFloat(opacity)), .beginTransparencyLayer]
+    pre.append(.globalAlpha(CGFloat(opacity)))
+  }
+  if presentation.opacity != nil || presentation.filter != nil {
+    pre.append(.beginTransparencyLayer)
     post.append(.endTransparencyLayer)
   }
   post.append(.restoreGState)
@@ -662,7 +668,7 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
   case let .linearGradient(g):
     guard let id = g.core.id else { return [] }
     let stops = g.stops
-    let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
+    let locandcolors: [(CGFloat, RGBACGColor)] = stops.map {
       let color = $0.presentation.stopColor ?? SVG.Color(gray: 0, alpha: .zero)
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
       let offset: CGFloat
