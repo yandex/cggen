@@ -178,28 +178,26 @@ class PareserTests: XCTestCase {
 extension Parser where D == Substring, T: Equatable {
   func test(
     _ data: String,
-    expected: (result: T?, rest: String),
-    file: StaticString = #file, line: UInt = #line
+    expected: (result: T?, rest: String)
   ) {
     var data = Substring(data)
-    XCTAssertEqual(expected.result, run(&data), file: file, line: line)
-    XCTAssertEqual(expected.rest, String(data), file: file, line: line)
+    XCTAssertEqual(expected.result, run(&data))
+    XCTAssertEqual(expected.rest, String(data))
   }
 }
 
 extension Parser where D == Substring, T == Void {
   func test(
     _ data: String,
-    expected: (result: Void?, rest: String) = ((), ""),
-    file: StaticString = #file, line: UInt = #line
+    expected: (result: Void?, rest: String) = ((), "")
   ) {
     var data = Substring(data)
     let result: Void? = run(&data)
     if expected.result == nil {
-      XCTAssertNil(result, file: file, line: line)
+      XCTAssertNil(result)
     } else {
-      XCTAssertNotNil(result, file: file, line: line)
+      XCTAssertNotNil(result)
     }
-    XCTAssertEqual(String(data), expected.rest, file: file, line: line)
+    XCTAssertEqual(String(data), expected.rest)
   }
 }

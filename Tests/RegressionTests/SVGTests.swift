@@ -177,11 +177,11 @@ class SVGShadowTests: XCTestCase {
 class SVGCustomCheckTests: XCTestCase {
   static let sizeParser: Parser<Substring, CGSize> =
     (int() <<~ "x" ~ int()).map(CGSize.init)
-  func testSvgFromArgs() {
+  func testSvgFromArgs() throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
       let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> ^\.value)
-    else { return }
+    else { throw XCTSkip() }
     print("Checking svg at \(path.path)")
     test(svg: path, size: size)
   }
@@ -220,14 +220,12 @@ private func test(
   svg name: String,
   tolerance: Double = defaultTolerance,
   scale: Double = defaultScale,
-  size: CGSize = CGSize(width: 50, height: 50),
-  file: StaticString = #file, line: UInt = #line
+  size: CGSize = CGSize(width: 50, height: 50)
 ) {
   test(
     svg: sample(named: name),
     tolerance: tolerance,
-    scale: scale, size: size,
-    file: file, line: line
+    scale: scale, size: size
   )
 }
 
@@ -235,8 +233,7 @@ private func test(
   svg path: URL,
   tolerance: Double = defaultTolerance,
   scale: Double = defaultScale,
-  size: CGSize,
-  file: StaticString = #file, line: UInt = #line
+  size: CGSize
 ) {
   XCTAssertNoThrow(try {
     let snapshoting = signpost("snapshot")
@@ -248,18 +245,20 @@ private func test(
     snapshoting()
 
     let images = try cggen(files: [path], scale: scale)
-    XCTAssertEqual(images.count, 1, file: file, line: line)
+    XCTAssertEqual(images.count, 1)
     // Unfortunately, snapshot from web view always comes with white
     // background color
     let image = images[0].redraw(with: .white)
-    XCTAssertEqual(referenceImg.intSize, image.intSize, file: file, line: line)
+    try check(
+      referenceImg.intSize == image.intSize,
+      Err("reference image size: \(referenceImg.intSize), got \(image.intSize)")
+    )
     let diff = signpostRegion("image comparision") {
       compare(referenceImg, image)
     }
 
     XCTAssertLessThan(
-      diff, tolerance, "Calculated diff exceeds tolerance",
-      file: file, line: line
+      diff, tolerance, "Calculated diff exceeds tolerance"
     )
     if diff >= tolerance {
       XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
@@ -268,7 +267,7 @@ private func test(
         $0.add(.init(image: .diff(lhs: referenceImg, rhs: image), name: "diff"))
       }
     }
-  }(), file: file, line: line)
+  }())
 }
 
 private func sample(named name: String) -> URL {
@@ -277,6 +276,30 @@ private func sample(named name: String) -> URL {
 
 private let samplesPath =
   getCurentFilePath().appendingPathComponent("svg_samples")
+
+extension WKWebView {
+  @NSManaged
+  private func _setPageZoomFactor(_: Double)
+  @NSManaged
+  private func _pageZoomFactor() -> Double
+
+  fileprivate var pageZoomFactor: CGFloat {
+    get {
+      if #available(macOS 11, *) {
+        return pageZoom
+      } else {
+        return CGFloat(_pageZoomFactor())
+      }
+    }
+    set {
+      if #available(macOS 11, *) {
+        pageZoom = newValue
+      } else {
+        _setPageZoomFactor(Double(newValue))
+      }
+    }
+  }
+}
 
 private class WKWebViewSnapshoter {
   private class WKDelegate: NSObject, WKNavigationDelegate {
@@ -308,17 +331,21 @@ private class WKWebViewSnapshoter {
     enum Error: Swift.Error {
       case unknownSnapshotError
     }
-    let contentScale = webView.layer.map(^\.contentsScale) ?? 1
-    let origin = viewport.origin
-    let size = modified(viewport.size) {
+    let contentScale = webView.layer.map(\.contentsScale) ?? 1
+    let effectiveScale = scale / contentScale
+    let effectiveViewport = viewport.applying(.scale(effectiveScale))
+    let origin = effectiveViewport.origin
+    let size = modified(effectiveViewport.size) {
       $0.width += origin.x * 2
       $0.height += origin.y * 2
     }
-    webView.frame = .init(origin: .zero, size: size)
-    webView.bounds = webView.frame
+    let frame = CGRect(origin: .zero, size: size)
+    webView.frame = frame
+    webView.bounds = frame
+    webView.pageZoomFactor = scale / contentScale
+
     let config = WKSnapshotConfiguration()
-    config.snapshotWidth = NSNumber(value: Double(viewport.size.width * scale / contentScale))
-    config.rect = viewport
+    config.rect = effectiveViewport
 
     webView.loadHTMLString(html, baseURL: nil)
     waitCallbackOnMT(delegate.onNavigationFinish)
@@ -337,6 +364,14 @@ private class WKWebViewSnapshoter {
     _ block: @escaping @convention(block) () -> Void
   ) {
     webView.perform(Selector(("_doAfterNextPresentationUpdate:")), with: block)
+  }
+}
+
+struct Err: Swift.Error {
+  var description: String
+
+  init(_ desc: String) {
+    description = desc
   }
 }
 
