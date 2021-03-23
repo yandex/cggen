@@ -8,13 +8,13 @@ public struct Ø: Numeric, Comparable {
   @inlinable public init(integerLiteral _: Int) {}
 
   public static let zero = Ø()
-  public static func -=(_: inout Ø, _: Ø) {}
-  public static func +=(_: inout Ø, _: Ø) {}
-  public static func *=(_: inout Ø, _: Ø) {}
-  public static func *(_: Ø, _: Ø) -> Ø { .init() }
-  public static func +(_: Ø, _: Ø) -> Ø { .init() }
-  public static func -(_: Ø, _: Ø) -> Ø { .init() }
-  public static func <(_: Ø, _: Ø) -> Bool { false }
+  @inlinable public static func -=(_: inout Ø, _: Ø) {}
+  @inlinable public static func +=(_: inout Ø, _: Ø) {}
+  @inlinable public static func *=(_: inout Ø, _: Ø) {}
+  @inlinable public static func *(_: Ø, _: Ø) -> Ø { .init() }
+  @inlinable public static func +(_: Ø, _: Ø) -> Ø { .init() }
+  @inlinable public static func -(_: Ø, _: Ø) -> Ø { .init() }
+  @inlinable public static func <(_: Ø, _: Ø) -> Bool { false }
 }
 
 public struct RGBAColorType<Component: Numeric, Alpha: Numeric>: Equatable {
