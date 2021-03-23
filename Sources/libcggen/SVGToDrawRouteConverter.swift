@@ -61,10 +61,11 @@ private enum Err: Swift.Error {
   case tooComplexFilter(SVGFilterNode)
   case invalidElementInClipPath(SVG)
   case ellipsesAreNotSupportedInPathsYet
+  case gradientTransformIsNotSupportedYet
 }
 
 private struct Context {
-  private(set) var fillRule: SVG.FillRule = .evenodd
+  private(set) var fillRule: SVG.FillRule = .nonzero
   private(set) var fillAlpha: SVG.Float = 1
   private(set) var fill: SVG.Paint = .rgb(.black())
   private(set) var strokeAlpha: SVG.Float = 1
@@ -704,6 +705,8 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
     return [(id, steps)]
   case let .radialGradient(g):
     guard let id = g.core.id else { return [] }
+    try
+      check(g.gradientTransform == nil, Err.gradientTransformIsNotSupportedYet)
     let stops = g.stops
     let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
       let color = try $0.presentation.stopColor !! Err.noStopColor
