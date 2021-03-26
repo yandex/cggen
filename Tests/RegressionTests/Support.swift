@@ -1,9 +1,60 @@
 import AppKit
 import CoreGraphics
+import Foundation
 import os.log
 
 import Base
 import libcggen
+
+public func runCggen(
+  objcHeader: String?,
+  objcPrefix: String,
+  objcImpl: String?,
+  objcHeaderImportPath: String?,
+  objcCallerPath: String?,
+  callerScale: Double,
+  callerPngOutputPath: String?,
+  files: [String]
+) throws {
+  let files = files.map(URL.init(fileURLWithPath:))
+  let images = try generateImages(from: files)
+
+  let params = GenerationParams(
+    style: .plain,
+    prefix: objcPrefix,
+    module: ""
+  )
+
+  if let objcHeaderPath = objcHeader {
+    let headerGenerator = ObjcHeaderCGGenerator(params: params)
+    let fileStr = headerGenerator.generateFile(images: images)
+    try! fileStr.write(toFile: objcHeaderPath, atomically: true, encoding: .utf8)
+  }
+
+  if let objcImplPath = objcImpl {
+    let headerImportPath = objcHeaderImportPath
+    let implGenerator = ObjcCGGenerator(
+      params: params,
+      headerImportPath: headerImportPath
+    )
+    let fileStr = implGenerator.generateFile(images: images)
+    try! fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
+  }
+
+  if let objcCallerPath = objcCallerPath,
+     let pngOutputPath = callerPngOutputPath,
+     let headerImportPath = objcHeaderImportPath {
+    let callerGenerator = ObjcCallerGen(
+      headerImportPath: headerImportPath,
+      scale: callerScale.cgfloat,
+      allowAntialiasing: true,
+      prefix: objcPrefix,
+      outputPath: pngOutputPath
+    )
+    let fileStr = callerGenerator.generateFile(images: images)
+    try! fileStr.write(toFile: objcCallerPath, atomically: true, encoding: .utf8)
+  }
+}
 
 private enum Error: Swift.Error {
   case compilationError
@@ -15,8 +66,8 @@ extension NSImage {
   func cgimg() throws -> CGImage {
     // Sometimes NSImage.cgImage has different size than underlying cgimage
     if representations.count == 1,
-      let repr = representations.first,
-      repr.className == "NSCGImageSnapshotRep" {
+       let repr = representations.first,
+       repr.className == "NSCGImageSnapshotRep" {
       return try repr.cgImage(forProposedRect: nil, context: nil, hints: nil) !!
         Error.cgimageCreationFailed
     }
@@ -30,16 +81,21 @@ func readImage(filePath: String) throws -> CGImage {
     case failedToCreateDataProvider
     case failedToCreateImage
   }
+
   let url = URL(fileURLWithPath: filePath) as CFURL
   guard let dataProvider = CGDataProvider(url: url)
-  else { throw ReadImageError.failedToCreateDataProvider }
+    else {
+    throw ReadImageError.failedToCreateDataProvider
+  }
   guard let img = CGImage(
     pngDataProviderSource: dataProvider,
     decode: nil,
     shouldInterpolate: true,
     intent: .defaultIntent
   )
-  else { throw ReadImageError.failedToCreateImage }
+    else {
+    throw ReadImageError.failedToCreateImage
+  }
   return img
 }
 
@@ -48,12 +104,20 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
   let buffer2 = RGBABuffer(image: img2)
 
   let rw1 = buffer1.pixels
-    .flatMap { $0 }
-    .flatMap { $0.norm(Double.self).components }
+    .flatMap {
+      $0
+    }
+    .flatMap {
+      $0.norm(Double.self).components
+    }
 
   let rw2 = buffer2.pixels
-    .flatMap { $0 }
-    .flatMap { $0.norm(Double.self).components }
+    .flatMap {
+      $0
+    }
+    .flatMap {
+      $0.norm(Double.self).components
+    }
 
   let ziped = zip(rw1, rw2).lazy.map(-)
   return ziped.rootMeanSquare()
@@ -91,21 +155,14 @@ func cggen(files: [URL], scale: Double) throws -> [CGImage] {
       atPath: outputPngs, withIntermediateDirectories: true
     )
     try runCggen(
-      with: .init(
-        objcHeader: header,
-        objcPrefix: "SVGTests",
-        objcImpl: impl.path,
-        objcHeaderImportPath: header,
-        objcCallerPath: caller.path,
-        callerScale: scale,
-        callerAllowAntialiasing: true,
-        callerPngOutputPath: outputPngs,
-        generationStyle: nil,
-        cggenSupportHeaderPath: nil,
-        module: nil,
-        verbose: false,
-        files: files.map { $0.path }
-      )
+      objcHeader: header,
+      objcPrefix: "SVGTests",
+      objcImpl: impl.path,
+      objcHeaderImportPath: header,
+      objcCallerPath: caller.path,
+      callerScale: scale,
+      callerPngOutputPath: outputPngs,
+      files: files.map { $0.path }
     )
   }
   try testLog.signpostRegion("clang invoc") {
@@ -172,7 +229,9 @@ private func clang(out: URL, files: [URL]) throws {
       "CoreServices",
       "-o",
       out.path,
-    ] + files.map { $0.path }
+    ] + files.map {
+      $0.path
+    }
   )
   try check(clangCode == 0, Error.compilationError)
 }
@@ -198,6 +257,7 @@ let testLog = OSLog(
 )
 
 internal let signpost = testLog.signpost
+
 internal func signpostRegion<T>(
   _ desc: StaticString,
   _ region: () throws -> T

@@ -2,8 +2,8 @@ import CoreGraphics
 
 import Base
 
-enum SVGToDrawRouteConverter {
-  static func convert(document: SVG.Document) throws -> DrawRoute {
+public enum SVGToDrawRouteConverter {
+  public static func convert(document: SVG.Document) throws -> DrawRoute {
     let boundingRect = document.boundingRect
     let height = boundingRect.size.height
     let gradients = try Dictionary(

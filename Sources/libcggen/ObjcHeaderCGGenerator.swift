@@ -1,16 +1,21 @@
 import CoreGraphics
 
-struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
+public struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
-  func filePreamble() -> String {
+
+  public init(params: GenerationParams) {
+    self.params = params
+  }
+
+  public func filePreamble() -> String {
     params.imports.renderText() + "\n"
   }
 
-  func generateImageFunction(image: Image) -> String {
+  public func generateImageFunction(image: Image) -> String {
     params.description(for: image)
   }
 
-  func fileEnding() -> String {
+  public func fileEnding() -> String {
     ""
   }
 }

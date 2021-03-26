@@ -96,7 +96,7 @@ enum DrawStep {
   }
 }
 
-struct DrawRoute {
+public struct DrawRoute {
   let boundingRect: CGRect
   let gradients: [String: Gradient]
   let subroutes: [String: DrawRoute]

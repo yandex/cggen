@@ -1,11 +1,20 @@
 import Foundation
 
-struct ObjcCallerGen: CoreGraphicsGenerator {
+public struct ObjcCallerGen: CoreGraphicsGenerator {
   let headerImportPath: String
   let scale: CGFloat
   let allowAntialiasing: Bool
   let prefix: String
   let outputPath: String
+
+  public init(headerImportPath: String, scale: CGFloat, allowAntialiasing: Bool, prefix: String, outputPath: String) {
+    self.headerImportPath = headerImportPath
+    self.scale = scale
+    self.allowAntialiasing = allowAntialiasing
+    self.prefix = prefix
+    self.outputPath = outputPath
+  }
+
   func filePreambleNew() -> ObjcTerm {
     ObjcTerm(
       .hasFeatureSupport,
@@ -53,11 +62,11 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
     """
   }
 
-  func filePreamble() -> String {
+  public func filePreamble() -> String {
     filePreambleNew().render(indent: 2).joined(separator: "\n") + filePreambleLegacy()
   }
 
-  func generateImageFunction(image: Image) -> String {
+  public func generateImageFunction(image: Image) -> String {
     let camel = image.name.upperCamelCase
     let function = ObjCGen.functionName(imageName: camel, prefix: prefix)
     return
@@ -68,7 +77,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       """
   }
 
-  func fileEnding() -> String {
+  public func fileEnding() -> String {
     "  return retCode;\n}"
   }
 }

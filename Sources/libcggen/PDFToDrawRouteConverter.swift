@@ -46,8 +46,8 @@ private enum PDFGradientDrawingOptions {
   case radial(DrawStep.RadialGradientDrawingOptions)
 }
 
-enum PDFToDrawRouteConverter {
-  static func convert(xobject: PDFXObject) -> DrawRoute {
+public enum PDFToDrawRouteConverter {
+  public static func convert(xobject: PDFXObject) -> DrawRoute {
     let ctm = xobject.matrix ?? .identity
     let bbox = xobject.bbox
     var prepend: [DrawStep] = [.saveGState, .concatCTM(ctm), .clipToRect(bbox)]
@@ -65,7 +65,7 @@ enum PDFToDrawRouteConverter {
     )
   }
 
-  static func convert(page: PDFPage) -> DrawRoute {
+  public static func convert(page: PDFPage) -> DrawRoute {
     convert(
       resources: page.resources,
       bbox: page.bbox,

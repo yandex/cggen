@@ -2,14 +2,14 @@ import Foundation
 
 import Base
 
-protocol CoreGraphicsGenerator {
+public protocol CoreGraphicsGenerator {
   func filePreamble() -> String
   func generateImageFunction(image: Image) -> String
   func fileEnding() -> String
 }
 
 extension CoreGraphicsGenerator {
-  func generateFile(images: [Image]) -> String {
+  public func generateFile(images: [Image]) -> String {
     let functions = images.map(generateImageFunction).joined(separator: "\n\n")
     return
       """

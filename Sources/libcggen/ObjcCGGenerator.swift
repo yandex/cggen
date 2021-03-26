@@ -3,11 +3,16 @@ import CoreGraphics
 import Base
 import PDFParse
 
-struct ObjcCGGenerator: CoreGraphicsGenerator {
+public struct ObjcCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
   let headerImportPath: String?
 
-  func filePreamble() -> String {
+  public init(params: GenerationParams, headerImportPath: String?) {
+    self.params = params
+    self.headerImportPath = headerImportPath
+  }
+
+  public func filePreamble() -> String {
     ObjcTerm([
       .hasFeatureSupport,
       headerImportPath.map { ObjcTerm.quotedImport($0) },
@@ -16,7 +21,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     ].compactMap(identity).insertSeparator(.newLine)).renderText()
   }
 
-  func generateImageFunction(image: Image) -> String {
+  public func generateImageFunction(image: Image) -> String {
     var lines: [String] = []
     lines += funcStart(imageName: image.name)
     lines += functionBodyForDrawRoute(route: image.route, contextName: "context")
@@ -29,7 +34,7 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
     return lines.joined(separator: "\n")
   }
 
-  func fileEnding() -> String {
+  public func fileEnding() -> String {
     ""
   }
 }

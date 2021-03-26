@@ -34,7 +34,7 @@ extension GenerationParams {
     "k" + prefix + module + image.name.upperCamelCase + "Descriptor"
   }
 
-  var cggenSupportHeaderBody: ObjcTerm {
+  public var cggenSupportHeaderBody: ObjcTerm {
     supportHeader(
       prefix: prefix,
       module: module,

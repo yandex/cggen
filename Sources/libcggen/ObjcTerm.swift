@@ -1,6 +1,6 @@
 import Base
 
-enum ObjcTerm {
+public enum ObjcTerm {
   typealias NotImplemented = Never
 
   enum Pointer {
@@ -8,7 +8,7 @@ enum ObjcTerm {
     indirect case more(typeQual: NotImplemented?, pointer: Pointer)
   }
 
-  struct TypeName {
+  public struct TypeName {
     enum DirectAbstractDeclarator {
       indirect case braced(AbstractDeclarator, NotImplemented)
       indirect case array(of: DirectAbstractDeclarator? /* , size: assignment-expression */ )
@@ -28,11 +28,12 @@ enum ObjcTerm {
     var declarator: AbstractDeclarator?
   }
 
-  struct TypeIdentifier: ExpressibleByStringLiteral, CustomStringConvertible {
+  public struct TypeIdentifier: ExpressibleByStringLiteral, CustomStringConvertible {
     let name: StaticString
 
-    init(stringLiteral value: StaticString) { name = value }
-    var description: String { name.description }
+    public init(stringLiteral value: StaticString) { name = value }
+
+    public var description: String { name.description }
 
     static let int: Self = "int"
     static let void: Self = "void"
@@ -55,7 +56,7 @@ enum ObjcTerm {
     case `enum`(NotImplemented)
   }
 
-  struct Declarator {
+  public struct Declarator {
     enum Direct {
       case identifier(String)
       indirect case braced(Declarator)
@@ -80,24 +81,24 @@ enum ObjcTerm {
     }
   }
 
-  enum Import {
+  public enum Import {
     case angleBrackets(path: String)
     case doubleQuotes(path: String)
   }
 
-  indirect enum Expr {
-    enum BinOp: String {
+  public indirect enum Expr {
+    public enum BinOp: String {
       case less = "<"
       case bitwiseOr = "|"
       case multiply = "*"
       case addition = "+"
     }
 
-    enum PostfixOp: String {
+    public enum PostfixOp: String {
       case incr = "++"
     }
 
-    enum UnaryOp: String {
+    public enum UnaryOp: String {
       case address = "&"
     }
 
@@ -129,8 +130,8 @@ enum ObjcTerm {
     }
   }
 
-  enum Statement {
-    enum BlockItem {
+  public enum Statement {
+    public enum BlockItem {
       case decl(CDecl)
       case stmnt(Statement)
     }
@@ -141,7 +142,7 @@ enum ObjcTerm {
     case multiple([Statement])
   }
 
-  struct CDecl {
+  public struct CDecl {
     enum Specifier {
       enum StorageClass: String {
         case typedef
@@ -169,7 +170,7 @@ enum ObjcTerm {
     var declarators: [InitDeclarator]
   }
 
-  enum PreprocessorDirective {
+  public enum PreprocessorDirective {
     case define(String, to: String)
     case `if`(cond: String)
     case ifdef(identifier: String)

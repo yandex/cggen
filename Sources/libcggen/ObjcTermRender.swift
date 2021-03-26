@@ -1,12 +1,12 @@
 import Base
 
-protocol Renderable {
+public protocol Renderable {
   associatedtype RenderType
   func render() -> RenderType
 }
 
 extension Renderable where RenderType == [String] {
-  func renderText() -> String {
+  public func renderText() -> String {
     render().joined(separator: "\n")
   }
 
@@ -16,7 +16,7 @@ extension Renderable where RenderType == [String] {
 }
 
 extension Collection where Element: Renderable {
-  func render() -> [Element.RenderType] {
+  public func render() -> [Element.RenderType] {
     map { $0.render() }
   }
 }
@@ -24,8 +24,9 @@ extension Collection where Element: Renderable {
 extension Array: Renderable where Element: Renderable {}
 
 extension ObjcTerm: Renderable {
-  typealias RenderType = [String]
-  func render() -> [String] {
+  public typealias RenderType = [String]
+
+  public func render() -> [String] {
     switch self {
     case let .composite(sequence):
       return sequence.flatMap { $0.render() }
@@ -48,7 +49,7 @@ extension ObjcTerm: Renderable {
 }
 
 extension ObjcTerm.PreprocessorDirective: Renderable {
-  func render() -> String {
+  public func render() -> String {
     switch self {
     case let .define(new, to: old):
       return "#define \(new) \(old)"
@@ -96,7 +97,7 @@ extension ObjcTerm.TypeName.AbstractDeclarator: Renderable {
 }
 
 extension ObjcTerm.TypeName: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     let specifiersLines = specifiers.render()
     let decl = declarator?.render() ?? ""
     var lines = specifiersLines.reduce([String]()) {
@@ -109,7 +110,7 @@ extension ObjcTerm.TypeName: Renderable {
 }
 
 extension ObjcTerm.Statement: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case let .expr(e):
       return [e.render() + ";"]
@@ -126,7 +127,7 @@ extension ObjcTerm.Statement: Renderable {
 }
 
 extension ObjcTerm.Statement.BlockItem: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case let .decl(d):
       return d.render()
@@ -137,7 +138,7 @@ extension ObjcTerm.Statement.BlockItem: Renderable {
 }
 
 extension ObjcTerm.CDecl: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     let intersectingLines = specifiers.render() + declarators.render()
     var lines = intersectingLines.reduce([String]()) {
       $0.appendFirstToLast($1, separator: " ")
@@ -149,7 +150,7 @@ extension ObjcTerm.CDecl: Renderable {
 
 extension ObjcTerm.CDecl.Specifier: Renderable {
   typealias RenderType = [String]
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case let .storage(storageClass):
       return [storageClass.rawValue]
@@ -164,14 +165,14 @@ extension ObjcTerm.CDecl.Specifier: Renderable {
 }
 
 extension ObjcTerm.Declarator: Renderable {
-  func render() -> String {
+  public func render() -> String {
     ([(pointer?.render() ?? "") + direct.render()] + attributes)
       .joined(separator: " ")
   }
 }
 
 extension ObjcTerm.CDecl.Initializer: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case let .list(l):
       let initializers = l.render(indent: 2).map { $0 + "," }
@@ -183,7 +184,7 @@ extension ObjcTerm.CDecl.Initializer: Renderable {
 }
 
 extension ObjcTerm.CDecl.InitDeclarator: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case let .decl(decl):
       return [decl.render()]
@@ -194,7 +195,7 @@ extension ObjcTerm.CDecl.InitDeclarator: Renderable {
 }
 
 extension ObjcTerm.Declarator.Direct {
-  func render() -> String {
+  public func render() -> String {
     switch self {
     case let .braced(decl):
       return "(\(decl.render()))"
@@ -211,7 +212,7 @@ extension ObjcTerm.Declarator.Direct {
 
 extension ObjcTerm.Pointer: Renderable {
   typealias RenderType = String
-  func render() -> String {
+  public func render() -> String {
     switch self {
     case .last:
       return "*"
@@ -222,7 +223,7 @@ extension ObjcTerm.Pointer: Renderable {
 }
 
 extension ObjcTerm.TypeSpecifier: Renderable {
-  func render() -> [String] {
+  public func render() -> [String] {
     switch self {
     case .enum:
       return []
@@ -241,7 +242,7 @@ extension ObjcTerm.TypeSpecifier: Renderable {
 }
 
 extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
-  func render() -> String {
+  public func render() -> String {
     (spec.render() + [decl.render()])
       .flatMap { $0 }
       .joined(separator: " ")
@@ -249,7 +250,7 @@ extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
 }
 
 extension ObjcTerm.Expr: Renderable {
-  func render() -> String {
+  public func render() -> String {
     switch self {
     case let .cast(to: type, expr):
       return "(\(type))\(expr.render())"
