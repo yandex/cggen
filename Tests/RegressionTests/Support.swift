@@ -144,10 +144,11 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
-private func subprocess(cmd: [String]) throws -> Int32 {
+private func subprocess(cmd: [String], env: [String:String]? = nil) throws -> Int32 {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
   task.arguments = cmd
+  task.environment = env ?? ProcessInfo().environment
   try task.run()
   task.waitUntilExit()
   return task.terminationStatus
@@ -172,7 +173,8 @@ private func clang(out: URL, files: [URL]) throws {
       "CoreServices",
       "-o",
       out.path,
-    ] + files.map { $0.path }
+    ] + files.map { $0.path },
+    env: [:]
   )
   try check(clangCode == 0, Error.compilationError)
 }
