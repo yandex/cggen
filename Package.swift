@@ -12,8 +12,12 @@ let package = Package(
     .executable(name: "cggen", targets: ["cggen"]),
     .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
     .executable(name: "pdf-to-png", targets: ["pdf-to-png"]),
+    .library(name: "cggen-bc-runner", targets: ["BCRunner"])
   ],
   targets: [
+    .target(
+        name: "BCRunner"
+    ),
     .target(
       name: "cggen",
       dependencies: ["ArgParse", "libcggen", "Base"]
