@@ -22,7 +22,11 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "BCRunner"
+      name: "BCCommon"
+    ),
+    .target(
+      name: "BCRunner",
+      dependencies: ["BCCommon"]
     ),
     .target(
       name: "cggen",

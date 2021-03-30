@@ -1,30 +1,19 @@
 import CoreGraphics
 import Foundation
 
-class BytecodeRunner {
+import BCCommon
+
+private class BytecodeRunner {
   struct State {
     var position: UnsafePointer<UInt8>
     var remaining: Int
   }
 
   class Commons {
-    private var subroutes: [State?] = []
+    var subroutes: [UInt8: State] = [:]
     let context: CGContext
     init(_ context: CGContext) {
       self.context = context
-    }
-
-    func addSubroute(_ id: Int, _ subroute: State) {
-      let sz = subroutes.count
-      if sz <= id {
-        subroutes
-          .append(contentsOf: Array(repeating: nil, count: id - sz + 1))
-      }
-      subroutes[id] = subroute
-    }
-
-    func getSubroute(_ id: Int) -> State {
-      subroutes[id]!
     }
   }
 
@@ -40,51 +29,40 @@ class BytecodeRunner {
     currentState.remaining -= count
   }
 
-  func readUInt8() -> UInt8 {
-    let ret = currentState.position.pointee
-    advance(1)
-    return ret
+  func read<T: FixedWidthInteger>(_: T.Type = T.self) -> T {
+    let size = MemoryLayout<T>.size
+    precondition(size >= currentState.remaining)
+    var ret: T = 0
+    memcpy(&ret, currentState.position, size)
+    advance(size)
+    return T(littleEndian: ret)
   }
 
-  func readUint16() -> UInt16 {
-    var ret: UInt16 = 0
-    memcpy(&ret, currentState.position, 2)
-    advance(2)
-    return UInt16(littleEndian: ret)
-  }
-
-  func readUInt32() -> UInt32 {
-    var ret: UInt32 = 0
-    memcpy(&ret, currentState.position, 4)
-    advance(4)
-    return UInt32(littleEndian: ret)
-  }
-
-  func readFloat32() -> Float32 {
-    .init(bitPattern: readUInt32())
+  func readCGFloat() -> CGFloat {
+    .init(Float(bitPattern: read()))
   }
 
   func run() {
     let context = commons.context
     while currentState.remaining > 0 {
-      let command = Command(rawValue: readUInt8())!
+      let command = Command(rawValue: read())
       switch command {
       case .declSubroute:
-        let id = Int(readUInt8())
-        let sz = Int(readUint16())
+        let id = read(UInt8.self)
+        let sz = Int(read(UInt16.self))
         let subroute = State(
           position: currentState.position,
           remaining: sz
         )
-        commons.addSubroute(id, subroute)
+        commons.subroutes[id] = subroute
         advance(sz)
       case .runSubroute:
-        let id = Int(readUInt8())
-        let subroute = commons.getSubroute(id)
+        let id = read(UInt8.self)
+        let subroute = commons.subroutes[id]!
         BytecodeRunner(subroute, commons).run()
       case .move:
-        let x = CGFloat(readFloat32())
-        let y = CGFloat(readFloat32())
+        let x = readCGFloat()
+        let y = readCGFloat()
         let point = CGPoint(x: x, y: y)
         context.move(to: point)
       default:
