@@ -144,7 +144,10 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
-private func subprocess(cmd: [String], env: [String: String]? = nil) throws -> Int32 {
+private func subprocess(
+  cmd: [String],
+  env: [String: String]? = nil
+) throws -> Int32 {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
   task.arguments = cmd

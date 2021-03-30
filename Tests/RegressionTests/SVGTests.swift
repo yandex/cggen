@@ -189,7 +189,7 @@ class SVGCustomCheckTests: XCTestCase {
   func testSvgFromArgs() throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
-          let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> ^\.value)
+          let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> \.value)
     else { throw XCTSkip() }
     print("Checking svg at \(path.path)")
     test(svg: path, size: size)
@@ -247,8 +247,9 @@ private func test(
   XCTAssertNoThrow(try {
     let snapshoting = signpost("snapshot")
 
-    let referenceImg = try signpostRegion("snapshot") { try WKWebViewSnapshoter()
-      .take(sample: path, scale: CGFloat(scale), size: size).cgimg()
+    let referenceImg = try signpostRegion("snapshot") {
+      try WKWebViewSnapshoter()
+        .take(sample: path, scale: CGFloat(scale), size: size).cgimg()
     }
 
     snapshoting()

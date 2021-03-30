@@ -371,18 +371,19 @@ extension CGBlendMode {
 
 extension PDFShading {
   fileprivate func makeGradient() -> (Gradient, PDFGradientDrawingOptions) {
-    let locationAndColors = function.points.map { (point) -> (CGFloat, RGBACGColor) in
-      precondition(point.value.count == 3)
-      let loc = point.arg
-      let components = point.value
-      let color = RGBAColor(
-        red: components[0],
-        green: components[1],
-        blue: components[2],
-        alpha: 1
-      )
-      return (loc, color)
-    }
+    let locationAndColors = function.points
+      .map { (point) -> (CGFloat, RGBACGColor) in
+        precondition(point.value.count == 3)
+        let loc = point.arg
+        let components = point.value
+        let color = RGBAColor(
+          red: components[0],
+          green: components[1],
+          blue: components[2],
+          alpha: 1
+        )
+        return (loc, color)
+      }
     return (Gradient(locationAndColors: locationAndColors), drawingOptions)
   }
 
@@ -425,11 +426,12 @@ extension PDFShading {
   private var drawingOptions: PDFGradientDrawingOptions {
     switch kind {
     case let .axial(axial):
-      return .linear((
-        startPoint: axial.coords.p0,
-        endPoint: axial.coords.p1,
-        options: .init(pdfExtend: axial.extend)
-      )
+      return .linear(
+        (
+          startPoint: axial.coords.p0,
+          endPoint: axial.coords.p1,
+          options: .init(pdfExtend: axial.extend)
+        )
       )
     case let .radial(radial):
       return .radial((
@@ -453,7 +455,10 @@ extension CGGradientDrawingOptions {
 }
 
 extension DrawStep {
-  fileprivate static func fillWithColor(context: Context, rule: CGPathFillRule) -> DrawStep {
+  fileprivate static func fillWithColor(
+    context: Context,
+    rule: CGPathFillRule
+  ) -> DrawStep {
     .composite([
       .fillColor(context.fillColorWithAlpha),
       .fill(rule),

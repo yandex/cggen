@@ -26,7 +26,10 @@ public struct PDFShading {
       function = try PDFFunction(obj: functionObj)
       domain = try dict["Domain"]?.domain() ?? defaultDomain
       extend = try dict["Extend"]?.extend() ?? defaultExtend
-      try check(domain == defaultDomain, Error.unsupported("shading domain \(domain)"))
+      try check(
+        domain == defaultDomain,
+        Error.unsupported("shading domain \(domain)")
+      )
     }
   }
 
@@ -52,7 +55,10 @@ public struct PDFShading {
       function = try PDFFunction(obj: functionObj)
       extend = try dict["Extend"]?.extend() ?? defaultExtend
       domain = try dict["Domain"]?.domain() ?? defaultDomain
-      try check(domain == defaultDomain, Error.unsupported("shading domain \(domain)"))
+      try check(
+        domain == defaultDomain,
+        Error.unsupported("shading domain \(domain)")
+      )
     }
   }
 

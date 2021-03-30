@@ -139,7 +139,7 @@ public struct Parser<D, T> {
   public func pullback<D1>(
     _ kp: WritableKeyPath<D1, D>
   ) -> Parser<D1, T> {
-    pullback(get: ^kp, set: ^kp)
+    pullback(get: kp.getter, set: kp.setter)
   }
 }
 
@@ -175,7 +175,9 @@ extension Parser where D == T? {
   }
 }
 
-public func atIndex<D: RangeReplaceableCollection>(idx: D.Index) -> Parser<D, D.Element> {
+public func atIndex<D: RangeReplaceableCollection>(
+  idx: D.Index
+) -> Parser<D, D.Element> {
   .opt {
     $0.remove(at: idx)
   }
@@ -339,7 +341,9 @@ public func oneOf<D, A>(_ ps: Parser<D, A>...) -> Parser<D, A> {
 }
 
 @inlinable
-public func longestOneOf<D: Collection, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
+public func longestOneOf<D: Collection, A>(
+  _ ps: [Parser<D, A>]
+) -> Parser<D, A> {
   .opt { str in
     let initial = str
     let initialLen = str.count
@@ -348,7 +352,8 @@ public func longestOneOf<D: Collection, A>(_ ps: [Parser<D, A>]) -> Parser<D, A>
     var result: A?
     for p in ps {
       str = initial
-      if case let .success(match) = p.parse(&str), initialLen - str.count > maxlen {
+      if case let .success(match) = p.parse(&str),
+         initialLen - str.count > maxlen {
         maxlen = initialLen - str.count
         result = match
         resultData = str
@@ -501,7 +506,10 @@ public func consume<D: StringProtocol, S: StringProtocol>(
   .init { (data) -> Result<Void, Error> in
     guard data.hasPrefix(s) else {
       return .failure(
-        ParseError.consume(expected: String(s), got: data.prefix(s.count).description)
+        ParseError.consume(
+          expected: String(s),
+          got: data.prefix(s.count).description
+        )
       )
     }
     data.removeFirst(s.count)

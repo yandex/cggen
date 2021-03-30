@@ -14,12 +14,19 @@ let package = Package(
     .executable(name: "pdf-to-png", targets: ["pdf-to-png"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.4.0")),
+    .package(
+      url: "https://github.com/apple/swift-argument-parser",
+      .upToNextMinor(from: "0.4.0")
+    ),
   ],
   targets: [
     .target(
       name: "cggen",
-      dependencies: ["libcggen", "Base", .product(name: "ArgumentParser", package: "swift-argument-parser")]
+      dependencies: [
+        "libcggen",
+        "Base",
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ]
     ),
     .target(
       name: "libcggen",
@@ -27,11 +34,17 @@ let package = Package(
     ),
     .target(
       name: "png-fuzzy-compare",
-      dependencies: [.product(name: "ArgumentParser", package: "swift-argument-parser"), "Base"]
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        "Base",
+      ]
     ),
     .target(
       name: "pdf-to-png",
-      dependencies: [.product(name: "ArgumentParser", package: "swift-argument-parser"), "Base"]
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+        "Base",
+      ]
     ),
     .target(
       name: "Base"

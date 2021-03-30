@@ -46,7 +46,13 @@ enum DrawStep {
   case lineTo(CGPoint)
   case appendRectangle(CGRect)
   case appendRoundedRect(CGRect, rx: CGFloat, ry: CGFloat)
-  case addArc(center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool)
+  case addArc(
+    center: CGPoint,
+    radius: CGFloat,
+    startAngle: CGFloat,
+    endAngle: CGFloat,
+    clockwise: Bool
+  )
   case closePath
   case endPath
   case replacePathWithStrokePath

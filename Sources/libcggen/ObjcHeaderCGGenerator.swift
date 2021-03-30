@@ -21,7 +21,9 @@ extension GenerationParams {
     case .plain:
       return .import(.coreGraphics)
     case .swiftFriendly:
-      return .preprocessorDirective(.import(.doubleQuotes(path: "cggen_support.h")))
+      return .preprocessorDirective(
+        .import(.doubleQuotes(path: "cggen_support.h"))
+      )
     }
   }
 }
@@ -36,7 +38,8 @@ extension GenerationParams {
       let functionDecl = ObjCGen.functionDecl(imageName: camel, prefix: prefix)
       return
         """
-        static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};
+        static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize
+          .width), .height = \(imageSize.height)};
         \(functionDecl)
         """
     case .swiftFriendly:

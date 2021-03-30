@@ -1,3 +1,5 @@
+// swiftformat:disable all
+
 @inlinable
 public func zip<A1, A2, D, R>(
   _ p1: Parser<D, A1>,

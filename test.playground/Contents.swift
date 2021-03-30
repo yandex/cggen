@@ -174,7 +174,8 @@ extension NamedColor {
   var caseHandling: String {
     """
         case .\(name):
-          return SVG.Color(red: \(value.red), green: \(value.green), blue: \(value.blue))
+          return SVG.Color(red: \(value.red), green: \(value
+      .green), blue: \(value.blue))
     """
   }
 }
@@ -196,9 +197,15 @@ public enum SVGColorKeyword: String, CaseIterable {
 let maxColorNameLength = svgColors.map(get(\.name.count)).max(by: <)!
 
 let svgrects = svgColors.enumerated().map {
-  let x = #""\#(($0.offset % 12) * 10)""#.padding(toLength: 5, withPad: " ", startingAt: 0)
-  let y = #""\#(($0.offset / 12) * 10)""#.padding(toLength: 5, withPad: " ", startingAt: 0)
-  let name = #""\#($0.element.name)""#.padding(toLength: maxColorNameLength + 2, withPad: " ", startingAt: 0)
+  let x = #""\#(($0.offset % 12) * 10)""#
+    .padding(toLength: 5, withPad: " ", startingAt: 0)
+  let y = #""\#(($0.offset / 12) * 10)""#
+    .padding(toLength: 5, withPad: " ", startingAt: 0)
+  let name = #""\#($0.element.name)""#.padding(
+    toLength: maxColorNameLength + 2,
+    withPad: " ",
+    startingAt: 0
+  )
   return #"        <rect fill=\#(name) x=\#(x) y=\#(y) width="10" height="10"></rect>"#
 }.joined(separator: "\n")
 
@@ -221,7 +228,10 @@ func len(_ c1: SVG.Color, _ c2: SVG.Color) -> Int {
     .reduce(0, +)
 }
 
-func closest(color: SVG.Color, to list: [NamedColor]) -> (NamedColor, CGColor)? {
+func closest(
+  color: SVG.Color,
+  to list: [NamedColor]
+) -> (NamedColor, CGColor)? {
   let result: (Int, NamedColor?) = list.reduce(into: (.max, nil)) {
     let l = len(color, $1.value)
     if l < $0.0 {
@@ -237,7 +247,8 @@ colorWithName?.1
 
 func zipGen(i: Int) -> String {
   let genericParams = (1...i).map { "A\($0)" }.joined(separator: ", ")
-  let args = (1...i).map { "  _ p\($0): Parser<D, A\($0)>," }.joined(separator: "\n")
+  let args = (1...i).map { "  _ p\($0): Parser<D, A\($0)>," }
+    .joined(separator: "\n")
   let previousZipArgs = (2...i).map { "p\($0)" }.joined(separator: ", ")
   let functioncall = (2...i).map { "$1.\($0 - 2)" }.joined(separator: ", ")
   return """

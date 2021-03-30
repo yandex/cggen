@@ -24,8 +24,8 @@ struct Main: ParsableCommand {
   )
 
   mutating func run() throws {
-    try runCggen(with:
-      Args(
+    try runCggen(
+      with: Args(
         objcHeader: objcHeader,
         objcPrefix: objcPrefix,
         objcImpl: objcImpl,

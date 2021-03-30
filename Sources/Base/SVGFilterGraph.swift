@@ -27,7 +27,10 @@ private enum FilterGraphCreationError: Swift.Error {
 
 extension SVGFilterNode {
   public init(raw: SVG.Filter) throws {
-    let result = try raw.children.reduce(into: FilterPrimitiveProcessAccumulator.initial, processFilterPrimitive(acc:next:))
+    let result = try raw.children.reduce(
+      into: FilterPrimitiveProcessAccumulator.initial,
+      processFilterPrimitive(acc:next:)
+    )
     self = result.prev
   }
 }
@@ -40,7 +43,10 @@ private struct FilterPrimitiveProcessAccumulator {
     FilterPrimitiveProcessAccumulator(prev: .sourceGraphic, preceding: [:])
 }
 
-private func processFilterPrimitive(acc: inout FilterPrimitiveProcessAccumulator, next: SVG.FilterPrimitiveContent) throws {
+private func processFilterPrimitive(
+  acc: inout FilterPrimitiveProcessAccumulator,
+  next: SVG.FilterPrimitiveContent
+) throws {
   let nodeFromInput = node(acc: acc)
   let resultNode: SVGFilterNode
 
@@ -94,7 +100,9 @@ private func singleFromValues(values: [SVG.Float]) throws -> SVG.Float {
   return values[0]
 }
 
-private func colorMatrixFromValues(values: [SVG.Float]) throws -> SVGFilterNode.ColorMatrix {
+private func colorMatrixFromValues(
+  values: [SVG.Float]
+) throws -> SVGFilterNode.ColorMatrix {
   try check(values.count == 20, .colorMatrixHasInvalidValuesCount(values.count))
   let a = values.splitBy(subSize: 5).map(Array.init)
   return .init(
@@ -120,7 +128,9 @@ private func colorMatrixFromValues(values: [SVG.Float]) throws -> SVGFilterNode.
  primitive with the given value for attribute ‘result’. Forward references to
  results are an error.
  */
-private func node(acc: FilterPrimitiveProcessAccumulator) -> (SVG.FilterPrimitiveIn?) throws -> SVGFilterNode { {
+private func node(
+  acc: FilterPrimitiveProcessAccumulator
+) -> (SVG.FilterPrimitiveIn?) throws -> SVGFilterNode { {
   switch $0 {
   case let .predefined(predefined):
     return node(from: predefined)
@@ -131,7 +141,9 @@ private func node(acc: FilterPrimitiveProcessAccumulator) -> (SVG.FilterPrimitiv
   }
 } }
 
-private func node(from predefinedInput: SVG.FilterPrimitiveIn.Predefined) -> SVGFilterNode {
+private func node(
+  from predefinedInput: SVG.FilterPrimitiveIn.Predefined
+) -> SVGFilterNode {
   switch predefinedInput {
   case .backgroundalpha:
     return .backgroundAlpha
@@ -148,7 +160,10 @@ private func node(from predefinedInput: SVG.FilterPrimitiveIn.Predefined) -> SVG
   }
 }
 
-private func check(_ condition: Bool, _ error: FilterGraphCreationError) throws {
+private func check(
+  _ condition: Bool,
+  _ error: FilterGraphCreationError
+) throws {
   if !condition {
     throw error
   }

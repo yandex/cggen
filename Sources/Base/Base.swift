@@ -47,7 +47,8 @@ extension String {
 
   public var lowerCamelCase: String {
     let comps = nameComponents
-    return (comps.first ?? "").lowercased() + comps.dropFirst().map { $0.capitalized }.joined()
+    return (comps.first ?? "").lowercased() + comps.dropFirst()
+      .map { $0.capitalized }.joined()
   }
 
   public var upperCamelCase: String {
@@ -173,7 +174,9 @@ extension Array {
     map { (a, $0) }
   }
 
-  public func concurrentMap<T>(_ transform: (Element) throws -> T) throws -> [T] {
+  public func concurrentMap<T>(
+    _ transform: (Element) throws -> T
+  ) throws -> [T] {
     var result = [T?](repeating: nil, count: count)
     let lock = NSLock()
     var barrier: Error?
@@ -214,7 +217,10 @@ extension Array {
 }
 
 extension Array where Element == String {
-  public func appendFirstToLast(_ strings: [String], separator: String) -> [String] {
+  public func appendFirstToLast(
+    _ strings: [String],
+    separator: String
+  ) -> [String] {
     let mid: String
     switch (last, strings.first) {
     case let (last?, nil):
@@ -253,7 +259,9 @@ extension Sequence {
     }
   }
 
-  public func insertSeparator(_ separator: Element) -> JoinedSequence<[[Self.Element]]> {
+  public func insertSeparator(
+    _ separator: Element
+  ) -> JoinedSequence<[[Self.Element]]> {
     map { [$0] }.joined(separator: [separator])
   }
 }
@@ -296,7 +304,10 @@ extension Result {
   }
 
   @inlinable
-  public func takeAction(onSuccess: (Success) -> Void, onFailure: (Failure) -> Void) {
+  public func takeAction(
+    onSuccess: (Success) -> Void,
+    onFailure: (Failure) -> Void
+  ) {
     switch self {
     case let .success(val): onSuccess(val)
     case let .failure(err): onFailure(err)
@@ -324,7 +335,10 @@ extension Result {
   }
 }
 
-public func partial<A1, A2, T>(_ f: @escaping (A1, A2) throws -> T, arg2: A2) -> (A1) throws -> T {
+public func partial<A1, A2, T>(
+  _ f: @escaping (A1, A2) throws -> T,
+  arg2: A2
+) -> (A1) throws -> T {
   { try f($0, arg2) }
 }
 
@@ -390,24 +404,14 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
   return copy
 }
 
-@inlinable
-public func get<T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
-  { $0[keyPath: kp] }
+extension KeyPath {
+  @inlinable
+  public var getter: (Root) -> Value { { $0[keyPath: self] } }
 }
 
-@inlinable
-public func set<T, U>(_ kp: WritableKeyPath<T, U>) -> (inout T, U) -> Void {
-  { $0[keyPath: kp] = $1 }
-}
-
-@inlinable
-public prefix func ^ <T, U>(_ kp: KeyPath<T, U>) -> (T) -> U {
-  get(kp)
-}
-
-@inlinable
-public prefix func ^ <T, U>(_ kp: WritableKeyPath<T, U>) -> (inout T, U) -> Void {
-  set(kp)
+extension WritableKeyPath {
+  @inlinable
+  public var setter: (inout Root, Value) -> Void { { $0[keyPath: self] = $1 } }
 }
 
 public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {
@@ -418,7 +422,9 @@ public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {
   }
 }
 
-public func waitCallbackOnMT<T>(_ operation: (@escaping (T) -> Void) -> Void) -> T {
+public func waitCallbackOnMT<T>(
+  _ operation: (@escaping (T) -> Void) -> Void
+) -> T {
   let semaphore = DispatchSemaphore(value: 0)
   var result: T?
   operation {

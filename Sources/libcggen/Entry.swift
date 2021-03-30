@@ -57,7 +57,8 @@ public func runCggen(with args: Args) throws {
 
   log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
-  let style = args.generationStyle.flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
+  let style = args.generationStyle
+    .flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
   let params = GenerationParams(
     style: style,
     prefix: objcPrefix,
@@ -67,7 +68,11 @@ public func runCggen(with args: Args) throws {
   if let objcHeaderPath = args.objcHeader {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let fileStr = headerGenerator.generateFile(images: images)
-    try! fileStr.write(toFile: objcHeaderPath, atomically: true, encoding: .utf8)
+    try! fileStr.write(
+      toFile: objcHeaderPath,
+      atomically: true,
+      encoding: .utf8
+    )
     log("Header generated in: \(stopwatch.reset())")
   }
 
@@ -82,7 +87,8 @@ public func runCggen(with args: Args) throws {
     log("Impl generated in: \(stopwatch.reset())")
   }
 
-  if case .swiftFriendly = params.style, let path = args.cggenSupportHeaderPath {
+  if case .swiftFriendly = params.style,
+     let path = args.cggenSupportHeaderPath {
     try! params.cggenSupportHeaderBody.renderText()
       .write(toFile: path, atomically: true, encoding: .utf8)
     log("cggen_support was generated in: \(stopwatch.reset())")
@@ -99,7 +105,11 @@ public func runCggen(with args: Args) throws {
       outputPath: pngOutputPath
     )
     let fileStr = callerGenerator.generateFile(images: images)
-    try! fileStr.write(toFile: objcCallerPath, atomically: true, encoding: .utf8)
+    try! fileStr.write(
+      toFile: objcCallerPath,
+      atomically: true,
+      encoding: .utf8
+    )
     log("Caller generated in: \(stopwatch.reset())")
   }
 }
@@ -128,7 +138,10 @@ private let generator: Generator = {
   }
 }
 
-private func generateImages(from files: [URL], generator: Generator = generator) throws -> [Image] {
+private func generateImages(
+  from files: [URL],
+  generator: Generator = generator
+) throws -> [Image] {
   try zip(files, files.concurrentMap(generator)).map {
     Image(
       name: $0.0.deletingPathExtension().lastPathComponent,

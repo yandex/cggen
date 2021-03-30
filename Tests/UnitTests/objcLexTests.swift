@@ -39,7 +39,12 @@ final class ObjcLexTests: XCTestCase {
     XCTAssertEqual(
       ObjcTerm.CDecl(specifiers: [
         .storage(.typedef),
-        .type(.structOrUnion(.struct, attributes: ["CF_BRIDGED_TYPE(id)"], identifier: "OldT", declList: [])),
+        .type(.structOrUnion(
+          .struct,
+          attributes: ["CF_BRIDGED_TYPE(id)"],
+          identifier: "OldT",
+          declList: []
+        )),
       ], declarators: [
         .decl(.namedInSwift("SwiftT", decl: .pointed(.identifier("NewT")))),
       ]).renderText(),
@@ -56,7 +61,13 @@ final class ObjcLexTests: XCTestCase {
         .type(.structOrUnion(
           .struct, attributes: [], identifier: nil, declList: [
             .init(spec: [.simple(.CGSize)], decl: [.identifier("size")]),
-            .init(spec: [.simple(.void)], decl: [.functionPointer(name: "drawingHandler", .type(.simple(.CGContextRef)))]),
+            .init(
+              spec: [.simple(.void)],
+              decl: [.functionPointer(
+                name: "drawingHandler",
+                .type(.simple(.CGContextRef))
+              )]
+            ),
           ]
         )),
       ], declarators: [

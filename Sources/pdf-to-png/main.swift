@@ -17,7 +17,12 @@ struct Main: ParsableCommand {
   func run() throws {
     files
       .map(URL.init(fileURLWithPath:))
-      .concurrentMap { ($0.deletingPathExtension().lastPathComponent, CGPDFDocument($0 as CFURL)!) }
+      .concurrentMap {
+        (
+          $0.deletingPathExtension().lastPathComponent,
+          CGPDFDocument($0 as CFURL)!
+        )
+      }
       .flatMap { $0.1.pages.appendToAll(a: $0.0) }
       .concurrentMap { ($0.0, $0.1.render(scale: scale.cgfloat)!) }
       .forEach { (name: String, img: CGImage) in
