@@ -7,7 +7,7 @@ public struct PDFSoftMask {
 
     init(obj: PDFObject) throws {
       guard let name = obj.nameVal(),
-        let value = SubType(rawValue: name) else {
+            let value = SubType(rawValue: name) else {
         throw Error.parsingError
       }
       self = value
@@ -19,9 +19,9 @@ public struct PDFSoftMask {
 
   init(obj: PDFObject, xobjFactory: PDFXObject.Factory) throws {
     guard let dict = obj.dictionaryVal(),
-      dict["Type"]?.nameVal() == "Mask",
-      let subType = try dict["S"].map(SubType.init),
-      let transparencyGroup = try dict["G"].map(xobjFactory)
+          dict["Type"]?.nameVal() == "Mask",
+          let subType = try dict["S"].map(SubType.init),
+          let transparencyGroup = try dict["G"].map(xobjFactory)
     else {
       throw Error.parsingError
     }

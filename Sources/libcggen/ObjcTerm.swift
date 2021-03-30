@@ -11,9 +11,15 @@ enum ObjcTerm {
   struct TypeName {
     enum DirectAbstractDeclarator {
       indirect case braced(AbstractDeclarator, NotImplemented)
-      indirect case array(of: DirectAbstractDeclarator? /* , size: assignment-expression */ )
+      indirect case array(
+        of: DirectAbstractDeclarator? /* , size: assignment-expression */
+      )
       indirect case arrayStar(of: DirectAbstractDeclarator?, NotImplemented)
-      indirect case function(return: DirectAbstractDeclarator?, args: Expr, NotImplemented)
+      indirect case function(
+        return: DirectAbstractDeclarator?,
+        args: Expr,
+        NotImplemented
+      )
 
       static let array = DirectAbstractDeclarator.array(of: nil)
     }
@@ -51,7 +57,12 @@ enum ObjcTerm {
     }
 
     case simple(TypeIdentifier)
-    case structOrUnion(StructOrUnion, attributes: [String], identifier: String?, declList: [StructDeclaration])
+    case structOrUnion(
+      StructOrUnion,
+      attributes: [String],
+      identifier: String?,
+      declList: [StructDeclaration]
+    )
     case `enum`(NotImplemented)
   }
 
@@ -121,7 +132,10 @@ enum ObjcTerm {
       )
     }
 
-    public static func array(of type: TypeIdentifier, _ values: [Expr]) -> Expr {
+    public static func array(
+      of type: TypeIdentifier,
+      _ values: [Expr]
+    ) -> Expr {
       .list(
         of: .init(specifiers: [.simple(type)], declarator: .direct(.array)),
         values
@@ -190,7 +204,10 @@ enum ObjcTerm {
 }
 
 extension ObjcTerm.Declarator {
-  static func namedInSwift(_ name: String, decl: ObjcTerm.Declarator) -> ObjcTerm.Declarator {
+  static func namedInSwift(
+    _ name: String,
+    decl: ObjcTerm.Declarator
+  ) -> ObjcTerm.Declarator {
     modified(decl) {
       $0.attributes.append("CF_SWIFT_NAME(\(name))")
     }
@@ -204,7 +221,10 @@ extension ObjcTerm.Declarator {
     .init(pointer: nil, direct: .braced(decl), attrs: [])
   }
 
-  static func parametrList(_ decl: ObjcTerm.Declarator, params: [ObjcTerm.CDecl.Specifier]) -> ObjcTerm.Declarator {
+  static func parametrList(
+    _ decl: ObjcTerm.Declarator,
+    params: [ObjcTerm.CDecl.Specifier]
+  ) -> ObjcTerm.Declarator {
     .init(pointer: nil, direct: .parametrList(decl, params), attrs: [])
   }
 
@@ -372,10 +392,10 @@ extension ObjcTerm {
         identifier: "\(cPref)\(namespace)", declList: []
       )),
     ], declarators: [
-        .decl(.namedInSwift(
-          namespace,
-          decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
-        )),
+      .decl(.namedInSwift(
+        namespace,
+        decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
+      )),
     ]))
   }
 }

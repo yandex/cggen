@@ -15,19 +15,21 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   }
 }
 
-private extension GenerationParams {
-  var imports: ObjcTerm {
+extension GenerationParams {
+  fileprivate var imports: ObjcTerm {
     switch style {
     case .plain:
       return .import(.coreGraphics)
     case .swiftFriendly:
-      return .preprocessorDirective(.import(.doubleQuotes(path: "cggen_support.h")))
+      return .preprocessorDirective(
+        .import(.doubleQuotes(path: "cggen_support.h"))
+      )
     }
   }
 }
 
-private extension GenerationParams {
-  func description(for image: Image) -> String {
+extension GenerationParams {
+  fileprivate func description(for image: Image) -> String {
     let camel = image.name.upperCamelCase
     let imageSize = image.route.boundingRect.size
 
@@ -36,7 +38,8 @@ private extension GenerationParams {
       let functionDecl = ObjCGen.functionDecl(imageName: camel, prefix: prefix)
       return
         """
-        static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize.width), .height = \(imageSize.height)};
+        static const CGSize k\(prefix)\(camel)ImageSize = (CGSize){.width = \(imageSize
+          .width), .height = \(imageSize.height)};
         \(functionDecl)
         """
     case .swiftFriendly:

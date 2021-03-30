@@ -175,7 +175,8 @@ extension CGAffineTransform {
 
   @inlinable
   public static func invertYAxis(height: CGFloat) -> CGAffineTransform {
-    CGAffineTransform(scaleX: 1, y: -1).concatenating(.init(translationX: 0, y: height))
+    CGAffineTransform(scaleX: 1, y: -1)
+      .concatenating(.init(translationX: 0, y: height))
   }
 }
 
@@ -268,7 +269,12 @@ extension CGImage {
   }
 
   public func write(fileURL: CFURL) throws {
-    guard let destination = CGImageDestinationCreateWithURL(fileURL, kUTTypePNG, 1, nil)
+    guard let destination = CGImageDestinationCreateWithURL(
+      fileURL,
+      kUTTypePNG,
+      1,
+      nil
+    )
     else { throw CGImageWriteError.failedDestinationFinalize }
     CGImageDestinationAddImage(destination, self, nil)
     guard CGImageDestinationFinalize(destination)

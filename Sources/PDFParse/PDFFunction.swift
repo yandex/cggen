@@ -27,23 +27,23 @@ public struct PDFFunction {
 
   init(obj: PDFObject) throws {
     guard let dict = obj.dictFromDictOrStream,
-      let functionTypeRaw = dict["FunctionType"]?.intValue,
-      let functionType = FunctionType(rawValue: functionTypeRaw)
+          let functionTypeRaw = dict["FunctionType"]?.intValue,
+          let functionType = FunctionType(rawValue: functionTypeRaw)
     else { throw Error.parsingError }
     guard PDFFunction.supportedTypes.contains(functionType)
     else { throw Error.unsupported("function type \(functionType)") }
 
     guard case let .stream(stream) = obj,
-      let rangeObj = stream.dict["Range"],
-      case let .array(rangeArray) = rangeObj,
-      let rangeRaw = rangeArray.map({ $0.realFromIntOrReal() }).unwrap(),
-      let sizeObj = stream.dict["Size"],
-      let size = sizeObj.integerArray(),
-      let length = stream.dict["Length"]?.intValue,
-      let domainObj = stream.dict["Domain"],
-      case let .array(domainArray) = domainObj,
-      let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
-      let bitsPerSample = stream.dict["BitsPerSample"]?.intValue
+          let rangeObj = stream.dict["Range"],
+          case let .array(rangeArray) = rangeObj,
+          let rangeRaw = rangeArray.map({ $0.realFromIntOrReal() }).unwrap(),
+          let sizeObj = stream.dict["Size"],
+          let size = sizeObj.integerArray(),
+          let length = stream.dict["Length"]?.intValue,
+          let domainObj = stream.dict["Domain"],
+          case let .array(domainArray) = domainObj,
+          let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
+          let bitsPerSample = stream.dict["BitsPerSample"]?.intValue
     else { throw Error.parsingError }
     precondition(stream.format == .raw)
 

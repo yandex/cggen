@@ -16,8 +16,8 @@ public struct PDFShading {
 
     init(dict: PDFDictionary) throws {
       guard let coords = dict["Coords"]?.floatArray(),
-        let functionObj = dict["Function"],
-        coords.count == 4
+            let functionObj = dict["Function"],
+            coords.count == 4
       else { throw Error.parsingError }
       self.coords = (
         p0: CGPoint(x: coords[0], y: coords[1]),
@@ -26,7 +26,10 @@ public struct PDFShading {
       function = try PDFFunction(obj: functionObj)
       domain = try dict["Domain"]?.domain() ?? defaultDomain
       extend = try dict["Extend"]?.extend() ?? defaultExtend
-      try check(domain == defaultDomain, Error.unsupported("shading domain \(domain)"))
+      try check(
+        domain == defaultDomain,
+        Error.unsupported("shading domain \(domain)")
+      )
     }
   }
 
@@ -40,8 +43,8 @@ public struct PDFShading {
 
     init(dict: PDFDictionary) throws {
       guard let coords = dict["Coords"]?.floatArray(),
-        let functionObj = dict["Function"],
-        coords.count == 6
+            let functionObj = dict["Function"],
+            coords.count == 6
       else { throw Error.parsingError }
       self.coords = (
         p0: CGPoint(x: coords[0], y: coords[1]),
@@ -52,7 +55,10 @@ public struct PDFShading {
       function = try PDFFunction(obj: functionObj)
       extend = try dict["Extend"]?.extend() ?? defaultExtend
       domain = try dict["Domain"]?.domain() ?? defaultDomain
-      try check(domain == defaultDomain, Error.unsupported("shading domain \(domain)"))
+      try check(
+        domain == defaultDomain,
+        Error.unsupported("shading domain \(domain)")
+      )
     }
   }
 
@@ -66,9 +72,9 @@ public struct PDFShading {
 
   init(obj: PDFObject) throws {
     guard case let .dictionary(dict) = obj,
-      case let .integer(typeInt)? = dict["ShadingType"],
-      let type = ShadingType(rawValue: typeInt),
-      let colorSpace = dict["ColorSpace"]
+          case let .integer(typeInt)? = dict["ShadingType"],
+          let type = ShadingType(rawValue: typeInt),
+          let colorSpace = dict["ColorSpace"]
     else { throw Error.parsingError }
 
     self.colorSpace = colorSpace
@@ -99,32 +105,32 @@ public enum ShadingType: Int {
   case tensorProductPatchMeshes
 }
 
-private extension PDFObject {
-  func extend() throws -> PDFShading.Extend {
+extension PDFObject {
+  fileprivate func extend() throws -> PDFShading.Extend {
     guard case let .array(array) = self,
-      array.count == 2,
-      case let .boolean(before) = array[0],
-      case let .boolean(after) = array[1]
+          array.count == 2,
+          case let .boolean(before) = array[0],
+          case let .boolean(after) = array[1]
     else { throw Error.parsingError }
     return (before: before != 0, after: after != 0)
   }
 
-  func domain() throws -> PDFShading.Domain {
+  fileprivate func domain() throws -> PDFShading.Domain {
     guard let array = floatArray(),
-      array.count == 2 else { throw Error.parsingError }
+          array.count == 2 else { throw Error.parsingError }
     return (array[0], array[1])
   }
 
-  func floatArray() -> [CGFloat]? {
+  fileprivate func floatArray() -> [CGFloat]? {
     guard case let .array(array) = self,
-      let a = array.map({ $0.realFromIntOrReal() }).unwrap()
+          let a = array.map({ $0.realFromIntOrReal() }).unwrap()
     else { return nil }
     return a
   }
 
-  func boolArray() -> [Bool]? {
+  private func boolArray() -> [Bool]? {
     guard case let .array(array) = self,
-      let a = array.map({ $0.boolValue }).unwrap()
+          let a = array.map({ $0.boolValue }).unwrap()
     else { return nil }
     return a
   }

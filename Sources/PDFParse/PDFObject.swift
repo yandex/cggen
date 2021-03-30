@@ -62,7 +62,7 @@ internal enum PDFObject {
   }
 
   static func processDict(_ dict: CGPDFDictionaryRef) -> [String: PDFObject] {
-    var result: NSMutableDictionary = NSMutableDictionary()
+    var result = NSMutableDictionary()
     CGPDFDictionaryApplyFunction(dict, { key, obj, info in
       let result = info!.load(as: NSMutableDictionary.self)
       let key = String(cString: key)
@@ -137,25 +137,25 @@ internal enum PDFObject {
   }
 }
 
-internal extension CGRect {
-  static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
+extension CGRect {
+  internal static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
     guard array.count == 4, let x = array[0].realFromIntOrReal(),
-      let y = array[1].realFromIntOrReal(),
-      let w = array[2].realFromIntOrReal(),
-      let h = array[3].realFromIntOrReal() else { return nil }
+          let y = array[1].realFromIntOrReal(),
+          let w = array[2].realFromIntOrReal(),
+          let h = array[3].realFromIntOrReal() else { return nil }
     return self.init(x: x, y: y, width: w, height: h)
   }
 }
 
-internal extension CGAffineTransform {
-  init?(pdfArray array: [PDFObject]) {
+extension CGAffineTransform {
+  internal init?(pdfArray array: [PDFObject]) {
     guard array.count == 6,
-      let a = array[0].realFromIntOrReal(),
-      let b = array[1].realFromIntOrReal(),
-      let c = array[2].realFromIntOrReal(),
-      let d = array[3].realFromIntOrReal(),
-      let e = array[4].realFromIntOrReal(),
-      let f = array[5].realFromIntOrReal() else { return nil }
+          let a = array[0].realFromIntOrReal(),
+          let b = array[1].realFromIntOrReal(),
+          let c = array[2].realFromIntOrReal(),
+          let d = array[3].realFromIntOrReal(),
+          let e = array[4].realFromIntOrReal(),
+          let f = array[5].realFromIntOrReal() else { return nil }
     self.init(a: a, b: b, c: c, d: d, tx: e, ty: f)
   }
 }

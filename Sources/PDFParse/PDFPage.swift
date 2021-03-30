@@ -15,7 +15,7 @@ public struct PDFPage {
       .parse(stream: CGPDFContentStreamCreateWithPage(page))
 
     guard let pageDictRaw = page.dictionary,
-      let pageDictionary = PDFObject.processDict(pageDictRaw)["Resources"]
+          let pageDictionary = PDFObject.processDict(pageDictRaw)["Resources"]
     else { return nil }
     let resources = PDFResources(obj: pageDictionary, parentStream: stream)!
 

@@ -117,7 +117,10 @@ extension ObjcTerm.Statement: Renderable {
       return ["{"] + list.flatMap { $0.render(indent: 2) } + ["}"]
     case let .for(init: initDecl, cond: cond, incr: incr, body: body):
       return ["for ("].appendFirstToLast(initDecl.render(), separator: "")
-        .appendFirstToLast(["\(cond.render()); \(incr.render()))"], separator: " ")
+        .appendFirstToLast(
+          ["\(cond.render()); \(incr.render()))"],
+          separator: " "
+        )
         .appendFirstToLast(body.render(), separator: " ")
     case let .multiple(stmnts):
       return stmnts.flatMap { $0.render() }
@@ -188,7 +191,8 @@ extension ObjcTerm.CDecl.InitDeclarator: Renderable {
     case let .decl(decl):
       return [decl.render()]
     case let .declinit(decl, initializer):
-      return [decl.render()].appendFirstToLast(initializer.render(), separator: " = ")
+      return [decl.render()]
+        .appendFirstToLast(initializer.render(), separator: " = ")
     }
   }
 }

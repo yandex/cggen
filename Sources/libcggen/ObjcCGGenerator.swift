@@ -19,7 +19,10 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   func generateImageFunction(image: Image) -> String {
     var lines: [String] = []
     lines += funcStart(imageName: image.name)
-    lines += functionBodyForDrawRoute(route: image.route, contextName: "context")
+    lines += functionBodyForDrawRoute(
+      route: image.route,
+      contextName: "context"
+    )
     lines += [
       "  CGColorSpaceRelease(\(rgbColorSpaceVarName));",
       "}",
@@ -34,15 +37,23 @@ struct ObjcCGGenerator: CoreGraphicsGenerator {
   }
 }
 
-private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> [String] {
-  let subroutes = route.subroutes.flatMap { (key: String, route: DrawRoute) -> [String] in
-    let contextName = "context_\(acquireUniqID())"
-    let blockName = subrouteBlockName(subrouteName: key)
-    let blockStart = "void (^\(blockName))(CGContextRef) = ^(CGContextRef \(contextName)) {"
-    let blockEnd = "};"
-    let commandsLines = functionBodyForDrawRoute(route: route, contextName: contextName)
-    return ([blockStart] + commandsLines + [blockEnd]).map { "  \($0)" }
-  }
+private func functionBodyForDrawRoute(
+  route: DrawRoute,
+  contextName: String
+) -> [String] {
+  let subroutes = route.subroutes
+    .flatMap { (key: String, route: DrawRoute) -> [String] in
+      let contextName = "context_\(acquireUniqID())"
+      let blockName = subrouteBlockName(subrouteName: key)
+      let blockStart =
+        "void (^\(blockName))(CGContextRef) = ^(CGContextRef \(contextName)) {"
+      let blockEnd = "};"
+      let commandsLines = functionBodyForDrawRoute(
+        route: route,
+        contextName: contextName
+      )
+      return ([blockStart] + commandsLines + [blockEnd]).map { "  \($0)" }
+    }
   let generator = DrawStepToObjcCommandGenerator(
     uniqIDProvider: acquireUniqID,
     contextVarName: contextName,
@@ -62,7 +73,10 @@ private func functionBodyForDrawRoute(route: DrawRoute, contextName: String) -> 
 extension ObjcCGGenerator {
   private func funcStart(imageName: String) -> [String] {
     [
-      params.style.drawingHandlerPrefix + ObjCGen.functionDef(imageName: imageName.upperCamelCase, prefix: params.prefix),
+      params.style.drawingHandlerPrefix + ObjCGen.functionDef(
+        imageName: imageName.upperCamelCase,
+        prefix: params.prefix
+      ),
       "  CGColorSpaceRef \(rgbColorSpaceVarName) = CGColorSpaceCreateDeviceRGB();",
       "  CGContextSetFillColorSpace(context, \(rgbColorSpaceVarName));",
       "  CGContextSetStrokeColorSpace(context, \(rgbColorSpaceVarName));",
@@ -70,8 +84,8 @@ extension ObjcCGGenerator {
   }
 }
 
-private extension GenerationParams.Style {
-  var drawingHandlerPrefix: String {
+extension GenerationParams.Style {
+  fileprivate var drawingHandlerPrefix: String {
     switch self {
     case .plain:
       return ""
@@ -81,12 +95,12 @@ private extension GenerationParams.Style {
   }
 }
 
-private extension GenerationParams {
+extension GenerationParams {
   private func funcName(imageName: String) -> String {
     ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
   }
 
-  func descriptorLines(for image: Image) -> [String] {
+  fileprivate func descriptorLines(for image: Image) -> [String] {
     switch style {
     case .plain:
       return []

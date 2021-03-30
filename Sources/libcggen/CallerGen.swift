@@ -54,7 +54,8 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   }
 
   func filePreamble() -> String {
-    filePreambleNew().render(indent: 2).joined(separator: "\n") + filePreambleLegacy()
+    filePreambleNew().render(indent: 2)
+      .joined(separator: "\n") + filePreambleLegacy()
   }
 
   func generateImageFunction(image: Image) -> String {
