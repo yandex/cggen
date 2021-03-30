@@ -87,9 +87,9 @@ private class XMLComposer: NSObject, XMLParserDelegate {
   }
 
   func parser(
-    _ parser: XMLParser,
+    _: XMLParser,
     didStartElement tag: String,
-    namespaceURI: String?,
+    namespaceURI _: String?,
     qualifiedName _: String?,
     attributes: [String: String] = [:]
   ) {
@@ -105,7 +105,7 @@ private class XMLComposer: NSObject, XMLParserDelegate {
     qualifiedName _: String?
   ) {
     guard let completeElement = elementsStack.popLast(),
-      completeElement.tag == elementName else {
+          completeElement.tag == elementName else {
       return stop(parser, .elementEndsButDidntStart(name: elementName))
     }
     elementsStack.modifyLast { $0.children.append(.el(completeElement)) }
@@ -117,10 +117,10 @@ private class XMLComposer: NSObject, XMLParserDelegate {
 
   func parserDidEndDocument(_ parser: XMLParser) {
     guard let root = elementsStack.popLast(),
-      elementsStack.count == 0,
-      root.tag == XMLComposer.rootTag,
-      root.children.count == 1,
-      let rootXML = root.children.first else {
+          elementsStack.count == 0,
+          root.tag == XMLComposer.rootTag,
+          root.children.count == 1,
+          let rootXML = root.children.first else {
       return stop(parser, .unexpectedEOF)
     }
     xml = .success(rootXML)

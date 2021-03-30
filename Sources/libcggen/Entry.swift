@@ -89,8 +89,8 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcCallerPath = args.objcCallerPath,
-    let pngOutputPath = args.callerPngOutputPath,
-    let headerImportPath = args.objcHeaderImportPath {
+     let pngOutputPath = args.callerPngOutputPath,
+     let headerImportPath = args.objcHeaderImportPath {
     let callerGenerator = ObjcCallerGen(
       headerImportPath: headerImportPath,
       scale: args.callerScale.cgfloat,

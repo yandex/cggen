@@ -1083,7 +1083,7 @@ public enum SVGParser {
     let childParser = Parser<ArraySlice<XML>, Child>.next { child.run($0) }
     let childrenParser: Parser<[XML], [Child]> =
       (childParser* <<~ endof())
-      .pullback(get: { $0[...] }, set: { $0 = Array($1) })
+        .pullback(get: { $0[...] }, set: { $0 = Array($1) })
     let attrs = (attributes <<~ endof())
     return zip(
       attrs.pullback(\XML.Element.attrs),

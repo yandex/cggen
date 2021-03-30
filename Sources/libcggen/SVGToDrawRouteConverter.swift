@@ -261,8 +261,8 @@ private struct Context {
         return shape
       }
       if case let .use(use) = $0,
-        let ref = use.xlinkHref,
-        let shape = defenitions[ref]?.firstAndOnly?.shape {
+         let ref = use.xlinkHref,
+         let shape = defenitions[ref]?.firstAndOnly?.shape {
         return shape
       }
       throw Err.invalidElementInClipPath($0)
@@ -431,8 +431,8 @@ private func pathConstruction(from polygon: SVG.PolygonData) -> (DrawStep, bound
 
 private func pathConstruction(from ellipse: SVG.EllipseData) -> (DrawStep, boundingBox: CGRect)? {
   guard let cx = ellipse.cx, let cy = ellipse.cy,
-    let rx = ellipse.rx, let ry = ellipse.ry,
-    rx.number != 0, ry.number != 0 else { return nil }
+        let rx = ellipse.rx, let ry = ellipse.ry,
+        rx.number != 0, ry.number != 0 else { return nil }
   let rect = CGRect(
     center: CGPoint(x: cx.number.cgfloat, y: cy.number.cgfloat),
     width: rx.number.cgfloat * 2,
@@ -1088,7 +1088,7 @@ extension DrawStep {
 extension SVGFilterNode {
   fileprivate var simpleShadow: Shadow? {
     guard case let .blend(in1: .sourceGraphic, in2: preShadow, .normal) = self,
-      var shadow = preShadow.meaningfulPart
+          var shadow = preShadow.meaningfulPart
     else { return nil }
 
     var offset: CGSize?
@@ -1164,9 +1164,9 @@ extension SVGFilterNode {
 extension SVGFilterNode.ColorMatrix {
   var ifAlphaMultiplication: SVG.Float? {
     guard r1.components.allSatisfy({ $0 == 0 }),
-      r2.components.allSatisfy({ $0 == 0 }),
-      r3.components.allSatisfy({ $0 == 0 }),
-      r4.c1 == 0, r4.c2 == 0, r4.c3 == 0, r4.c5 == 0 else { return nil }
+          r2.components.allSatisfy({ $0 == 0 }),
+          r3.components.allSatisfy({ $0 == 0 }),
+          r4.c1 == 0, r4.c2 == 0, r4.c3 == 0, r4.c5 == 0 else { return nil }
     return r4.c4
   }
 }

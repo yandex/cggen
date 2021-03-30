@@ -70,8 +70,8 @@ extension ObjcCGGenerator {
   }
 }
 
-private extension GenerationParams.Style {
-  var drawingHandlerPrefix: String {
+extension GenerationParams.Style {
+  fileprivate var drawingHandlerPrefix: String {
     switch self {
     case .plain:
       return ""
@@ -81,12 +81,12 @@ private extension GenerationParams.Style {
   }
 }
 
-private extension GenerationParams {
+extension GenerationParams {
   private func funcName(imageName: String) -> String {
     ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
   }
 
-  func descriptorLines(for image: Image) -> [String] {
+  fileprivate func descriptorLines(for image: Image) -> [String] {
     switch style {
     case .plain:
       return []

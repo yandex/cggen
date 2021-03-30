@@ -15,8 +15,8 @@ extension NSImage {
   func cgimg() throws -> CGImage {
     // Sometimes NSImage.cgImage has different size than underlying cgimage
     if representations.count == 1,
-      let repr = representations.first,
-      repr.className == "NSCGImageSnapshotRep" {
+       let repr = representations.first,
+       repr.className == "NSCGImageSnapshotRep" {
       return try repr.cgImage(forProposedRect: nil, context: nil, hints: nil) !!
         Error.cgimageCreationFailed
     }
@@ -144,7 +144,7 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
-private func subprocess(cmd: [String], env: [String:String]? = nil) throws -> Int32 {
+private func subprocess(cmd: [String], env: [String: String]? = nil) throws -> Int32 {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
   task.arguments = cmd
@@ -185,7 +185,7 @@ private func checkStatus(bin: URL) throws {
 }
 
 extension FileManager {
-  fileprivate func contentsOfDirectory(at url: URL) throws -> [URL] {
+  private func contentsOfDirectory(at url: URL) throws -> [URL] {
     try contentsOfDirectory(
       at: url,
       includingPropertiesForKeys: nil,

@@ -196,9 +196,9 @@ public enum SVGColorKeyword: String, CaseIterable {
 let maxColorNameLength = svgColors.map(get(\.name.count)).max(by: <)!
 
 let svgrects = svgColors.enumerated().map {
-  let x = #""\#(($0.offset % 12) * 10)""# .padding(toLength: 5, withPad: " ", startingAt: 0)
-  let y = #""\#(($0.offset / 12) * 10)""# .padding(toLength: 5, withPad: " ", startingAt: 0)
-  let name = #""\#($0.element.name)""# .padding(toLength: maxColorNameLength + 2, withPad: " ", startingAt: 0)
+  let x = #""\#(($0.offset % 12) * 10)""#.padding(toLength: 5, withPad: " ", startingAt: 0)
+  let y = #""\#(($0.offset / 12) * 10)""#.padding(toLength: 5, withPad: " ", startingAt: 0)
+  let name = #""\#($0.element.name)""#.padding(toLength: maxColorNameLength + 2, withPad: " ", startingAt: 0)
   return #"        <rect fill=\#(name) x=\#(x) y=\#(y) width="10" height="10"></rect>"#
 }.joined(separator: "\n")
 

@@ -15,8 +15,8 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   }
 }
 
-private extension GenerationParams {
-  var imports: ObjcTerm {
+extension GenerationParams {
+  fileprivate var imports: ObjcTerm {
     switch style {
     case .plain:
       return .import(.coreGraphics)
@@ -26,8 +26,8 @@ private extension GenerationParams {
   }
 }
 
-private extension GenerationParams {
-  func description(for image: Image) -> String {
+extension GenerationParams {
+  fileprivate func description(for image: Image) -> String {
     let camel = image.name.upperCamelCase
     let imageSize = image.route.boundingRect.size
 

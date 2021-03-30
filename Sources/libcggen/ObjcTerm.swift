@@ -372,10 +372,10 @@ extension ObjcTerm {
         identifier: "\(cPref)\(namespace)", declList: []
       )),
     ], declarators: [
-        .decl(.namedInSwift(
-          namespace,
-          decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
-        )),
+      .decl(.namedInSwift(
+        namespace,
+        decl: .pointed(.identifier("\(cPref)\(namespace)Ref"))
+      )),
     ]))
   }
 }

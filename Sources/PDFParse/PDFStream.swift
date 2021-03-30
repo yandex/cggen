@@ -8,8 +8,8 @@ struct PDFStream {
 
   init?(obj: CGPDFObjectRef) {
     guard let raw = obj.stream,
-      let (data, format) = raw.dataAndFormat,
-      let dict = raw.dictionary
+          let (data, format) = raw.dataAndFormat,
+          let dict = raw.dictionary
     else { return nil }
     self.raw = raw
     self.data = data
@@ -22,8 +22,8 @@ struct PDFStream {
   }
 }
 
-private extension CGPDFObjectRef {
-  var stream: CGPDFStreamRef? {
+extension CGPDFObjectRef {
+  fileprivate var stream: CGPDFStreamRef? {
     var streamPtr: CGPDFStreamRef?
     guard CGPDFObjectGetValue(self, .stream, &streamPtr) else {
       return nil
@@ -32,8 +32,8 @@ private extension CGPDFObjectRef {
   }
 }
 
-private extension CGPDFStreamRef {
-  var dataAndFormat: (Data, CGPDFDataFormat)? {
+extension CGPDFStreamRef {
+  fileprivate var dataAndFormat: (Data, CGPDFDataFormat)? {
     var format = CGPDFDataFormat.raw
     guard let data = CGPDFStreamCopyData(self, &format) as Data? else {
       return nil
@@ -41,7 +41,7 @@ private extension CGPDFStreamRef {
     return (data, format)
   }
 
-  var dictionary: CGPDFDictionaryRef? {
+  fileprivate var dictionary: CGPDFDictionaryRef? {
     CGPDFStreamGetDictionary(self)
   }
 }
