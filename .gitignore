@@ -7,3 +7,5 @@ timeline.xctimeline
 /build
 *.pyc
 .swiftpm
+.idea
+Package.resolved

@@ -1,35 +1,49 @@
+import ArgumentParser
+import Base
 import Foundation
 
-import ArgParse
-import Base
-
-struct Args {
-  let firstImagePath: String
-  let secondImagePath: String
-  let imageDiffOutput: String?
-  let asciiDiffOutput: String?
-}
-
-func ParseArgs() -> Args {
-  let parser = ArgParser(
-    helptext: "Tool for generationg CoreGraphics code from vector images in pdf format",
+struct Main: ParsableCommand {
+  static let configuration = CommandConfiguration(
+    commandName: "png-fuzzy-compare",
+    abstract: "Tool for generationg CoreGraphics code from vector images in pdf format",
     version: "0.1"
   )
-  let firstImagePathKey = "first-image"
-  let secondImagePathKey = "second-image"
-  let imageDiffOutputKey = "output-image-diff"
-  let asciiDiffOutputKey = "output-ascii-diff"
-  parser.newString(firstImagePathKey)
-  parser.newString(secondImagePathKey)
-  parser.newString(imageDiffOutputKey)
-  parser.newString(asciiDiffOutputKey)
-  parser.parse()
-  return Args(
-    firstImagePath: parser.string(at: firstImagePathKey)!,
-    secondImagePath: parser.string(at: secondImagePathKey)!,
-    imageDiffOutput: parser.string(at: imageDiffOutputKey),
-    asciiDiffOutput: parser.string(at: asciiDiffOutputKey)
-  )
+
+  @Option var firstImage: String
+  @Option var secondImage: String
+  @Option var outputImageDiff: String?
+  @Option var outputAsciiDiff: String?
+
+  func run() throws {
+    let img1 = try! readImage(filePath: firstImage)
+    let img2 = try! readImage(filePath: secondImage)
+
+    if let diffOutputImage = outputImageDiff {
+      let url = URL(fileURLWithPath: diffOutputImage) as CFURL
+      try! CGImage.diff(lhs: img1, rhs: img2).write(fileURL: url)
+    }
+
+    let buffer1 = RGBABuffer(image: img1)
+    let buffer2 = RGBABuffer(image: img2)
+
+    if let diffOutputAscii = outputAsciiDiff {
+      let url = URL(fileURLWithPath: diffOutputAscii)
+      try! asciiDiff(buffer1: buffer1, buffer2: buffer2)
+        .data(using: .utf8)!
+        .write(to: url)
+    }
+
+    let rw1 = buffer1.pixels
+      .flatMap { $0 }
+      .flatMap { $0.normComponents }
+
+    let rw2 = buffer2.pixels
+      .flatMap { $0 }
+      .flatMap { $0.normComponents }
+
+    let ziped = zip(rw1, rw2).lazy.map(-)
+    print(ziped.rootMeanSquare())
+  }
 }
 
 enum ReadImageError: Error {
@@ -89,36 +103,4 @@ func asciiDiff(buffer1: RGBABuffer, buffer2: RGBABuffer) -> String {
     .joined(separator: "\n")
 }
 
-func main(args: Args) -> Int32 {
-  let img1 = try! readImage(filePath: args.firstImagePath)
-  let img2 = try! readImage(filePath: args.secondImagePath)
-
-  if let diffOutputImage = args.imageDiffOutput {
-    let url = URL(fileURLWithPath: diffOutputImage) as CFURL
-    try! CGImage.diff(lhs: img1, rhs: img2).write(fileURL: url)
-  }
-
-  let buffer1 = RGBABuffer(image: img1)
-  let buffer2 = RGBABuffer(image: img2)
-
-  if let diffOutputAscii = args.asciiDiffOutput {
-    let url = URL(fileURLWithPath: diffOutputAscii)
-    try! asciiDiff(buffer1: buffer1, buffer2: buffer2)
-      .data(using: .utf8)!
-      .write(to: url)
-  }
-
-  let rw1 = buffer1.pixels
-    .flatMap { $0 }
-    .flatMap { $0.normComponents }
-
-  let rw2 = buffer2.pixels
-    .flatMap { $0 }
-    .flatMap { $0.normComponents }
-
-  let ziped = zip(rw1, rw2).lazy.map(-)
-  print(ziped.rootMeanSquare())
-  return 0
-}
-
-exit(main(args: ParseArgs()))
+Main.main()
