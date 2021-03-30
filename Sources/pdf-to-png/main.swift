@@ -1,6 +1,7 @@
 import ArgumentParser
-import Base
 import Foundation
+
+import Base
 
 struct Main: ParsableCommand {
   static let configuration = CommandConfiguration(

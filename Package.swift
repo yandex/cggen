@@ -19,7 +19,7 @@ let package = Package(
   targets: [
     .target(
       name: "cggen",
-      dependencies: ["libcggen", "Base", .product(name: "ArgumentParser", package: "swift-argument-parser"), ]
+      dependencies: ["libcggen", "Base", .product(name: "ArgumentParser", package: "swift-argument-parser")]
     ),
     .target(
       name: "libcggen",

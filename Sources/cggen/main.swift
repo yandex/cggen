@@ -1,6 +1,6 @@
 import ArgumentParser
-import Base
 import Foundation
+
 import libcggen
 
 struct Main: ParsableCommand {
@@ -23,21 +23,22 @@ struct Main: ParsableCommand {
     version: "0.1"
   )
 
-  public mutating func run() throws {
-    try runCggen(with: Args(
-      objcHeader: objcHeader,
-      objcPrefix: objcPrefix,
-      objcImpl: objcImpl,
-      objcHeaderImportPath: objcHeaderImportPath,
-      objcCallerPath: objcCallerPath,
-      callerScale: callerScale,
-      callerPngOutputPath: callerPngOutput,
-      generationStyle: generationStyle,
-      cggenSupportHeaderPath: cggenSupportHeaderPath,
-      module: moduleName,
-      verbose: verbose,
-      files: files
-    )
+  mutating func run() throws {
+    try runCggen(with:
+      Args(
+        objcHeader: objcHeader,
+        objcPrefix: objcPrefix,
+        objcImpl: objcImpl,
+        objcHeaderImportPath: objcHeaderImportPath,
+        objcCallerPath: objcCallerPath,
+        callerScale: callerScale,
+        callerPngOutputPath: callerPngOutput,
+        generationStyle: generationStyle,
+        cggenSupportHeaderPath: cggenSupportHeaderPath,
+        module: moduleName,
+        verbose: verbose,
+        files: files
+      )
     )
   }
 }
