@@ -12,6 +12,7 @@ let package = Package(
     .executable(name: "cggen", targets: ["cggen"]),
     .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
     .executable(name: "pdf-to-png", targets: ["pdf-to-png"]),
+    .library(name: "cggen-bc-runner", targets: ["BCRunner"]),
   ],
   dependencies: [
     .package(
@@ -20,6 +21,13 @@ let package = Package(
     ),
   ],
   targets: [
+    .target(
+      name: "BCCommon"
+    ),
+    .target(
+      name: "BCRunner",
+      dependencies: ["BCCommon"]
+    ),
     .target(
       name: "cggen",
       dependencies: [
