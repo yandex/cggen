@@ -77,7 +77,8 @@ struct DrawStepToObjcCommandGenerator {
     case let .dash(pattern):
       return cmd(
         "CGContextSetLineDash",
-        args: .value(pattern.phase), .value(pattern.lengths), .value(pattern.lengths.count)
+        args: .value(pattern.phase), .value(pattern.lengths),
+        .value(pattern.lengths.count)
       )
     case let .clipToRect(rect):
       return cmd("CGContextClipToRect", args: .value(rect))
@@ -115,7 +116,11 @@ struct DrawStepToObjcCommandGenerator {
     case let .blendMode(blendMode):
       return cmd("CGContextSetBlendMode", args: .value(blendMode))
     case let .lines(points):
-      return cmd("CGContextAddLines", args: .value(points), .value(points.count))
+      return cmd(
+        "CGContextAddLines",
+        args: .value(points),
+        .value(points.count)
+      )
     case let .fillEllipse(rect):
       return cmd("CGContextFillEllipseInRect", args: .value(rect))
     case let .drawPath(mode):
@@ -149,7 +154,10 @@ struct DrawStepToObjcCommandGenerator {
       )
       let a = ObjcTerm.Expr.cast(to: .double, .member(ctm, "a"))
       let c = ObjcTerm.Expr.cast(to: .double, .member(ctm, "c"))
-      let scaleX = ObjcTerm.Expr.call(.identifier("sqrt"), args: [a * a + c * c])
+      let scaleX = ObjcTerm.Expr.call(
+        .identifier("sqrt"),
+        args: [a * a + c * c]
+      )
       let blurExpression = ObjcTerm.Expr.cast(
         to: .CGFloat,
         .call(
@@ -166,11 +174,12 @@ struct DrawStepToObjcCommandGenerator {
         type: .CGColorRef, id: "color_\(uniqIDProvider())",
         functionName: "CGColorCreate",
         args:
-          .identifier(globalDeviceRGBContextName),
-          .array(
-            of: .CGFloat,
-            [color.red, color.green, color.blue, color.alpha].map(ObjcTerm.Expr.value)
-          )
+        .identifier(globalDeviceRGBContextName),
+        .array(
+          of: .CGFloat,
+          [color.red, color.green, color.blue, color.alpha]
+            .map(ObjcTerm.Expr.value)
+        )
       )
       let setShadow = cmd(
         "CGContextSetShadowWithColor",
@@ -194,11 +203,14 @@ struct DrawStepToObjcCommandGenerator {
     }
   }
 
-  private func cmd(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
-    .expr(.call(
-      .identifier(name),
-      args: [.identifier(contextVarName)] + args
-    )
+  private func cmd(
+    _ name: String, args: ObjcTerm.Expr...
+  ) -> ObjcTerm.Statement {
+    .expr(
+      .call(
+        .identifier(name),
+        args: [.identifier(contextVarName)] + args
+      )
     )
   }
 
@@ -390,20 +402,28 @@ extension CGPathDrawingMode: ObjcConstNameExpressible {
 }
 
 extension ObjcTerm {
-  static func forLoop(idx: String, range: Range<Int>, body: ObjcTerm.Statement) -> ObjcTerm {
-    .stmnt(.for(
-      init: .variable(type: .int, name: idx, value: "\(range.lowerBound)"),
-      cond: .identifier(idx) < .const(raw: "\(range.upperBound)"),
-      incr: .incr(idx),
-      body: body
-    )
+  static func forLoop(
+    idx: String,
+    range: Range<Int>,
+    body: ObjcTerm.Statement
+  ) -> ObjcTerm {
+    .stmnt(
+      .for(
+        init: .variable(type: .int, name: idx, value: "\(range.lowerBound)"),
+        cond: .identifier(idx) < .const(raw: "\(range.upperBound)"),
+        incr: .incr(idx),
+        body: body
+      )
     )
   }
 }
 
 extension ObjcTerm.Statement {
-  static func call(_ name: String, args: ObjcTerm.Expr...) -> ObjcTerm.Statement {
-    .expr(.call(.identifier(name), args: args)
+  static func call(
+    _ name: String, args: ObjcTerm.Expr...
+  ) -> ObjcTerm.Statement {
+    .expr(
+      .call(.identifier(name), args: args)
     )
   }
 }
@@ -429,7 +449,11 @@ extension ObjcTerm.CDecl {
     )
   }
 
-  static func variable(type: ObjcTerm.TypeIdentifier, name: String, value: String) -> ObjcTerm.CDecl {
+  static func variable(
+    type: ObjcTerm.TypeIdentifier,
+    name: String,
+    value: String
+  ) -> ObjcTerm.CDecl {
     .init(
       specifiers: [.type(.simple(type))],
       declarators: [

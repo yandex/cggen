@@ -13,13 +13,18 @@ public protocol LinearInterpolatable {
 }
 
 extension Array where Element: LinearInterpolatable {
-  public func removeIntermediates(tolerance: Element.DistanceType) -> [Element] {
+  public func removeIntermediates(
+    tolerance: Element.DistanceType
+  ) -> [Element] {
     typealias IndexAndError = (at: Int, error: Element.DistanceType)
-    func maxLinearInterpolationError(in range: CountableClosedRange<Int>) -> IndexAndError {
+    func maxLinearInterpolationError(
+      in range: CountableClosedRange<Int>
+    ) -> IndexAndError {
       let start = self[range.lowerBound]
       let end = self[range.upperBound]
       let linearInterpolationErrorFor: (Element) -> Element.DistanceType = {
-        Element.linearInterpolate(from: start, to: end, at: $0.abscissa).distanceTo($0)
+        Element.linearInterpolate(from: start, to: end, at: $0.abscissa)
+          .distanceTo($0)
       }
       let initialValue = (range.lowerBound, start.distanceTo(start))
       return zip(range, self[range])
@@ -30,7 +35,9 @@ extension Array where Element: LinearInterpolatable {
         }
     }
 
-    func removeIntermediates(range: CountableClosedRange<Int>) -> ArraySlice<Element> {
+    func removeIntermediates(
+      range: CountableClosedRange<Int>
+    ) -> ArraySlice<Element> {
       guard range.count >= 2 else {
         return self[range]
       }
@@ -47,7 +54,8 @@ extension Array where Element: LinearInterpolatable {
         return [self[range.lowerBound], self[range.upperBound]]
       }
     }
-    return isEmpty ? [] : Array(removeIntermediates(range: CountableClosedRange(indices)))
+    return isEmpty ? [] :
+      Array(removeIntermediates(range: CountableClosedRange(indices)))
   }
 }
 
@@ -105,7 +113,9 @@ public enum Matrix {
   public typealias D4x5<T: Equatable> = Row4<Column5<T>>
 
   @inlinable
-  public static func diagonal4x5<T: Equatable>(r1c1: T, r2c2: T, r3c3: T, r4c4: T, zero: T) -> D4x5<T> {
+  public static func diagonal4x5<T: Equatable>(
+    r1c1: T, r2c2: T, r3c3: T, r4c4: T, zero: T
+  ) -> D4x5<T> {
     .init(
       r1: .init(c1: r1c1, c2: zero, c3: zero, c4: zero, c5: zero),
       r2: .init(c1: zero, c2: r2c2, c3: zero, c4: zero, c5: zero),

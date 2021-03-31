@@ -61,11 +61,20 @@ private func supportHeader(
           .type(.structOrUnion(
             .struct, attributes: [], identifier: nil, declList: [
               .init(spec: [.simple(.CGSize)], decl: [.identifier("size")]),
-              .init(spec: [.simple(.void)], decl: [.functionPointer(name: "drawingHandler", .type(.simple(.CGContextRef)))]),
+              .init(
+                spec: [.simple(.void)],
+                decl: [.functionPointer(
+                  name: "drawingHandler",
+                  .type(.simple(.CGContextRef))
+                )]
+              ),
             ]
           )),
         ], declarators: [
-          .decl(.namedInSwift("\(module)Resources.Descriptor", decl: .identifier(descriptorTypeName))),
+          .decl(.namedInSwift(
+            "\(module)Resources.Descriptor",
+            decl: .identifier(descriptorTypeName)
+          )),
         ]
       ))
     ),

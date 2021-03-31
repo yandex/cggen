@@ -4,6 +4,7 @@ import os.log
 
 import Base
 import libcggen
+import XCTest
 
 private enum Error: Swift.Error {
   case compilationError
@@ -15,8 +16,8 @@ extension NSImage {
   func cgimg() throws -> CGImage {
     // Sometimes NSImage.cgImage has different size than underlying cgimage
     if representations.count == 1,
-      let repr = representations.first,
-      repr.className == "NSCGImageSnapshotRep" {
+       let repr = representations.first,
+       repr.className == "NSCGImageSnapshotRep" {
       return try repr.cgImage(forProposedRect: nil, context: nil, hints: nil) !!
         Error.cgimageCreationFailed
     }
@@ -64,7 +65,11 @@ func getCurentFilePath(_ file: StaticString = #file) -> URL {
     .deletingLastPathComponent()
 }
 
-func cggen(files: [URL], scale: Double) throws -> [CGImage] {
+func cggen(
+  files: [URL],
+  scale: Double,
+  callerAllowAntialiasing: Bool
+) throws -> [CGImage] {
   let fm = FileManager.default
 
   let tmpdir = try fm.url(
@@ -93,12 +98,12 @@ func cggen(files: [URL], scale: Double) throws -> [CGImage] {
     try runCggen(
       with: .init(
         objcHeader: header,
-        objcPrefix: "SVGTests",
+        objcPrefix: "Tests",
         objcImpl: impl.path,
         objcHeaderImportPath: header,
         objcCallerPath: caller.path,
         callerScale: scale,
-        callerAllowAntialiasing: true,
+        callerAllowAntialiasing: callerAllowAntialiasing,
         callerPngOutputPath: outputPngs,
         generationStyle: nil,
         cggenSupportHeaderPath: nil,
@@ -144,7 +149,10 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
-private func subprocess(cmd: [String], env: [String:String]? = nil) throws -> Int32 {
+private func subprocess(
+  cmd: [String],
+  env: [String: String]? = nil
+) throws -> Int32 {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
   task.arguments = cmd
@@ -185,7 +193,7 @@ private func checkStatus(bin: URL) throws {
 }
 
 extension FileManager {
-  fileprivate func contentsOfDirectory(at url: URL) throws -> [URL] {
+  private func contentsOfDirectory(at url: URL) throws -> [URL] {
     try contentsOfDirectory(
       at: url,
       includingPropertiesForKeys: nil,
@@ -205,4 +213,61 @@ internal func signpostRegion<T>(
   _ region: () throws -> T
 ) rethrows -> T {
   try testLog.signpostRegion(desc, region)
+}
+
+internal func test(
+  snapshot: (URL) throws -> CGImage,
+  adjustImage: (CGImage) -> CGImage = { $0 },
+  antialiasing: Bool,
+  path: URL,
+  tolerance: Double,
+  scale: Double,
+  size _: CGSize
+) throws {
+  let referenceImg = try signpostRegion("snapshot") {
+    try snapshot(path)
+  }
+
+  let images = try cggen(
+    files: [path],
+    scale: scale,
+    callerAllowAntialiasing: antialiasing
+  )
+  try check(images.count == 1, Err("multiple images from cggen"))
+  let image = adjustImage(images[0])
+  try check(
+    referenceImg.intSize == image.intSize,
+    Err("reference image size: \(referenceImg.intSize), got \(image.intSize)")
+  )
+  let diff = signpostRegion("image comparision") {
+    compare(referenceImg, image)
+  }
+
+  XCTAssertLessThan(
+    diff, tolerance, "Calculated diff exceeds tolerance"
+  )
+  if diff >= tolerance {
+    XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+      $0.add(.init(image: image, name: "result"))
+      $0.add(.init(image: referenceImg, name: "webkitsnapshot"))
+      $0.add(.init(image: .diff(lhs: referenceImg, rhs: image), name: "diff"))
+    }
+  }
+}
+
+extension XCTAttachment {
+  convenience init(image: CGImage, name: String) {
+    let size = NSSize(width: image.width, height: image.height)
+    let nsimage = NSImage(cgImage: image, size: size)
+    self.init(image: nsimage)
+    self.name = name
+  }
+}
+
+struct Err: Swift.Error {
+  var description: String
+
+  init(_ desc: String) {
+    description = desc
+  }
 }

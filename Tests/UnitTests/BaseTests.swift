@@ -56,7 +56,10 @@ class BaseTests: XCTestCase {
   }
 }
 
-private func checkZip<T: Equatable, U: Equatable>(_ lhs: (T, U)?, _ rhs: (T, U)?) {
+private func checkZip<T: Equatable, U: Equatable>(
+  _ lhs: (T, U)?,
+  _ rhs: (T, U)?
+) {
   XCTAssertEqual(lhs?.0, rhs?.0)
   XCTAssertEqual(lhs?.1, rhs?.1)
 }

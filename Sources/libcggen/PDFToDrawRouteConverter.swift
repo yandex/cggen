@@ -109,8 +109,8 @@ enum PDFToDrawRouteConverter {
   }
 }
 
-private extension PDFOperator {
-  func drawStep(
+extension PDFOperator {
+  fileprivate func drawStep(
     resources: PDFResources,
     context: Context,
     gradients: [String: PDFGradientDrawingOptions]
@@ -336,8 +336,8 @@ extension CGColorRenderingIntent {
   }
 }
 
-private extension CGBlendMode {
-  init(pdfBlendMode: String) {
+extension CGBlendMode {
+  fileprivate init(pdfBlendMode: String) {
     switch pdfBlendMode {
     case "Normal":
       self = .normal
@@ -369,24 +369,25 @@ private extension CGBlendMode {
   }
 }
 
-private extension PDFShading {
-  func makeGradient() -> (Gradient, PDFGradientDrawingOptions) {
-    let locationAndColors = function.points.map { (point) -> (CGFloat, RGBACGColor) in
-      precondition(point.value.count == 3)
-      let loc = point.arg
-      let components = point.value
-      let color = RGBAColor(
-        red: components[0],
-        green: components[1],
-        blue: components[2],
-        alpha: 1
-      )
-      return (loc, color)
-    }
+extension PDFShading {
+  fileprivate func makeGradient() -> (Gradient, PDFGradientDrawingOptions) {
+    let locationAndColors = function.points
+      .map { (point) -> (CGFloat, RGBACGColor) in
+        precondition(point.value.count == 3)
+        let loc = point.arg
+        let components = point.value
+        let color = RGBAColor(
+          red: components[0],
+          green: components[1],
+          blue: components[2],
+          alpha: 1
+        )
+        return (loc, color)
+      }
     return (Gradient(locationAndColors: locationAndColors), drawingOptions)
   }
 
-  var function: PDFFunction {
+  private var function: PDFFunction {
     switch kind {
     case let .axial(axial):
       return axial.function
@@ -395,7 +396,7 @@ private extension PDFShading {
     }
   }
 
-  var extend: PDFShading.Extend {
+  private var extend: PDFShading.Extend {
     switch kind {
     case let .axial(axial):
       return axial.extend
@@ -404,7 +405,7 @@ private extension PDFShading {
     }
   }
 
-  var startPoint: CGPoint {
+  private var startPoint: CGPoint {
     switch kind {
     case let .axial(axial):
       return axial.coords.p0
@@ -413,7 +414,7 @@ private extension PDFShading {
     }
   }
 
-  var endPoint: CGPoint {
+  private var endPoint: CGPoint {
     switch kind {
     case let .axial(axial):
       return axial.coords.p1
@@ -422,14 +423,15 @@ private extension PDFShading {
     }
   }
 
-  var drawingOptions: PDFGradientDrawingOptions {
+  private var drawingOptions: PDFGradientDrawingOptions {
     switch kind {
     case let .axial(axial):
-      return .linear((
-        startPoint: axial.coords.p0,
-        endPoint: axial.coords.p1,
-        options: .init(pdfExtend: axial.extend)
-      )
+      return .linear(
+        (
+          startPoint: axial.coords.p0,
+          endPoint: axial.coords.p1,
+          options: .init(pdfExtend: axial.extend)
+        )
       )
     case let .radial(radial):
       return .radial((
@@ -452,15 +454,18 @@ extension CGGradientDrawingOptions {
   }
 }
 
-private extension DrawStep {
-  static func fillWithColor(context: Context, rule: CGPathFillRule) -> DrawStep {
+extension DrawStep {
+  fileprivate static func fillWithColor(
+    context: Context,
+    rule: CGPathFillRule
+  ) -> DrawStep {
     .composite([
       .fillColor(context.fillColorWithAlpha),
       .fill(rule),
     ])
   }
 
-  static func strokeWithColor(_ context: Context) -> DrawStep {
+  fileprivate static func strokeWithColor(_ context: Context) -> DrawStep {
     .composite([
       .strokeColor(context.strokeColorWithAlpha),
       .stroke,

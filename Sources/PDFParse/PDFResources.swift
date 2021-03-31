@@ -15,7 +15,8 @@ public struct PDFResources {
     let gStatesDict = dict["ExtGState"]?.dictionaryVal() ?? [:]
     let xObjectsDict = dict["XObject"]?.dictionaryVal() ?? [:]
     shadings = shadingDict.mapValues { try! PDFShading(obj: $0) }
-    gStates = try! gStatesDict.mapValues(partial(PDFExtGState.init, arg2: xobjFactory))
+    gStates = try! gStatesDict
+      .mapValues(partial(PDFExtGState.init, arg2: xobjFactory))
     xObjects = try! xObjectsDict.mapValues(xobjFactory)
   }
 }

@@ -1,3 +1,5 @@
+// swiftformat:disable all
+
 @inlinable
 public func identity<T>(_ t: T) -> T {
   t
