@@ -31,7 +31,7 @@ private class BytecodeRunner {
 
   func read<T: FixedWidthInteger>(_: T.Type = T.self) -> T {
     let size = MemoryLayout<T>.size
-    precondition(size >= currentState.remaining)
+    precondition(size <= currentState.remaining)
     var ret: T = 0
     memcpy(&ret, currentState.position, size)
     advance(size)
@@ -70,6 +70,14 @@ private class BytecodeRunner {
       }
     }
   }
+}
+
+public func runBytecode(_ context: CGContext, fromData data: Data) {
+  let sz = data.count
+  data.withUnsafeBytes({
+    let ptr = $0.bindMemory(to:UInt8.self).baseAddress!
+    runBytecode(context, ptr, sz)
+    })
 }
 
 @_cdecl("runBytecode") func runBytecode(
