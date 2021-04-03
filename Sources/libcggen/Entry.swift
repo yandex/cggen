@@ -7,6 +7,7 @@ public struct Args {
   let objcHeader: String?
   let objcPrefix: String?
   let objcImpl: String?
+  let bytecodeFilePrefix: String?
   let objcHeaderImportPath: String?
   let objcCallerPath: String?
   let callerScale: Double
@@ -22,6 +23,7 @@ public struct Args {
     objcHeader: String?,
     objcPrefix: String?,
     objcImpl: String?,
+    bytecodeFilePrefix: String?,
     objcHeaderImportPath: String?,
     objcCallerPath: String?,
     callerScale: Double,
@@ -36,6 +38,7 @@ public struct Args {
     self.objcHeader = objcHeader
     self.objcPrefix = objcPrefix
     self.objcImpl = objcImpl
+    self.bytecodeFilePrefix = bytecodeFilePrefix
     self.objcHeaderImportPath = objcHeaderImportPath
     self.objcCallerPath = objcCallerPath
     self.callerScale = callerScale
@@ -64,6 +67,28 @@ public func runCggen(with args: Args) throws {
     prefix: objcPrefix,
     module: args.module ?? ""
   )
+
+  if let filePrefix = args.bytecodeFilePrefix {
+    let headerGenerator = ObjcHeaderCGGenerator(params: params)
+    let headerStr = headerGenerator.generateFile(images: images)
+    try! headerStr.write(
+      toFile: filePrefix + ".h",
+      atomically: true,
+      encoding: .utf8
+    )
+
+    let implGenerator = BCCGGenerator(
+      headerImportPath: filePrefix + ".h"
+    )
+    let fileStr = implGenerator.generateFile(images: images)
+    try! fileStr.write(
+      toFile: filePrefix + ".m",
+      atomically: true,
+      encoding: .utf8
+    )
+
+    log("Bytecode generated in: \(stopwatch.reset())")
+  }
 
   if let objcHeaderPath = args.objcHeader {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
