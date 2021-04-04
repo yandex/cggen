@@ -47,20 +47,11 @@ private class BytecodeRunner {
     while currentState.remaining > 0 {
       let command = Command(rawValue: read())
       switch command {
-      case .declSubroute:
-        let id = read(UInt8.self)
-        let sz = Int(read(UInt16.self))
-        let subroute = State(
-          position: currentState.position,
-          remaining: sz
-        )
-        commons.subroutes[id] = subroute
-        advance(sz)
-      case .runSubroute:
+      case .subrouteWithId:
         let id = read(UInt8.self)
         let subroute = commons.subroutes[id]!
         BytecodeRunner(subroute, commons).run()
-      case .move:
+      case .moveTo:
         let x = readCGFloat()
         let y = readCGFloat()
         let point = CGPoint(x: x, y: y)
