@@ -65,10 +65,10 @@ private class BytecodeRunner {
 
 public func runBytecode(_ context: CGContext, fromData data: Data) {
   let sz = data.count
-  data.withUnsafeBytes({
-    let ptr = $0.bindMemory(to:UInt8.self).baseAddress!
+  data.withUnsafeBytes {
+    let ptr = $0.bindMemory(to: UInt8.self).baseAddress!
     runBytecode(context, ptr, sz)
-    })
+  }
 }
 
 @_cdecl("runBytecode") func runBytecode(

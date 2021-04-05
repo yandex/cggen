@@ -5,13 +5,11 @@
 import Foundation
 
 private protocol ByteCodable {
-  var byteCode: String { get }
+  var byteCode: [UInt8] { get }
 }
 
-private let newLine = "\n    "
-
 extension UInt32: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     var littleEndian = self.littleEndian
     let count = 4
     let bytePtr = withUnsafePointer(to: &littleEndian) { pointer in
@@ -19,99 +17,96 @@ extension UInt32: ByteCodable {
         UnsafeBufferPointer(start: pt, count: count)
       }
     }
-    let byteArr = Array(bytePtr)
-    return byteArr.map { byte in
-      "\(byte)"
-    }.joined(separator: ", ") + ", "
+    return Array(bytePtr)
   }
 }
 
 extension CGFloat: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     Float(self).bitPattern.byteCode
   }
 }
 
 extension Bool: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     if self {
-      return "1, "
+      return [1]
     }
-    return "0, "
+    return [0]
   }
 }
 
 extension CGPoint: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     x.byteCode + y.byteCode
   }
 }
 
 extension Array: ByteCodable where Element: ByteCodable {
-  var byteCode: String {
-    UInt32(count).byteCode + map { point in
-      point.byteCode
+  var byteCode: [UInt8] {
+    UInt32(count).byteCode + map { element in
+      element.byteCode
     }.joined()
   }
 }
 
 extension CGRect: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     x.byteCode + y.byteCode + width.byteCode + height.byteCode
   }
 }
 
 extension CGPathFillRule: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension DashPattern: ByteCodable {
-  var byteCode: String {
-    phase.byteCode + UInt32(lengths.count).byteCode + lengths.byteCode
+  var byteCode: [UInt8] {
+    phase.byteCode + lengths.byteCode
   }
 }
 
 extension CGPathDrawingMode: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension CGAffineTransform: ByteCodable {
-  var byteCode: String {
-    a.byteCode + b.byteCode + c.byteCode + d.byteCode + tx.byteCode + ty
-      .byteCode
+  var byteCode: [UInt8] {
+    let abcd = a.byteCode + b.byteCode + c.byteCode + d.byteCode
+    return abcd + tx.byteCode + ty.byteCode
   }
 }
 
 extension CGLineJoin: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension CGLineCap: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension CGColorRenderingIntent: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension RGBACGColor: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     red.byteCode + green.byteCode + blue.byteCode + alpha.byteCode
   }
 }
 
 extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     UInt32(self.count).byteCode + self.map { (v: CGFloat, v2: RGBACGColor) in
       v.byteCode + v2.byteCode
     }.joined()
@@ -119,43 +114,43 @@ extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
 }
 
 extension Gradient: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     locationAndColors.byteCode
   }
 }
 
 extension CGSize: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     width.byteCode + height.byteCode
   }
 }
 
 extension Shadow: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     offset.byteCode + blur.byteCode + color.byteCode
   }
 }
 
 extension CGBlendMode: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
 extension CGGradientDrawingOptions: ByteCodable {
-  var byteCode: String {
-    "\(rawValue), "
+  var byteCode: [UInt8] {
+    [UInt8(rawValue)]
   }
 }
 
-private func byteCommand(_ code: UInt8, _ args: ByteCodable...) -> String {
-  "\(newLine)\(code), " + args.map { arg -> String in
-    "\(arg.byteCode)"
+private func byteCommand(_ code: UInt8, _ args: ByteCodable...) -> [UInt8] {
+  [code] + args.map { arg -> [UInt8] in
+    arg.byteCode
   }.joined()
 }
 
 extension DrawStep: ByteCodable {
-  var byteCode: String {
+  var byteCode: [UInt8] {
     switch self {
     case .saveGState:
       return byteCommand(0)
@@ -220,11 +215,31 @@ extension DrawStep: ByteCodable {
     case let .fillColor(color):
       return byteCommand(30, color)
     case let .linearGradient(name, options):
-      return byteCommand(31, gradientsIds[name]!, options.startPoint, options.endPoint, options.endPoint)
+      return byteCommand(
+        31,
+        gradientsIds[name]!,
+        options.startPoint,
+        options.endPoint,
+        options.endPoint
+      )
     case let .radialGradient(name, options):
-      return byteCommand(32, gradientsIds[name]!, options.startCenter, options.startRadius, options.endCenter, options.endRadius, options.options)
+      return byteCommand(
+        32,
+        gradientsIds[name]!,
+        options.startCenter,
+        options.startRadius,
+        options.endCenter,
+        options.endRadius,
+        options.options
+      )
     case let .linearGradientInlined(gradient, options):
-      return byteCommand(33, gradient, options.startPoint, options.endPoint, options.options)
+      return byteCommand(
+        33,
+        gradient,
+        options.startPoint,
+        options.endPoint,
+        options.options
+      )
     case let .radialGradientInlined(gradient, options):
       return byteCommand(
         34,
@@ -251,43 +266,39 @@ extension DrawStep: ByteCodable {
   }
 }
 
+extension DrawRoute: ByteCodable {
+  var byteCode: [UInt8] {
+    generateGradients(gradients: gradients) +
+      generateSubroutes(subroutes: subroutes) + steps.byteCode
+  }
+}
+
 private var gradientsIds: [String: UInt32] = [:]
 
-private func generateGradients(gradients: [String: Gradient]) -> String {
-  var res = "\(UInt32(gradients.count).byteCode)"
+private func generateGradients(gradients: [String: Gradient]) -> [UInt8] {
+  var res = UInt32(gradients.count).byteCode
   for gradient in gradients {
     let counter = UInt32(gradientsIds.count)
     gradientsIds[gradient.key] = counter
-    res += newLine + counter.byteCode + gradient.value.byteCode
+    let gradientBytecode = gradient.value.byteCode
+    res += counter.byteCode + UInt32(gradientBytecode.count)
+      .byteCode + gradientBytecode
   }
   return res
 }
 
 private var subroutesIds: [String: UInt32] = [:]
 
-private func generateSubroutes(subroutes: [String: DrawRoute]) -> String {
-  var res = "\(UInt32(subroutes.count).byteCode)"
+private func generateSubroutes(subroutes: [String: DrawRoute]) -> [UInt8] {
+  var res = UInt32(subroutes.count).byteCode
   for subroute in subroutes {
     let counter = UInt32(subroutesIds.count)
     subroutesIds[subroute.key] = counter
-    res += newLine + counter.byteCode + subroute.value.byteCode
+    let subrouteBytecode = subroute.value.byteCode
+    res += counter.byteCode + UInt32(subrouteBytecode.count)
+      .byteCode + subrouteBytecode
   }
   return res
-}
-
-extension DrawRoute: ByteCodable {
-  var byteCode: String {
-    """
-        // Gradients
-        \(generateGradients(gradients: gradients))
-
-        // Subroutes
-        \(generateSubroutes(subroutes: subroutes))
-
-        // Steps
-        \(steps.byteCode)
-    """
-  }
 }
 
 struct BCCGGenerator: CoreGraphicsGenerator {
@@ -307,7 +318,7 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     let bytecodeName = "\(image.name)Bytecode"
     return """
     bytecode \(bytecodeName)[] = {
-    \(image.route.byteCode)
+    \(image.route.byteCode.map { byte -> String in "\(byte), " }.joined())
     };
     void Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
       runBytecode(context, &\(bytecodeName), sizeof(\(bytecodeName)));
@@ -316,6 +327,6 @@ struct BCCGGenerator: CoreGraphicsGenerator {
   }
 
   func fileEnding() -> String {
-    "\(CGGradientDrawingOptions(arrayLiteral: [.drawsAfterEndLocation]).rawValue)"
+    ""
   }
 }
