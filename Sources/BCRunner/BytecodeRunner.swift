@@ -100,7 +100,6 @@ class BytecodeRunner {
     let gradientCount: UInt32 = read()
     for _ in 1...gradientCount {
       let id:UInt32 = read()
-       _ = read(UInt32.self) // size of gradient in bytes is useless
       gradients[id] = readGradient()
     }
     
@@ -114,8 +113,6 @@ class BytecodeRunner {
     }
     
     //MARK: Executing commands
-    
-    _ = read(UInt32.self) // number of commands is useless
     
     while currentState.remaining > 0 {
       let command = Command(rawValue: read())!
@@ -202,8 +199,6 @@ class BytecodeRunner {
         let id:UInt32 = read()
         let subroute = subroutes[id]!
         BytecodeRunner(subroute, commons).run()
-      case .composite:
-        _ = read(UInt32.self) // number of commands is useless, this command is useless
       case .shadow:
         drawShadow()
       }
