@@ -32,7 +32,6 @@ public enum Command: UInt8 {
   case appendRoundedRect // (CGRect, rx: CGFloat, ry: CGFloat)
   case addArc // (center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool)
   case closePath
-  case endPath
   case replacePathWithStrokePath
 
   case lines // ([CGPoint])
@@ -56,8 +55,6 @@ public enum Command: UInt8 {
 
   case colorRenderingIntent // (CGColorRenderingIntent)
   case globalAlpha // (CGFloat)
-  case fillColorSpace
-  case strokeColorSpace
   case strokeColor // (RGBACGColor)
   case fillColor // (RGBACGColor)
 
