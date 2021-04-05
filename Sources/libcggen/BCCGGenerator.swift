@@ -149,6 +149,10 @@ private func byteCommand(_ code: UInt8, _ args: ByteCodable...) -> [UInt8] {
   }.joined()
 }
 
+private func generateSteps(steps: [DrawStep]) -> [UInt8] {
+  Array(steps.map{ step in step.byteCode}.joined())
+}
+
 extension DrawStep: ByteCodable {
   var byteCode: [UInt8] {
     switch self {
@@ -261,7 +265,7 @@ extension DrawStep: ByteCodable {
     case .endTransparencyLayer:
       return byteCommand(39)
     case let .composite(steps):
-      return byteCommand(40, steps)
+      return generateSteps(steps: steps)
     }
   }
 }
@@ -269,7 +273,7 @@ extension DrawStep: ByteCodable {
 extension DrawRoute: ByteCodable {
   var byteCode: [UInt8] {
     generateGradients(gradients: gradients) +
-      generateSubroutes(subroutes: subroutes) + steps.byteCode
+      generateSubroutes(subroutes: subroutes) + generateSteps(steps: steps)
   }
 }
 
@@ -280,9 +284,7 @@ private func generateGradients(gradients: [String: Gradient]) -> [UInt8] {
   for gradient in gradients {
     let counter = UInt32(gradientsIds.count)
     gradientsIds[gradient.key] = counter
-    let gradientBytecode = gradient.value.byteCode
-    res += counter.byteCode + UInt32(gradientBytecode.count)
-      .byteCode + gradientBytecode
+    res += counter.byteCode + gradient.value.byteCode
   }
   return res
 }
