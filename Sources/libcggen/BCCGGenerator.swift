@@ -174,53 +174,47 @@ extension DrawStep: ByteCodable {
       return byteCommand(7, center, radius, startAngle, endAngle, clockwise)
     case .closePath:
       return byteCommand(8)
-    case .endPath:
-      return byteCommand(9)
     case .replacePathWithStrokePath:
-      return byteCommand(10)
+      return byteCommand(9)
     case let .lines(lines):
-      return byteCommand(11, lines)
+      return byteCommand(10, lines)
     case let .clip(rule):
-      return byteCommand(12, rule)
+      return byteCommand(11, rule)
     case let .clipToRect(rect):
-      return byteCommand(13, rect)
+      return byteCommand(12, rect)
     case let .dash(pattern):
-      return byteCommand(14, pattern)
+      return byteCommand(13, pattern)
     case let .fill(rule):
-      return byteCommand(15, rule)
+      return byteCommand(14, rule)
     case let .fillEllipse(rect):
-      return byteCommand(16, rect)
+      return byteCommand(15, rect)
     case .stroke:
-      return byteCommand(17)
+      return byteCommand(16)
     case let .drawPath(mode):
-      return byteCommand(18, mode)
+      return byteCommand(17, mode)
     case let .addEllipse(rect):
-      return byteCommand(19, rect)
+      return byteCommand(18, rect)
     case let .concatCTM(transform):
-      return byteCommand(20, transform)
+      return byteCommand(19, transform)
     case let .flatness(f):
-      return byteCommand(21, f)
+      return byteCommand(20, f)
     case let .lineWidth(width):
-      return byteCommand(22, width)
+      return byteCommand(21, width)
     case let .lineJoinStyle(lineJoin):
-      return byteCommand(23, lineJoin)
+      return byteCommand(22, lineJoin)
     case let .lineCapStyle(cap):
-      return byteCommand(24, cap)
+      return byteCommand(23, cap)
     case let .colorRenderingIntent(intent):
-      return byteCommand(25, intent)
+      return byteCommand(24, intent)
     case let .globalAlpha(alpha):
-      return byteCommand(26, alpha)
-    case .fillColorSpace:
-      return byteCommand(27)
-    case .strokeColorSpace:
-      return byteCommand(28)
+      return byteCommand(25, alpha)
     case let .strokeColor(color):
-      return byteCommand(29, color)
+      return byteCommand(26, color)
     case let .fillColor(color):
-      return byteCommand(30, color)
+      return byteCommand(27, color)
     case let .linearGradient(name, options):
       return byteCommand(
-        31,
+        28,
         gradientsIds[name]!,
         options.startPoint,
         options.endPoint,
@@ -228,7 +222,7 @@ extension DrawStep: ByteCodable {
       )
     case let .radialGradient(name, options):
       return byteCommand(
-        32,
+        29,
         gradientsIds[name]!,
         options.startCenter,
         options.startRadius,
@@ -238,7 +232,7 @@ extension DrawStep: ByteCodable {
       )
     case let .linearGradientInlined(gradient, options):
       return byteCommand(
-        33,
+        30,
         gradient,
         options.startPoint,
         options.endPoint,
@@ -246,7 +240,7 @@ extension DrawStep: ByteCodable {
       )
     case let .radialGradientInlined(gradient, options):
       return byteCommand(
-        34,
+        31,
         gradient,
         options.startCenter,
         options.startRadius,
@@ -255,17 +249,19 @@ extension DrawStep: ByteCodable {
         options.options
       )
     case let .subrouteWithName(name):
-      return byteCommand(35, subroutesIds[name]!)
+      return byteCommand(32, subroutesIds[name]!)
     case let .shadow(shadow):
-      return byteCommand(36, shadow)
+      return byteCommand(33, shadow)
     case let .blendMode(mode):
-      return byteCommand(37, mode)
+      return byteCommand(34, mode)
     case .beginTransparencyLayer:
-      return byteCommand(38)
+      return byteCommand(35)
     case .endTransparencyLayer:
-      return byteCommand(39)
+      return byteCommand(36)
     case let .composite(steps):
       return generateSteps(steps: steps)
+    case .endPath, .fillColorSpace, .strokeColorSpace:
+      return []
     }
   }
 }
