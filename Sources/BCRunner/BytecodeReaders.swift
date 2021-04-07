@@ -1,157 +1,166 @@
+import CoreGraphics
 import Foundation
 
-import Foundation
-import CoreGraphics
 import BCCommon
 
 protocol BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> Self
 }
 
-internal extension  BytecodeElement where Self: FixedWidthInteger {
-  static func readFrom(_ runner: BytecodeRunner) -> Self {
-    runner.readBytes()
+extension BytecodeElement where Self: FixedWidthInteger {
+  internal static func readFrom(_ runner: BytecodeRunner) -> Self {
+    runner.readInt()
   }
 }
 
-extension UInt8 : BytecodeElement {}
-extension UInt32 : BytecodeElement {}
-extension UInt16 : BytecodeElement {}
+extension UInt8: BytecodeElement {}
+extension UInt32: BytecodeElement {}
+extension UInt16: BytecodeElement {}
 
 extension CGFloat: BytecodeElement {
   internal static func readFrom(_ runner: BytecodeRunner) -> CGFloat {
-    .init(Float(bitPattern: runner.readBytes()))
+    .init(Float32(bitPattern: runner.readInt()))
   }
 }
 
 extension CGPoint: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGPoint {
-    .init(x: runner.read(), y: runner.read())
+    .init(x: .readFrom(runner), y: .readFrom(runner))
   }
 }
 
 extension CGSize: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGSize {
-    .init(width: runner.read(), height: runner.read())
+    .init(width: .readFrom(runner), height: .readFrom(runner))
   }
 }
 
 extension CGRect: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGRect {
-    .init(origin: runner.read(), size: runner.read())
+    .init(origin: .readFrom(runner), size: .readFrom(runner))
   }
 }
 
 extension Bool: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> Bool {
-    runner.read(UInt8.self) != 0
+    UInt8.readFrom(runner) != 0
   }
 }
 
 extension CGPathFillRule: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGPathFillRule {
-    CGPathFillRule.init(rawValue: Int(runner.read(UInt8.self)))!
+    CGPathFillRule(rawValue: Int(runner.read(UInt8.self)))!
   }
 }
 
 extension Array: BytecodeElement where Element: BytecodeElement {
-  static func readFrom(_ runner: BytecodeRunner) -> Array<Element> {
-    let sz = Int(runner.read(UInt32.self))
-    var arr:[Element] = []
-    arr.reserveCapacity(sz)
-    for _ in 0..<sz {
-      arr.append(runner.read())
-    }
+  static func readFrom(_ runner: BytecodeRunner) -> [Element] {
+    let sz = BCSizeType.readFrom(runner)
+    let arr: [Element] = (0..<sz).map { _ in .readFrom(runner) }
     return arr
   }
 }
 
 extension BCDashPattern: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> BCDashPattern {
-    .init(phase: runner.read(), lengths: runner.read())
+    .init(.readFrom(runner), .readFrom(runner))
   }
 }
 
 extension CGPathDrawingMode: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGPathDrawingMode {
-    CGPathDrawingMode.init(rawValue: Int32(runner.read(UInt8.self)))!
+    CGPathDrawingMode(rawValue: Int32(UInt8.readFrom(runner)))!
   }
 }
 
 extension CGAffineTransform: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGAffineTransform {
     .init(
-      a: runner.read(),
-      b: runner.read(),
-      c: runner.read(),
-      d: runner.read(),
-      tx: runner.read(),
-      ty: runner.read()
+      a: .readFrom(runner),
+      b: .readFrom(runner),
+      c: .readFrom(runner),
+      d: .readFrom(runner),
+      tx: .readFrom(runner),
+      ty: .readFrom(runner)
     )
   }
 }
 
 extension CGLineJoin: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGLineJoin {
-    CGLineJoin.init(rawValue: Int32(runner.read(UInt8.self)))!
+    CGLineJoin(rawValue: Int32(UInt8.readFrom(runner)))!
   }
 }
 
 extension CGLineCap: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGLineCap {
-    CGLineCap.init(rawValue: Int32(runner.read(UInt8.self)))!
+    CGLineCap(rawValue: Int32(UInt8.readFrom(runner)))!
   }
 }
 
 extension BCRGBAColor: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> BCRGBAColor {
     BCRGBAColor(
-      runner.read(),
-      runner.read(),
-      runner.read(),
-      runner.read()
+      .readFrom(runner),
+      .readFrom(runner),
+      .readFrom(runner),
+      .readFrom(runner)
     )
   }
 }
 
 extension CGGradientDrawingOptions: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGGradientDrawingOptions {
-    CGGradientDrawingOptions.init(rawValue: UInt32(runner.read(UInt8.self)))
+    CGGradientDrawingOptions(rawValue: UInt32(UInt8.readFrom(runner)))
   }
 }
 
 extension BCLinearGradientDrawingOptions: BytecodeElement {
-  static func readFrom(_ runner: BytecodeRunner) -> BCLinearGradientDrawingOptions {
-    .init(runner.read(), runner.read(), runner.read())
+  static func readFrom(_ runner: BytecodeRunner)
+    -> BCLinearGradientDrawingOptions {
+    .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
   }
 }
 
 extension BCRadialGradientDrawingOptions: BytecodeElement {
-  static func readFrom(_ runner: BytecodeRunner) -> BCRadialGradientDrawingOptions {
-    .init(runner.read(), runner.read(), runner.read(), runner.read(), runner.read())
+  static func readFrom(_ runner: BytecodeRunner)
+    -> BCRadialGradientDrawingOptions {
+    .init(
+      .readFrom(runner),
+      .readFrom(runner),
+      .readFrom(runner),
+      .readFrom(runner),
+      .readFrom(runner)
+    )
   }
 }
 
 extension BCLocationAndColor: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> BCLocationAndColor {
-    .init(runner.read(), runner.read())
+    .init(.readFrom(runner), .readFrom(runner))
   }
 }
 
 extension BCShadow: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> BCShadow {
-    .init(runner.read(), runner.read(), runner.read())
+    .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
   }
 }
 
 extension CGBlendMode: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGBlendMode {
-    CGBlendMode.init(rawValue: Int32(runner.read(UInt8.self)))!
+    CGBlendMode(rawValue: Int32(UInt8.readFrom(runner)))!
   }
 }
 
 extension CGColorRenderingIntent: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) -> CGColorRenderingIntent {
-    CGColorRenderingIntent.init(rawValue: Int32(runner.read(UInt8.self)))!
+    CGColorRenderingIntent(rawValue: Int32(UInt8.readFrom(runner)))!
+  }
+}
+
+extension Command: BytecodeElement {
+  static func readFrom(_ runner: BytecodeRunner) -> Command {
+    Command(rawValue: .readFrom(runner))!
   }
 }
