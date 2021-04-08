@@ -68,6 +68,4 @@ public enum Command: UInt8 {
 
   case beginTransparencyLayer
   case endTransparencyLayer
-
-  case composite // ([DrawStep])
 }
