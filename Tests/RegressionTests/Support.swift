@@ -100,6 +100,7 @@ func cggen(
         objcHeader: header,
         objcPrefix: "Tests",
         objcImpl: impl.path,
+        bytecodeFilePrefix: nil,
         objcHeaderImportPath: header,
         objcCallerPath: caller.path,
         callerScale: scale,

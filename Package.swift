@@ -38,7 +38,7 @@ let package = Package(
     ),
     .target(
       name: "libcggen",
-      dependencies: ["Base", "PDFParse"]
+      dependencies: ["Base", "PDFParse", "BCCommon"]
     ),
     .target(
       name: "png-fuzzy-compare",
