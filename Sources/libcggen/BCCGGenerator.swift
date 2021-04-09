@@ -1,7 +1,4 @@
-//
-// Created by Максим Ефимов on 03.04.2021.
-//
-
+import BCCommon
 import Foundation
 
 private protocol ByteCodable {
@@ -10,29 +7,19 @@ private protocol ByteCodable {
 
 extension UInt32: ByteCodable {
   var byteCode: [UInt8] {
-    var littleEndian = self.littleEndian
-    let count = 4
-    let bytePtr = withUnsafePointer(to: &littleEndian) { pointer in
-      pointer.withMemoryRebound(to: UInt8.self, capacity: count) { pt in
-        UnsafeBufferPointer(start: pt, count: count)
-      }
-    }
-    return Array(bytePtr)
+    withUnsafeBytes(of: littleEndian, Array.init)
   }
 }
 
 extension CGFloat: ByteCodable {
   var byteCode: [UInt8] {
-    Float(self).bitPattern.byteCode
+    Float32(self).bitPattern.byteCode
   }
 }
 
 extension Bool: ByteCodable {
   var byteCode: [UInt8] {
-    if self {
-      return [1]
-    }
-    return [0]
+    [self ? 1 : 0]
   }
 }
 
@@ -44,15 +31,13 @@ extension CGPoint: ByteCodable {
 
 extension Array: ByteCodable where Element: ByteCodable {
   var byteCode: [UInt8] {
-    UInt32(count).byteCode + map { element in
-      element.byteCode
-    }.joined()
+    UInt32(count).byteCode + flatMap(\.byteCode)
   }
 }
 
 extension CGRect: ByteCodable {
   var byteCode: [UInt8] {
-    x.byteCode + y.byteCode + width.byteCode + height.byteCode
+    [x, y, width, height].flatMap(\.byteCode)
   }
 }
 
@@ -76,8 +61,7 @@ extension CGPathDrawingMode: ByteCodable {
 
 extension CGAffineTransform: ByteCodable {
   var byteCode: [UInt8] {
-    let abcd = a.byteCode + b.byteCode + c.byteCode + d.byteCode
-    return abcd + tx.byteCode + ty.byteCode
+    [a, b, c, d, tx, ty].flatMap(\.byteCode)
   }
 }
 
@@ -101,15 +85,13 @@ extension CGColorRenderingIntent: ByteCodable {
 
 extension RGBACGColor: ByteCodable {
   var byteCode: [UInt8] {
-    red.byteCode + green.byteCode + blue.byteCode + alpha.byteCode
+    [red, green, blue, alpha].flatMap(\.byteCode)
   }
 }
 
 extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
   var byteCode: [UInt8] {
-    UInt32(self.count).byteCode + self.map { (v: CGFloat, v2: RGBACGColor) in
-      v.byteCode + v2.byteCode
-    }.joined()
+    UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
   }
 }
 
@@ -143,87 +125,88 @@ extension CGGradientDrawingOptions: ByteCodable {
   }
 }
 
-private func byteCommand(_ code: UInt8, _ args: ByteCodable...) -> [UInt8] {
-  [code] + args.map { arg -> [UInt8] in
-    arg.byteCode
-  }.joined()
+private func byteCommand(_ code: Command, _ args: ByteCodable...) -> [UInt8] {
+  [code.rawValue] + args.flatMap(\.byteCode)
 }
 
-private func generateSteps(steps: [DrawStep]) -> [UInt8] {
-  Array(steps.map{ step in step.byteCode}.joined())
-}
-
-extension DrawStep: ByteCodable {
-  var byteCode: [UInt8] {
-    switch self {
+private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
+  steps.flatMap { (step: DrawStep) -> [UInt8] in
+    switch step {
     case .saveGState:
-      return byteCommand(0)
+      return byteCommand(.saveGState)
     case .restoreGState:
-      return byteCommand(1)
+      return byteCommand(.restoreGState)
     case let .moveTo(to):
-      return byteCommand(2, to)
+      return byteCommand(.moveTo, to)
     case let .curveTo(c1, c2, end):
-      return byteCommand(3, c1, c2, end)
+      return byteCommand(.curveTo, c1, c2, end)
     case let .lineTo(to):
-      return byteCommand(4, to)
+      return byteCommand(.lineTo, to)
     case let .appendRectangle(rect):
-      return byteCommand(5, rect)
+      return byteCommand(.appendRectangle, rect)
     case let .appendRoundedRect(rect, rx, ry):
-      return byteCommand(6, rect, rx, ry)
+      return byteCommand(.appendRoundedRect, rect, rx, ry)
     case let .addArc(center, radius, startAngle, endAngle, clockwise):
-      return byteCommand(7, center, radius, startAngle, endAngle, clockwise)
+      return byteCommand(
+        .addArc,
+        center,
+        radius,
+        startAngle,
+        endAngle,
+        clockwise
+      )
     case .closePath:
-      return byteCommand(8)
+      return byteCommand(.closePath)
     case .replacePathWithStrokePath:
-      return byteCommand(9)
+      return byteCommand(.replacePathWithStrokePath)
     case let .lines(lines):
-      return byteCommand(10, lines)
+      return byteCommand(.lines, lines)
     case let .clip(rule):
-      return byteCommand(11, rule)
+      return byteCommand(.clip, rule)
     case let .clipToRect(rect):
-      return byteCommand(12, rect)
+      return byteCommand(.clipToRect, rect)
     case let .dash(pattern):
-      return byteCommand(13, pattern)
+      return byteCommand(.dash, pattern)
     case let .fill(rule):
-      return byteCommand(14, rule)
+      return byteCommand(.fill, rule)
     case let .fillEllipse(rect):
-      return byteCommand(15, rect)
+      return byteCommand(.fillEllipse, rect)
     case .stroke:
-      return byteCommand(16)
+      return byteCommand(.stroke)
     case let .drawPath(mode):
-      return byteCommand(17, mode)
+      return byteCommand(.drawPath, mode)
     case let .addEllipse(rect):
-      return byteCommand(18, rect)
+      return byteCommand(.addEllipse, rect)
     case let .concatCTM(transform):
-      return byteCommand(19, transform)
+      return byteCommand(.concatCTM, transform)
     case let .flatness(f):
-      return byteCommand(20, f)
+      return byteCommand(.flatness, f)
     case let .lineWidth(width):
-      return byteCommand(21, width)
+      return byteCommand(.lineWidth, width)
     case let .lineJoinStyle(lineJoin):
-      return byteCommand(22, lineJoin)
+      return byteCommand(.lineJoinStyle, lineJoin)
     case let .lineCapStyle(cap):
-      return byteCommand(23, cap)
+      return byteCommand(.lineCapStyle, cap)
     case let .colorRenderingIntent(intent):
-      return byteCommand(24, intent)
+      return byteCommand(.colorRenderingIntent, intent)
     case let .globalAlpha(alpha):
-      return byteCommand(25, alpha)
+      return byteCommand(.globalAlpha, alpha)
     case let .strokeColor(color):
-      return byteCommand(26, color)
+      return byteCommand(.strokeColor, color)
     case let .fillColor(color):
-      return byteCommand(27, color)
+      return byteCommand(.fillColor, color)
     case let .linearGradient(name, options):
       return byteCommand(
-        28,
-        gradientsIds[name]!,
+        .linearGradient,
+        context.gradientsIds[name]!,
         options.startPoint,
         options.endPoint,
         options.endPoint
       )
     case let .radialGradient(name, options):
       return byteCommand(
-        29,
-        gradientsIds[name]!,
+        .radialGradient,
+        context.gradientsIds[name]!,
         options.startCenter,
         options.startRadius,
         options.endCenter,
@@ -232,7 +215,7 @@ extension DrawStep: ByteCodable {
       )
     case let .linearGradientInlined(gradient, options):
       return byteCommand(
-        30,
+        .linearGradientInlined,
         gradient,
         options.startPoint,
         options.endPoint,
@@ -240,7 +223,7 @@ extension DrawStep: ByteCodable {
       )
     case let .radialGradientInlined(gradient, options):
       return byteCommand(
-        31,
+        .radialGradientInlined,
         gradient,
         options.startCenter,
         options.startRadius,
@@ -249,54 +232,70 @@ extension DrawStep: ByteCodable {
         options.options
       )
     case let .subrouteWithName(name):
-      return byteCommand(32, subroutesIds[name]!)
+      return byteCommand(.subrouteWithId, context.subroutesIds[name]!)
     case let .shadow(shadow):
-      return byteCommand(33, shadow)
+      return byteCommand(.shadow, shadow)
     case let .blendMode(mode):
-      return byteCommand(34, mode)
+      return byteCommand(.blendMode, mode)
     case .beginTransparencyLayer:
-      return byteCommand(35)
+      return byteCommand(.beginTransparencyLayer)
     case .endTransparencyLayer:
-      return byteCommand(36)
+      return byteCommand(.endTransparencyLayer)
     case let .composite(steps):
-      return generateSteps(steps: steps)
-    case .endPath, .fillColorSpace, .strokeColorSpace:
+      return generateSteps(steps: steps, context: context)
+    case .endPath:
+      // .endPath is rather important, this should be fixed in future
       return []
+    case .fillColorSpace, .strokeColorSpace:
+      fatalError("Not implemented")
     }
   }
 }
 
-extension DrawRoute: ByteCodable {
-  var byteCode: [UInt8] {
-    generateGradients(gradients: gradients) +
-      generateSubroutes(subroutes: subroutes) + generateSteps(steps: steps)
+private func generateSubroutes(
+  subroutes: [String: DrawRoute],
+  context: Context
+) -> [UInt8] {
+  var res = UInt32(subroutes.count).byteCode
+  for subroute in subroutes {
+    let counter = UInt32(context.subroutesIds.count)
+    context.subroutesIds[subroute.key] = counter
+    let subrouteBytecode = generateRoute(
+      route: subroute.value,
+      context: context
+    )
+    res += counter.byteCode + UInt32(subrouteBytecode.count)
+      .byteCode + subrouteBytecode
   }
+  return res
 }
 
-private var gradientsIds: [String: UInt32] = [:]
-
-private func generateGradients(gradients: [String: Gradient]) -> [UInt8] {
+private func generateGradients(
+  gradients: [String: Gradient],
+  context: Context
+) -> [UInt8] {
   var res = UInt32(gradients.count).byteCode
   for gradient in gradients {
-    let counter = UInt32(gradientsIds.count)
-    gradientsIds[gradient.key] = counter
+    let counter = UInt32(context.gradientsIds.count)
+    context.gradientsIds[gradient.key] = counter
     res += counter.byteCode + gradient.value.byteCode
   }
   return res
 }
 
-private var subroutesIds: [String: UInt32] = [:]
+private func generateRoute(route: DrawRoute, context: Context) -> [UInt8] {
+  generateGradients(gradients: route.gradients, context: context)
+    + generateSubroutes(subroutes: route.subroutes, context: context)
+    + generateSteps(steps: route.steps, context: context)
+}
 
-private func generateSubroutes(subroutes: [String: DrawRoute]) -> [UInt8] {
-  var res = UInt32(subroutes.count).byteCode
-  for subroute in subroutes {
-    let counter = UInt32(subroutesIds.count)
-    subroutesIds[subroute.key] = counter
-    let subrouteBytecode = subroute.value.byteCode
-    res += counter.byteCode + UInt32(subrouteBytecode.count)
-      .byteCode + subrouteBytecode
-  }
-  return res
+private class Context {
+  var gradientsIds: [String: UInt32] = [:]
+  var subroutesIds: [String: UInt32] = [:]
+}
+
+func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
+  generateRoute(route: route, context: Context())
 }
 
 struct BCCGGenerator: CoreGraphicsGenerator {
@@ -304,9 +303,7 @@ struct BCCGGenerator: CoreGraphicsGenerator {
 
   func filePreamble() -> String {
     """
-    #import <CoreGraphics/CoreGraphics.h>
     #import "\(headerImportPath)"
-    @import BCRunner;
     typedef const unsigned char bytecode;
     void runBytecode(CGContextRef context, bytecode** arr, int len);
     """
@@ -314,9 +311,10 @@ struct BCCGGenerator: CoreGraphicsGenerator {
 
   func generateImageFunction(image: Image) -> String {
     let bytecodeName = "\(image.name)Bytecode"
+    let bytecode = generateRouteBytecode(route: image.route)
     return """
     bytecode \(bytecodeName)[] = {
-    \(image.route.byteCode.map { byte -> String in "\(byte), " }.joined())
+    \(bytecode.map { "\($0), " }.joined())
     };
     void Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
       runBytecode(context, &\(bytecodeName), sizeof(\(bytecodeName)));

@@ -71,7 +71,7 @@ public func runCggen(with args: Args) throws {
   if let filePrefix = args.bytecodeFilePrefix {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let headerStr = headerGenerator.generateFile(images: images)
-    try! headerStr.write(
+    try headerStr.write(
       toFile: filePrefix + ".h",
       atomically: true,
       encoding: .utf8
@@ -81,7 +81,7 @@ public func runCggen(with args: Args) throws {
       headerImportPath: filePrefix + ".h"
     )
     let fileStr = implGenerator.generateFile(images: images)
-    try! fileStr.write(
+    try fileStr.write(
       toFile: filePrefix + ".m",
       atomically: true,
       encoding: .utf8
