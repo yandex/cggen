@@ -91,7 +91,7 @@ extension RGBACGColor: ByteCodable {
 
 extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
   var byteCode: [UInt8] {
-    UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
+    UInt32(count).byteCode + flatMap { $0.0.byteCode + $0.1.byteCode }
   }
 }
 

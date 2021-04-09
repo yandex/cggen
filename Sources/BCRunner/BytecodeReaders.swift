@@ -7,8 +7,7 @@ protocol BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> Self
 }
 
-struct EnumerationError<T>: Swift.Error {
-}
+struct EnumerationError<T>: Swift.Error {}
 
 extension BytecodeElement where Self: FixedWidthInteger {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> Self {
@@ -20,7 +19,8 @@ extension UInt8: BytecodeElement {}
 extension UInt32: BytecodeElement {}
 extension UInt16: BytecodeElement {}
 
-extension BytecodeElement where Self: RawRepresentable, Self.RawValue: FixedWidthInteger {
+extension BytecodeElement where Self: RawRepresentable,
+  Self.RawValue: FixedWidthInteger {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> Self {
     let rawValue: UInt8 = try runner.readInt()
     let converted = Self.RawValue(rawValue)
@@ -34,7 +34,6 @@ extension BytecodeElement where Self: RawRepresentable, Self.RawValue: FixedWidt
 extension CGBlendMode: BytecodeElement {}
 extension CGPathFillRule: BytecodeElement {}
 extension CGPathDrawingMode: BytecodeElement {}
-
 
 extension CGFloat: BytecodeElement {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> CGFloat {
@@ -75,7 +74,7 @@ extension Array: BytecodeElement where Element: BytecodeElement {
 }
 
 extension BCDashPattern: BytecodeElement {
-  static func readFrom(_ runner: BytecodeRunner) throws  -> BCDashPattern {
+  static func readFrom(_ runner: BytecodeRunner) throws -> BCDashPattern {
     try .init(.readFrom(runner), .readFrom(runner))
   }
 }

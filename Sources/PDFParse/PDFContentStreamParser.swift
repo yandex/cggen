@@ -72,12 +72,12 @@ enum PDFContentStreamParser {
       Parser.ctx(info).operators.append(.concatCTM(transform))
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "CS") { scanner, info in
+    CGPDFOperatorTableSetCallback(operatorTableRef, "CS") { scanner, _ in
       let name = scanner.popName()!
       // Parser.ctx(info).operators.append(.colorSpaceStroke(name))
     }
 
-    CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { scanner, info in
+    CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { scanner, _ in
       let name = scanner.popName()!
       // Parser.ctx(info).operators.append(.colorSpaceNonstroke(name))
     }

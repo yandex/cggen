@@ -8,14 +8,13 @@ extension BCRGBAColor {
 }
 
 class BytecodeRunner {
-  
   enum Error: Swift.Error {
     case outOfBounds(left: BCSizeType, required: BCSizeType)
     case failedToCreateGradient
     case invalidGradientId
     case invalidSubrouteId
   }
-  
+
   struct State {
     var position: UnsafePointer<UInt8>
     var remaining: BCSizeType
@@ -47,7 +46,10 @@ class BytecodeRunner {
   func readInt<T: FixedWidthInteger>(_: T.Type = T.self) throws -> T {
     let size = MemoryLayout<T>.size
     guard size <= currentState.remaining else {
-      throw Error.outOfBounds(left: currentState.remaining, required: UInt32(size))
+      throw Error.outOfBounds(
+        left: currentState.remaining,
+        required: UInt32(size)
+      )
     }
     var ret: T = 0
     memcpy(&ret, currentState.position, size)
@@ -212,7 +214,7 @@ class BytecodeRunner {
       case .lineWidth:
         try context.setLineWidth(read())
       case .linearGradient:
-        let id:BCIdType = try read()
+        let id: BCIdType = try read()
         guard let gradient = commons.gradients[id] else {
           throw Error.invalidGradientId
         }
@@ -225,7 +227,7 @@ class BytecodeRunner {
       case .moveTo:
         try context.move(to: read())
       case .radialGradient:
-        let id:BCIdType = try read()
+        let id: BCIdType = try read()
         guard let gradient = commons.gradients[id] else {
           throw Error.invalidGradientId
         }
@@ -245,7 +247,7 @@ class BytecodeRunner {
         let color: BCRGBAColor = try read()
         context.setStrokeColor(color.components)
       case .subrouteWithId:
-        let id:BCIdType = try read()
+        let id: BCIdType = try read()
         guard let subroute = commons.subroutes[id] else {
           throw Error.invalidSubrouteId
         }
