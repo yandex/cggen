@@ -10,8 +10,6 @@ let package = Package(
   ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
-    .executable(name: "png-fuzzy-compare", targets: ["png-fuzzy-compare"]),
-    .executable(name: "pdf-to-png", targets: ["pdf-to-png"]),
     .library(name: "cggen-bc-runner", targets: ["BCRunner"]),
   ],
   dependencies: [
@@ -39,20 +37,6 @@ let package = Package(
     .target(
       name: "libcggen",
       dependencies: ["Base", "PDFParse", "BCCommon"]
-    ),
-    .target(
-      name: "png-fuzzy-compare",
-      dependencies: [
-        .product(name: "ArgumentParser", package: "swift-argument-parser"),
-        "Base",
-      ]
-    ),
-    .target(
-      name: "pdf-to-png",
-      dependencies: [
-        .product(name: "ArgumentParser", package: "swift-argument-parser"),
-        "Base",
-      ]
     ),
     .target(
       name: "Base"
