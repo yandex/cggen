@@ -95,6 +95,7 @@ func testBC(
 
   let reference = try renderPDF(from: path, scale: CGFloat(defScale))
   let bytecode = try getBytecode(from: path)
+  
   let cs = CGColorSpaceCreateDeviceRGB()
   guard let context = CGContext(
     data: nil,
@@ -109,10 +110,19 @@ func testBC(
   }
   context
     .concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
+  context.setAllowsAntialiasing(false)
   try runBytecode(context, fromData: Data(bytecode))
+  
   guard let result = context.makeImage() else {
     throw Err("Failed to draw CGImage")
   }
   let diff = compare(reference, result)
   XCTAssertLessThan(diff, tolerance)
+  if diff >= tolerance {
+    XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+      $0.add(.init(image: result, name: "result"))
+      $0.add(.init(image: reference, name: "webkitsnapshot"))
+      $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+    }
+  }
 }
