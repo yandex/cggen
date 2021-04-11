@@ -93,14 +93,14 @@ func testBC(
 ) throws {
   // TODO: Add support for svg
 
-  let reference = try renderPDF(from: path, scale: CGFloat(defScale))
+  let reference = try renderPDF(from: path, scale: CGFloat(scale))
   let bytecode = try getBytecode(from: path)
   
   let cs = CGColorSpaceCreateDeviceRGB()
   guard let context = CGContext(
     data: nil,
-    width: Int(50 * scale),
-    height: Int(50 * scale),
+    width: reference.width,
+    height: reference.height,
     bitsPerComponent: 8,
     bytesPerRow: 0,
     space: cs,
