@@ -139,7 +139,7 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
     case let .moveTo(to):
       return byteCommand(.moveTo, to)
     case let .curveTo(c1, c2, end):
-      return byteCommand(.curveTo, c1, c2, end)
+      return byteCommand(.curveTo, end, c1, c2)
     case let .lineTo(to):
       return byteCommand(.lineTo, to)
     case let .appendRectangle(rect):
