@@ -201,7 +201,7 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
         context.gradientsIds[name]!,
         options.startPoint,
         options.endPoint,
-        options.endPoint
+        options.options
       )
     case let .radialGradient(name, options):
       return byteCommand(
