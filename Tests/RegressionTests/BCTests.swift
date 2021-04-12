@@ -95,7 +95,7 @@ func testBC(
 
   let reference = try renderPDF(from: path, scale: CGFloat(scale))
   let bytecode = try getBytecode(from: path)
-  
+
   let cs = CGColorSpaceCreateDeviceRGB()
   guard let context = CGContext(
     data: nil,
@@ -112,7 +112,7 @@ func testBC(
     .concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
   context.setAllowsAntialiasing(false)
   try runBytecode(context, fromData: Data(bytecode))
-  
+
   guard let result = context.makeImage() else {
     throw Err("Failed to draw CGImage")
   }

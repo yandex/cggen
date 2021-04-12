@@ -143,3 +143,9 @@ extension BCShadow: BytecodeElement {
 extension CGColorRenderingIntent: BytecodeElement {}
 
 extension Command: BytecodeElement {}
+
+extension BCCubicCurve: BytecodeElement {
+  static func readFrom(_ runner: BytecodeRunner) throws -> BCCubicCurve {
+    try .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
+  }
+}

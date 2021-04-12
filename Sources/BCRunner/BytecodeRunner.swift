@@ -183,7 +183,12 @@ class BytecodeRunner {
       case .concatCTM:
         try context.concatenate(read())
       case .curveTo:
-        try context.addCurve(to: read(), control1: read(), control2: read())
+        let curve: BCCubicCurve = try read()
+        context.addCurve(
+          to: curve.to,
+          control1: curve.control1,
+          control2: curve.control2
+        )
       case .dash:
         let dashPattern: BCDashPattern = try read()
         context.setLineDash(

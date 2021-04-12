@@ -10,6 +10,17 @@ public struct BCDashPattern {
   }
 }
 
+public struct BCCubicCurve {
+  public let control1: CGPoint
+  public let control2: CGPoint
+  public let to: CGPoint
+  public init(_ control1: CGPoint, _ control2: CGPoint, _ to: CGPoint) {
+    self.control1 = control1
+    self.control2 = control2
+    self.to = to
+  }
+}
+
 public struct BCRGBAColor {
   public let red: CGFloat
   public let green: CGFloat
