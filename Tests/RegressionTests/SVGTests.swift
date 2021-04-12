@@ -293,7 +293,7 @@ extension WKWebView {
   }
 }
 
-private class WKWebViewSnapshoter {
+class WKWebViewSnapshoter {
   private class WKDelegate: NSObject, WKNavigationDelegate {
     private var onNavigationFinishCallbacks = [() -> Void]()
 
