@@ -174,3 +174,8 @@ private func generateImages(
     )
   }
 }
+
+public func getBytecode(from file: URL) throws -> [UInt8] {
+  let img = try generateImages(from: [file])[0]
+  return generateRouteBytecode(route: img.route)
+}

@@ -37,7 +37,7 @@ extension Array: ByteCodable where Element: ByteCodable {
 
 extension CGRect: ByteCodable {
   var byteCode: [UInt8] {
-    [x, y, width, height].flatMap(\.byteCode)
+    origin.byteCode + size.byteCode
   }
 }
 

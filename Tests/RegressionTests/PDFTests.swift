@@ -110,9 +110,4 @@ private func sample(named name: String) -> URL {
 private let samplesPath =
   getCurentFilePath().appendingPathComponent("pdf_samples")
 
-func renderPDF(from pdf: URL, scale: CGFloat) throws -> CGImage {
-  let pdf = CGPDFDocument(pdf as CFURL)!
-  try check(pdf.pages.count == 1, Err("multipage pdf"))
-  return try
-    pdf.pages[0].render(scale: scale) !! Err("Couldnt create png from \(pdf)")
-}
+
