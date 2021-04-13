@@ -9,8 +9,8 @@ private let defTolerance = 0.002
 private let defScale: CGFloat = 2.0
 private let defSize = CGSize(width: 50, height: 50)
 
-let PDFSamplesPath = getCurentFilePath().appendingPathComponent("pdf_samples")
-let SVGSamplesPath = getCurentFilePath().appendingPathComponent("svg_samples")
+let samplesPathPDF = getCurentFilePath().appendingPathComponent("pdf_samples")
+let samplesPathSVG = getCurentFilePath().appendingPathComponent("svg_samples")
 
 class BCPDFTests: XCTestCase {
   func testAlpha() {
@@ -225,7 +225,7 @@ func testBC(
   tolerance: Double = defTolerance,
   scale: CGFloat = defScale
 ) {
-  let url = PDFSamplesPath.appendingPathComponent(pdf)
+  let url = samplesPathPDF.appendingPathComponent(pdf)
     .appendingPathExtension("pdf")
   XCTAssertNoThrow(try testBC(
     path: url,
@@ -242,7 +242,7 @@ func testBC(
   scale: CGFloat = defScale,
   size: CGSize = defSize
 ) {
-  let url = SVGSamplesPath.appendingPathComponent(svg)
+  let url = samplesPathSVG.appendingPathComponent(svg)
     .appendingPathExtension("svg")
   XCTAssertNoThrow(try testBC(
     path: url,

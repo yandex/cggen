@@ -7,7 +7,14 @@ protocol BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> Self
 }
 
-struct EnumerationError<T>: Swift.Error {}
+public struct InvalidRawValue<T: RawRepresentable>: Swift.Error {
+  public typealias enumType = T
+  public typealias rawType = T.RawValue
+  public var rawValue: rawType
+  public init(rawValue: rawType) {
+    self.rawValue = rawValue
+  }
+}
 
 extension BytecodeElement where Self: FixedWidthInteger {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> Self {
@@ -20,12 +27,12 @@ extension UInt32: BytecodeElement {}
 extension UInt16: BytecodeElement {}
 
 extension BytecodeElement where Self: RawRepresentable,
-  Self.RawValue: FixedWidthInteger {
+  RawValue: FixedWidthInteger {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> Self {
     let rawValue: UInt8 = try runner.readInt()
     let converted = Self.RawValue(rawValue)
     guard let ret = Self(rawValue: converted) else {
-      throw EnumerationError<Self>()
+      throw InvalidRawValue<Self>(rawValue: converted)
     }
     return ret
   }
@@ -75,7 +82,7 @@ extension Array: BytecodeElement where Element: BytecodeElement {
 
 extension BCDashPattern: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCDashPattern {
-    try .init(.readFrom(runner), .readFrom(runner))
+    try .init(phase: .readFrom(runner), lengths: .readFrom(runner))
   }
 }
 
@@ -98,10 +105,10 @@ extension CGLineCap: BytecodeElement {}
 extension BCRGBAColor: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCRGBAColor {
     try BCRGBAColor(
-      .readFrom(runner),
-      .readFrom(runner),
-      .readFrom(runner),
-      .readFrom(runner)
+      red: .readFrom(runner),
+      green: .readFrom(runner),
+      blue: .readFrom(runner),
+      alpha: .readFrom(runner)
     )
   }
 }
@@ -111,7 +118,7 @@ extension CGGradientDrawingOptions: BytecodeElement {}
 extension BCLinearGradientDrawingOptions: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws
     -> BCLinearGradientDrawingOptions {
-    try .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
+    try .init(start: .readFrom(runner), end: .readFrom(runner), drawingOptions: .readFrom(runner))
   }
 }
 
@@ -119,24 +126,24 @@ extension BCRadialGradientDrawingOptions: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws
     -> BCRadialGradientDrawingOptions {
     try .init(
-      .readFrom(runner),
-      .readFrom(runner),
-      .readFrom(runner),
-      .readFrom(runner),
-      .readFrom(runner)
+      startCenter: .readFrom(runner),
+      startRadius: .readFrom(runner),
+      endCenter: .readFrom(runner),
+      endRadius: .readFrom(runner),
+      drawingOptions: .readFrom(runner)
     )
   }
 }
 
 extension BCLocationAndColor: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCLocationAndColor {
-    try .init(.readFrom(runner), .readFrom(runner))
+    try .init(location: .readFrom(runner), color: .readFrom(runner))
   }
 }
 
 extension BCShadow: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCShadow {
-    try .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
+    try .init(offset: .readFrom(runner), blur: .readFrom(runner), color: .readFrom(runner))
   }
 }
 
@@ -146,6 +153,6 @@ extension Command: BytecodeElement {}
 
 extension BCCubicCurve: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCCubicCurve {
-    try .init(.readFrom(runner), .readFrom(runner), .readFrom(runner))
+    try .init(control1: .readFrom(runner), control2: .readFrom(runner), to: .readFrom(runner))
   }
 }

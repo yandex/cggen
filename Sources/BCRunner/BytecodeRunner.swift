@@ -7,12 +7,12 @@ extension BCRGBAColor {
   var components: [CGFloat] { [red, green, blue, alpha] }
 }
 
-class BytecodeRunner {
-  enum Error: Swift.Error {
+public class BytecodeRunner {
+  public enum Error: Swift.Error {
     case outOfBounds(left: BCSizeType, required: BCSizeType)
     case failedToCreateGradient
-    case invalidGradientId
-    case invalidSubrouteId
+    case invalidGradientId(id: BCIdType)
+    case invalidSubrouteId(id: BCIdType)
   }
 
   struct State {
@@ -221,7 +221,7 @@ class BytecodeRunner {
       case .linearGradient:
         let id: BCIdType = try read()
         guard let gradient = commons.gradients[id] else {
-          throw Error.invalidGradientId
+          throw Error.invalidGradientId(id: id)
         }
         try drawLinearGradient(gradient)
       case .linearGradientInlined:
@@ -234,7 +234,7 @@ class BytecodeRunner {
       case .radialGradient:
         let id: BCIdType = try read()
         guard let gradient = commons.gradients[id] else {
-          throw Error.invalidGradientId
+          throw Error.invalidGradientId(id: id)
         }
         try drawRadialGradient(gradient)
       case .radialGradientInlined:
@@ -254,7 +254,7 @@ class BytecodeRunner {
       case .subrouteWithId:
         let id: BCIdType = try read()
         guard let subroute = commons.subroutes[id] else {
-          throw Error.invalidSubrouteId
+          throw Error.invalidSubrouteId(id: id)
         }
         try BytecodeRunner(subroute, commons).run()
       case .shadow:
@@ -290,5 +290,9 @@ func runBytecodeThrowing(
   _ start: UnsafePointer<UInt8>,
   _ len: Int
 ) {
-  try! runBytecodeThrowing(context, start, len)
+  do {
+    try runBytecodeThrowing(context, start, len)
+  } catch let t {
+    assertionFailure("Failed to run bytecode with error: \(t)");
+  }
 }

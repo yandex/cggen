@@ -27,9 +27,9 @@ public enum PDFOperator {
   // cm
   case concatCTM(CGAffineTransform)
   // CS
-  // case colorSpaceStroke(String)
+  case colorSpaceStroke(String)
   // cs
-  // case colorSpaceNonstroke(String)
+  case colorSpaceNonstroke(String)
   // d
   case dash(CGFloat, [CGFloat])
   // d0

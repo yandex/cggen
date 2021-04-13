@@ -4,7 +4,7 @@ import Foundation
 public struct BCDashPattern {
   public let phase: CGFloat
   public let lengths: [CGFloat]
-  public init(_ phase: CGFloat, _ lengths: [CGFloat]) {
+  public init(phase: CGFloat, lengths: [CGFloat]) {
     self.phase = phase
     self.lengths = lengths
   }
@@ -14,7 +14,7 @@ public struct BCCubicCurve {
   public let control1: CGPoint
   public let control2: CGPoint
   public let to: CGPoint
-  public init(_ control1: CGPoint, _ control2: CGPoint, _ to: CGPoint) {
+  public init(control1: CGPoint, control2: CGPoint, to: CGPoint) {
     self.control1 = control1
     self.control2 = control2
     self.to = to
@@ -27,10 +27,10 @@ public struct BCRGBAColor {
   public let blue: CGFloat
   public let alpha: CGFloat
   public init(
-    _ red: CGFloat,
-    _ green: CGFloat,
-    _ blue: CGFloat,
-    _ alpha: CGFloat
+    red: CGFloat,
+    green: CGFloat,
+    blue: CGFloat,
+    alpha: CGFloat
   ) {
     self.red = red
     self.green = green
@@ -44,9 +44,9 @@ public struct BCLinearGradientDrawingOptions {
   public let end: CGPoint
   public let options: CGGradientDrawingOptions
   public init(
-    _ start: CGPoint,
-    _ end: CGPoint,
-    _ drawingOptions: CGGradientDrawingOptions
+    start: CGPoint,
+    end: CGPoint,
+    drawingOptions: CGGradientDrawingOptions
   ) {
     self.start = start
     self.end = end
@@ -61,11 +61,11 @@ public struct BCRadialGradientDrawingOptions {
   public let endRadius: CGFloat
   public let drawingOptions: CGGradientDrawingOptions
   public init(
-    _ startCenter: CGPoint,
-    _ startRadius: CGFloat,
-    _ endCenter: CGPoint,
-    _ endRadius: CGFloat,
-    _ drawingOptions: CGGradientDrawingOptions
+    startCenter: CGPoint,
+    startRadius: CGFloat,
+    endCenter: CGPoint,
+    endRadius: CGFloat,
+    drawingOptions: CGGradientDrawingOptions
   ) {
     self.startCenter = startCenter
     self.startRadius = startRadius
@@ -78,7 +78,7 @@ public struct BCRadialGradientDrawingOptions {
 public struct BCLocationAndColor {
   public let location: CGFloat
   public let color: BCRGBAColor
-  public init(_ location: CGFloat, _ color: BCRGBAColor) {
+  public init(location: CGFloat, color: BCRGBAColor) {
     self.location = location
     self.color = color
   }
@@ -90,7 +90,7 @@ public struct BCShadow {
   public let offset: CGSize
   public let blur: CGFloat
   public let color: BCRGBAColor
-  public init(_ offset: CGSize, _ blur: CGFloat, _ color: BCRGBAColor) {
+  public init(offset: CGSize, blur: CGFloat, color: BCRGBAColor) {
     self.offset = offset
     self.blur = blur
     self.color = color

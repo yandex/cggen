@@ -139,10 +139,10 @@ extension PDFOperator {
       return .curveTo(p1, p2, p3)
     case let .concatCTM(transform):
       return .concatCTM(transform)
-//    case .colorSpaceStroke:
-//      return .strokeColorSpace
-//    case .colorSpaceNonstroke:
-//      return .fillColorSpace
+    case .colorSpaceStroke:
+      return .empty
+    case .colorSpaceNonstroke:
+      return .empty
     case let .dash(phase, lengths):
       let pattern = DashPattern(phase: phase, lengths: lengths)
       return .dash(pattern)
