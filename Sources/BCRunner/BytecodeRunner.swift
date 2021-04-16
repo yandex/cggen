@@ -285,7 +285,8 @@ func runBytecodeThrowing(
   try BytecodeRunner(state, commons).run()
 }
 
-@_cdecl("runBytecode") func runBytecode(
+@_cdecl("runBytecode")
+public func runBytecode(
   _ context: CGContext,
   _ start: UnsafePointer<UInt8>,
   _ len: Int

@@ -78,7 +78,8 @@ public func runCggen(with args: Args) throws {
     )
 
     let implGenerator = BCCGGenerator(
-      headerImportPath: filePrefix + ".h"
+      headerImportPath: filePrefix + ".h",
+      prefix: objcPrefix
     )
     let fileStr = implGenerator.generateFile(images: images)
     try fileStr.write(

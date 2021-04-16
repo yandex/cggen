@@ -299,13 +299,15 @@ func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
 }
 
 struct BCCGGenerator: CoreGraphicsGenerator {
-  let headerImportPath: String
+  var headerImportPath: String
+  var prefix: String
 
   func filePreamble() -> String {
     """
     #import "\(headerImportPath)"
-    typedef const unsigned char bytecode;
-    void runBytecode(CGContextRef context, bytecode** arr, int len);
+
+    void runBytecode(CGContextRef context, const uint8_t* arr, int len);
+
     """
   }
 
@@ -313,11 +315,11 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     let bytecodeName = "\(image.name)Bytecode"
     let bytecode = generateRouteBytecode(route: image.route)
     return """
-    bytecode \(bytecodeName)[] = {
+    const uint8_t \(bytecodeName)[] = {
     \(bytecode.map { "\($0), " }.joined())
     };
-    void Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
-      runBytecode(context, &\(bytecodeName), sizeof(\(bytecodeName)));
+    void \(prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
+      runBytecode(context, \(bytecodeName), sizeof(\(bytecodeName)) /* \(bytecode.count) */);
     }
     """
   }
