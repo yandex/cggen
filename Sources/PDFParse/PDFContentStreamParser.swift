@@ -83,7 +83,7 @@ enum PDFContentStreamParser {
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d") { scanner, info in
-      let phase = CGFloat(scanner.popInt()!)
+      let phase = scanner.popNumber()!
       let lengths = scanner.popArray()!.map { CGFloat($0.realFromIntOrReal()!) }
       Parser.ctx(info).operators.append(.dash(phase, lengths))
     }
