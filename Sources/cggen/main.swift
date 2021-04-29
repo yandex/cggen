@@ -7,6 +7,7 @@ struct Main: ParsableCommand {
   @Option var objcHeader: String?
   @Option var objcPrefix = ""
   @Option var objcImpl: String?
+  @Option var objcBytecodeImpl: String?
   @Option var bytecodeFilePrefix: String?
   @Option var objcHeaderImportPath: String?
   @Option var objcCallerPath: String?
@@ -24,24 +25,22 @@ struct Main: ParsableCommand {
     version: "0.1"
   )
 
-  mutating func run() throws {
-    try runCggen(
-      with: Args(
-        objcHeader: objcHeader,
-        objcPrefix: objcPrefix,
-        objcImpl: objcImpl,
-        bytecodeFilePrefix: bytecodeFilePrefix,
-        objcHeaderImportPath: objcHeaderImportPath,
-        objcCallerPath: objcCallerPath,
-        callerScale: callerScale,
-        callerPngOutputPath: callerPngOutput,
-        generationStyle: generationStyle,
-        cggenSupportHeaderPath: cggenSupportHeaderPath,
-        module: moduleName,
-        verbose: verbose,
-        files: files
-      )
-    )
+  func run() throws {
+    try runCggen(with: Args(
+      objcHeader: objcHeader,
+      objcPrefix: objcPrefix,
+      objcImpl: objcImpl,
+      objcBytecodeImpl: objcBytecodeImpl,
+      objcHeaderImportPath: objcHeaderImportPath,
+      objcCallerPath: objcCallerPath,
+      callerScale: callerScale,
+      callerPngOutputPath: callerPngOutput,
+      generationStyle: generationStyle,
+      cggenSupportHeaderPath: cggenSupportHeaderPath,
+      module: moduleName,
+      verbose: verbose,
+      files: files
+    ))
   }
 }
 
