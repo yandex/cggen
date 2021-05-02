@@ -1,3 +1,4 @@
+import Base
 import BCCommon
 import Foundation
 
@@ -298,14 +299,15 @@ func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
   generateRoute(route: route, context: Context())
 }
 
+
 struct BCCGGenerator: CoreGraphicsGenerator {
-  var headerImportPath: String
-  var prefix: String
+  var params: GenerationParams
+  var headerImportPath: String?
 
   func filePreamble() -> String {
-    """
-    #import "\(headerImportPath)"
-
+    let importLine = headerImportPath.map { "#import \"\($0)\"\n" } ?? ""
+    return """
+    \(importLine)
     void runBytecode(CGContextRef context, const uint8_t* arr, int len);
 
     """
@@ -315,11 +317,11 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     let bytecodeName = "\(image.name)Bytecode"
     let bytecode = generateRouteBytecode(route: image.route)
     return """
-    const uint8_t \(bytecodeName)[] = {
-    \(bytecode.map { "\($0), " }.joined())
+    static const uint8_t \(bytecodeName)[] = { /* size: \(bytecode.count)*/
+      \(bytecode.map { "\($0), " }.joined())
     };
-    void \(prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
-      runBytecode(context, \(bytecodeName), sizeof(\(bytecodeName)) /* \(bytecode.count) */);
+    void \(params.prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
+      runBytecode(context, \(bytecodeName), sizeof(\(bytecodeName)));
     }
     """
   }

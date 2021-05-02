@@ -7,7 +7,7 @@ public struct Args {
   let objcHeader: String?
   let objcPrefix: String?
   let objcImpl: String?
-  let bytecodeFilePrefix: String?
+  let objcBytecodeImpl: String?
   let objcHeaderImportPath: String?
   let objcCallerPath: String?
   let callerScale: Double
@@ -23,7 +23,7 @@ public struct Args {
     objcHeader: String?,
     objcPrefix: String?,
     objcImpl: String?,
-    bytecodeFilePrefix: String?,
+    objcBytecodeImpl: String?,
     objcHeaderImportPath: String?,
     objcCallerPath: String?,
     callerScale: Double,
@@ -38,7 +38,7 @@ public struct Args {
     self.objcHeader = objcHeader
     self.objcPrefix = objcPrefix
     self.objcImpl = objcImpl
-    self.bytecodeFilePrefix = bytecodeFilePrefix
+    self.objcBytecodeImpl = objcBytecodeImpl
     self.objcHeaderImportPath = objcHeaderImportPath
     self.objcCallerPath = objcCallerPath
     self.callerScale = callerScale
@@ -68,22 +68,14 @@ public func runCggen(with args: Args) throws {
     module: args.module ?? ""
   )
 
-  if let filePrefix = args.bytecodeFilePrefix {
-    let headerGenerator = ObjcHeaderCGGenerator(params: params)
-    let headerStr = headerGenerator.generateFile(images: images)
-    try headerStr.write(
-      toFile: filePrefix + ".h",
-      atomically: true,
-      encoding: .utf8
-    )
-
+  if let objcBytecodeImpl = args.objcBytecodeImpl {
     let implGenerator = BCCGGenerator(
-      headerImportPath: filePrefix + ".h",
-      prefix: objcPrefix
+      params: params,
+      headerImportPath: args.objcHeaderImportPath
     )
     let fileStr = implGenerator.generateFile(images: images)
     try fileStr.write(
-      toFile: filePrefix + ".m",
+      toFile: objcBytecodeImpl,
       atomically: true,
       encoding: .utf8
     )
@@ -94,7 +86,7 @@ public func runCggen(with args: Args) throws {
   if let objcHeaderPath = args.objcHeader {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let fileStr = headerGenerator.generateFile(images: images)
-    try! fileStr.write(
+    try fileStr.write(
       toFile: objcHeaderPath,
       atomically: true,
       encoding: .utf8
@@ -109,13 +101,13 @@ public func runCggen(with args: Args) throws {
       headerImportPath: headerImportPath
     )
     let fileStr = implGenerator.generateFile(images: images)
-    try! fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
+    try fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
     log("Impl generated in: \(stopwatch.reset())")
   }
 
   if case .swiftFriendly = params.style,
      let path = args.cggenSupportHeaderPath {
-    try! params.cggenSupportHeaderBody.renderText()
+    try params.cggenSupportHeaderBody.renderText()
       .write(toFile: path, atomically: true, encoding: .utf8)
     log("cggen_support was generated in: \(stopwatch.reset())")
   }
@@ -131,7 +123,7 @@ public func runCggen(with args: Args) throws {
       outputPath: pngOutputPath
     )
     let fileStr = callerGenerator.generateFile(images: images)
-    try! fileStr.write(
+    try fileStr.write(
       toFile: objcCallerPath,
       atomically: true,
       encoding: .utf8
