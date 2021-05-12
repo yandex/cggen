@@ -5,7 +5,7 @@ import XCTest
 import BCRunner
 import libcggen
 
-private let defTolerance = 0.002
+private let defTolerance = 0.003
 private let defScale: CGFloat = 2.0
 private let defSize = CGSize(width: 50, height: 50)
 
@@ -62,11 +62,11 @@ class BCPDFTests: XCTestCase {
   }
 
   func testNestedTransparentGroup() {
-    testBC(pdf: "nested_transparent_group", tolerance: 0.003)
+    testBC(pdf: "nested_transparent_group", tolerance: 0.004)
   }
 
   func testShapes() {
-    testBC(pdf: "shapes", tolerance: 0.004)
+    testBC(pdf: "shapes", tolerance: 0.005)
   }
 
   func testUnderlyingObjectWithTinyAlpha() {

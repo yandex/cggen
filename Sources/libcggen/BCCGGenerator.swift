@@ -84,9 +84,13 @@ extension CGColorRenderingIntent: ByteCodable {
   }
 }
 
+private func zipComponent(val: CGFloat) -> UInt8 {
+  UInt8(val * CGFloat(UInt8.max))
+}
+
 extension RGBACGColor: ByteCodable {
   var byteCode: [UInt8] {
-    [red, green, blue, alpha].flatMap(\.byteCode)
+    [red, green, blue].map(zipComponent) + alpha.byteCode
   }
 }
 

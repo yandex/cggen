@@ -105,9 +105,9 @@ extension CGLineCap: BytecodeElement {}
 extension BCRGBAColor: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCRGBAColor {
     try BCRGBAColor(
-      red: .readFrom(runner),
-      green: .readFrom(runner),
-      blue: .readFrom(runner),
+      r: .readFrom(runner),
+      g: .readFrom(runner),
+      b: .readFrom(runner),
       alpha: .readFrom(runner)
     )
   }

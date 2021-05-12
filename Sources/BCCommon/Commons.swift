@@ -21,22 +21,27 @@ public struct BCCubicCurve {
   }
 }
 
+private func unzipComponent(val: UInt8) -> CGFloat {
+  CGFloat(val) / CGFloat(UInt8.max)
+}
+
 public struct BCRGBAColor {
   public let red: CGFloat
   public let green: CGFloat
   public let blue: CGFloat
   public let alpha: CGFloat
   public init(
-    red: CGFloat,
-    green: CGFloat,
-    blue: CGFloat,
+    r: UInt8,
+    g: UInt8,
+    b: UInt8,
     alpha: CGFloat
   ) {
-    self.red = red
-    self.green = green
-    self.blue = blue
+    red = unzipComponent(val: r)
+    green = unzipComponent(val: g)
+    blue = unzipComponent(val: b)
     self.alpha = alpha
   }
+  
 }
 
 public struct BCLinearGradientDrawingOptions {
