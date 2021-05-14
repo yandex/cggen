@@ -314,14 +314,14 @@ struct BCCGGenerator: CoreGraphicsGenerator {
   }
 
   func generateImageFunction(image: Image) -> String {
-    let bytecodeName = "\(image.name)Bytecode"
+    let bytecodeName = "\(image.name.lowerCamelCase)Bytecode"
     let bytecode = generateRouteBytecode(route: image.route)
     return """
-    static const uint8_t \(bytecodeName)[] = { /* size: \(bytecode.count)*/
-      \(bytecode.map { "\($0), " }.joined())
+    static const uint8_t \(bytecodeName)[] = {
+      \(bytecode.map(\.description).joined(separator: ", "))
     };
     void \(params.prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
-      runBytecode(context, \(bytecodeName), sizeof(\(bytecodeName)));
+      runBytecode(context, \(bytecodeName), \(bytecode.count);
     }
     """
   }
