@@ -325,11 +325,11 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     static const uint8_t \(bytecodeName)[] = {
       \(bytecode.map(\.description).joined(separator: ", "))
     };
-    void \(params.prefix)Draw\(image.name
+    \(params.style.drawingHandlerPrefix)void \(params.prefix)Draw\(image.name
       .upperCamelCase)ImageInContext(CGContextRef context) {
       runBytecode(context, \(bytecodeName), \(bytecode.count));
     }
-    """
+    """ + params.descriptorLines(for: image).joined(separator: "\n")
   }
 
   func fileEnding() -> String {

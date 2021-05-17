@@ -3,6 +3,8 @@ import Foundation
 
 import libcggen
 
+extension GenerationStyle: ExpressibleByArgument {}
+
 struct Main: ParsableCommand {
   @Option var objcHeader: String?
   @Option var objcPrefix = ""
@@ -13,7 +15,8 @@ struct Main: ParsableCommand {
   @Option var objcCallerPath: String?
   @Option var callerScale = 1.0
   @Option var callerPngOutput: String?
-  @Option var generationStyle: String?
+  @Option(help: "Interface generation style, swift-friendly or plain")
+  var generationStyle: GenerationStyle = .plain
   @Option var cggenSupportHeaderPath: String?
   @Option var moduleName = ""
   @Flag var verbose = false

@@ -13,7 +13,7 @@ public struct Args {
   let callerScale: Double
   let callerAllowAntialiasing: Bool
   let callerPngOutputPath: String?
-  let generationStyle: String?
+  let generationStyle: GenerationStyle
   let cggenSupportHeaderPath: String?
   let module: String?
   let verbose: Bool
@@ -29,7 +29,7 @@ public struct Args {
     callerScale: Double,
     callerAllowAntialiasing: Bool = false,
     callerPngOutputPath: String?,
-    generationStyle: String?,
+    generationStyle: GenerationStyle,
     cggenSupportHeaderPath: String?,
     module: String?,
     verbose: Bool,
@@ -61,7 +61,6 @@ public func runCggen(with args: Args) throws {
   log("Parsed in: \(stopwatch.reset())")
   let objcPrefix = args.objcPrefix ?? ""
   let style = args.generationStyle
-    .flatMap(GenerationParams.Style.init(rawValue:)) ?? .plain
   let params = GenerationParams(
     style: style,
     prefix: objcPrefix,

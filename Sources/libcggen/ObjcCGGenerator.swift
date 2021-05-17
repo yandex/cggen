@@ -84,38 +84,6 @@ extension ObjcCGGenerator {
   }
 }
 
-extension GenerationParams.Style {
-  fileprivate var drawingHandlerPrefix: String {
-    switch self {
-    case .plain:
-      return ""
-    case .swiftFriendly:
-      return "static "
-    }
-  }
-}
-
-extension GenerationParams {
-  private func funcName(imageName: String) -> String {
-    ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
-  }
-
-  fileprivate func descriptorLines(for image: Image) -> [String] {
-    switch style {
-    case .plain:
-      return []
-    case .swiftFriendly:
-      let size = image.route.boundingRect.size
-      return [
-        "const \(descriptorTypename) \(descriptorName(for: image)) = {",
-        "  { (CGFloat)\(size.width), (CGFloat)\(size.height) },",
-        "  \(funcName(imageName: image.name))",
-        "};",
-      ]
-    }
-  }
-}
-
 func subrouteBlockName(subrouteName: String) -> String {
   "subrouteNamed\(subrouteName)"
 }
