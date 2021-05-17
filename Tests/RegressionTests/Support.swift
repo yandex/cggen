@@ -1,11 +1,11 @@
 import AppKit
 import CoreGraphics
 import os.log
+import WebKit
+import XCTest
 
 import Base
 import libcggen
-import XCTest
-import WebKit
 
 private enum Error: Swift.Error {
   case compilationError
@@ -116,7 +116,12 @@ func cggen(
     )
   }
   try testLog.signpostRegion("clang invoc") {
-    try clang(out: genBin, files: [impl, caller])
+    try clang(out: genBin, files: [impl, caller], frameworks: [
+      "CoreGraphics",
+      "Foundation",
+      "ImageIO",
+      "CoreServices",
+    ])
   }
 
   try testLog.signpostRegion("img gen bin") {
@@ -164,26 +169,25 @@ private func subprocess(
   return task.terminationStatus
 }
 
-private func clang(out: URL, files: [URL]) throws {
+internal func clang(
+  out: URL?,
+  files: [URL],
+  syntaxOnly: Bool = false,
+  frameworks: [String]
+) throws {
+  let frameworkArgs = frameworks.flatMap { ["-framework", $0] }
+  let outArgs = out.map { ["-o", $0.path] } ?? []
+  let syntaxOnlyArg = syntaxOnly ? ["-fsyntax-only"] : []
+  let args: [String] = [
+    "clang",
+    "-Weverything",
+    "-Werror",
+    "-fmodules",
+    "-isysroot",
+    sdkPath,
+  ] + outArgs + frameworkArgs + syntaxOnlyArg + files.map { $0.path }
   let clangCode = try subprocess(
-    cmd: [
-      "clang",
-      "-Weverything",
-      "-Werror",
-      "-fmodules",
-      "-isysroot",
-      sdkPath,
-      "-framework",
-      "CoreGraphics",
-      "-framework",
-      "Foundation",
-      "-framework",
-      "ImageIO",
-      "-framework",
-      "CoreServices",
-      "-o",
-      out.path,
-    ] + files.map { $0.path },
+    cmd: args,
     env: [:]
   )
   try check(clangCode == 0, Error.compilationError)

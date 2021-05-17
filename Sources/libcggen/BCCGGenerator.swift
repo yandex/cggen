@@ -90,11 +90,13 @@ extension RGBACGColor: ByteCodable {
   }
 }
 
+// swiftformat:disable redundantSelf
 extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
   var byteCode: [UInt8] {
     UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
   }
 }
+// swiftformat:enable redundantSelf
 
 extension Gradient: ByteCodable {
   var byteCode: [UInt8] {
@@ -299,7 +301,6 @@ func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
   generateRoute(route: route, context: Context())
 }
 
-
 struct BCCGGenerator: CoreGraphicsGenerator {
   var params: GenerationParams
   var headerImportPath: String?
@@ -320,8 +321,9 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     static const uint8_t \(bytecodeName)[] = {
       \(bytecode.map(\.description).joined(separator: ", "))
     };
-    void \(params.prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
-      runBytecode(context, \(bytecodeName), \(bytecode.count);
+    void \(params.prefix)Draw\(image.name
+      .upperCamelCase)ImageInContext(CGContextRef context) {
+      runBytecode(context, \(bytecodeName), \(bytecode.count));
     }
     """
   }

@@ -118,7 +118,11 @@ extension CGGradientDrawingOptions: BytecodeElement {}
 extension BCLinearGradientDrawingOptions: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws
     -> BCLinearGradientDrawingOptions {
-    try .init(start: .readFrom(runner), end: .readFrom(runner), drawingOptions: .readFrom(runner))
+    try .init(
+      start: .readFrom(runner),
+      end: .readFrom(runner),
+      drawingOptions: .readFrom(runner)
+    )
   }
 }
 
@@ -143,7 +147,11 @@ extension BCLocationAndColor: BytecodeElement {
 
 extension BCShadow: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCShadow {
-    try .init(offset: .readFrom(runner), blur: .readFrom(runner), color: .readFrom(runner))
+    try .init(
+      offset: .readFrom(runner),
+      blur: .readFrom(runner),
+      color: .readFrom(runner)
+    )
   }
 }
 
@@ -153,6 +161,10 @@ extension Command: BytecodeElement {}
 
 extension BCCubicCurve: BytecodeElement {
   static func readFrom(_ runner: BytecodeRunner) throws -> BCCubicCurve {
-    try .init(control1: .readFrom(runner), control2: .readFrom(runner), to: .readFrom(runner))
+    try .init(
+      control1: .readFrom(runner),
+      control2: .readFrom(runner),
+      to: .readFrom(runner)
+    )
   }
 }
