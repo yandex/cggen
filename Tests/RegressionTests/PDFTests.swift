@@ -95,10 +95,11 @@ private func test(
     try test(
       snapshot: { try renderPDF(from: $0, scale: CGFloat(scale)) },
       antialiasing: false,
-      path: path,
+      paths: [path],
       tolerance: tolerance,
       scale: scale,
-      size: size
+      size: size,
+      bytecode: false
     )
   }())
 }

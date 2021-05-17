@@ -69,7 +69,8 @@ func getCurentFilePath(_ file: StaticString = #file) -> URL {
 func cggen(
   files: [URL],
   scale: Double,
-  callerAllowAntialiasing: Bool
+  callerAllowAntialiasing: Bool,
+  bytecode: Bool
 ) throws -> [CGImage] {
   let fm = FileManager.default
 
@@ -100,14 +101,14 @@ func cggen(
       with: .init(
         objcHeader: header,
         objcPrefix: "Tests",
-        objcImpl: impl.path,
-        objcBytecodeImpl: nil,
+        objcImpl: bytecode ? nil : impl.path,
+        objcBytecodeImpl: bytecode ? impl.path : nil,
         objcHeaderImportPath: header,
         objcCallerPath: caller.path,
         callerScale: scale,
         callerAllowAntialiasing: callerAllowAntialiasing,
         callerPngOutputPath: outputPngs,
-        generationStyle: nil,
+        generationStyle: .plain,
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
@@ -116,12 +117,23 @@ func cggen(
     )
   }
   try testLog.signpostRegion("clang invoc") {
-    try clang(out: genBin, files: [impl, caller], frameworks: [
+    let frameworks = [
       "CoreGraphics",
       "Foundation",
       "ImageIO",
       "CoreServices",
-    ])
+    ]
+
+    let support = bytecode ? [
+      "BCCommon.o",
+      "BCRunner.o",
+    ].map { currentBundlePath.deletingLastPathComponent().appendingPathComponent($0) } : []
+    try clang(
+      out: genBin,
+      files: [impl, caller] + support,
+      frameworks: frameworks,
+      libSearchPaths: ["/usr/lib/swift", toolchainPath.path + "/usr/lib/swift/macosx" ]
+    )
   }
 
   try testLog.signpostRegion("img gen bin") {
@@ -134,6 +146,9 @@ func cggen(
 
   return try pngPaths.map(readImage)
 }
+
+private class Dummy: NSObject {}
+let currentBundlePath = Bundle(for: Dummy.self).bundleURL
 
 private func check_output(cmd: String...) throws -> (out: String, err: String) {
   let task = Process()
@@ -156,6 +171,11 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
+private let toolchainPath = try! URL(fileURLWithPath: check_output(
+  cmd: "xcrun", "--sdk", "macosx", "--find", "clang"
+).out.trimmingCharacters(in: .newlines)).deletingLastPathComponent()
+.deletingLastPathComponent().deletingLastPathComponent()
+
 private func subprocess(
   cmd: [String],
   env: [String: String]? = nil
@@ -173,11 +193,13 @@ internal func clang(
   out: URL?,
   files: [URL],
   syntaxOnly: Bool = false,
-  frameworks: [String]
+  frameworks: [String],
+  libSearchPaths: [String] = []
 ) throws {
   let frameworkArgs = frameworks.flatMap { ["-framework", $0] }
   let outArgs = out.map { ["-o", $0.path] } ?? []
   let syntaxOnlyArg = syntaxOnly ? ["-fsyntax-only"] : []
+  let libSearchPathsArgs = libSearchPaths.map { "-L" + $0 }
   let args: [String] = [
     "clang",
     "-Weverything",
@@ -185,7 +207,7 @@ internal func clang(
     "-fmodules",
     "-isysroot",
     sdkPath,
-  ] + outArgs + frameworkArgs + syntaxOnlyArg + files.map { $0.path }
+  ] + [ outArgs, frameworkArgs, syntaxOnlyArg, files.map { $0.path }, libSearchPathsArgs ].flatMap(identity)
   let clangCode = try subprocess(
     cmd: args,
     env: [:]
@@ -225,38 +247,48 @@ internal func test(
   snapshot: (URL) throws -> CGImage,
   adjustImage: (CGImage) -> CGImage = { $0 },
   antialiasing: Bool,
-  path: URL,
+  paths: [URL],
   tolerance: Double,
   scale: Double,
-  size _: CGSize
+  size _: CGSize,
+  bytecode: Bool
 ) throws {
-  let referenceImg = try signpostRegion("snapshot") {
-    try snapshot(path)
+  let referenceImgs = try signpostRegion("snapshot") {
+    try paths.map(snapshot)
   }
 
   let images = try cggen(
-    files: [path],
+    files: paths,
     scale: scale,
-    callerAllowAntialiasing: antialiasing
-  )
-  try check(images.count == 1, Err("multiple images from cggen"))
-  let image = adjustImage(images[0])
+    callerAllowAntialiasing: antialiasing,
+    bytecode: bytecode
+  ).map(adjustImage)
   try check(
-    referenceImg.intSize == image.intSize,
-    Err("reference image size: \(referenceImg.intSize), got \(image.intSize)")
+    images.count == referenceImgs.count,
+    Err("Required images count: \(referenceImgs.count), got \(images.count) from cggen")
   )
-  let diff = signpostRegion("image comparision") {
-    compare(referenceImg, image)
-  }
 
-  XCTAssertLessThan(
-    diff, tolerance, "Calculated diff exceeds tolerance"
-  )
-  if diff >= tolerance {
-    XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-      $0.add(.init(image: image, name: "result"))
-      $0.add(.init(image: referenceImg, name: "webkitsnapshot"))
-      $0.add(.init(image: .diff(lhs: referenceImg, rhs: image), name: "diff"))
+  for (i, path) in paths.enumerated() {
+    let img = images[i]
+    let ref = referenceImgs[i]
+    try check(
+      ref.intSize == img.intSize,
+      Err("reference image size: \(ref.intSize), got \(img.intSize) for \(path.path)")
+    )
+
+    let diff = signpostRegion("image comparision") {
+      compare(ref, img)
+    }
+
+    XCTAssertLessThan(
+      diff, tolerance, "Calculated diff exceeds tolerance"
+    )
+    if diff >= tolerance {
+      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+        $0.add(.init(image: img, name: "result"))
+        $0.add(.init(image: ref, name: "webkitsnapshot"))
+        $0.add(.init(image: .diff(lhs: ref, rhs: img), name: "diff"))
+      }
     }
   }
 }

@@ -254,7 +254,7 @@ class BCCompilationTests: XCTestCase {
         callerScale: 1,
         callerAllowAntialiasing: false,
         callerPngOutputPath: nil,
-        generationStyle: nil,
+        generationStyle: .plain,
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
@@ -267,6 +267,41 @@ class BCCompilationTests: XCTestCase {
       files: [impl],
       syntaxOnly: true,
       frameworks: []
+    )
+  }
+
+  func testCompilationAndDrawing() throws {
+    // FIXME: Figure out how to link bcrunner code to binaries in tests
+    guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil else {
+      throw XCTSkip("This test supported only in xcode")
+    }
+    let files = [
+      "caps_joins.svg",
+      "clip_path.svg",
+      "dashes.svg",
+      "different_blur_radius.svg",
+      "fill.svg",
+      "gradient.svg",
+      "lines.svg",
+      "shapes.svg",
+      "transforms.svg",
+    ].map { samplesPathSVG.appendingPathComponent($0) }
+    try test(
+      snapshot: {
+        try WKWebViewSnapshoter()
+          .take(sample: $0, scale: CGFloat(defScale), size: defSize).cgimg()
+      },
+      adjustImage: {
+        // Unfortunately, snapshot from web view always comes with white
+        // background color
+        $0.redraw(with: .white)
+      },
+      antialiasing: true,
+      paths: files,
+      tolerance: 0.1,
+      scale: Double(defScale),
+      size: defSize,
+      bytecode: true
     )
   }
 }

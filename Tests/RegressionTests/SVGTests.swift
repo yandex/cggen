@@ -253,10 +253,11 @@ private func test(
         $0.redraw(with: .white)
       },
       antialiasing: true,
-      path: path,
+      paths: [path],
       tolerance: tolerance,
       scale: scale,
-      size: size
+      size: size,
+      bytecode: false
     )
   }())
 }
