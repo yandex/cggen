@@ -5,13 +5,6 @@ import XCTest
 import BCRunner
 import libcggen
 
-private let defTolerance = 0.003
-private let defScale: CGFloat = 2.0
-private let defSize = CGSize(width: 50, height: 50)
-
-let samplesPathPDF = getCurentFilePath().appendingPathComponent("pdf_samples")
-let samplesPathSVG = getCurentFilePath().appendingPathComponent("svg_samples")
-
 class BCPDFTests: XCTestCase {
   func testAlpha() {
     testBC(pdf: "alpha")
@@ -220,7 +213,72 @@ class BCSVGTests: XCTestCase {
   }
 }
 
-func testBC(
+class BCCompilationTests: XCTestCase {
+  func testCompilation() throws {
+    let variousFilenamesDir =
+      getCurentFilePath().appendingPathComponent("various_filenames")
+    let files = [
+      "Capital letter.svg",
+      "dash-dash.svg",
+      "under_score.svg",
+      "white space.svg",
+    ]
+
+    let fm = FileManager.default
+
+    let tmpdir = try fm.url(
+      for: .itemReplacementDirectory,
+      in: .userDomainMask,
+      appropriateFor: fm.homeDirectoryForCurrentUser,
+      create: true
+    )
+    defer {
+      do {
+        try fm.removeItem(at: tmpdir)
+      } catch {
+        fatalError("Unable to clean up dir: \(tmpdir), error: \(error)")
+      }
+    }
+
+    let header = tmpdir.appendingPathComponent("gen.h").path
+    let impl = tmpdir.appendingPathComponent("gen.m")
+
+    try runCggen(
+      with: .init(
+        objcHeader: header,
+        objcPrefix: "Tests",
+        objcImpl: nil,
+        objcBytecodeImpl: impl.path,
+        objcHeaderImportPath: header,
+        objcCallerPath: nil,
+        callerScale: 1,
+        callerAllowAntialiasing: false,
+        callerPngOutputPath: nil,
+        generationStyle: nil,
+        cggenSupportHeaderPath: nil,
+        module: nil,
+        verbose: false,
+        files: files.map { variousFilenamesDir.appendingPathComponent($0).path }
+      )
+    )
+
+    try clang(
+      out: nil,
+      files: [impl],
+      syntaxOnly: true,
+      frameworks: []
+    )
+  }
+}
+
+private let defTolerance = 0.003
+private let defScale: CGFloat = 2.0
+private let defSize = CGSize(width: 50, height: 50)
+
+let samplesPathPDF = getCurentFilePath().appendingPathComponent("pdf_samples")
+let samplesPathSVG = getCurentFilePath().appendingPathComponent("svg_samples")
+
+private func testBC(
   pdf: String,
   tolerance: Double = defTolerance,
   scale: CGFloat = defScale
@@ -236,7 +294,7 @@ func testBC(
   ))
 }
 
-func testBC(
+private func testBC(
   svg: String,
   tolerance: Double = defTolerance,
   scale: CGFloat = defScale,
@@ -256,7 +314,7 @@ func testBC(
   ))
 }
 
-func testBC(
+private func testBC(
   path: URL,
   referenceRenderer: (URL) throws -> CGImage,
   scale: CGFloat,

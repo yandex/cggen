@@ -94,11 +94,13 @@ extension RGBACGColor: ByteCodable {
   }
 }
 
+// swiftformat:disable redundantSelf
 extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
   var byteCode: [UInt8] {
     UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
   }
 }
+// swiftformat:enable redundantSelf
 
 extension Gradient: ByteCodable {
   var byteCode: [UInt8] {
@@ -303,7 +305,6 @@ func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
   generateRoute(route: route, context: Context())
 }
 
-
 struct BCCGGenerator: CoreGraphicsGenerator {
   var params: GenerationParams
   var headerImportPath: String?
@@ -318,14 +319,15 @@ struct BCCGGenerator: CoreGraphicsGenerator {
   }
 
   func generateImageFunction(image: Image) -> String {
-    let bytecodeName = "\(image.name)Bytecode"
+    let bytecodeName = "\(image.name.lowerCamelCase)Bytecode"
     let bytecode = generateRouteBytecode(route: image.route)
     return """
-    static const uint8_t \(bytecodeName)[] = { /* size: \(bytecode.count)*/
-      \(bytecode.map { "\($0), " }.joined())
+    static const uint8_t \(bytecodeName)[] = {
+      \(bytecode.map(\.description).joined(separator: ", "))
     };
-    void \(params.prefix)Draw\(image.name.upperCamelCase)ImageInContext(CGContextRef context) {
-      runBytecode(context, \(bytecodeName), sizeof(\(bytecodeName)));
+    void \(params.prefix)Draw\(image.name
+      .upperCamelCase)ImageInContext(CGContextRef context) {
+      runBytecode(context, \(bytecodeName), \(bytecode.count));
     }
     """
   }

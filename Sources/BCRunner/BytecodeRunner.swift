@@ -294,6 +294,6 @@ public func runBytecode(
   do {
     try runBytecodeThrowing(context, start, len)
   } catch let t {
-    assertionFailure("Failed to run bytecode with error: \(t)");
+    assertionFailure("Failed to run bytecode with error: \(t)")
   }
 }

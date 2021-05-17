@@ -109,5 +109,3 @@ private func sample(named name: String) -> URL {
 
 private let samplesPath =
   getCurentFilePath().appendingPathComponent("pdf_samples")
-
-
