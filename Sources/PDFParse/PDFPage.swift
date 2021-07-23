@@ -9,15 +9,15 @@ public struct PDFPage {
   public let operators: [PDFOperator]
   public let bbox: CGRect
 
-  internal init?(page: CGPDFPage) {
+  internal init(page: CGPDFPage) throws {
     let stream = CGPDFContentStreamCreateWithPage(page)
-    let operators = PDFContentStreamParser
+    let operators = try PDFContentStreamParser
       .parse(stream: CGPDFContentStreamCreateWithPage(page))
 
     guard let pageDictRaw = page.dictionary,
           let pageDictionary = PDFObject.processDict(pageDictRaw)["Resources"]
-    else { return nil }
-    let resources = PDFResources(obj: pageDictionary, parentStream: stream)!
+    else { throw Error.parsingError() }
+    let resources = try PDFResources(obj: pageDictionary, parentStream: stream)
 
     let bbox = page.getBoxRect(.mediaBox)
 

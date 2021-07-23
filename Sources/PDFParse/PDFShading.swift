@@ -18,7 +18,7 @@ public struct PDFShading {
       guard let coords = dict["Coords"]?.floatArray(),
             let functionObj = dict["Function"],
             coords.count == 4
-      else { throw Error.parsingError }
+      else { throw Error.parsingError() }
       self.coords = (
         p0: CGPoint(x: coords[0], y: coords[1]),
         p1: CGPoint(x: coords[2], y: coords[3])
@@ -45,7 +45,7 @@ public struct PDFShading {
       guard let coords = dict["Coords"]?.floatArray(),
             let functionObj = dict["Function"],
             coords.count == 6
-      else { throw Error.parsingError }
+      else { throw Error.parsingError() }
       self.coords = (
         p0: CGPoint(x: coords[0], y: coords[1]),
         p1: CGPoint(x: coords[3], y: coords[4])
@@ -75,7 +75,7 @@ public struct PDFShading {
           case let .integer(typeInt)? = dict["ShadingType"],
           let type = ShadingType(rawValue: typeInt),
           let colorSpace = dict["ColorSpace"]
-    else { throw Error.parsingError }
+    else { throw Error.parsingError() }
 
     self.colorSpace = colorSpace
     switch type {
@@ -111,13 +111,13 @@ extension PDFObject {
           array.count == 2,
           case let .boolean(before) = array[0],
           case let .boolean(after) = array[1]
-    else { throw Error.parsingError }
+    else { throw Error.parsingError() }
     return (before: before != 0, after: after != 0)
   }
 
   fileprivate func domain() throws -> PDFShading.Domain {
     guard let array = floatArray(),
-          array.count == 2 else { throw Error.parsingError }
+          array.count == 2 else { throw Error.parsingError() }
     return (array[0], array[1])
   }
 

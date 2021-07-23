@@ -47,7 +47,7 @@ private enum PDFGradientDrawingOptions {
 }
 
 enum PDFToDrawRouteConverter {
-  static func convert(xobject: PDFXObject) -> DrawRoute {
+  static func convert(xobject: PDFXObject) throws -> DrawRoute {
     let ctm = xobject.matrix ?? .identity
     let bbox = xobject.bbox
     var prepend: [DrawStep] = [.saveGState, .concatCTM(ctm), .clipToRect(bbox)]
@@ -56,7 +56,7 @@ enum PDFToDrawRouteConverter {
       prepend.append(.beginTransparencyLayer)
       append.append(.endTransparencyLayer)
     }
-    return convert(
+    return try convert(
       resources: xobject.resources,
       bbox: xobject.bbox,
       operators: xobject.operators,
@@ -65,8 +65,8 @@ enum PDFToDrawRouteConverter {
     )
   }
 
-  static func convert(page: PDFPage) -> DrawRoute {
-    convert(
+  static func convert(page: PDFPage) throws -> DrawRoute {
+    try convert(
       resources: page.resources,
       bbox: page.bbox,
       operators: page.operators
@@ -79,11 +79,11 @@ enum PDFToDrawRouteConverter {
     operators: [PDFOperator],
     prependSteps: [DrawStep] = [],
     appendSteps: [DrawStep] = []
-  ) -> DrawRoute {
+  ) throws -> DrawRoute {
     let gradients = resources.shadings.mapValues { $0.makeGradient() }
-    let subroutes = resources.xObjects.mapValues { convert(xobject: $0) }
+    let subroutes = try resources.xObjects.mapValues { try convert(xobject: $0) }
     precondition(resources.xObjects.count == subroutes.count)
-    let steps = operatorsToSteps(
+    let steps = try operatorsToSteps(
       ops: operators,
       resources: resources,
       gradients: gradients.mapValues { $0.1 }
@@ -101,10 +101,10 @@ enum PDFToDrawRouteConverter {
     ops: [PDFOperator],
     resources: PDFResources,
     gradients: [String: PDFGradientDrawingOptions]
-  ) -> [DrawStep] {
+  ) throws -> [DrawStep] {
     let context = Context()
-    return ops.map {
-      $0.drawStep(resources: resources, context: context, gradients: gradients)
+    return try ops.map {
+      try $0.drawStep(resources: resources, context: context, gradients: gradients)
     }
   }
 }
@@ -114,26 +114,26 @@ extension PDFOperator {
     resources: PDFResources,
     context: Context,
     gradients: [String: PDFGradientDrawingOptions]
-  ) -> DrawStep {
+  ) throws -> DrawStep {
     switch self {
     case .closeFillStrokePathWinding:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .fillStrokePathWinding:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .closeFillStrokePathEvenOdd:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .fillStrokePathEvenOdd:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .markedContentSequenceWithPListBegin:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .inlineImageBegin:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .markedContentSequenceBegin:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textObjectBegin:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .compatabilitySectionBegin:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case let .curveTo(p1, p2, p3):
       return .curveTo(p1, p2, p3)
@@ -148,9 +148,9 @@ extension PDFOperator {
       return .dash(pattern)
 
     case .glyphWidthInType3Font:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .glyphWidthAndBoundingBoxInType3Font:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case let .invokeXObject(name):
       return .composite([
@@ -159,15 +159,15 @@ extension PDFOperator {
       ])
 
     case .markedContentPointWithPListDefine:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .inlineImageEnd:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .markedContentSequenceEnd:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textObjectEnd:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .compatabilitySectionEnd:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case .fillWinding:
       return .fillWithColor(context: context, rule: .winding)
@@ -175,23 +175,23 @@ extension PDFOperator {
       return .fillWithColor(context: context, rule: .evenOdd)
 
     case .grayLevelStroke:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .grayLevelNonstroke:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case let .applyGState(name):
       let state = resources.gStates[name]!
-      let steps = state.commands.map { (cmd) -> DrawStep in
+      let steps = try state.commands.map { (cmd) -> DrawStep in
         switch cmd {
         case let .fillAlpha(alpha):
           context.fillAlpha = alpha
         case let .strokeAlpha(alpha):
           context.strokeAlpha = alpha
         case let .blendMode(pdfBlendMode):
-          let blendMode = CGBlendMode(pdfBlendMode: pdfBlendMode)
+          let blendMode = try CGBlendMode(pdfBlendMode: pdfBlendMode)
           return .blendMode(blendMode)
         case .sMask:
-          fatalError("Soft Mask not implemented")
+          throw DrawError("Soft Mask not implemented")
         }
         return .empty
       }
@@ -202,22 +202,22 @@ extension PDFOperator {
       return .flatness(flatness)
 
     case .inlineImageDataBegin:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case let .lineJoinStyle(styleRaw):
       guard let style = CGLineJoin(rawValue: Int32(styleRaw)) else {
-        fatalError("Unknown line join style: \(styleRaw)")
+        throw DrawError("Unknown line join style: \(styleRaw)")
       }
       return .lineJoinStyle(style)
     case let .lineCapStyle(styleRaw):
       guard let style = CGLineCap(rawValue: Int32(styleRaw)) else {
-        fatalError("Unknown line cap style: \(styleRaw)")
+        throw DrawError("Unknown line cap style: \(styleRaw)")
       }
       return .lineCapStyle(style)
 
     case .cmykColorStroke:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .cmykColorNonstroke:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case let .lineTo(point):
       return .lineTo(point)
@@ -225,9 +225,9 @@ extension PDFOperator {
       return .moveTo(point)
 
     case .miterLimit:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .markedContentPointDefine:
-      fatalError()
+      throw DrawError("Not implemented")
 
     case .endPath:
       return .endPath
@@ -260,9 +260,9 @@ extension PDFOperator {
       return .empty
 
     case .iccOrSpecialColorStroke:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .iccOrSpecialColorNonstroke:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case let .shadingFill(shading):
       switch gradients[shading] {
       case nil:
@@ -273,33 +273,33 @@ extension PDFOperator {
         return .radialGradient(shading, radial)
       }
     case .startNextTextLine:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .characterSpacing:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .moveTextPosition:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .moveTextPositionAnsSetLeading:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textFontAndSize:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .showText:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .showTextAllowingIndividualGlyphPositioning:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textLeading:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textAndTextLineMatrix:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textRenderingMode:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .textRise:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .wordSpacing:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .horizontalTextScaling:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .curveToWithInitailPointReplicated:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
 
     case let .lineWidth(w):
       return .lineWidth(w)
@@ -309,11 +309,11 @@ extension PDFOperator {
       return .clip(.evenOdd)
 
     case .curveToWithFinalPointReplicated:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .moveToNextLineAndShowText:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     case .wordAndCharacterSpacingMoveToNextLineAndShowText:
-      fatalError("Not implemented")
+      throw DrawError("Not implemented")
     }
   }
 }
@@ -337,7 +337,7 @@ extension CGColorRenderingIntent {
 }
 
 extension CGBlendMode {
-  fileprivate init(pdfBlendMode: String) {
+  fileprivate init(pdfBlendMode: String) throws {
     switch pdfBlendMode {
     case "Normal":
       self = .normal
@@ -364,7 +364,7 @@ extension CGBlendMode {
     case "Exclusion":
       self = .exclusion
     default:
-      fatalError("Unknown/unimplemented blend mode – '\(pdfBlendMode)'")
+      throw DrawError("Unknown/unimplemented blend mode – '\(pdfBlendMode)'")
     }
   }
 }
@@ -471,4 +471,16 @@ extension DrawStep {
       .stroke,
     ])
   }
+}
+
+private struct DrawError: Swift.Error {
+  init(_ text: String, file: String = #file, line: Int = #line) {
+    self.text = text
+    self.file = file
+    self.line = line
+  }
+
+  let text: String
+  let file: String
+  let line: Int
 }

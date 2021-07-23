@@ -29,7 +29,7 @@ public struct PDFFunction {
     guard let dict = obj.dictFromDictOrStream,
           let functionTypeRaw = dict["FunctionType"]?.intValue,
           let functionType = FunctionType(rawValue: functionTypeRaw)
-    else { throw Error.parsingError }
+    else { throw Error.parsingError() }
     guard PDFFunction.supportedTypes.contains(functionType)
     else { throw Error.unsupported("function type \(functionType)") }
 
@@ -44,7 +44,7 @@ public struct PDFFunction {
           case let .array(domainArray) = domainObj,
           let domainRaw = domainArray.map({ $0.realFromIntOrReal() }).unwrap(),
           let bitsPerSample = stream.dict["BitsPerSample"]?.intValue
-    else { throw Error.parsingError }
+    else { throw Error.parsingError() }
     precondition(stream.format == .raw)
 
     let range = rangeRaw.splitBy(subSize: 2).map {

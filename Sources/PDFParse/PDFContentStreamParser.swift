@@ -3,18 +3,34 @@ import Foundation
 import Base
 
 enum PDFContentStreamParser {
-  static func parse(stream: CGPDFContentStreamRef) -> [PDFOperator] {
+  static func parse(stream: CGPDFContentStreamRef) throws -> [PDFOperator] {
     var context = Context()
     let operatorTable = makeOperatorTable()
     let scanner = CGPDFScannerCreate(stream, operatorTable, &context)
     CGPDFScannerScan(scanner)
     CGPDFScannerRelease(scanner)
     CGPDFContentStreamRelease(stream)
-    return context.operators
+    return try context.operators.map { try $0.get() }
   }
 
   private class Context {
-    var operators = [PDFOperator]()
+    private(set) var operators = [Result<PDFOperator, Error>]()
+
+    func append(_ op: PDFOperator) {
+      operators.append(.success(op))
+    }
+
+    func append(_ op: PDFOperator?, file: String = #file, line: Int = #line) {
+      guard let op = op else {
+        operators.append(.failure(.parsingError(file: file, line: line)))
+        return
+      }
+      append(op)
+    }
+
+    func append(file: String = #file, line: Int = #line, _ factory: () -> PDFOperator?) {
+      append(factory(), file: file, line: line)
+    }
   }
 
   private static func ctx(_ info: UnsafeMutableRawPointer?) -> Context {
@@ -25,231 +41,262 @@ enum PDFContentStreamParser {
     let operatorTableRef = CGPDFOperatorTableCreate()!
     typealias Parser = PDFContentStreamParser
     CGPDFOperatorTableSetCallback(operatorTableRef, "b") { _, info in
-      Parser.ctx(info).operators.append(.closeFillStrokePathWinding)
+      Parser.ctx(info).append(.closeFillStrokePathWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "B") { _, info in
-      Parser.ctx(info).operators.append(.fillStrokePathWinding)
+      Parser.ctx(info).append(.fillStrokePathWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "b*") { _, info in
-      Parser.ctx(info).operators.append(.closeFillStrokePathEvenOdd)
+      Parser.ctx(info).append(.closeFillStrokePathEvenOdd)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "B*") { _, info in
-      Parser.ctx(info).operators.append(.fillStrokePathEvenOdd)
+      Parser.ctx(info).append(.fillStrokePathEvenOdd)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "BDC") { _, info in
-      Parser.ctx(info).operators.append(.markedContentSequenceWithPListBegin)
+      Parser.ctx(info).append(.markedContentSequenceWithPListBegin)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "BI") { _, info in
-      Parser.ctx(info).operators.append(.inlineImageBegin)
+      Parser.ctx(info).append(.inlineImageBegin)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "BMC") { _, info in
-      Parser.ctx(info).operators.append(.markedContentSequenceBegin)
+      Parser.ctx(info).append(.markedContentSequenceBegin)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "BT") { _, info in
-      Parser.ctx(info).operators.append(.textObjectBegin)
+      Parser.ctx(info).append(.textObjectBegin)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "BX") { _, info in
-      Parser.ctx(info).operators.append(.compatabilitySectionBegin)
+      Parser.ctx(info).append(.compatabilitySectionBegin)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "c") { scanner, info in
-      let c3 = scanner.popPoint()!
-      let c2 = scanner.popPoint()!
-      let c1 = scanner.popPoint()!
-      Parser.ctx(info).operators.append(.curveTo(c1, c2, c3))
+      Parser.ctx(info).append {
+        guard let c3 = scanner.popPoint(),
+              let c2 = scanner.popPoint(),
+              let c1 = scanner.popPoint() else {
+          return nil
+        }
+        return .curveTo(c1, c2, c3)
+      }
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "cm") { scanner, info in
-      let transform = scanner.popAffineTransform()!
-      Parser.ctx(info).operators.append(.concatCTM(transform))
+      Parser.ctx(info).append(
+        scanner.popAffineTransform().map(PDFOperator.concatCTM)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "CS") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.colorSpaceStroke(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.colorSpaceStroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "cs") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.colorSpaceNonstroke(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.colorSpaceNonstroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d") { scanner, info in
-      let phase = scanner.popNumber()!
-      let lengths = scanner.popArray()!.map { CGFloat($0.realFromIntOrReal()!) }
-      Parser.ctx(info).operators.append(.dash(phase, lengths))
+      Parser.ctx(info).append {
+        guard let phase = scanner.popNumber(),
+              let array = scanner.popArray(),
+              let lengths = try? array.map({
+                CGFloat(try $0.realFromIntOrReal() !! Error.parsingError())
+              }) else {
+          return nil
+        }
+        return .dash(phase, lengths)
+      }
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d0") { _, info in
-      Parser.ctx(info).operators.append(.glyphWidthInType3Font)
+      Parser.ctx(info).append(.glyphWidthInType3Font)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "d1") { _, info in
-      Parser.ctx(info).operators.append(.glyphWidthAndBoundingBoxInType3Font)
+      Parser.ctx(info).append(.glyphWidthAndBoundingBoxInType3Font)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "Do") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.invokeXObject(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.invokeXObject)
+      )
     }
 
     // TODO: DP, EI, EMC, ET, EX
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "f") { _, info in
-      Parser.ctx(info).operators.append(.fillWinding)
+      Parser.ctx(info).append(.fillWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "F") { _, info in
-      Parser.ctx(info).operators.append(.fillWinding)
+      Parser.ctx(info).append(.fillWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "f*") { _, info in
-      Parser.ctx(info).operators.append(.fillEvenOdd)
+      Parser.ctx(info).append(.fillEvenOdd)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "G") { _, info in
-      Parser.ctx(info).operators.append(.grayLevelStroke)
+      Parser.ctx(info).append(.grayLevelStroke)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "g") { _, info in
-      Parser.ctx(info).operators.append(.grayLevelNonstroke)
+      Parser.ctx(info).append(.grayLevelNonstroke)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "gs") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.applyGState(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.applyGState)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "h") { _, info in
-      Parser.ctx(info).operators.append(.closeSubpath)
+      Parser.ctx(info).append(.closeSubpath)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "i") { scanner, info in
-      let tolerance = scanner.popNumber()!
-      Parser.ctx(info).operators.append(.setFlatnessTolerance(tolerance))
+      Parser.ctx(info).append(
+        scanner.popNumber().map(PDFOperator.setFlatnessTolerance)
+      )
     }
 
 //    This prints a error. Should be investigated further
 //    `ID' isn't an operator.
 //    CGPDFOperatorTableSetCallback(operatorTableRef, "ID") { scanner, info in
-//      Parser.ctx(info).operators.append(.inlineImageDataBegin)
+//      Parser.ctx(info).append(.inlineImageDataBegin)
 //    }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "j") { scanner, info in
-      let style = scanner.popInt()!
-      Parser.ctx(info).operators.append(.lineJoinStyle(style))
+      Parser.ctx(info).append(
+        scanner.popInt().map(PDFOperator.lineJoinStyle)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "J") { scanner, info in
-      let style = scanner.popInt()!
-      Parser.ctx(info).operators.append(.lineCapStyle(style))
+      Parser.ctx(info).append(
+        scanner.popInt().map(PDFOperator.lineCapStyle)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "K") { _, info in
-      Parser.ctx(info).operators.append(.cmykColorStroke)
+      Parser.ctx(info).append(.cmykColorStroke)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "k") { _, info in
-      Parser.ctx(info).operators.append(.cmykColorNonstroke)
+      Parser.ctx(info).append(.cmykColorNonstroke)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "l") { scanner, info in
-      let point = scanner.popPoint()!
-      Parser.ctx(info).operators.append(.lineTo(point))
+      Parser.ctx(info).append(
+        scanner.popPoint().map(PDFOperator.lineTo)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "m") { scanner, info in
-      let point = scanner.popPoint()!
-      Parser.ctx(info).operators.append(.moveTo(point))
+      Parser.ctx(info).append(
+        scanner.popPoint().map(PDFOperator.moveTo)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "MP") { _, info in
-      Parser.ctx(info).operators.append(.markedContentPointDefine)
+      Parser.ctx(info).append(.markedContentPointDefine)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "n") { _, info in
-      Parser.ctx(info).operators.append(.endPath)
+      Parser.ctx(info).append(.endPath)
     }
     CGPDFOperatorTableSetCallback(operatorTableRef, "q") { _, info in
-      Parser.ctx(info).operators.append(.saveGState)
+      Parser.ctx(info).append(.saveGState)
     }
     CGPDFOperatorTableSetCallback(operatorTableRef, "Q") { _, info in
-      Parser.ctx(info).operators.append(.restoreGState)
+      Parser.ctx(info).append(.restoreGState)
     }
     CGPDFOperatorTableSetCallback(operatorTableRef, "re") { scanner, info in
-      let rect = scanner.popRect()!
-      Parser.ctx(info).operators.append(.appendRectangle(rect))
+      Parser.ctx(info).append(
+        scanner.popRect().map(PDFOperator.appendRectangle)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "RG") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.rgbColorStroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.rgbColorStroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "rg") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.rgbColorNonstroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "ri") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.colorRenderingIntent(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.colorRenderingIntent)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "s") { _, info in
-      Parser.ctx(info).operators.append(.closeAndStrokePath)
+      Parser.ctx(info).append(.closeAndStrokePath)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "S") { _, info in
-      Parser.ctx(info).operators.append(.strokePath)
+      Parser.ctx(info).append(.strokePath)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "SC") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.colorStroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.colorStroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sc") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.rgbColorNonstroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "SCN") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.colorStroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.colorStroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "scn") { scanner, info in
-      let color = scanner.popColor()!
-      Parser.ctx(info).operators.append(.rgbColorNonstroke(color))
+      Parser.ctx(info).append(
+        scanner.popColor().map(PDFOperator.rgbColorNonstroke)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "sh") { scanner, info in
-      let name = scanner.popName()!
-      Parser.ctx(info).operators.append(.shadingFill(name))
+      Parser.ctx(info).append(
+        scanner.popName().map(PDFOperator.shadingFill)
+      )
     }
 
     // TODO: text things: T*, Td, TD, Tf, Tj, TJ, Tm, Tr, Ts, Tw, Tz
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "w") { scanner, info in
-      let width = scanner.popNumber()!
-      Parser.ctx(info).operators.append(.lineWidth(width))
+      Parser.ctx(info).append(
+        scanner.popNumber().map(PDFOperator.lineWidth)
+      )
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "W") { _, info in
-      Parser.ctx(info).operators.append(.clipWinding)
+      Parser.ctx(info).append(.clipWinding)
     }
 
     CGPDFOperatorTableSetCallback(operatorTableRef, "W*") { _, info in
-      Parser.ctx(info).operators.append(.clipEvenOdd)
+      Parser.ctx(info).append(.clipEvenOdd)
     }
     // TODO: text things: ',"
     return operatorTableRef
