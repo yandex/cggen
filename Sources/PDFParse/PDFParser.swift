@@ -3,13 +3,11 @@ import Foundation
 import Base
 
 public enum PDFParser {
-  public static func parse(pdfURL: CFURL) -> [PDFPage] {
+  public static func parse(pdfURL: CFURL) throws -> [PDFPage] {
     guard let pdfDoc = CGPDFDocument(pdfURL) else {
-      fatalError("Could not open pdf file at: \(pdfURL)")
+      throw Error.parsingError()
     }
-    return pdfDoc.pages.map {
-      PDFPage(page: $0)!
-    }
+    return try pdfDoc.pages.map(PDFPage.init(page:))
   }
 }
 

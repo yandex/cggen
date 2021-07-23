@@ -8,7 +8,7 @@ public struct PDFSoftMask {
     init(obj: PDFObject) throws {
       guard let name = obj.nameVal(),
             let value = SubType(rawValue: name) else {
-        throw Error.parsingError
+        throw Error.parsingError()
       }
       self = value
     }
@@ -23,7 +23,7 @@ public struct PDFSoftMask {
           let subType = try dict["S"].map(SubType.init),
           let transparencyGroup = try dict["G"].map(xobjFactory)
     else {
-      throw Error.parsingError
+      throw Error.parsingError()
     }
     self.subType = subType
     self.transparencyGroup = transparencyGroup
@@ -40,12 +40,12 @@ public enum PDFGStateCommand {
 public struct PDFExtGState {
   public let commands: [PDFGStateCommand]
   init(obj: PDFObject, xobjFactory: PDFXObject.Factory) throws {
-    guard let dict = obj.dictionaryVal() else { throw Error.parsingError }
+    guard let dict = obj.dictionaryVal() else { throw Error.parsingError() }
     commands = try dict.compactMap { (arg) -> PDFGStateCommand? in
       let (key, val) = arg
       switch key {
       case "Type":
-        guard val.nameVal() == "ExtGState" else { throw Error.parsingError }
+        guard val.nameVal() == "ExtGState" else { throw Error.parsingError() }
         return nil
       case "ca":
         let alpha = val.realFromIntOrReal()!

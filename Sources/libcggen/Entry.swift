@@ -134,6 +134,7 @@ public func runCggen(with args: Args) throws {
 public enum Error: Swift.Error {
   case unsupportedFileExtension(String)
   case multiplePagedPdfNotSupported(file: String)
+  case imageGenerationFailed([(URL, Swift.Error)])
 }
 
 private typealias Generator = (URL) throws -> DrawRoute
@@ -141,12 +142,12 @@ private typealias Generator = (URL) throws -> DrawRoute
 private let generator: Generator = {
   switch $0.pathExtension {
   case "pdf":
-    let pages = PDFParser.parse(pdfURL: $0 as CFURL)
+    let pages = try PDFParser.parse(pdfURL: $0 as CFURL)
     try check(
       pages.count == 1,
       Error.multiplePagedPdfNotSupported(file: $0.absoluteString)
     )
-    return PDFToDrawRouteConverter.convert(page: pages[0])
+    return try PDFToDrawRouteConverter.convert(page: pages[0])
   case "svg":
     let svg = try SVGParser.root(from: Data(contentsOf: $0))
     return try SVGToDrawRouteConverter.convert(document: svg)
@@ -159,10 +160,29 @@ private func generateImages(
   from files: [URL],
   generator: Generator = generator
 ) throws -> [Image] {
-  try zip(files, files.concurrentMap(generator)).map {
+  let generator: (URL) -> Result<DrawRoute, Swift.Error> = { url in
+    Result(catching: { try generator(url) })
+  }
+
+  let generated = zip(files, files.concurrentMap(generator))
+
+  let failed = generated.compactMap { (url, result) -> (URL, Swift.Error)? in
+    switch result {
+    case .success:
+      return nil
+    case let .failure(error):
+      return (url, error)
+    }
+  }
+
+  guard failed.isEmpty else {
+    throw Error.imageGenerationFailed(failed)
+  }
+
+  return generated.map {
     Image(
       name: $0.0.deletingPathExtension().lastPathComponent,
-      route: $0.1
+      route: try! $0.1.get()
     )
   }
 }
