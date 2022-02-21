@@ -223,48 +223,40 @@ private let defaultTolerance = 0.002
 private let defaultScale = 2.0
 
 private func test(
-  svg name: String,
+  svg: String,
   tolerance: Double = defaultTolerance,
-  scale: Double = defaultScale,
+  scale: CGFloat = defaultScale,
   size: CGSize = CGSize(width: 50, height: 50)
 ) {
   test(
-    svg: sample(named: name),
+    svg: sample(named: svg),
     tolerance: tolerance,
-    scale: scale, size: size
+    scale: scale,
+    size: size
   )
 }
 
 private func test(
-  svg path: URL,
+  svg: URL,
   tolerance: Double = defaultTolerance,
-  scale: Double = defaultScale,
+  scale: CGFloat = defaultScale,
   size: CGSize
 ) {
-  XCTAssertNoThrow(try {
-    try test(
-      snapshot: {
-        try WKWebViewSnapshoter()
-          .take(sample: $0, scale: CGFloat(scale), size: size).cgimg()
-      },
-      adjustImage: {
-        // Unfortunately, snapshot from web view always comes with white
-        // background color
-        $0.redraw(with: .white)
-      },
-      antialiasing: true,
-      paths: [path],
-      tolerance: tolerance,
-      scale: scale,
-      size: size,
-      bytecode: false
-    )
-  }())
+  XCTAssertNoThrow(try testBC(
+    path: svg,
+    referenceRenderer: {
+      try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
+        .cgimg()
+    },
+    scale: scale,
+    resultAdjust: { $0.redraw(with: .white) },
+    tolerance: tolerance
+  ))
 }
 
 private func sample(named name: String) -> URL {
-  samplesPath.appendingPathComponent(name).appendingPathExtension("svg")
+  svgSamplesPath.appendingPathComponent(name).appendingPathExtension("svg")
 }
 
-private let samplesPath =
+let svgSamplesPath =
   getCurentFilePath().appendingPathComponent("svg_samples")

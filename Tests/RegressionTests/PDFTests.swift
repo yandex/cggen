@@ -57,7 +57,7 @@ class PDFTests: XCTestCase {
   }
 
   func testShapes() {
-    test(pdf: "shapes", tolerance: 0.004)
+    test(pdf: "shapes", tolerance: 0.005)
   }
 
   func testUnderlyingObjectWithTinyAlpha() {
@@ -69,39 +69,21 @@ class PDFTests: XCTestCase {
   }
 }
 
-private let defaultTolerance = 0.002
+private let defaultTolerance = 0.003
 private let defaultScale = 2.0
 
 private func test(
-  pdf name: String,
+  pdf: String,
   tolerance: Double = defaultTolerance,
-  scale: Double = defaultScale,
-  size: CGSize = CGSize(width: 50, height: 50)
+  scale: CGFloat = defaultScale
 ) {
-  test(
-    pdf: sample(named: name),
-    tolerance: tolerance,
-    scale: scale, size: size
-  )
-}
-
-private func test(
-  pdf path: URL,
-  tolerance: Double = defaultTolerance,
-  scale: Double = defaultScale,
-  size: CGSize
-) {
-  XCTAssertNoThrow(try {
-    try test(
-      snapshot: { try renderPDF(from: $0, scale: CGFloat(scale)) },
-      antialiasing: false,
-      paths: [path],
-      tolerance: tolerance,
-      scale: scale,
-      size: size,
-      bytecode: false
-    )
-  }())
+  XCTAssertNoThrow(try testBC(
+    path: sample(named: pdf),
+    referenceRenderer: { try renderPDF(from: $0, scale: scale) },
+    scale: scale,
+    antialiasing: false,
+    tolerance: tolerance
+  ))
 }
 
 private func sample(named name: String) -> URL {

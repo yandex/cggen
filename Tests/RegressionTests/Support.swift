@@ -5,6 +5,7 @@ import WebKit
 import XCTest
 
 import Base
+import BCRunner
 import libcggen
 
 private enum Error: Swift.Error {
@@ -69,8 +70,7 @@ func getCurentFilePath(_ file: StaticString = #file) -> URL {
 func cggen(
   files: [URL],
   scale: Double,
-  callerAllowAntialiasing: Bool,
-  bytecode: Bool
+  callerAllowAntialiasing: Bool
 ) throws -> [CGImage] {
   let fm = FileManager.default
 
@@ -101,8 +101,7 @@ func cggen(
       with: .init(
         objcHeader: header,
         objcPrefix: "Tests",
-        objcImpl: bytecode ? nil : impl.path,
-        objcBytecodeImpl: bytecode ? impl.path : nil,
+        objcImpl: impl.path,
         objcHeaderImportPath: header,
         objcCallerPath: caller.path,
         callerScale: scale,
@@ -124,10 +123,10 @@ func cggen(
       "CoreServices",
     ]
 
-    let support = bytecode ? [
+    let support = [
       "BCCommon.o",
       "BCRunner.o",
-    ].map { currentBundlePath.deletingLastPathComponent().appendingPathComponent($0) } : []
+    ].map { currentBundlePath.deletingLastPathComponent().appendingPathComponent($0) }
     try clang(
       out: genBin,
       files: [impl, caller] + support,
@@ -250,8 +249,7 @@ internal func test(
   paths: [URL],
   tolerance: Double,
   scale: Double,
-  size _: CGSize,
-  bytecode: Bool
+  size _: CGSize
 ) throws {
   let referenceImgs = try signpostRegion("snapshot") {
     try paths.map(snapshot)
@@ -260,8 +258,7 @@ internal func test(
   let images = try cggen(
     files: paths,
     scale: scale,
-    callerAllowAntialiasing: antialiasing,
-    bytecode: bytecode
+    callerAllowAntialiasing: antialiasing
   ).map(adjustImage)
   try check(
     images.count == referenceImgs.count,
@@ -414,5 +411,48 @@ extension WKWebViewSnapshoter {
       viewport: CGRect(origin: CGPoint(x: 8, y: 8), size: size),
       scale: scale
     )
+  }
+}
+
+func testBC(
+  path: URL,
+  referenceRenderer: (URL) throws -> CGImage,
+  scale: CGFloat,
+  antialiasing: Bool = true,
+  resultAdjust: (CGImage) -> CGImage = { $0 },
+  tolerance: Double
+) throws {
+  let reference = try referenceRenderer(path)
+  let bytecode = try getBytecode(from: path)
+
+  let cs = CGColorSpaceCreateDeviceRGB()
+  guard let context = CGContext(
+    data: nil,
+    width: reference.width,
+    height: reference.height,
+    bitsPerComponent: 8,
+    bytesPerRow: 0,
+    space: cs,
+    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+  ) else {
+    throw Err("Failed to create CGContext")
+  }
+  context
+    .concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
+  context.setAllowsAntialiasing(antialiasing)
+  try runBytecode(context, fromData: Data(bytecode))
+
+  guard let rawResult = context.makeImage() else {
+    throw Err("Failed to draw CGImage")
+  }
+  let result = resultAdjust(rawResult)
+  let diff = compare(reference, result)
+  XCTAssertLessThan(diff, tolerance)
+  if diff >= tolerance {
+    XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+      $0.add(.init(image: result, name: "result"))
+      $0.add(.init(image: reference, name: "webkitsnapshot"))
+      $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+    }
   }
 }

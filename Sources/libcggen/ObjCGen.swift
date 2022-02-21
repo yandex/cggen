@@ -81,3 +81,8 @@ private func supportHeader(
     .newLine
   )
 }
+
+extension ObjcTerm.TypeIdentifier {
+  public static let CGSize: Self = "CGSize"
+  public static let CGContextRef: Self = "CGContextRef"
+}

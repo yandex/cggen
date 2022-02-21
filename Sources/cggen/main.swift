@@ -9,7 +9,6 @@ struct Main: ParsableCommand {
   @Option var objcHeader: String?
   @Option var objcPrefix = ""
   @Option var objcImpl: String?
-  @Option var objcBytecodeImpl: String?
   @Option var bytecodeFilePrefix: String?
   @Option var objcHeaderImportPath: String?
   @Option var objcCallerPath: String?
@@ -33,7 +32,6 @@ struct Main: ParsableCommand {
       objcHeader: objcHeader,
       objcPrefix: objcPrefix,
       objcImpl: objcImpl,
-      objcBytecodeImpl: objcBytecodeImpl,
       objcHeaderImportPath: objcHeaderImportPath,
       objcCallerPath: objcCallerPath,
       callerScale: callerScale,
