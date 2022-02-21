@@ -9,7 +9,7 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   func filePreambleNew() -> ObjcTerm {
     ObjcTerm(
       .hasFeatureSupport,
-      .import(.coreGraphics, .foundation),
+      .import(.coreGraphics, .foundation, .imageIO, .uniformTypeIdentifiers),
       .newLine,
       .quotedImport(headerImportPath),
       .newLine
@@ -36,7 +36,10 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       CGImageRef img = CGBitmapContextCreateImage(ctx);
       NSURL* url = [NSURL fileURLWithPath:outputFilePath];
       CGImageDestinationRef destination = CGImageDestinationCreateWithURL(
-        (__bridge CFURLRef)url, kUTTypePNG, 1, nil);
+        (__bridge CFURLRef)url,
+        (__bridge CFStringRef)UTTypePNG.identifier,
+        1, nil
+      );
       CGImageDestinationAddImage(destination, img, nil);
       BOOL t = CGImageDestinationFinalize(destination);
 
@@ -47,7 +50,10 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       return t ? 0 : 1;
     }
 
-    int main(int __attribute__((unused)) argc, const char* __attribute__((unused)) argv[]) {
+    int main(
+      int __attribute__((unused)) argc,
+      const char* __attribute__((unused)) argv[]
+    ) {
       int retCode = 0;
 
     """

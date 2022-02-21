@@ -313,6 +313,8 @@ extension ObjcTerm {
     static let foundation: SystemModule = "Foundation"
     static let coreGraphics: SystemModule = "CoreGraphics"
     static let coreFoundation: SystemModule = "CoreFoundation"
+    static let imageIO: SystemModule = "ImageIO"
+    static let uniformTypeIdentifiers: SystemModule = "UniformTypeIdentifiers"
   }
 
   static func quotedImport(_ path: String) -> ObjcTerm {
