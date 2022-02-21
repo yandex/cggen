@@ -7,7 +7,6 @@ public struct Args {
   let objcHeader: String?
   let objcPrefix: String?
   let objcImpl: String?
-  let objcBytecodeImpl: String?
   let objcHeaderImportPath: String?
   let objcCallerPath: String?
   let callerScale: Double
@@ -23,7 +22,6 @@ public struct Args {
     objcHeader: String?,
     objcPrefix: String?,
     objcImpl: String?,
-    objcBytecodeImpl: String?,
     objcHeaderImportPath: String?,
     objcCallerPath: String?,
     callerScale: Double,
@@ -38,7 +36,6 @@ public struct Args {
     self.objcHeader = objcHeader
     self.objcPrefix = objcPrefix
     self.objcImpl = objcImpl
-    self.objcBytecodeImpl = objcBytecodeImpl
     self.objcHeaderImportPath = objcHeaderImportPath
     self.objcCallerPath = objcCallerPath
     self.callerScale = callerScale
@@ -67,21 +64,6 @@ public func runCggen(with args: Args) throws {
     module: args.module ?? ""
   )
 
-  if let objcBytecodeImpl = args.objcBytecodeImpl {
-    let implGenerator = BCCGGenerator(
-      params: params,
-      headerImportPath: args.objcHeaderImportPath
-    )
-    let fileStr = implGenerator.generateFile(images: images)
-    try fileStr.write(
-      toFile: objcBytecodeImpl,
-      atomically: true,
-      encoding: .utf8
-    )
-
-    log("Bytecode generated in: \(stopwatch.reset())")
-  }
-
   if let objcHeaderPath = args.objcHeader {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
     let fileStr = headerGenerator.generateFile(images: images)
@@ -94,14 +76,18 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcImplPath = args.objcImpl {
-    let headerImportPath = args.objcHeaderImportPath
-    let implGenerator = ObjcCGGenerator(
+    let implGenerator = BCCGGenerator(
       params: params,
-      headerImportPath: headerImportPath
+      headerImportPath: args.objcHeaderImportPath
     )
     let fileStr = implGenerator.generateFile(images: images)
-    try fileStr.write(toFile: objcImplPath, atomically: true, encoding: .utf8)
-    log("Impl generated in: \(stopwatch.reset())")
+    try fileStr.write(
+      toFile: objcImplPath,
+      atomically: true,
+      encoding: .utf8
+    )
+
+    log("Bytecode generated in: \(stopwatch.reset())")
   }
 
   if case .swiftFriendly = params.style,
