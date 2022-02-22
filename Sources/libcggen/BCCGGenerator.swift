@@ -100,6 +100,7 @@ extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
     UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
   }
 }
+
 // swiftformat:enable redundantSelf
 
 extension Gradient: ByteCodable {
@@ -168,14 +169,18 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
       return byteCommand(.replacePathWithStrokePath)
     case let .lines(lines):
       return byteCommand(.lines, lines)
-    case let .clip(rule):
-      return byteCommand(.clip, rule)
+    case .clip:
+      return byteCommand(.clip)
+    case let .clipWithRule(rule):
+      return byteCommand(.clipWithRule, rule)
     case let .clipToRect(rect):
       return byteCommand(.clipToRect, rect)
     case let .dash(pattern):
       return byteCommand(.dash, pattern)
-    case let .fill(rule):
-      return byteCommand(.fill, rule)
+    case .fill:
+      return byteCommand(.fill)
+    case let .fillWithRule(rule):
+      return byteCommand(.fillWithRule, rule)
     case let .fillEllipse(rect):
       return byteCommand(.fillEllipse, rect)
     case .stroke:
@@ -202,6 +207,10 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
       return byteCommand(.strokeColor, color)
     case let .fillColor(color):
       return byteCommand(.fillColor, color)
+    case let .fillRule(rule):
+      return byteCommand(.fillRule, rule)
+    case .fillAndStroke:
+      return byteCommand(.fillAndStroke)
     case let .linearGradient(name, options):
       return byteCommand(
         .linearGradient,

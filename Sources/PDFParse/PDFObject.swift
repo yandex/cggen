@@ -44,7 +44,7 @@ internal enum PDFObject {
       CGPDFObjectGetValue(obj, .array, &tempArray)
       let array = tempArray!
       let range = 0..<CGPDFArrayGetCount(array)
-      self = .array(range.map { (i) -> PDFObject in
+      self = .array(range.map { i -> PDFObject in
         var tempObj: CGPDFObjectRef?
         CGPDFArrayGetObject(array, i, &tempObj)
         let obj = tempObj!

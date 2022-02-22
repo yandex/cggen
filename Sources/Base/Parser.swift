@@ -460,7 +460,7 @@ extension Parser:
   @inlinable
   public init(stringLiteral value: StaticString) {
     let s = value.description
-    self.init { (data) -> Result<Void, Error> in
+    self.init { data -> Result<Void, Error> in
       guard data.hasPrefix(s) else {
         return .failure(ParseError.consume(
           expected: value.description,
@@ -503,7 +503,7 @@ public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
 public func consume<D: StringProtocol, S: StringProtocol>(
   _ s: S
 ) -> Parser<D, Void> where D.SubSequence == D {
-  .init { (data) -> Result<Void, Error> in
+  .init { data -> Result<Void, Error> in
     guard data.hasPrefix(s) else {
       return .failure(
         ParseError.consume(
@@ -525,7 +525,7 @@ public func int<S: StringProtocol>(
   .opt {
     // Fail on any leading whitespace, as `strtol` skips it.
     guard let first = $0.first, !first.isWhitespace else { return nil }
-    let (res, len) = $0.withCString { (cstr) -> (Int, Int) in
+    let (res, len) = $0.withCString { cstr -> (Int, Int) in
       var endPointer: UnsafeMutablePointer<Int8>?
       let res = strtol(cstr, &endPointer, radix)
       guard let intEndPointee = endPointer else { return (0, 0) }
@@ -546,7 +546,7 @@ public func double<S: StringProtocol>(
   .opt {
     // Fail on any leading whitespace, as `strtod` skips it.
     guard let first = $0.first, !first.isWhitespace else { return nil }
-    let (res, len) = $0.withCString { (cstr) -> (Double, Int) in
+    let (res, len) = $0.withCString { cstr -> (Double, Int) in
       var endPointer: UnsafeMutablePointer<Int8>?
       let res = strtod(cstr, &endPointer)
       guard let doubleEndPointee = endPointer else { return (0, 0) }

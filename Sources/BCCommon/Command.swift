@@ -36,15 +36,18 @@ public enum Command: UInt8 {
 
   case lines // ([CGPoint])
 
-  case clip // (CGPathFillRule)
+  case clip
+  case clipWithRule // (CGPathFillRule)
   case clipToRect // (CGRect)
   case dash // (DashPattern)
 
-  case fill // (CGPathFillRule)
+  case fill
+  case fillWithRule // (CGPathFillRule)
   case fillEllipse // (in: CGRect)
   case stroke
   case drawPath // (mode: CGPathDrawingMode)
   case addEllipse // (in: CGRect)
+  case fillAndStroke
 
   case concatCTM // (CGAffineTransform)
 
@@ -57,6 +60,7 @@ public enum Command: UInt8 {
   case globalAlpha // (CGFloat)
   case strokeColor // (RGBACGColor)
   case fillColor // (RGBACGColor)
+  case fillRule // (CGPathFillRule)
 
   case linearGradient // (id: UInt32, LinearGradientDrawingOptions)
   case radialGradient // (id: UInt32, RadialGradientDrawingOptions)

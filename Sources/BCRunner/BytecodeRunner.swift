@@ -33,9 +33,12 @@ public class BytecodeRunner {
 
   var currentState: State
   let commons: Commons
-  init(_ state: State, _ commons: Commons) {
+  private var gstack: GStateStack
+
+  init(_ state: State, _ commons: Commons, gstate: GState) {
     currentState = state
     self.commons = commons
+    gstack = GStateStack(initial: gstate)
   }
 
   func advance(_ count: BCSizeType) {
@@ -173,6 +176,8 @@ public class BytecodeRunner {
       case .blendMode:
         try context.setBlendMode(read())
       case .clip:
+        context.clip(using: gstack.fillRule)
+      case .clipWithRule:
         try context.clip(using: read())
       case .clipToRect:
         try context.clip(to: read(CGRect.self))
@@ -200,10 +205,26 @@ public class BytecodeRunner {
       case .endTransparencyLayer:
         context.endTransparencyLayer()
       case .fill:
+        context.fillPath(using: gstack.fillRule)
+      case .fillWithRule:
         try context.fillPath(using: read())
+      case .fillAndStroke:
+        let mode: CGPathDrawingMode
+        switch gstack.fillRule {
+        case .winding:
+          mode = .fillStroke
+        case .evenOdd:
+          mode = .eoFillStroke
+        @unknown default:
+          mode = .fillStroke
+        }
+        context.drawPath(using: mode)
       case .fillColor:
         let color: BCRGBAColor = try read()
         context.setFillColor(color.components)
+      case .fillRule:
+        let rule: CGPathFillRule = try read()
+        gstack.fillRule = rule
       case .fillEllipse:
         try context.fillEllipse(in: read())
       case .flatness:
@@ -243,8 +264,10 @@ public class BytecodeRunner {
       case .replacePathWithStrokePath:
         context.replacePathWithStrokedPath()
       case .restoreGState:
+        gstack.restoreGState()
         context.restoreGState()
       case .saveGState:
+        gstack.saveGState()
         context.saveGState()
       case .stroke:
         context.strokePath()
@@ -256,7 +279,7 @@ public class BytecodeRunner {
         guard let subroute = commons.subroutes[id] else {
           throw Error.invalidSubrouteId(id: id)
         }
-        try BytecodeRunner(subroute, commons).run()
+        try BytecodeRunner(subroute, commons, gstate: gstack.current).run()
       case .shadow:
         try drawShadow()
       }
@@ -282,7 +305,7 @@ func runBytecodeThrowing(
   context.setStrokeColorSpace(cs)
   let state = BytecodeRunner.State(position: start, remaining: BCSizeType(len))
   let commons = BytecodeRunner.Commons(context, cs)
-  try BytecodeRunner(state, commons).run()
+  try BytecodeRunner(state, commons, gstate: .default).run()
 }
 
 @_cdecl("runBytecode")
@@ -295,5 +318,37 @@ public func runBytecode(
     try runBytecodeThrowing(context, start, len)
   } catch let t {
     assertionFailure("Failed to run bytecode with error: \(t)")
+  }
+}
+
+struct GState {
+  var fillRule: CGPathFillRule
+
+  static let `default` = Self(fillRule: .winding)
+}
+
+@dynamicMemberLookup
+struct GStateStack {
+  private var stack: [GState]
+  var current: GState
+
+  init(initial: GState) {
+    stack = []
+    current = initial
+  }
+
+  mutating func saveGState() {
+    stack.append(current)
+  }
+
+  mutating func restoreGState() {
+    if let saved = stack.popLast() {
+      current = saved
+    }
+  }
+
+  subscript<T>(dynamicMember kp: WritableKeyPath<GState, T>) -> T {
+    get { current[keyPath: kp] }
+    set { current[keyPath: kp] = newValue }
   }
 }

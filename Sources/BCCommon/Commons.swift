@@ -41,7 +41,6 @@ public struct BCRGBAColor {
     blue = unzipComponent(val: b)
     self.alpha = alpha
   }
-  
 }
 
 public struct BCLinearGradientDrawingOptions {

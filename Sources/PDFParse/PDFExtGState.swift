@@ -41,7 +41,7 @@ public struct PDFExtGState {
   public let commands: [PDFGStateCommand]
   init(obj: PDFObject, xobjFactory: PDFXObject.Factory) throws {
     guard let dict = obj.dictionaryVal() else { throw Error.parsingError() }
-    commands = try dict.compactMap { (arg) -> PDFGStateCommand? in
+    commands = try dict.compactMap { arg -> PDFGStateCommand? in
       let (key, val) = arg
       switch key {
       case "Type":

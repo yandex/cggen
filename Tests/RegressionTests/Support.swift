@@ -126,12 +126,17 @@ func cggen(
     let support = [
       "BCCommon.o",
       "BCRunner.o",
-    ].map { currentBundlePath.deletingLastPathComponent().appendingPathComponent($0) }
+    ].map {
+      currentBundlePath.deletingLastPathComponent().appendingPathComponent($0)
+    }
     try clang(
       out: genBin,
       files: [impl, caller] + support,
       frameworks: frameworks,
-      libSearchPaths: ["/usr/lib/swift", toolchainPath.path + "/usr/lib/swift/macosx" ]
+      libSearchPaths: [
+        "/usr/lib/swift",
+        toolchainPath.path + "/usr/lib/swift/macosx",
+      ]
     )
   }
 
@@ -173,7 +178,7 @@ private let sdkPath = try! check_output(
 private let toolchainPath = try! URL(fileURLWithPath: check_output(
   cmd: "xcrun", "--sdk", "macosx", "--find", "clang"
 ).out.trimmingCharacters(in: .newlines)).deletingLastPathComponent()
-.deletingLastPathComponent().deletingLastPathComponent()
+  .deletingLastPathComponent().deletingLastPathComponent()
 
 private func subprocess(
   cmd: [String],
@@ -206,7 +211,13 @@ internal func clang(
     "-fmodules",
     "-isysroot",
     sdkPath,
-  ] + [ outArgs, frameworkArgs, syntaxOnlyArg, files.map { $0.path }, libSearchPathsArgs ].flatMap(identity)
+  ] + [
+    outArgs,
+    frameworkArgs,
+    syntaxOnlyArg,
+    files.map { $0.path },
+    libSearchPathsArgs,
+  ].flatMap(identity)
   let clangCode = try subprocess(
     cmd: args,
     env: [:]
@@ -262,7 +273,9 @@ internal func test(
   ).map(adjustImage)
   try check(
     images.count == referenceImgs.count,
-    Err("Required images count: \(referenceImgs.count), got \(images.count) from cggen")
+    Err(
+      "Required images count: \(referenceImgs.count), got \(images.count) from cggen"
+    )
   )
 
   for (i, path) in paths.enumerated() {
@@ -270,7 +283,9 @@ internal func test(
     let ref = referenceImgs[i]
     try check(
       ref.intSize == img.intSize,
-      Err("reference image size: \(ref.intSize), got \(img.intSize) for \(path.path)")
+      Err(
+        "reference image size: \(ref.intSize), got \(img.intSize) for \(path.path)"
+      )
     )
 
     let diff = signpostRegion("image comparision") {

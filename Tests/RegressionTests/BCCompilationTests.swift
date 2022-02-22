@@ -63,7 +63,8 @@ class BCCompilationTests: XCTestCase {
 
   func testCompilationAndDrawing() throws {
     // FIXME: Figure out how to link bcrunner code to binaries in tests
-    guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil else {
+    guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil
+    else {
       throw XCTSkip("This test supported only in xcode")
     }
     let files = [
@@ -95,5 +96,6 @@ class BCCompilationTests: XCTestCase {
     )
   }
 }
+
 let defSize = CGSize(width: 50, height: 50)
 let defScale = 2.0
