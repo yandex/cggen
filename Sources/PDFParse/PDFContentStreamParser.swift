@@ -28,7 +28,11 @@ enum PDFContentStreamParser {
       append(op)
     }
 
-    func append(file: String = #file, line: Int = #line, _ factory: () -> PDFOperator?) {
+    func append(
+      file: String = #file,
+      line: Int = #line,
+      _ factory: () -> PDFOperator?
+    ) {
       append(factory(), file: file, line: line)
     }
   }

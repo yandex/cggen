@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <path id="path" d="M1,1 v8 h8 v-8 h-8 M3,3 v4 h4 v-4 h-4" />
+    <path id="path-eveodd" d="M1,1 v8 h8 v-8 h-8 M3,3 v4 h4 v-4 h-4" fill-rule="evenodd"/>
+    <path id="path-nonzero" d="M1,1 v8 h8 v-8 h-8 M3,3 v4 h4 v-4 h-4" fill-rule="nonzero"/>
+    <g id="group" transform="translate(2, 2)">
+      <use xlink:href="#path-eveodd" fill="indianred"/>
+      <use xlink:href="#path-nonzero" fill="indianred" transform="translate(10,0)" />
+      <use xlink:href="#path" transform="translate(0,10)" />
+      <use xlink:href="#path" transform="translate(10,10)" fill-rule="evenodd" />
+    </g>
+  </defs>
+  <rect fill="white" x="0" y="0" width="50" height="50" />
+  <g stroke="none" fill="darkred">
+    <use xlink:href="#group" fill-rule="nonzero" />
+    <use xlink:href="#group" fill-rule="evenodd" transform="translate(0,25)" />
+    <g fill-rule="nonzero" transform="translate(25, 0)">
+      <use xlink:href="#group"/>
+    </g>
+    <g fill-rule="evenodd" transform="translate(25, 25)">
+      <use xlink:href="#group"/>
+    </g>
+  </g>
+</svg>

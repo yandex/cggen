@@ -116,6 +116,10 @@ class SVGPathTests: XCTestCase {
   func testPathFillRuleNonzeroDefault() {
     test(svg: "path_fill_rule_nonzero_default")
   }
+
+  func testPathFillRuleGstate() {
+    test(svg: "path_fill_rule_gstate")
+  }
 }
 
 class SVGGradientTests: XCTestCase {

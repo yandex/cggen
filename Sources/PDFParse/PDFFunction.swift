@@ -59,7 +59,7 @@ public struct PDFFunction {
     precondition(bitsPerSample == 8, "Only UInt8 supported")
     let samples = [UInt8](stream.data).map { CGFloat($0) / CGFloat(UInt8.max) }
     let values = samples.splitBy(subSize: rangeDim)
-    let allPoints = (0..<size[0]).map { (s) -> Point in
+    let allPoints = (0..<size[0]).map { s -> Point in
       let start = domain[0].0
       let end = domain[0].1
       let step = (end - start) / CGFloat(size[0] - 1)
@@ -85,7 +85,7 @@ extension PDFFunction.Point: LinearInterpolatable {
 
   public func distanceTo(_ other: PDFFunction.Point) -> CGFloat {
     let squareDistance = zip(value, other.value)
-      .reduce(0) { (acc, pair) -> CGFloat in
+      .reduce(0) { acc, pair -> CGFloat in
         let d = pair.0 - pair.1
         return acc + d * d
       }
@@ -100,7 +100,7 @@ extension PDFFunction.Point: LinearInterpolatable {
     precondition(lhs.value.count == rhs.value.count)
     let x1 = lhs.arg
     let x2 = rhs.arg
-    let out = zip(lhs.value, rhs.value).map { (y1, y2) -> CGFloat in
+    let out = zip(lhs.value, rhs.value).map { y1, y2 -> CGFloat in
       let k = (y1 - y2) / (x1 - x2)
       let b = y1 - k * x1
       return k * x + b

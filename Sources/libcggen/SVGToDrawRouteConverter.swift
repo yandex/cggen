@@ -65,7 +65,7 @@ private enum Err: Swift.Error {
 }
 
 private struct Context {
-  private(set) var fillRule: SVG.FillRule = .nonzero
+//  private(set) var fillRule: SVG.FillRule = .nonzero
   private(set) var fillAlpha: SVG.Float = 1
   private(set) var fill: SVG.Paint = .rgb(.black())
   private(set) var strokeAlpha: SVG.Float = 1
@@ -125,7 +125,6 @@ private struct Context {
     _ presentation: SVG.PresentationAttributes,
     area: CGRect?
   ) throws -> DrawStep {
-    fillRule ?= presentation.fillRule
     fillAlpha ?= presentation.fillOpacity
     fill ?= presentation.fill
     stroke ?= presentation.stroke
@@ -135,7 +134,11 @@ private struct Context {
     strokeDashOffset ?= presentation.strokeDashOffset
     objectBoundingBox ?= area
 
-    let strokeWidth = presentation.strokeWidth.map { (l) -> DrawStep in
+    let fillRule = presentation.fillRule.map { rule in
+      DrawStep.fillRule(.init(rule))
+    }
+
+    let strokeWidth = presentation.strokeWidth.map { l -> DrawStep in
       precondition(l.unit != .percent)
       return DrawStep.lineWidth(CGFloat(l.number))
     }
@@ -145,21 +148,21 @@ private struct Context {
     let strokeLineJoin = presentation.strokeLineJoin.map {
       DrawStep.lineJoinStyle(.init(svgJoin: $0))
     }
-    let mask = try presentation.mask.map { (maskName) -> DrawStep in
+    let mask = try presentation.mask.map { maskName -> DrawStep in
       guard case let .mask(svgmask)? = defenitions[maskName]?.firstAndOnly
       else {
         throw Err.noDefenitionForId(maskName)
       }
       return try stepsForMask(svgmask)
     }
-    let clip = try presentation.clipPath.map { (maskName) -> DrawStep in
+    let clip = try presentation.clipPath.map { maskName -> DrawStep in
       guard case let .clipPath(clip)? = defenitions[maskName]?.firstAndOnly
       else {
         throw Err.noDefenitionForId(maskName)
       }
       return try stepsForClip(clip)
     }
-    let filter = try presentation.filter.map { (filterName) -> DrawStep in
+    let filter = try presentation.filter.map { filterName -> DrawStep in
       let filter = try filters[filterName] !! Err.noDefenitionForId(filterName)
       return try .shadow(filter.simpleShadow !! Err.tooComplexFilter(filter))
     }
@@ -173,6 +176,7 @@ private struct Context {
       strokeLineJoin,
       strokeDash,
       updateCurrentFillAndStroke(),
+      fillRule,
       mask,
       clip,
       filter,
@@ -195,42 +199,34 @@ private struct Context {
       gradient(for: \.fill, opacity: fillAlpha).map {
         DrawStep.savingGState(
           path,
-          DrawStep.clip(.init(fillRule)),
+          DrawStep.clip,
           $0
         )
       },
-      currentDrawingMode.map(DrawStep.drawPath).map {
-        DrawStep.composite([
-          path,
-          $0,
-        ])
-      },
+      DrawStep.composite(.build {
+        switch (currentStroke, currentFill) {
+        case (nil, nil):
+          DrawStep.empty
+        case (.some, nil):
+          path
+          DrawStep.stroke
+        case (nil, .some):
+          path
+          DrawStep.fill
+        case (.some, .some):
+          path
+          DrawStep.fillAndStroke
+        }
+      }),
       gradient(for: \.stroke, opacity: strokeAlpha).map {
         DrawStep.savingGState(
           path,
           DrawStep.replacePathWithStrokePath,
-          DrawStep.clip(.init(fillRule)),
+          DrawStep.clip,
           $0
         )
       },
     ].compactMap(identity))
-  }
-
-  var currentDrawingMode: CGPathDrawingMode? {
-    switch (currentStroke, currentFill, fillRule) {
-    case (nil, nil, _):
-      return nil
-    case (nil, .some, .nonzero):
-      return .fill
-    case (nil, .some, .evenodd):
-      return .eoFill
-    case (.some, nil, _):
-      return .stroke
-    case (.some, .some, .nonzero):
-      return .fillStroke
-    case (.some, .some, .evenodd):
-      return .eoFillStroke
-    }
   }
 
   var currentDash: DashPattern? {
@@ -278,7 +274,7 @@ private struct Context {
     }
     let comps: [DrawStep?] = try [.saveGState, transform] +
       shapes.map { try $0.shapeConstruction()?.0 } +
-      [.restoreGState, .clip(.init(fillRule))]
+      [.restoreGState, .clip]
     return .composite(comps.compactMap(identity))
   }
 }
@@ -505,7 +501,7 @@ private func pathConstruction(
   var currentPoint: CGPoint?
   var subPathStartPoint: CGPoint?
   var prevCurveControlPoint = Resetable<CGPoint>()
-  let steps: [DrawStep] = try commands.flatMap { (command) -> [DrawStep] in
+  let steps: [DrawStep] = try commands.flatMap { command -> [DrawStep] in
     defer {
       prevCurveControlPoint.reset()
     }
@@ -1166,7 +1162,7 @@ extension SVGFilterNode {
       }
     }
     guard alphaClamped else { return nil }
-    return zip(blur, alpha).map { (arg) -> Shadow in
+    return zip(blur, alpha).map { arg -> Shadow in
       let (blur, alpha) = arg
       return .init(
         offset: offset ?? .zero,

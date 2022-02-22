@@ -81,7 +81,8 @@ enum PDFToDrawRouteConverter {
     appendSteps: [DrawStep] = []
   ) throws -> DrawRoute {
     let gradients = resources.shadings.mapValues { $0.makeGradient() }
-    let subroutes = try resources.xObjects.mapValues { try convert(xobject: $0) }
+    let subroutes = try resources.xObjects
+      .mapValues { try convert(xobject: $0) }
     precondition(resources.xObjects.count == subroutes.count)
     let steps = try operatorsToSteps(
       ops: operators,
@@ -104,7 +105,11 @@ enum PDFToDrawRouteConverter {
   ) throws -> [DrawStep] {
     let context = Context()
     return try ops.map {
-      try $0.drawStep(resources: resources, context: context, gradients: gradients)
+      try $0.drawStep(
+        resources: resources,
+        context: context,
+        gradients: gradients
+      )
     }
   }
 }
@@ -181,7 +186,7 @@ extension PDFOperator {
 
     case let .applyGState(name):
       let state = resources.gStates[name]!
-      let steps = try state.commands.map { (cmd) -> DrawStep in
+      let steps = try state.commands.map { cmd -> DrawStep in
         switch cmd {
         case let .fillAlpha(alpha):
           context.fillAlpha = alpha
@@ -304,9 +309,9 @@ extension PDFOperator {
     case let .lineWidth(w):
       return .lineWidth(w)
     case .clipWinding:
-      return .clip(.winding)
+      return .clipWithRule(.winding)
     case .clipEvenOdd:
-      return .clip(.evenOdd)
+      return .clipWithRule(.evenOdd)
 
     case .curveToWithFinalPointReplicated:
       throw DrawError("Not implemented")
@@ -372,7 +377,7 @@ extension CGBlendMode {
 extension PDFShading {
   fileprivate func makeGradient() -> (Gradient, PDFGradientDrawingOptions) {
     let locationAndColors = function.points
-      .map { (point) -> (CGFloat, RGBACGColor) in
+      .map { point -> (CGFloat, RGBACGColor) in
         precondition(point.value.count == 3)
         let loc = point.arg
         let components = point.value
@@ -461,7 +466,7 @@ extension DrawStep {
   ) -> DrawStep {
     .composite([
       .fillColor(context.fillColorWithAlpha),
-      .fill(rule),
+      .fillWithRule(rule),
     ])
   }
 

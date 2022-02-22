@@ -152,7 +152,7 @@ private func generateImages(
 
   let generated = zip(files, files.concurrentMap(generator))
 
-  let failed = generated.compactMap { (url, result) -> (URL, Swift.Error)? in
+  let failed = generated.compactMap { url, result -> (URL, Swift.Error)? in
     switch result {
     case .success:
       return nil

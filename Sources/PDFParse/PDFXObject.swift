@@ -22,10 +22,14 @@ public struct PDFXObject {
       throw Error.unsupported("Only XObject type is supported")
     }
     guard !PDFXObject.unsupportedSubtypes.contains(subtype) else {
-      throw Error.unsupported("XObject with subtype \(subtype) is not supported")
+      throw Error
+        .unsupported("XObject with subtype \(subtype) is not supported")
     }
     guard subtype == "Form" else {
-      throw Error.unsupported("XObject with subtype \(subtype) is not implemented (yet?)")
+      throw Error
+        .unsupported(
+          "XObject with subtype \(subtype) is not implemented (yet?)"
+        )
     }
 
     let contentStream = CGPDFContentStreamCreateWithStream(
@@ -43,7 +47,8 @@ public struct PDFXObject {
       parentStream: contentStream
     )
 
-    guard let bbox = CGRect.fromPDFArray(bboxArray) else { throw Error.parsingError() }
+    guard let bbox = CGRect.fromPDFArray(bboxArray)
+    else { throw Error.parsingError() }
 
     let operators = try PDFContentStreamParser.parse(stream: contentStream)
 
