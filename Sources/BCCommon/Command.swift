@@ -48,6 +48,7 @@ public enum Command: UInt8 {
   case drawPath // (mode: CGPathDrawingMode)
   case addEllipse // (in: CGRect)
   case fillAndStroke
+  case setGlobalAlphaToFillAlpha
 
   case concatCTM // (CGAffineTransform)
 
@@ -59,7 +60,11 @@ public enum Command: UInt8 {
   case colorRenderingIntent // (CGColorRenderingIntent)
   case globalAlpha // (CGFloat)
   case strokeColor // (RGBACGColor)
+  case strokeAlpha // (CGFloat)
+  case strokeNone
   case fillColor // (RGBACGColor)
+  case fillAlpha // (CGFloat)
+  case fillNone
   case fillRule // (CGPathFillRule)
 
   case linearGradient // (id: UInt32, LinearGradientDrawingOptions)

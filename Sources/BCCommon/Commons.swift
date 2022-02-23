@@ -27,9 +27,9 @@ private func unzipComponent(val: UInt8) -> CGFloat {
 
 public struct BCRGBAColor {
   public let red: CGFloat
-  public let green: CGFloat
-  public let blue: CGFloat
-  public let alpha: CGFloat
+  public var green: CGFloat
+  public var blue: CGFloat
+  public var alpha: CGFloat
   public init(
     r: UInt8,
     g: UInt8,
@@ -40,6 +40,21 @@ public struct BCRGBAColor {
     green = unzipComponent(val: g)
     blue = unzipComponent(val: b)
     self.alpha = alpha
+  }
+}
+
+public struct BCRGBColor {
+  public var red: CGFloat
+  public var green: CGFloat
+  public var blue: CGFloat
+  public init(
+    r: UInt8,
+    g: UInt8,
+    b: UInt8
+  ) {
+    red = unzipComponent(val: r)
+    green = unzipComponent(val: g)
+    blue = unzipComponent(val: b)
   }
 }
 
@@ -99,6 +114,10 @@ public struct BCShadow {
     self.blur = blur
     self.color = color
   }
+}
+
+public enum BCFillRule: Int {
+  case winding, evenOdd
 }
 
 public typealias BCIdType = UInt32

@@ -3,6 +3,7 @@ import Foundation
 import Base
 
 typealias RGBACGColor = RGBAColor<CGFloat>
+typealias RGBCGColor = RGBColor<CGFloat>
 
 struct Gradient {
   var locationAndColors: [(CGFloat, RGBACGColor)]
@@ -81,10 +82,15 @@ enum DrawStep {
 
   case colorRenderingIntent(CGColorRenderingIntent)
   case globalAlpha(CGFloat)
+  case setGlobalAlphaToFillAlpha
   case fillColorSpace
   case strokeColorSpace
-  case strokeColor(RGBACGColor)
-  case fillColor(RGBACGColor)
+  case strokeColor(RGBCGColor)
+  case strokeAlpha(CGFloat)
+  case strokeNone
+  case fillColor(RGBCGColor)
+  case fillAlpha(CGFloat)
+  case fillNone
 
   case fillRule(CGPathFillRule)
 
@@ -108,10 +114,11 @@ enum DrawStep {
 }
 
 struct DrawRoute {
-  let boundingRect: CGRect
-  let gradients: [String: Gradient]
-  let subroutes: [String: DrawRoute]
-  let steps: [DrawStep]
+  var boundingRect: CGRect
+  var gradients: [String: Gradient]
+  var subroutes: [String: DrawRoute]
+  var steps: [DrawStep]
+
   init(
     boundingRect: CGRect,
     gradients: [String: Gradient],

@@ -176,9 +176,9 @@ public class BytecodeRunner {
       case .blendMode:
         try context.setBlendMode(read())
       case .clip:
-        context.clip(using: gstack.fillRule)
+        context.clip(using: .init(gstack.fillRule))
       case .clipWithRule:
-        try context.clip(using: read())
+        try context.clip(using: .init(read(BCFillRule.self)))
       case .clipToRect:
         try context.clip(to: read(CGRect.self))
       case .closePath:
@@ -205,25 +205,35 @@ public class BytecodeRunner {
       case .endTransparencyLayer:
         context.endTransparencyLayer()
       case .fill:
-        context.fillPath(using: gstack.fillRule)
+        context.fillPath(using: .init(gstack.fillRule))
       case .fillWithRule:
-        try context.fillPath(using: read())
+        try context.fillPath(using: .init(read(BCFillRule.self)))
       case .fillAndStroke:
-        let mode: CGPathDrawingMode
-        switch gstack.fillRule {
-        case .winding:
+        let mode: CGPathDrawingMode?
+        switch (gstack.stroke.color, gstack.fill.color, gstack.fillRule) {
+        case (.some, .some, .winding):
           mode = .fillStroke
-        case .evenOdd:
+        case (.some, .some, .evenOdd):
           mode = .eoFillStroke
-        @unknown default:
-          mode = .fillStroke
+        case (nil, .some, .winding):
+          mode = .fill
+        case (nil, .some, .evenOdd):
+          mode = .eoFill
+        case (.some, nil, _):
+          mode = .stroke
+        case (nil, nil, _):
+          mode = nil
         }
-        context.drawPath(using: mode)
+        if let mode = mode {
+          context.drawPath(using: mode)
+        } else {
+          context.beginPath()
+        }
       case .fillColor:
-        let color: BCRGBAColor = try read()
-        context.setFillColor(color.components)
+        try gstack.setFillColor(read())
+        gstack.fill.rgba.map(context.setFillColor)
       case .fillRule:
-        let rule: CGPathFillRule = try read()
+        let rule: BCFillRule = try read()
         gstack.fillRule = rule
       case .fillEllipse:
         try context.fillEllipse(in: read())
@@ -272,8 +282,8 @@ public class BytecodeRunner {
       case .stroke:
         context.strokePath()
       case .strokeColor:
-        let color: BCRGBAColor = try read()
-        context.setStrokeColor(color.components)
+        try gstack.setStrokeColor(read())
+        gstack.stroke.rgba.map(context.setStrokeColor)
       case .subrouteWithId:
         let id: BCIdType = try read()
         guard let subroute = commons.subroutes[id] else {
@@ -282,6 +292,18 @@ public class BytecodeRunner {
         try BytecodeRunner(subroute, commons, gstate: gstack.current).run()
       case .shadow:
         try drawShadow()
+      case .strokeAlpha:
+        try gstack.setStrokeAlpha(read())
+        gstack.stroke.rgba.map(context.setStrokeColor)
+      case .fillAlpha:
+        try gstack.setFillAlpha(read())
+        gstack.fill.rgba.map(context.setFillColor)
+      case .strokeNone:
+        gstack.stroke.color = nil
+      case .fillNone:
+        gstack.fill.color = nil
+      case .setGlobalAlphaToFillAlpha:
+        context.setAlpha(gstack.fill.alpha)
       }
     }
   }
@@ -322,9 +344,26 @@ public func runBytecode(
 }
 
 struct GState {
-  var fillRule: CGPathFillRule
+  typealias RGBA = (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)
+  struct Paint {
+    var color: BCRGBColor?
+    var alpha: CGFloat
+    var rgba: RGBA? {
+      color.map { ($0.red, $0.green, $0.blue, alpha) }
+    }
 
-  static let `default` = Self(fillRule: .winding)
+    static let black = Self(color: .init(r: 0, g: 0, b: 0), alpha: 1)
+    static let none = Self(color: nil, alpha: 1)
+  }
+
+  var fillRule: BCFillRule
+  var fill: Paint
+  var stroke: Paint
+
+  static let `default` = Self(
+    fillRule: .winding,
+    fill: .black, stroke: .none
+  )
 }
 
 @dynamicMemberLookup
@@ -350,5 +389,52 @@ struct GStateStack {
   subscript<T>(dynamicMember kp: WritableKeyPath<GState, T>) -> T {
     get { current[keyPath: kp] }
     set { current[keyPath: kp] = newValue }
+  }
+
+  mutating func setFillColor(_ c: BCRGBColor) {
+    current.fill.color = c
+  }
+
+  mutating func setFillAlpha(_ alpha: CGFloat) {
+    current.fill.alpha = alpha
+  }
+
+  mutating func setStrokeColor(_ c: BCRGBColor) {
+    current.stroke.color = c
+  }
+
+  mutating func setStrokeAlpha(_ alpha: CGFloat) {
+    current.stroke.alpha = alpha
+  }
+}
+
+private func setRGB(to rgba: inout GState.RGBA, from rgb: BCRGBColor) {
+  rgba.red = rgb.red
+  rgba.green = rgb.green
+  rgba.blue = rgb.blue
+}
+
+extension CGContext {
+  func setFillColor(_ rgba: GState.RGBA) {
+    setFillColor(
+      red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
+    )
+  }
+
+  func setStrokeColor(_ rgba: GState.RGBA) {
+    setStrokeColor(
+      red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
+    )
+  }
+}
+
+extension CGPathFillRule {
+  init(_ bc: BCFillRule) {
+    switch bc {
+    case .winding:
+      self = .winding
+    case .evenOdd:
+      self = .evenOdd
+    }
   }
 }
