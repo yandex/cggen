@@ -65,7 +65,6 @@ private enum Err: Swift.Error {
 }
 
 private struct Context {
-//  private(set) var fillRule: SVG.FillRule = .nonzero
   private(set) var fillAlpha: SVG.Float = 1
   private(set) var fill: SVG.Paint = .rgb(.black())
   private(set) var strokeAlpha: SVG.Float = 1
@@ -74,8 +73,6 @@ private struct Context {
   private(set) var strokeDashArray: [SVG.Length] = []
   private(set) var strokeDashOffset: SVG.Length = 0
 
-  var currentFill: RGBAColorType<UInt8, SVG.Float>?
-  var currentStroke: RGBAColorType<UInt8, SVG.Float>?
   var objectBoundingBox: CGRect
   var drawingBounds: CGRect
   let gradients: [String: GradientStepsProvider]
@@ -96,31 +93,6 @@ private struct Context {
     self.defenitions = defenitions
   }
 
-  mutating func updateCurrentFillAndStroke() -> DrawStep {
-    func color(
-      paint: SVG.Paint,
-      opacity: SVG.Float,
-      current: inout RGBAColorType<UInt8, SVG.Float>?
-    ) -> RGBACGColor? {
-      guard let color = paint.color else {
-        current = nil
-        return nil
-      }
-      let new = color.withAlpha(opacity)
-      guard current != new else {
-        return nil
-      }
-      current = new
-      return color.norm().withAlpha(opacity.cgfloat)
-    }
-    return .composite([
-      color(paint: fill, opacity: fillAlpha, current: &currentFill)
-        .map(DrawStep.fillColor),
-      color(paint: stroke, opacity: strokeAlpha, current: &currentStroke)
-        .map(DrawStep.strokeColor),
-    ].compactMap(identity))
-  }
-
   mutating func apply(
     _ presentation: SVG.PresentationAttributes,
     area: CGRect?
@@ -137,6 +109,36 @@ private struct Context {
     let fillRule = presentation.fillRule.map { rule in
       DrawStep.fillRule(.init(rule))
     }
+
+    let fill: DrawStep? = presentation.fill.flatMap { paint in
+      switch paint {
+      case let .rgb(color):
+        return .fillColor(color.norm())
+      case let .funciri(id: id):
+        _ = id
+        // TODO(): Implement
+        return .fillNone
+      case .none:
+        return .fillNone
+      }
+    }
+
+
+    let stroke: DrawStep? = presentation.stroke.flatMap { paint in
+      switch paint {
+      case let .rgb(color):
+        return .strokeColor(color.norm())
+      case let .funciri(id: id):
+        _ = id
+        // TODO(): Implement
+        return .strokeNone
+      case .none:
+        return .strokeNone
+      }
+    }
+
+    let strokeAlpha = presentation.strokeOpacity.map { DrawStep.strokeAlpha($0) }
+    let fillAlpha = presentation.fillOpacity.map { DrawStep.fillAlpha($0) }
 
     let strokeWidth = presentation.strokeWidth.map { l -> DrawStep in
       precondition(l.unit != .percent)
@@ -175,7 +177,10 @@ private struct Context {
       strokeLineCap,
       strokeLineJoin,
       strokeDash,
-      updateCurrentFillAndStroke(),
+      fillAlpha,
+      fill,
+      strokeAlpha,
+      stroke,
       fillRule,
       mask,
       clip,
@@ -203,21 +208,8 @@ private struct Context {
           $0
         )
       },
-      DrawStep.composite(.build {
-        switch (currentStroke, currentFill) {
-        case (nil, nil):
-          DrawStep.empty
-        case (.some, nil):
-          path
-          DrawStep.stroke
-        case (nil, .some):
-          path
-          DrawStep.fill
-        case (.some, .some):
-          path
-          DrawStep.fillAndStroke
-        }
-      }),
+      path,
+      DrawStep.fillAndStroke,
       gradient(for: \.stroke, opacity: strokeAlpha).map {
         DrawStep.savingGState(
           path,

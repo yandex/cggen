@@ -42,9 +42,20 @@ extension CGRect: ByteCodable {
   }
 }
 
-extension CGPathFillRule: ByteCodable {
+extension BCFillRule: ByteCodable {
   var byteCode: [UInt8] {
     [UInt8(rawValue)]
+  }
+
+  init(_ cg: CGPathFillRule) {
+    switch cg {
+    case .winding:
+      self = .winding
+    case .evenOdd:
+      self = .evenOdd
+    @unknown default:
+      fatalError()
+    }
   }
 }
 
@@ -88,9 +99,15 @@ private func zipComponent(val: CGFloat) -> UInt8 {
   UInt8(val * CGFloat(UInt8.max))
 }
 
-extension RGBACGColor: ByteCodable {
+extension RGBACGColor {
   var byteCode: [UInt8] {
     [red, green, blue].map(zipComponent) + alpha.byteCode
+  }
+}
+
+extension RGBCGColor {
+  var byteCode: [UInt8] {
+    [red, green, blue].map(zipComponent)
   }
 }
 
@@ -172,7 +189,7 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
     case .clip:
       return byteCommand(.clip)
     case let .clipWithRule(rule):
-      return byteCommand(.clipWithRule, rule)
+      return byteCommand(.clipWithRule, BCFillRule(rule))
     case let .clipToRect(rect):
       return byteCommand(.clipToRect, rect)
     case let .dash(pattern):
@@ -180,7 +197,7 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
     case .fill:
       return byteCommand(.fill)
     case let .fillWithRule(rule):
-      return byteCommand(.fillWithRule, rule)
+      return byteCommand(.fillWithRule, BCFillRule(rule))
     case let .fillEllipse(rect):
       return byteCommand(.fillEllipse, rect)
     case .stroke:
@@ -204,13 +221,23 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
     case let .globalAlpha(alpha):
       return byteCommand(.globalAlpha, alpha)
     case let .strokeColor(color):
-      return byteCommand(.strokeColor, color)
+      return byteCommand(.strokeColor) + color.byteCode
+    case let .strokeAlpha(alpha):
+      return byteCommand(.strokeAlpha, alpha)
     case let .fillColor(color):
-      return byteCommand(.fillColor, color)
+      return byteCommand(.fillColor) + color.byteCode
+    case let .fillAlpha(alpha):
+      return byteCommand(.fillAlpha, alpha)
+    case .strokeNone:
+      return byteCommand(.strokeNone)
+    case .fillNone:
+      return byteCommand(.fillNone)
     case let .fillRule(rule):
-      return byteCommand(.fillRule, rule)
+      return byteCommand(.fillRule, BCFillRule(rule))
     case .fillAndStroke:
       return byteCommand(.fillAndStroke)
+    case .setGlobalAlphaToFillAlpha:
+      return byteCommand(.setGlobalAlphaToFillAlpha)
     case let .linearGradient(name, options):
       return byteCommand(
         .linearGradient,

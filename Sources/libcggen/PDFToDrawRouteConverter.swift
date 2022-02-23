@@ -3,44 +3,6 @@ import Foundation
 import Base
 import PDFParse
 
-private class Context {
-  private var stack: [Context] = []
-  var fillAlpha: CGFloat = 1
-  var strokeAlpha: CGFloat = 1
-  var fillColor: PDFColor = .black()
-  var strokeColor: PDFColor = .black()
-
-  var fillColorWithAlpha: RGBACGColor {
-    fillColor.withAlpha(fillAlpha)
-  }
-
-  var strokeColorWithAlpha: RGBACGColor {
-    strokeColor.withAlpha(strokeAlpha)
-  }
-
-  func save() {
-    stack.append(copy())
-  }
-
-  func restore() {
-    let restored = stack.removeLast()
-    restored.copyStateTo(ctx: self)
-  }
-
-  func copy() -> Context {
-    let new = Context()
-    copyStateTo(ctx: new)
-    return new
-  }
-
-  private func copyStateTo(ctx: Context) {
-    ctx.fillAlpha = fillAlpha
-    ctx.strokeAlpha = strokeAlpha
-    ctx.fillColor = fillColor
-    ctx.strokeColor = strokeColor
-  }
-}
-
 private enum PDFGradientDrawingOptions {
   case linear(DrawStep.LinearGradientDrawingOptions)
   case radial(DrawStep.RadialGradientDrawingOptions)
@@ -53,7 +15,11 @@ enum PDFToDrawRouteConverter {
     var prepend: [DrawStep] = [.saveGState, .concatCTM(ctm), .clipToRect(bbox)]
     var append: [DrawStep] = [.restoreGState]
     if xobject.group != nil {
-      prepend.append(.beginTransparencyLayer)
+      prepend += [
+        .fillAlpha(1),
+        .strokeAlpha(1),
+        .beginTransparencyLayer
+      ]
       append.append(.endTransparencyLayer)
     }
     return try convert(
@@ -103,11 +69,9 @@ enum PDFToDrawRouteConverter {
     resources: PDFResources,
     gradients: [String: PDFGradientDrawingOptions]
   ) throws -> [DrawStep] {
-    let context = Context()
     return try ops.map {
       try $0.drawStep(
         resources: resources,
-        context: context,
         gradients: gradients
       )
     }
@@ -117,7 +81,6 @@ enum PDFToDrawRouteConverter {
 extension PDFOperator {
   fileprivate func drawStep(
     resources: PDFResources,
-    context: Context,
     gradients: [String: PDFGradientDrawingOptions]
   ) throws -> DrawStep {
     switch self {
@@ -159,8 +122,10 @@ extension PDFOperator {
 
     case let .invokeXObject(name):
       return .composite([
-        .globalAlpha(context.fillAlpha),
+        .saveGState,
+        .setGlobalAlphaToFillAlpha,
         .subrouteWithName(name),
+        .restoreGState,
       ])
 
     case .markedContentPointWithPListDefine:
@@ -175,9 +140,9 @@ extension PDFOperator {
       throw DrawError("Not implemented")
 
     case .fillWinding:
-      return .fillWithColor(context: context, rule: .winding)
+      return .fillWithRule(.winding)
     case .fillEvenOdd:
-      return .fillWithColor(context: context, rule: .evenOdd)
+      return .fillWithRule(.evenOdd)
 
     case .grayLevelStroke:
       throw DrawError("Not implemented")
@@ -189,16 +154,15 @@ extension PDFOperator {
       let steps = try state.commands.map { cmd -> DrawStep in
         switch cmd {
         case let .fillAlpha(alpha):
-          context.fillAlpha = alpha
+          return .fillAlpha(alpha)
         case let .strokeAlpha(alpha):
-          context.strokeAlpha = alpha
+          return .strokeAlpha(alpha)
         case let .blendMode(pdfBlendMode):
           let blendMode = try CGBlendMode(pdfBlendMode: pdfBlendMode)
           return .blendMode(blendMode)
         case .sMask:
           throw DrawError("Soft Mask not implemented")
         }
-        return .empty
       }
       return .composite(steps)
     case .closeSubpath:
@@ -237,32 +201,26 @@ extension PDFOperator {
     case .endPath:
       return .endPath
     case .saveGState:
-      context.save()
       return .saveGState
     case .restoreGState:
-      context.restore()
       return .restoreGState
     case let .appendRectangle(rect):
       return .appendRectangle(rect)
     case let .rgbColorStroke(color):
-      context.strokeColor = color
-      return .empty
+      return .strokeColor(color)
     case let .rgbColorNonstroke(color):
-      context.fillColor = color
-      return .empty
+      return .fillColor(color)
     case let .colorRenderingIntent(name):
       return .colorRenderingIntent(CGColorRenderingIntent(pdfIntent: name))
 
     case .closeAndStrokePath:
-      return .composite([.closePath, .strokeWithColor(context)])
+      return .composite([.closePath, .stroke])
     case .strokePath:
-      return .strokeWithColor(context)
+      return .stroke
     case let .colorStroke(color):
-      context.strokeColor = color
-      return .empty
+      return .strokeColor(color)
     case let .colorNonstroke(color):
-      context.fillColor = color
-      return .empty
+      return .fillColor(color)
 
     case .iccOrSpecialColorStroke:
       throw DrawError("Not implemented")
@@ -456,25 +414,6 @@ extension CGGradientDrawingOptions {
     self = []
     if before { insert(.drawsBeforeStartLocation) }
     if after { insert(.drawsAfterEndLocation) }
-  }
-}
-
-extension DrawStep {
-  fileprivate static func fillWithColor(
-    context: Context,
-    rule: CGPathFillRule
-  ) -> DrawStep {
-    .composite([
-      .fillColor(context.fillColorWithAlpha),
-      .fillWithRule(rule),
-    ])
-  }
-
-  fileprivate static func strokeWithColor(_ context: Context) -> DrawStep {
-    .composite([
-      .strokeColor(context.strokeColorWithAlpha),
-      .stroke,
-    ])
   }
 }
 

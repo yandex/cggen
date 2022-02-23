@@ -39,8 +39,8 @@ extension BytecodeElement where Self: RawRepresentable,
 }
 
 extension CGBlendMode: BytecodeElement {}
-extension CGPathFillRule: BytecodeElement {}
 extension CGPathDrawingMode: BytecodeElement {}
+extension BCFillRule: BytecodeElement {}
 
 extension CGFloat: BytecodeElement {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> CGFloat {
@@ -103,12 +103,22 @@ extension CGLineJoin: BytecodeElement {}
 extension CGLineCap: BytecodeElement {}
 
 extension BCRGBAColor: BytecodeElement {
-  static func readFrom(_ runner: BytecodeRunner) throws -> BCRGBAColor {
-    try BCRGBAColor(
+  static func readFrom(_ runner: BytecodeRunner) throws -> Self {
+    try Self(
       r: .readFrom(runner),
       g: .readFrom(runner),
       b: .readFrom(runner),
       alpha: .readFrom(runner)
+    )
+  }
+}
+
+extension BCRGBColor: BytecodeElement {
+  static func readFrom(_ runner: BytecodeRunner) throws -> Self {
+    try Self(
+      r: .readFrom(runner),
+      g: .readFrom(runner),
+      b: .readFrom(runner)
     )
   }
 }
