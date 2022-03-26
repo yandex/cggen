@@ -25,19 +25,24 @@ struct DashPattern {
 }
 
 enum DrawStep {
-  typealias RadialGradientDrawingOptions = (
-    startCenter: CGPoint,
-    startRadius: CGFloat,
-    endCenter: CGPoint,
-    endRadius: CGFloat,
-    options: CGGradientDrawingOptions
-  )
+  struct RadialGradientDrawingOptions {
+    var startCenter: CGPoint
+    var startRadius: CGFloat
+    var endCenter: CGPoint
+    var endRadius: CGFloat
+    var options: CGGradientDrawingOptions
+  }
 
-  typealias LinearGradientDrawingOptions = (
-    startPoint: CGPoint,
-    endPoint: CGPoint,
-    options: CGGradientDrawingOptions
-  )
+  public enum Units {
+    case userSpaceOnUse, objectBoundingBox
+  }
+
+  struct LinearGradientDrawingOptions {
+    var startPoint: CGPoint
+    var endPoint: CGPoint
+    var options: CGGradientDrawingOptions
+    var units: Units
+  }
 
   case saveGState
   case restoreGState
@@ -64,6 +69,8 @@ enum DrawStep {
   case clipWithRule(CGPathFillRule)
   case clipToRect(CGRect)
   case dash(DashPattern)
+  case dashPhase(CGFloat)
+  case dashLenghts([CGFloat])
 
   case fill
   case fillWithRule(CGPathFillRule)
@@ -113,21 +120,21 @@ enum DrawStep {
   }
 }
 
-struct DrawRoute {
+struct DrawRoutine {
   var boundingRect: CGRect
   var gradients: [String: Gradient]
-  var subroutes: [String: DrawRoute]
+  var subroutines: [String: DrawRoutine]
   var steps: [DrawStep]
 
   init(
     boundingRect: CGRect,
     gradients: [String: Gradient],
-    subroutes: [String: DrawRoute],
+    subroutines: [String: DrawRoutine],
     steps: [DrawStep]
   ) {
     self.boundingRect = boundingRect
     self.gradients = gradients
-    self.subroutes = subroutes
+    self.subroutines = subroutines
     self.steps = steps
   }
 }

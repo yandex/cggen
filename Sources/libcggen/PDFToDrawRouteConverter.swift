@@ -9,7 +9,7 @@ private enum PDFGradientDrawingOptions {
 }
 
 enum PDFToDrawRouteConverter {
-  static func convert(xobject: PDFXObject) throws -> DrawRoute {
+  static func convert(xobject: PDFXObject) throws -> DrawRoutine {
     let ctm = xobject.matrix ?? .identity
     let bbox = xobject.bbox
     var prepend: [DrawStep] = [.saveGState, .concatCTM(ctm), .clipToRect(bbox)]
@@ -31,7 +31,7 @@ enum PDFToDrawRouteConverter {
     )
   }
 
-  static func convert(page: PDFPage) throws -> DrawRoute {
+  static func convert(page: PDFPage) throws -> DrawRoutine {
     try convert(
       resources: page.resources,
       bbox: page.bbox,
@@ -45,20 +45,20 @@ enum PDFToDrawRouteConverter {
     operators: [PDFOperator],
     prependSteps: [DrawStep] = [],
     appendSteps: [DrawStep] = []
-  ) throws -> DrawRoute {
+  ) throws -> DrawRoutine {
     let gradients = resources.shadings.mapValues { $0.makeGradient() }
-    let subroutes = try resources.xObjects
+    let subroutines = try resources.xObjects
       .mapValues { try convert(xobject: $0) }
-    precondition(resources.xObjects.count == subroutes.count)
+    precondition(resources.xObjects.count == subroutines.count)
     let steps = try operatorsToSteps(
       ops: operators,
       resources: resources,
       gradients: gradients.mapValues { $0.1 }
     )
-    let route = DrawRoute(
+    let route = DrawRoutine(
       boundingRect: bbox,
       gradients: gradients.mapValues { $0.0 },
-      subroutes: subroutes,
+      subroutines: subroutines,
       steps: prependSteps + steps + appendSteps
     )
     return route
@@ -390,14 +390,15 @@ extension PDFShading {
     switch kind {
     case let .axial(axial):
       return .linear(
-        (
+        .init(
           startPoint: axial.coords.p0,
           endPoint: axial.coords.p1,
-          options: .init(pdfExtend: axial.extend)
+          options: .init(pdfExtend: axial.extend),
+          units: .objectBoundingBox
         )
       )
     case let .radial(radial):
-      return .radial((
+      return .radial(.init(
         startCenter: radial.coords.p0,
         startRadius: radial.startRadius,
         endCenter: radial.coords.p1,

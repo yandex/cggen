@@ -40,6 +40,8 @@ public enum Command: UInt8 {
   case clipWithRule // (CGPathFillRule)
   case clipToRect // (CGRect)
   case dash // (DashPattern)
+  case dashPhase // (CGFloat)
+  case dashLenghts // ([CGFloat])
 
   case fill
   case fillWithRule // (CGPathFillRule)

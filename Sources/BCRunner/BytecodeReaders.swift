@@ -41,6 +41,7 @@ extension BytecodeElement where Self: RawRepresentable,
 extension CGBlendMode: BytecodeElement {}
 extension CGPathDrawingMode: BytecodeElement {}
 extension BCFillRule: BytecodeElement {}
+extension BCCoordinateUnits: BytecodeElement {}
 
 extension CGFloat: BytecodeElement {
   internal static func readFrom(_ runner: BytecodeRunner) throws -> CGFloat {
@@ -131,7 +132,8 @@ extension BCLinearGradientDrawingOptions: BytecodeElement {
     try .init(
       start: .readFrom(runner),
       end: .readFrom(runner),
-      drawingOptions: .readFrom(runner)
+      options: .readFrom(runner),
+      units: .readFrom(runner)
     )
   }
 }
