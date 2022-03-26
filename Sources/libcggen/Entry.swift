@@ -123,7 +123,7 @@ public enum Error: Swift.Error {
   case imageGenerationFailed([(URL, Swift.Error)])
 }
 
-private typealias Generator = (URL) throws -> DrawRoute
+private typealias Generator = (URL) throws -> DrawRoutine
 
 private let pdfAndSvgGenerator: Generator = {
   switch $0.pathExtension {
@@ -153,7 +153,7 @@ private func flattenDrawRoute(from generator: @escaping Generator) -> Generator 
   { url in
     var route = try generator(url)
     route.steps = flattenDrawSteps(route.steps)
-    route.subroutes = route.subroutes.mapValues { modified($0) {
+    route.subroutines = route.subroutines.mapValues { modified($0) {
       $0.steps = flattenDrawSteps($0.steps)
     }}
     return route
@@ -166,7 +166,7 @@ private func generateImages(
   from files: [URL],
   generator: @escaping Generator = generator
 ) throws -> [Image] {
-  let generator: (URL) -> Result<DrawRoute, Swift.Error> = { url in
+  let generator: (URL) -> Result<DrawRoutine, Swift.Error> = { url in
     Result(catching: { try generator(url) })
   }
 

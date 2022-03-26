@@ -35,7 +35,7 @@ public class BytecodeRunner {
   let commons: Commons
   private var gstack: GStateStack
 
-  init(_ state: State, _ commons: Commons, gstate: GState) {
+  fileprivate init(_ state: State, _ commons: Commons, gstate: GState) {
     currentState = state
     self.commons = commons
     gstack = GStateStack(initial: gstate)
@@ -195,11 +195,14 @@ public class BytecodeRunner {
           control2: curve.control2
         )
       case .dash:
-        let dashPattern: BCDashPattern = try read()
-        context.setLineDash(
-          phase: dashPattern.phase,
-          lengths: dashPattern.lengths
-        )
+        gstack.dash = try .init(read())
+        context.setDash(gstack.dash)
+      case .dashPhase:
+        gstack.dash.phase = try read()
+        context.setDash(gstack.dash)
+      case .dashLenghts:
+        gstack.dash.lengths = try read()
+        context.setDash(gstack.dash)
       case .drawPath:
         try context.drawPath(using: read())
       case .endTransparencyLayer:
@@ -343,8 +346,24 @@ public func runBytecode(
   }
 }
 
-struct GState {
+private struct GState {
   typealias RGBA = (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)
+
+  struct DashPattern {
+    var phase: CGFloat
+    var lengths: [CGFloat]?
+
+    init(phase: CGFloat, lengths: [CGFloat]? = nil) {
+      self.phase = phase
+      self.lengths = lengths
+    }
+
+    init(_ bcdash: BCDashPattern) {
+      self.phase = bcdash.phase
+      self.lengths = bcdash.lengths
+    }
+  }
+
   struct Paint {
     var color: BCRGBColor?
     var alpha: CGFloat
@@ -359,15 +378,17 @@ struct GState {
   var fillRule: BCFillRule
   var fill: Paint
   var stroke: Paint
+  var dash: DashPattern
 
   static let `default` = Self(
     fillRule: .winding,
-    fill: .black, stroke: .none
+    fill: .black, stroke: .none,
+    dash: .init(phase: 0, lengths: nil)
   )
 }
 
 @dynamicMemberLookup
-struct GStateStack {
+private struct GStateStack {
   private var stack: [GState]
   var current: GState
 
@@ -415,16 +436,21 @@ private func setRGB(to rgba: inout GState.RGBA, from rgb: BCRGBColor) {
 }
 
 extension CGContext {
-  func setFillColor(_ rgba: GState.RGBA) {
+  fileprivate func setFillColor(_ rgba: GState.RGBA) {
     setFillColor(
       red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
     )
   }
 
-  func setStrokeColor(_ rgba: GState.RGBA) {
+  fileprivate func setStrokeColor(_ rgba: GState.RGBA) {
     setStrokeColor(
       red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
     )
+  }
+
+  fileprivate func setDash(_ dash: GState.DashPattern) {
+    guard let lenghts = dash.lengths else { return }
+    setLineDash(phase: dash.phase, lengths: lenghts)
   }
 }
 

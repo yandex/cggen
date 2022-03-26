@@ -3,7 +3,7 @@ import CoreGraphics
 import Base
 
 enum SVGToDrawRouteConverter {
-  static func convert(document: SVG.Document) throws -> DrawRoute {
+  static func convert(document: SVG.Document) throws -> DrawRoutine {
     let boundingRect = document.boundingRect
     let height = boundingRect.size.height
     let gradients = try Dictionary(
@@ -25,7 +25,7 @@ enum SVGToDrawRouteConverter {
     return try .init(
       boundingRect: boundingRect,
       gradients: [:],
-      subroutes: [:],
+      subroutines: [:],
       steps: [.concatCTM(.invertYAxis(height: height)), initialContextPrep] +
         document.children.map { try drawstep(svg: $0, ctx: &context)
         }
@@ -69,9 +69,6 @@ private struct Context {
   private(set) var fill: SVG.Paint = .rgb(.black())
   private(set) var strokeAlpha: SVG.Float = 1
   private(set) var stroke: SVG.Paint = .none
-  private(set) var strokeWidth: SVG.Length = 1
-  private(set) var strokeDashArray: [SVG.Length] = []
-  private(set) var strokeDashOffset: SVG.Length = 0
 
   var objectBoundingBox: CGRect
   var drawingBounds: CGRect
@@ -101,9 +98,6 @@ private struct Context {
     fill ?= presentation.fill
     stroke ?= presentation.stroke
     strokeAlpha ?= presentation.strokeOpacity
-    strokeWidth ?= presentation.strokeWidth
-    strokeDashArray ?= presentation.strokeDashArray
-    strokeDashOffset ?= presentation.strokeDashOffset
     objectBoundingBox ?= area
 
     let fillRule = presentation.fillRule.map { rule in
@@ -140,8 +134,10 @@ private struct Context {
     let strokeAlpha = presentation.strokeOpacity.map { DrawStep.strokeAlpha($0) }
     let fillAlpha = presentation.fillOpacity.map { DrawStep.fillAlpha($0) }
 
-    let strokeWidth = presentation.strokeWidth.map { l -> DrawStep in
-      precondition(l.unit != .percent)
+    let strokeWidth = try presentation.strokeWidth.map { l -> DrawStep in
+      try check(
+        l.unit != .percent, GenericError("Percent unit is not supported")
+      )
       return DrawStep.lineWidth(CGFloat(l.number))
     }
     let strokeLineCap = presentation.strokeLineCap.map {
@@ -168,15 +164,12 @@ private struct Context {
       let filter = try filters[filterName] !! Err.noDefenitionForId(filterName)
       return try .shadow(filter.simpleShadow !! Err.tooComplexFilter(filter))
     }
-    let needsDashUpdate = presentation.strokeDashOffset != nil ||
-      presentation.strokeDashArray != nil
-    let strokeDash = needsDashUpdate ? currentDash.map(DrawStep.dash) : nil
 
     return .composite([
       strokeWidth,
       strokeLineCap,
       strokeLineJoin,
-      strokeDash,
+      presentation.dashPatternUpdate,
       fillAlpha,
       fill,
       strokeAlpha,
@@ -219,21 +212,6 @@ private struct Context {
         )
       },
     ].compactMap(identity))
-  }
-
-  var currentDash: DashPattern? {
-    let lengths = strokeDashArray.map {
-      CGFloat($0.number)
-    }
-    let phase = CGFloat(strokeDashOffset.number)
-    switch strokeDashArray.count {
-    case 0:
-      return nil
-    case let even where even.isMultiple(of: 2):
-      return .init(phase: phase, lengths: lengths)
-    default:
-      return .init(phase: phase, lengths: lengths + lengths)
-    }
   }
 
   func stepsForMask(_ mask: SVG.Mask) throws -> DrawStep {
@@ -712,10 +690,11 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       }
       return .linearGradientInlined(
         .init(locationAndColors: locAndColorsWithOpacity),
-        (
+        .init(
           startPoint: g.startPoint(in: coordinates),
           endPoint: g.endPoint(in: coordinates),
-          options: g.options
+          options: g.options,
+          units: g.unit.map(DrawStep.Units.init) ?? .objectBoundingBox
         )
       )
     }
@@ -751,7 +730,7 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       }
       return .radialGradientInlined(
         .init(locationAndColors: locAndColorsWithOpacity),
-        (
+        .init(
           startCenter: g.startCenter(in: coordinates),
           startRadius: 0,
           endCenter: g.endCenter(in: coordinates),
@@ -1198,5 +1177,41 @@ extension SVGFilterNode.ColorMatrix {
           r3.components.allSatisfy({ $0 == 0 }),
           r4.c1 == 0, r4.c2 == 0, r4.c3 == 0, r4.c5 == 0 else { return nil }
     return r4.c4
+  }
+}
+
+extension SVG.PresentationAttributes {
+  var dashPatternUpdate: DrawStep? {
+    let lengths: [CGFloat]? = self.strokeDashArray.flatMap { lengths in
+      guard lengths.count > 0 else { return nil }
+      let lenghts = lengths.map { CGFloat($0.number) }
+      if lengths.count.isMultiple(of: 2) {
+        return lenghts
+      } else {
+        return lenghts + lenghts
+      }
+    }
+    let phase = strokeDashOffset.map { CGFloat($0.number) }
+    switch (phase, lengths) {
+    case let (phase?, lengths?):
+      return .dash(.init(phase: phase, lengths: lengths))
+    case let (phase?, nil):
+      return .dashPhase(phase)
+    case let (nil, lengths?):
+      return .dashLenghts(lengths)
+    case (nil, nil):
+      return nil
+    }
+  }
+}
+
+extension DrawStep.Units {
+  fileprivate init(_ svg: SVG.Units) {
+    switch svg {
+    case .objectBoundingBox:
+      self = .objectBoundingBox
+    case .userSpaceOnUse:
+      self = .userSpaceOnUse
+    }
   }
 }

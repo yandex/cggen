@@ -150,6 +150,19 @@ extension CGGradientDrawingOptions: ByteCodable {
   }
 }
 
+extension BCCoordinateUnits: ByteCodable {
+  init(_ units: DrawStep.Units) {
+    switch units {
+    case .objectBoundingBox:
+      self = .objectBoundingBox
+    case .userSpaceOnUse:
+      self = .userSpaceOnUse
+    }
+  }
+
+  var byteCode: [UInt8] { [rawValue] }
+}
+
 private func byteCommand(_ code: Command, _ args: ByteCodable...) -> [UInt8] {
   [code.rawValue] + args.flatMap(\.byteCode)
 }
@@ -194,6 +207,10 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
       return byteCommand(.clipToRect, rect)
     case let .dash(pattern):
       return byteCommand(.dash, pattern)
+    case let .dashPhase(phase):
+      return byteCommand(.dashPhase, phase)
+    case let .dashLenghts(lenghts):
+      return byteCommand(.dashLenghts, lenghts)
     case .fill:
       return byteCommand(.fill)
     case let .fillWithRule(rule):
@@ -244,7 +261,8 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
         context.gradientsIds[name]!,
         options.startPoint,
         options.endPoint,
-        options.options
+        options.options,
+        BCCoordinateUnits(options.units)
       )
     case let .radialGradient(name, options):
       return byteCommand(
@@ -262,7 +280,8 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
         gradient,
         options.startPoint,
         options.endPoint,
-        options.options
+        options.options,
+        BCCoordinateUnits(options.units)
       )
     case let .radialGradientInlined(gradient, options):
       return byteCommand(
@@ -296,7 +315,7 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
 }
 
 private func generateSubroutes(
-  subroutes: [String: DrawRoute],
+  subroutes: [String: DrawRoutine],
   context: Context
 ) -> [UInt8] {
   var res = UInt32(subroutes.count).byteCode
@@ -326,9 +345,9 @@ private func generateGradients(
   return res
 }
 
-private func generateRoute(route: DrawRoute, context: Context) -> [UInt8] {
+private func generateRoute(route: DrawRoutine, context: Context) -> [UInt8] {
   generateGradients(gradients: route.gradients, context: context)
-    + generateSubroutes(subroutes: route.subroutes, context: context)
+    + generateSubroutes(subroutes: route.subroutines, context: context)
     + generateSteps(steps: route.steps, context: context)
 }
 
@@ -337,7 +356,7 @@ private class Context {
   var subroutesIds: [String: UInt32] = [:]
 }
 
-func generateRouteBytecode(route: DrawRoute) -> [UInt8] {
+func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
   generateRoute(route: route, context: Context())
 }
 
