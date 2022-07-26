@@ -1,5 +1,6 @@
 import Base
 import BCCommon
+import CoreGraphics
 import Foundation
 
 private protocol ByteCodable {

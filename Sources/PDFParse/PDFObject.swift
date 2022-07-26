@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 internal typealias PDFDictionary = [String: PDFObject]

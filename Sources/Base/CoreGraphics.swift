@@ -2,6 +2,7 @@ import CoreGraphics
 import CoreImage
 import CoreServices
 import ImageIO
+import UniformTypeIdentifiers
 import simd
 
 public typealias RGBAPixel = RGBAColor<UInt8>
