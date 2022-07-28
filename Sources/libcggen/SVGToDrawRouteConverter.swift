@@ -1098,21 +1098,21 @@ extension SVGFilterNode {
 
     var offset: CGSize?
     var blur: CGFloat?
-    var alpha: CGFloat?
-    var alphaClamped = false
+    var alphaAndColor: (SVG.Float, RGBACGColor)?
+    var alphaBurned = false
 
     outer: while true {
       switch shadow {
       case .sourceAlpha, .sourceGraphic:
         break outer
       case let .colorMatrix(in: input, type: .matrix(matrix)):
-        guard let alphaMultiplier = matrix.ifAlphaMultiplication else {
+        guard let alphaAndColorFromMatrix = matrix.ifAlphaMultiplication else {
           return nil
         }
-        if alpha == nil {
-          alpha = CGFloat(alphaMultiplier)
-        } else if !alphaClamped, alphaMultiplier >= 100 {
-          alphaClamped = true
+        if alphaAndColor == nil {
+          alphaAndColor = alphaAndColorFromMatrix
+        } else if !alphaBurned, alphaAndColorFromMatrix.alpha >= 100 {
+          alphaBurned = true
         } else {
           return nil
         }
@@ -1122,7 +1122,7 @@ extension SVGFilterNode {
         offset = CGSize(width: dx, height: dy)
         shadow = input
       case let .gaussianBlur(in: input, stddevX: stddevX, stddevY: stddevY):
-        guard !alphaClamped, blur == nil, stddevX == stddevY else { return nil }
+        guard !alphaBurned, blur == nil, stddevX == stddevY else { return nil }
         // See `15.17 Filter primitive ‘feGaussianBlur’` in specs.
         // Here we don't know the resulting ctm yet, so we can't add 0.5 and
         // floor it. That is done on codegen level for now.
@@ -1132,20 +1132,26 @@ extension SVGFilterNode {
         return nil
       }
     }
-    guard alphaClamped else { return nil }
-    return zip(blur, alpha).map { arg -> Shadow in
-      let (blur, alpha) = arg
+    guard alphaBurned else { return nil }
+    return zip(blur, alphaAndColor).map { arg -> Shadow in
+      let (blur, alphaAndColor) = arg
+      // As shadows alpha channel is burned we can add multiplier and constant
+      // parts
+      // From specs: A' = a1*R + a2*G + a3*B + a4*A + a5
+      // a1, a2, a3 are zero, A is burned to 1, so it simplifies:
+      // A' = a4 + a5
+      let color = modified(alphaAndColor.1) { $0.alpha += alphaAndColor.0 }
       return .init(
         offset: offset ?? .zero,
         blur: blur,
-        color: .init(gray: 0, alpha: alpha)
+        color: color
       )
     }
   }
 
   private var meaningfulPart: SVGFilterNode? {
     guard isMeaningful else { return nil }
-    if case let .blend(in1: in1, in2: in2, .normal) = self {
+    if case let .blend(in1: in1, in2: in2, _) = self {
       switch (in1.meaningfulPart, in2.meaningfulPart) {
       case (_?, _?): // Both inputs are meaningfull
         return self
@@ -1171,12 +1177,17 @@ extension SVGFilterNode {
 }
 
 extension SVGFilterNode.ColorMatrix {
-  var ifAlphaMultiplication: SVG.Float? {
-    guard r1.components.allSatisfy({ $0 == 0 }),
-          r2.components.allSatisfy({ $0 == 0 }),
-          r3.components.allSatisfy({ $0 == 0 }),
-          r4.c1 == 0, r4.c2 == 0, r4.c3 == 0, r4.c5 == 0 else { return nil }
-    return r4.c4
+  var ifAlphaMultiplication: (alpha: SVG.Float, color: RGBACGColor)? {
+    // Check if input color doesn't affect output
+    let isConst: (T) -> Bool = {
+      $0.c1.isAlmostZero() && $0.c2.isAlmostZero() && $0.c3.isAlmostZero() &&
+      $0.c4.isAlmostZero()
+    }
+    guard isConst(r1), isConst(r2), isConst(r3),
+            isConst(r4) || !r4.c4.isAlmostZero() // Allow nonzero alpha multiplier
+    else { return nil }
+    let color = RGBACGColor(red: r1.c5, green: r2.c5, blue: r3.c5, alpha: r4.c5)
+    return (r4.c4, color)
   }
 }
 

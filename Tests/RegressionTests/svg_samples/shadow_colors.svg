@@ -1,0 +1,37 @@
+<svg width="50px" height="50px" viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <use xlink:href="#c" x="10" y="10" filter="url(#f1)"/>
+    <use xlink:href="#c" x="10" y="40" filter="url(#f2)"/>
+    <use xlink:href="#c" x="40" y="10" filter="url(#f3)"/>
+    <use xlink:href="#c" x="40" y="40" filter="url(#f4)"/>
+    <defs>
+        <circle id="c" r="5" fill="indianred"/>
+        <filter id="f1" x="-25" y="-25" width="50" height="50" color-interpolation-filters="sRGB">
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 120 0"/>
+            <feOffset dy="5" dx="5"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feColorMatrix values="0 0 0 0 0.3 0 0 0 0 0 0 0 0 0 0 0 0 0 0.8 0"/>
+            <feBlend mode="normal" in="SourceGraphic"/>
+        </filter>
+        <filter id="f2" x="-25" y="-25" width="50" height="50" color-interpolation-filters="sRGB">
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 120 0"/>
+            <feOffset dy="-5" dx="5"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0.3 0 0 0 0 0 0 0 0 0.8 0"/>
+            <feBlend mode="normal" in="SourceGraphic"/>
+        </filter>
+        <filter id="f3" x="-25" y="-25" width="50" height="50" color-interpolation-filters="sRGB">
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 120 0"/>
+            <feOffset dy="5" dx="-5"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0 0 0 0.8 0"/>
+            <feBlend mode="normal" in="SourceGraphic"/>
+        </filter>
+        <filter id="f4" x="-25" y="-25" width="50" height="50" color-interpolation-filters="sRGB">
+            <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 120 0"/>
+            <feOffset dy="-5" dx="-5"/>
+            <feGaussianBlur stdDeviation="2"/>
+            <feColorMatrix values="0 0 0 0 0.8 0 0 0 0 0.3 0 0 0 0 0.3 0 0 0 0.8 0"/>
+            <feBlend mode="normal" in="SourceGraphic"/>
+        </filter>
+    </defs>
+</svg>
