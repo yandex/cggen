@@ -1,27 +1,32 @@
 import Foundation
 
-public enum Command: UInt8 {
-  // A: [T]                       = size: UInt32, A[0], A[1], ..., A[size-1]
-  // (T, Y)                       = T, Y
+/*
+ A: [T]                       = size: UInt32, A[0], A[1], ..., A[size-1]
+ (T, Y)                       = T, Y
 
-  // CGFloat                      = Float32
-  // CGSize                       = width: CGFloat, height: CGFloat
-  // CGPoint                      = x: CGFloat, y: CGFloat
-  // CGRect                       = x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat
-  // Bool                         = false   = 0 | true     = 1
-  // CGPathFillRule               = winding = 0 | evenOdd  = 1
-  // DashPattern                  = phase: CGFloat, lengths: [CGFloat]
-  // CGPathDrawingMode            = fill = 0 | eoFill = 1 | stroke = 2 | fillStroke = 3 | eoFillStroke = 4
-  // CGAffineTransform            = a: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat, tx: CGFloat, ty: CGFloat
-  // CGLineJoin                   = miter = 0 | round = 1 | bevel   = 2
-  // CGLineCap                    = butt  = 0 | round = 1 | square  = 2
-  // RGBACGColor                  = red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat
-  // CGGradientDrawingOptions     = {} = 0 | {.drawsBeforeStartLocation} = 1 | {.drawsAfterEndLocation} = 2 | {.drawsBeforeStartLocation, .drawsAfterEndLocation} = 3
-  // LinearGradientDrawingOptions = startPoint: CGPoint, endPoint: CGPoint, options: CGGradientDrawingOptions
-  // RadialGradientDrawingOptions = startCenter: CGPoint, startRadius: CGFloat, endCenter: CGPoint, endRadius: CGFloat, options: CGGradientDrawingOptions
-  // Gradient                     = locationAndColors: [(CGFloat, RGBACGColor)]
-  // Shadow                       = offset: CGSize, blur: CGFloat, color: RGBACGColor
-  // CGBlendMode                  = 0..27    (rawValue)
+ CGFloat                      = Float32
+ CGSize                       = width: CGFloat, height: CGFloat
+ CGPoint                      = x: CGFloat, y: CGFloat
+ CGRect                       = x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat
+ Bool                         = false   = 0 | true     = 1
+ CGPathFillRule               = winding = 0 | evenOdd  = 1
+ DashPattern                  = phase: CGFloat, lengths: [CGFloat]
+ CGPathDrawingMode            = fill = 0 | eoFill = 1 | stroke = 2 | fillStroke = 3 | eoFillStroke = 4
+ CGAffineTransform            = a: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat, tx: CGFloat, ty: CGFloat
+ CGLineJoin                   = miter = 0 | round = 1 | bevel   = 2
+ CGLineCap                    = butt  = 0 | round = 1 | square  = 2
+ RGBACGColor                  = red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat
+ CGGradientDrawingOptions     = {} = 0 | {.drawsBeforeStartLocation} = 1 | {.drawsAfterEndLocation} = 2 | {.drawsBeforeStartLocation, .drawsAfterEndLocation} = 3
+ LinearGradientDrawingOptions =
+  startPoint: CGPoint,
+  endPoint: CGPoint,
+  options: CGGradientDrawingOptions
+ RadialGradientDrawingOptions = startCenter: CGPoint, startRadius: CGFloat, endCenter: CGPoint, endRadius: CGFloat, options: CGGradientDrawingOptions
+ Gradient                     = locationAndColors: [(CGFloat, RGBACGColor)]
+ Shadow                       = offset: CGSize, blur: CGFloat, color: RGBACGColor
+ CGBlendMode                  = 0..27    (rawValue)
+ */
+public enum Command: UInt8 {
   case saveGState = 0
   case restoreGState
 

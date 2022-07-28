@@ -130,6 +130,13 @@ public enum Matrix {
   }
 }
 
+extension Comparable {
+  @inlinable
+  public func clamped(to limits: ClosedRange<Self>) -> Self {
+    return min(max(self, limits.lowerBound), limits.upperBound)
+  }
+}
+
 extension BinaryFloatingPoint {
   // https://github.com/apple/swift-evolution/blob/master/proposals/0259-approximately-equal.md
   @inlinable
