@@ -213,7 +213,6 @@ extension PDFOperator {
       return .fillColor(color)
     case let .colorRenderingIntent(name):
       return .colorRenderingIntent(CGColorRenderingIntent(pdfIntent: name))
-
     case .closeAndStrokePath:
       return .composite([.closePath, .stroke])
     case .strokePath:
@@ -222,7 +221,6 @@ extension PDFOperator {
       return .strokeColor(color)
     case let .colorNonstroke(color):
       return .fillColor(color)
-
     case .iccOrSpecialColorStroke:
       throw DrawError("Not implemented")
     case .iccOrSpecialColorNonstroke:
@@ -264,14 +262,12 @@ extension PDFOperator {
       throw DrawError("Not implemented")
     case .curveToWithInitailPointReplicated:
       throw DrawError("Not implemented")
-
     case let .lineWidth(w):
       return .lineWidth(w)
     case .clipWinding:
       return .clipWithRule(.winding)
     case .clipEvenOdd:
       return .clipWithRule(.evenOdd)
-
     case .curveToWithFinalPointReplicated:
       throw DrawError("Not implemented")
     case .moveToNextLineAndShowText:

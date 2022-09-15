@@ -76,8 +76,10 @@ public enum Command: UInt8 {
 
   case linearGradient // (id: UInt32, LinearGradientDrawingOptions)
   case radialGradient // (id: UInt32, RadialGradientDrawingOptions)
-  case linearGradientInlined // (Gradient, LinearGradientDrawingOptions)
-  case radialGradientInlined // (Gradient, RadialGradientDrawingOptions)
+  case fillLinearGradient // (id: UInt32, LinearGradientDrawingOptions)
+  case fillRadialGradient // (id: UInt32, RadialGradientDrawingOptions)
+  case strokeLinearGradient // (id: UInt32, LinearGradientDrawingOptions)
+  case strokeRadialGradient // (id: UInt32, RadialGradientDrawingOptions)
   case subrouteWithId // (id: UInt32)
   case shadow // (Shadow)
   case blendMode // (CGBlendMode)

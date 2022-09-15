@@ -164,6 +164,44 @@ extension BCCoordinateUnits: ByteCodable {
   var byteCode: [UInt8] { [rawValue] }
 }
 
+extension BCLinearGradientDrawingOptions: ByteCodable {
+  init(_ opts: DrawStep.LinearGradientDrawingOptions) {
+    self.init(
+      start: opts.startPoint,
+      end: opts.endPoint,
+      options: opts.options,
+      units: BCCoordinateUnits(opts.units)
+    )
+  }
+  
+  var byteCode: [UInt8] {
+    start.byteCode +
+    end.byteCode +
+    options.byteCode +
+    units.byteCode
+  }
+}
+
+extension BCRadialGradientDrawingOptions: ByteCodable {
+  init(_ opts: DrawStep.RadialGradientDrawingOptions) {
+    self.init(
+      startCenter: opts.startCenter,
+      startRadius: opts.startRadius,
+      endCenter: opts.endCenter,
+      endRadius: opts.endRadius,
+      drawingOptions: opts.options
+    )
+  }
+  
+  var byteCode: [UInt8] {
+    startCenter.byteCode +
+    startRadius.byteCode +
+    endCenter.byteCode +
+    endRadius.byteCode +
+    drawingOptions.byteCode
+  }
+}
+
 private func byteCommand(_ code: Command, _ args: ByteCodable...) -> [UInt8] {
   [code.rawValue] + args.flatMap(\.byteCode)
 }
@@ -260,39 +298,37 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
       return byteCommand(
         .linearGradient,
         context.gradientsIds[name]!,
-        options.startPoint,
-        options.endPoint,
-        options.options,
-        BCCoordinateUnits(options.units)
+        BCLinearGradientDrawingOptions(options)
       )
     case let .radialGradient(name, options):
       return byteCommand(
         .radialGradient,
         context.gradientsIds[name]!,
-        options.startCenter,
-        options.startRadius,
-        options.endCenter,
-        options.endRadius,
-        options.options
+        BCRadialGradientDrawingOptions(options)
       )
-    case let .linearGradientInlined(gradient, options):
+    case let .fillLinearGradient(name, options):
       return byteCommand(
-        .linearGradientInlined,
-        gradient,
-        options.startPoint,
-        options.endPoint,
-        options.options,
-        BCCoordinateUnits(options.units)
+        .fillLinearGradient,
+        context.gradientsIds[name]!,
+        BCLinearGradientDrawingOptions(options)
       )
-    case let .radialGradientInlined(gradient, options):
+    case let .fillRadialGradient(name, options):
       return byteCommand(
-        .radialGradientInlined,
-        gradient,
-        options.startCenter,
-        options.startRadius,
-        options.endCenter,
-        options.endRadius,
-        options.options
+        .fillRadialGradient,
+        context.gradientsIds[name]!,
+        BCRadialGradientDrawingOptions(options)
+      )
+    case let .strokeLinearGradient(name, options):
+      return byteCommand(
+        .strokeLinearGradient,
+        context.gradientsIds[name]!,
+        BCLinearGradientDrawingOptions(options)
+      )
+    case let .strokeRadialGradient(name, options):
+      return byteCommand(
+        .strokeRadialGradient,
+        context.gradientsIds[name]!,
+        BCRadialGradientDrawingOptions(options)
       )
     case let .subrouteWithName(name):
       return byteCommand(.subrouteWithId, context.subroutesIds[name]!)

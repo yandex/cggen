@@ -1,16 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <!-- Generator: Sketch 57.1 (83088) - https://sketch.com -->
-    <title>gradient_with_alpha</title>
-    <desc>Created with Sketch.</desc>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg"
+    xmlns:xlink="http://www.w3.org/1999/xlink">
     <defs>
-        <linearGradient x1="0%" y1="0%" x2="101.999998%" y2="100.999999%" id="linearGradient-1">
-            <stop stop-color="#3023AE" offset="0%"></stop>
-            <stop stop-color="#FFFFFF" stop-opacity="0" offset="100%"></stop>
+        <linearGradient x1="15%" y1="15%" x2="85%" y2="85%" id="g">
+            <stop stop-color="coral" offset="0%"></stop>
+            <stop stop-color="indianred" offset="50%"></stop>
+            <stop stop-color="white" stop-opacity="0" offset="100%"></stop>
         </linearGradient>
+        <circle id="c" fill="url(#g)" cx="12" cy="12" r="12"/>
     </defs>
     <g id="gradient_with_alpha" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <rect id="Rectangle" fill="#50E3C2" x="0" y="0" width="50" height="50"></rect>
-        <circle id="Oval" fill="url(#linearGradient-1)" cx="25" cy="25" r="23"></circle>
+        <rect id="Rectangle" fill="lightsteelblue" x="0" y="0" width="50" height="50"/>
+        <use xlink:href="#c" x="1" y="1"/>
+        <use xlink:href="#c" x="26" y="1" fill-opacity="0.75"/>
+        <use xlink:href="#c" x="1" y="26" fill-opacity="0.5"/>
+        <use xlink:href="#c" x="26" y="26" fill-opacity="0.25"/>
     </g>
 </svg>
