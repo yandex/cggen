@@ -16,7 +16,7 @@ enum SVGToDrawRouteConverter {
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
-      gradients: gradients,
+      gradients: gradients.mapValues(\.0),
       filters: filters,
       defenitions: defenitions
     )
@@ -24,7 +24,7 @@ enum SVGToDrawRouteConverter {
       try context.apply(document.presentation, area: boundingRect)
     return try .init(
       boundingRect: boundingRect,
-      gradients: [:],
+      gradients: gradients.mapValues(\.1),
       subroutines: [:],
       steps: [.concatCTM(.invertYAxis(height: height)), initialContextPrep] +
         document.children.map { try drawstep(svg: $0, ctx: &context)
@@ -65,9 +65,7 @@ private enum Err: Swift.Error {
 }
 
 private struct Context {
-  private(set) var fillAlpha: SVG.Float = 1
   private(set) var fill: SVG.Paint = .rgb(.black())
-  private(set) var strokeAlpha: SVG.Float = 1
   private(set) var stroke: SVG.Paint = .none
 
   var objectBoundingBox: CGRect
@@ -94,10 +92,8 @@ private struct Context {
     _ presentation: SVG.PresentationAttributes,
     area: CGRect?
   ) throws -> DrawStep {
-    fillAlpha ?= presentation.fillOpacity
     fill ?= presentation.fill
     stroke ?= presentation.stroke
-    strokeAlpha ?= presentation.strokeOpacity
     objectBoundingBox ?= area
 
     let fillRule = presentation.fillRule.map { rule in
@@ -183,34 +179,21 @@ private struct Context {
 
   func gradient(
     for paint: KeyPath<Context, SVG.Paint>,
-    opacity: SVG.Float
+    operation: PaintOpearion
   ) throws -> DrawStep? {
     if case let .funciri(grad) = self[keyPath: paint] {
       let g = try gradients[grad] !! Err.gradientNotFound(grad)
-      return g((objectBoundingBox, drawingBounds, opacity))
+      return g((objectBoundingBox, drawingBounds, operation))
     }
     return nil
   }
 
   func drawPath(path: DrawStep) throws -> DrawStep {
     try .composite([
-      gradient(for: \.fill, opacity: fillAlpha).map {
-        DrawStep.savingGState(
-          path,
-          DrawStep.clip,
-          $0
-        )
-      },
+      gradient(for: \.fill, operation: .fill),
+      gradient(for: \.stroke, operation: .stroke),
       path,
       DrawStep.fillAndStroke,
-      gradient(for: \.stroke, opacity: strokeAlpha).map {
-        DrawStep.savingGState(
-          path,
-          DrawStep.replacePathWithStrokePath,
-          DrawStep.clip,
-          $0
-        )
-      },
     ].compactMap(identity))
   }
 
@@ -651,13 +634,19 @@ private func processCommandKind(
   }
 }
 
+enum PaintOpearion {
+  case stroke, fill
+}
+
 typealias GradientStepsProvider = ((
   objectBoundingBox: CGRect,
   drawingBounds: CGRect,
-  opacity: SVG.Float
+  operation: PaintOpearion
 )) -> DrawStep
 
-private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
+private func gradients(
+  svg: SVG
+) throws -> [(String, (GradientStepsProvider, Gradient))] {
   switch svg {
   case let .defs(defs):
     return try defs.children.flatMap(gradients(svg:))
@@ -676,8 +665,9 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       }
       return (offset, color.norm().withAlpha(opacity))
     }
+    let gradient = Gradient(locationAndColors: locandcolors)
     let steps: GradientStepsProvider = { arg in
-      let (objectBox, drawingArea, opacity) = arg
+      let (objectBox, drawingArea, operation) = arg
       let coordinates: CGRect
       switch g.unit ?? .objectBoundingBox {
       case .objectBoundingBox:
@@ -685,20 +675,20 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
-      let locAndColorsWithOpacity = locandcolors.map {
-        ($0.0, modified($0.1) { $0.alpha *= CGFloat(opacity) })
-      }
-      return .linearGradientInlined(
-        .init(locationAndColors: locAndColorsWithOpacity),
-        .init(
-          startPoint: g.startPoint(in: coordinates),
-          endPoint: g.endPoint(in: coordinates),
-          options: g.options,
-          units: g.unit.map(DrawStep.Units.init) ?? .objectBoundingBox
-        )
+      let options = DrawStep.LinearGradientDrawingOptions(
+        startPoint: g.startPoint(in: coordinates),
+        endPoint: g.endPoint(in: coordinates),
+        options: g.options,
+        units: g.unit.map(DrawStep.Units.init) ?? .objectBoundingBox
       )
+      switch operation {
+      case .stroke:
+        return .strokeLinearGradient(id, options)
+      case .fill:
+        return .fillLinearGradient(id, options)
+      }
     }
-    return [(id, steps)]
+    return [(id, (steps, gradient))]
   case let .radialGradient(g):
     guard let id = g.core.id else { return [] }
     try
@@ -716,8 +706,9 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       }
       return (offset, color.norm().withAlpha(opacity))
     }
+    let gradient = Gradient(locationAndColors: locandcolors)
     let steps: GradientStepsProvider = { arg in
-      let (objectBox, drawingArea, opacity) = arg
+      let (objectBox, drawingArea, operation) = arg
       let coordinates: CGRect
       switch g.unit ?? .objectBoundingBox {
       case .objectBoundingBox:
@@ -725,21 +716,21 @@ private func gradients(svg: SVG) throws -> [(String, GradientStepsProvider)] {
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
-      let locAndColorsWithOpacity = locandcolors.map {
-        ($0.0, modified($0.1) { $0.alpha *= CGFloat(opacity) })
-      }
-      return .radialGradientInlined(
-        .init(locationAndColors: locAndColorsWithOpacity),
-        .init(
-          startCenter: g.startCenter(in: coordinates),
-          startRadius: 0,
-          endCenter: g.endCenter(in: coordinates),
-          endRadius: g.endRadius(in: coordinates),
-          options: g.options
-        )
+      let options = DrawStep.RadialGradientDrawingOptions(
+        startCenter: g.startCenter(in: coordinates),
+        startRadius: 0,
+        endCenter: g.endCenter(in: coordinates),
+        endRadius: g.endRadius(in: coordinates),
+        options: g.options
       )
+      switch operation {
+      case .stroke:
+        return .strokeRadialGradient(id, options)
+      case .fill:
+        return .fillRadialGradient(id, options)
+      }
     }
-    return [(id, steps)]
+    return [(id, (steps, gradient))]
   default:
     return []
   }

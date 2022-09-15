@@ -3,50 +3,256 @@ import Foundation
 
 import BCCommon
 
+public func runBytecode(_ context: CGContext, fromData data: Data) throws {
+  let sz = data.count
+  try data.withUnsafeBytes {
+    let ptr = $0.bindMemory(to: UInt8.self).baseAddress!
+    try BytecodeRunner.run(context, ptr, sz)
+  }
+}
+
+@_cdecl("runBytecode")
+public func runBytecode(
+  _ context: CGContext,
+  _ start: UnsafePointer<UInt8>,
+  _ len: Int
+) {
+  do {
+    try BytecodeRunner.run(context, start, len)
+  } catch let t {
+    assertionFailure("Failed to run bytecode with error: \(t)")
+  }
+}
+
+public enum Error: Swift.Error {
+  case outOfBounds(left: BCSizeType, required: BCSizeType)
+  case failedToCreateGradient
+  case invalidGradientId(id: BCIdType)
+  case invalidSubrouteId(id: BCIdType)
+}
+
 extension BCRGBAColor {
   var components: [CGFloat] { [red, green, blue, alpha] }
 }
 
-public class BytecodeRunner {
-  public enum Error: Swift.Error {
-    case outOfBounds(left: BCSizeType, required: BCSizeType)
-    case failedToCreateGradient
-    case invalidGradientId(id: BCIdType)
-    case invalidSubrouteId(id: BCIdType)
-  }
-
+public struct BytecodeRunner {
   struct State {
     var position: UnsafePointer<UInt8>
     var remaining: BCSizeType
   }
 
-  class Commons {
+  private struct Commons {
     var subroutes: [BCIdType: State] = [:]
-    var gradients: [BCIdType: CGGradient] = [:]
-    let context: CGContext
-    let cs: CGColorSpace
-    init(_ context: CGContext, _ cs: CGColorSpace) {
-      self.cs = cs
+    var gradients: [BCIdType: BCGradient] = [:]
+    var context: ExtendedContext
+
+    init(_ context: ExtendedContext) {
       self.context = context
     }
   }
 
-  var currentState: State
-  let commons: Commons
-  private var gstack: GStateStack
-
-  fileprivate init(_ state: State, _ commons: Commons, gstate: GState) {
-    currentState = state
-    self.commons = commons
-    gstack = GStateStack(initial: gstate)
+  private var currentState: State
+  private var commons: Commons
+  
+  private var context: ExtendedContext {
+    get { commons.context }
+    set { commons.context = newValue }
+  }
+  private var cgcontext: CGContext { context.cg }
+  
+  static func run(
+    _ context: CGContext,
+    _ start: UnsafePointer<UInt8>,
+    _ len: Int
+  ) throws {
+    let state = BytecodeRunner.State(position: start, remaining: BCSizeType(len))
+    let commons = BytecodeRunner.Commons(
+      ExtendedContext(initial: .default, context: context)
+    )
+    var runner = BytecodeRunner(state, commons, gstate: .default)
+    try runner.run()
   }
 
-  func advance(_ count: BCSizeType) {
+  private init(_ state: State, _ commons: Commons, gstate: GState) {
+    currentState = state
+    self.commons = commons
+  }
+
+  mutating func run() throws {
+    // MARK: Reading gradients and subroutes
+
+    let gradientCount: BCIdType = try read()
+    for _ in 0..<gradientCount {
+      let id: BCIdType = try read()
+      commons.gradients[id] = try read(BCGradient.self)
+    }
+
+    let subrouteCount: BCIdType = try read()
+    for _ in 0..<subrouteCount {
+      let id: BCIdType = try read()
+      try commons.subroutes[id] = readSubroute()
+    }
+    
+    context.synchronize()
+
+    // MARK: Executing commands
+
+    while currentState.remaining > 0 {
+      let command: Command = try read()
+      switch command {
+      case .addArc:
+        try cgcontext.addArc(
+          center: read(),
+          radius: read(),
+          startAngle: read(),
+          endAngle: read(),
+          clockwise: read()
+        )
+      case .addEllipse:
+        try cgcontext.addEllipse(in: read())
+      case .appendRectangle:
+        try cgcontext.addRect(read())
+      case .appendRoundedRect:
+        let path = try CGPath(
+          roundedRect: read(),
+          cornerWidth: read(),
+          cornerHeight: read(),
+          transform: nil
+        )
+        cgcontext.addPath(path)
+      case .beginTransparencyLayer:
+        cgcontext.beginTransparencyLayer(auxiliaryInfo: nil)
+      case .blendMode:
+        try cgcontext.setBlendMode(read())
+      case .clip:
+        context.clip()
+      case .clipWithRule:
+        try cgcontext.clip(using: .init(read(BCFillRule.self)))
+      case .clipToRect:
+        try cgcontext.clip(to: read(CGRect.self))
+      case .closePath:
+        cgcontext.closePath()
+      case .colorRenderingIntent:
+        try cgcontext.setRenderingIntent(read())
+      case .concatCTM:
+        try cgcontext.concatenate(read())
+      case .curveTo:
+        let curve: BCCubicCurve = try read()
+        cgcontext.addCurve(
+          to: curve.to,
+          control1: curve.control1,
+          control2: curve.control2
+        )
+      case .dash:
+        context.dash = try .init(read())
+        cgcontext.setDash(context.dash)
+      case .dashPhase:
+        context.dash.phase = try read()
+        cgcontext.setDash(context.dash)
+      case .dashLenghts:
+        context.dash.lengths = try read()
+        cgcontext.setDash(context.dash)
+      case .drawPath:
+        try cgcontext.drawPath(using: read())
+      case .endTransparencyLayer:
+        cgcontext.endTransparencyLayer()
+      case .fill:
+        cgcontext.fillPath(using: .init(context.fillRule))
+      case .fillWithRule:
+        try cgcontext.fillPath(using: .init(read(BCFillRule.self)))
+      case .fillAndStroke:
+        try context.fillAndStroke()
+      case .fillColor:
+        let color = try read(BCRGBColor.self)
+        context.setFillColor(color)
+      case .fillRule:
+        let rule: BCFillRule = try read()
+        context.fillRule = rule
+      case .fillEllipse:
+        try cgcontext.fillEllipse(in: read())
+      case .flatness:
+        try cgcontext.setFlatness(read())
+      case .globalAlpha:
+        try cgcontext.setAlpha(read())
+      case .lineCapStyle:
+        try cgcontext.setLineCap(read())
+      case .lineJoinStyle:
+        try cgcontext.setLineJoin(read())
+      case .lineTo:
+        try cgcontext.addLine(to: read())
+      case .lineWidth:
+        try cgcontext.setLineWidth(read())
+      case .linearGradient:
+        try context.drawLinearGradient(
+          getGradient(id: read()),
+          options: read(BCLinearGradientDrawingOptions.self)
+        )
+      case .lines:
+        try cgcontext.addLines(between: read())
+      case .moveTo:
+        try cgcontext.move(to: read())
+      case .radialGradient:
+        let gradient = try getGradient(id: read())
+        try context.drawRadialGradient(gradient, options: read())
+      case .fillLinearGradient:
+        try context.fill.dye = .gradient((
+          getGradient(id: read()),
+          .linear(read())
+        ))
+      case .fillRadialGradient:
+        try context.fill.dye = .gradient((
+          getGradient(id: read()),
+          .radial(read())
+        ))
+      case .strokeLinearGradient:
+        try context.stroke.dye = .gradient((
+          getGradient(id: read()),
+          .linear(read())
+        ))
+      case .strokeRadialGradient:
+        try context.stroke.dye = .gradient((
+          getGradient(id: read()),
+          .radial(read())
+        ))
+      case .replacePathWithStrokePath:
+        cgcontext.replacePathWithStrokedPath()
+      case .restoreGState:
+        context.restoreGState()
+      case .saveGState:
+        context.saveGState()
+      case .stroke:
+        cgcontext.strokePath()
+      case .strokeColor:
+        try context.setStrokeColor(read())
+      case .subrouteWithId:
+        let id: BCIdType = try read()
+        guard let subroute = commons.subroutes[id] else {
+          throw Error.invalidSubrouteId(id: id)
+        }
+        var runner = BytecodeRunner(subroute, commons, gstate: context.gstate)
+        try runner.run()
+      case .shadow:
+        try context.drawShadow(read(BCShadow.self))
+      case .strokeAlpha:
+        try context.setStrokeAlpha(read())
+      case .fillAlpha:
+        try context.setFillAlpha(read())
+      case .strokeNone:
+        context.stroke.dye = nil
+      case .fillNone:
+        context.fill.dye = nil
+      case .setGlobalAlphaToFillAlpha:
+        cgcontext.setAlpha(context.fill.alpha)
+      }
+    }
+  }
+  
+  mutating func advance(_ count: BCSizeType) {
     currentState.position += Int(count)
     currentState.remaining -= count
   }
 
-  func readInt<T: FixedWidthInteger>(_: T.Type = T.self) throws -> T {
+  mutating func readInt<T: FixedWidthInteger>(_: T.Type = T.self) throws -> T {
     let size = MemoryLayout<T>.size
     guard size <= currentState.remaining else {
       throw Error.outOfBounds(
@@ -60,52 +266,11 @@ public class BytecodeRunner {
     return T(littleEndian: ret)
   }
 
-  func read<T: BytecodeElement>(_: T.Type = T.self) throws -> T {
-    try T.readFrom(self)
+  mutating func read<T: BytecodeElement>(_: T.Type = T.self) throws -> T {
+    try T.readFrom(&self)
   }
 
-  func drawLinearGradient(_ gradient: CGGradient) throws {
-    let context = commons.context
-    let options: BCLinearGradientDrawingOptions = try read()
-    context.drawLinearGradient(
-      gradient,
-      start: options.start,
-      end: options.end,
-      options: options.options
-    )
-  }
-
-  func drawRadialGradient(_ gradient: CGGradient) throws {
-    let context = commons.context
-    let options: BCRadialGradientDrawingOptions = try read()
-    context.drawRadialGradient(
-      gradient,
-      startCenter: options.startCenter,
-      startRadius: options.startRadius,
-      endCenter: options.endCenter,
-      endRadius: options.endRadius,
-      options: options.drawingOptions
-    )
-  }
-
-  func readGradient() throws -> CGGradient {
-    let gradientDesc: BCGradient = try read()
-    let sz = gradientDesc.count
-    let cs = commons.cs
-    let colors = gradientDesc.flatMap(\.color.components)
-    let locations = gradientDesc.map(\.location)
-    guard let gradient = CGGradient(
-      colorSpace: cs,
-      colorComponents: colors,
-      locations: locations,
-      count: sz
-    ) else {
-      throw Error.failedToCreateGradient
-    }
-    return gradient
-  }
-
-  func readSubroute() throws -> State {
+  mutating func readSubroute() throws -> State {
     let sz: BCSizeType = try read()
     guard sz <= currentState.remaining else {
       throw Error.outOfBounds(left: currentState.remaining, required: sz)
@@ -114,241 +279,16 @@ public class BytecodeRunner {
     advance(sz)
     return subroute
   }
-
-  func drawShadow() throws {
-    let context = commons.context
-    let shadow: BCShadow = try read()
-    let ctm = context.ctm
-    let cs = commons.cs
-    let a = ctm.a
-    let c = ctm.c
-    let scaleX = sqrt(a * a + c * c)
-    let offset = shadow.offset.applying(ctm)
-    let blur = floor(shadow.blur * scaleX + 0.5)
-    let color = CGColor(colorSpace: cs, components: shadow.color.components)
-    context.setShadow(offset: offset, blur: blur, color: color)
-  }
-
-  func run() throws {
-    let context = commons.context
-
-    // MARK: Reading gradients and subroutes
-
-    let gradientCount: BCIdType = try read()
-    for _ in 0..<gradientCount {
-      let id: BCIdType = try read()
-      commons.gradients[id] = try readGradient()
+  
+  func getGradient(id: BCIdType) throws -> CGGradient {
+    guard let gradient = commons.gradients[id] else {
+      throw Error.invalidGradientId(id: id)
     }
-
-    let subrouteCount: BCIdType = try read()
-    for _ in 0..<subrouteCount {
-      let id: BCIdType = try read()
-      try commons.subroutes[id] = readSubroute()
-    }
-
-    // MARK: Executing commands
-
-    while currentState.remaining > 0 {
-      let command: Command = try read()
-      switch command {
-      case .addArc:
-        try context.addArc(
-          center: read(),
-          radius: read(),
-          startAngle: read(),
-          endAngle: read(),
-          clockwise: read()
-        )
-      case .addEllipse:
-        try context.addEllipse(in: read())
-      case .appendRectangle:
-        try context.addRect(read())
-      case .appendRoundedRect:
-        let path = try CGPath(
-          roundedRect: read(),
-          cornerWidth: read(),
-          cornerHeight: read(),
-          transform: nil
-        )
-        context.addPath(path)
-      case .beginTransparencyLayer:
-        context.beginTransparencyLayer(auxiliaryInfo: nil)
-      case .blendMode:
-        try context.setBlendMode(read())
-      case .clip:
-        context.clip(using: .init(gstack.fillRule))
-      case .clipWithRule:
-        try context.clip(using: .init(read(BCFillRule.self)))
-      case .clipToRect:
-        try context.clip(to: read(CGRect.self))
-      case .closePath:
-        context.closePath()
-      case .colorRenderingIntent:
-        try context.setRenderingIntent(read())
-      case .concatCTM:
-        try context.concatenate(read())
-      case .curveTo:
-        let curve: BCCubicCurve = try read()
-        context.addCurve(
-          to: curve.to,
-          control1: curve.control1,
-          control2: curve.control2
-        )
-      case .dash:
-        gstack.dash = try .init(read())
-        context.setDash(gstack.dash)
-      case .dashPhase:
-        gstack.dash.phase = try read()
-        context.setDash(gstack.dash)
-      case .dashLenghts:
-        gstack.dash.lengths = try read()
-        context.setDash(gstack.dash)
-      case .drawPath:
-        try context.drawPath(using: read())
-      case .endTransparencyLayer:
-        context.endTransparencyLayer()
-      case .fill:
-        context.fillPath(using: .init(gstack.fillRule))
-      case .fillWithRule:
-        try context.fillPath(using: .init(read(BCFillRule.self)))
-      case .fillAndStroke:
-        let mode: CGPathDrawingMode?
-        switch (gstack.stroke.color, gstack.fill.color, gstack.fillRule) {
-        case (.some, .some, .winding):
-          mode = .fillStroke
-        case (.some, .some, .evenOdd):
-          mode = .eoFillStroke
-        case (nil, .some, .winding):
-          mode = .fill
-        case (nil, .some, .evenOdd):
-          mode = .eoFill
-        case (.some, nil, _):
-          mode = .stroke
-        case (nil, nil, _):
-          mode = nil
-        }
-        if let mode = mode {
-          context.drawPath(using: mode)
-        } else {
-          context.beginPath()
-        }
-      case .fillColor:
-        try gstack.setFillColor(read())
-        gstack.fill.rgba.map(context.setFillColor)
-      case .fillRule:
-        let rule: BCFillRule = try read()
-        gstack.fillRule = rule
-      case .fillEllipse:
-        try context.fillEllipse(in: read())
-      case .flatness:
-        try context.setFlatness(read())
-      case .globalAlpha:
-        try context.setAlpha(read())
-      case .lineCapStyle:
-        try context.setLineCap(read())
-      case .lineJoinStyle:
-        try context.setLineJoin(read())
-      case .lineTo:
-        try context.addLine(to: read())
-      case .lineWidth:
-        try context.setLineWidth(read())
-      case .linearGradient:
-        let id: BCIdType = try read()
-        guard let gradient = commons.gradients[id] else {
-          throw Error.invalidGradientId(id: id)
-        }
-        try drawLinearGradient(gradient)
-      case .linearGradientInlined:
-        let gradient = try readGradient()
-        try drawLinearGradient(gradient)
-      case .lines:
-        try context.addLines(between: read())
-      case .moveTo:
-        try context.move(to: read())
-      case .radialGradient:
-        let id: BCIdType = try read()
-        guard let gradient = commons.gradients[id] else {
-          throw Error.invalidGradientId(id: id)
-        }
-        try drawRadialGradient(gradient)
-      case .radialGradientInlined:
-        let gradient = try readGradient()
-        try drawRadialGradient(gradient)
-      case .replacePathWithStrokePath:
-        context.replacePathWithStrokedPath()
-      case .restoreGState:
-        gstack.restoreGState()
-        context.restoreGState()
-      case .saveGState:
-        gstack.saveGState()
-        context.saveGState()
-      case .stroke:
-        context.strokePath()
-      case .strokeColor:
-        try gstack.setStrokeColor(read())
-        gstack.stroke.rgba.map(context.setStrokeColor)
-      case .subrouteWithId:
-        let id: BCIdType = try read()
-        guard let subroute = commons.subroutes[id] else {
-          throw Error.invalidSubrouteId(id: id)
-        }
-        try BytecodeRunner(subroute, commons, gstate: gstack.current).run()
-      case .shadow:
-        try drawShadow()
-      case .strokeAlpha:
-        try gstack.setStrokeAlpha(read())
-        gstack.stroke.rgba.map(context.setStrokeColor)
-      case .fillAlpha:
-        try gstack.setFillAlpha(read())
-        gstack.fill.rgba.map(context.setFillColor)
-      case .strokeNone:
-        gstack.stroke.color = nil
-      case .fillNone:
-        gstack.fill.color = nil
-      case .setGlobalAlphaToFillAlpha:
-        context.setAlpha(gstack.fill.alpha)
-      }
-    }
-  }
-}
-
-public func runBytecode(_ context: CGContext, fromData data: Data) throws {
-  let sz = data.count
-  try data.withUnsafeBytes {
-    let ptr = $0.bindMemory(to: UInt8.self).baseAddress!
-    try runBytecodeThrowing(context, ptr, sz)
-  }
-}
-
-func runBytecodeThrowing(
-  _ context: CGContext,
-  _ start: UnsafePointer<UInt8>,
-  _ len: Int
-) throws {
-  let cs = CGColorSpaceCreateDeviceRGB()
-  context.setFillColorSpace(cs)
-  context.setStrokeColorSpace(cs)
-  let state = BytecodeRunner.State(position: start, remaining: BCSizeType(len))
-  let commons = BytecodeRunner.Commons(context, cs)
-  try BytecodeRunner(state, commons, gstate: .default).run()
-}
-
-@_cdecl("runBytecode")
-public func runBytecode(
-  _ context: CGContext,
-  _ start: UnsafePointer<UInt8>,
-  _ len: Int
-) {
-  do {
-    try runBytecodeThrowing(context, start, len)
-  } catch let t {
-    assertionFailure("Failed to run bytecode with error: \(t)")
+    return try .make(gradient, colorSpace: context.fillColorSpace)
   }
 }
 
 private struct GState {
-  typealias RGBA = (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat)
-
   struct DashPattern {
     var phase: CGFloat
     var lengths: [CGFloat]?
@@ -363,94 +303,273 @@ private struct GState {
       self.lengths = bcdash.lengths
     }
   }
+  
+  enum Dye {
+    enum GradientType {
+      case linear(BCLinearGradientDrawingOptions)
+      case radial(BCRadialGradientDrawingOptions)
+    }
+    
+    typealias Gradient = (CGGradient, type: GradientType)
+    
+    case color(BCRGBColor)
+    case gradient(Gradient)
+  }
 
   struct Paint {
-    var color: BCRGBColor?
+    var dye: Dye?
     var alpha: CGFloat
-    var rgba: RGBA? {
-      color.map { ($0.red, $0.green, $0.blue, alpha) }
+    
+    init(dye: Dye? = nil, alpha: CGFloat) {
+      self.dye = dye
+      self.alpha = alpha
+    }
+    
+    init(color: BCRGBColor, alpha: CGFloat) {
+      self.dye = .color(color)
+      self.alpha = alpha
     }
 
     static let black = Self(color: .init(r: 0, g: 0, b: 0), alpha: 1)
-    static let none = Self(color: nil, alpha: 1)
+    static let none = Self(dye: nil, alpha: 1)
   }
 
   var fillRule: BCFillRule
   var fill: Paint
   var stroke: Paint
   var dash: DashPattern
+  var fillColorSpace: CGColorSpace
 
   static let `default` = Self(
     fillRule: .winding,
     fill: .black, stroke: .none,
-    dash: .init(phase: 0, lengths: nil)
+    dash: .init(phase: 0, lengths: nil),
+    fillColorSpace: CGColorSpaceCreateDeviceRGB()
   )
 }
 
 @dynamicMemberLookup
-private struct GStateStack {
-  private var stack: [GState]
-  var current: GState
+private struct ExtendedContext {
+  private var gstateStack: [GState]
+  var gstate: GState
+  private(set) var cg: CGContext
 
-  init(initial: GState) {
-    stack = []
-    current = initial
+  init(initial: GState, context: CGContext) {
+    gstateStack = []
+    gstate = initial
+    cg = context
   }
 
   mutating func saveGState() {
-    stack.append(current)
+    gstateStack.append(gstate)
+    cg.saveGState()
   }
 
   mutating func restoreGState() {
-    if let saved = stack.popLast() {
-      current = saved
+    if let saved = gstateStack.popLast() {
+      gstate = saved
     }
+    cg.restoreGState()
   }
 
   subscript<T>(dynamicMember kp: WritableKeyPath<GState, T>) -> T {
-    get { current[keyPath: kp] }
-    set { current[keyPath: kp] = newValue }
+    get { gstate[keyPath: kp] }
+    set { gstate[keyPath: kp] = newValue }
+  }
+  
+  func synchronize() {
+    cg.setFillColorSpace(gstate.fillColorSpace)
+    cg.setStrokeColorSpace(gstate.fillColorSpace)
+  }
+  
+  func clip() {
+    cg.clip(using: .init(gstate.fillRule))
   }
 
   mutating func setFillColor(_ c: BCRGBColor) {
-    current.fill.color = c
+    gstate.fill.dye = .color(c)
+    syncFillDye()
   }
 
   mutating func setFillAlpha(_ alpha: CGFloat) {
-    current.fill.alpha = alpha
+    gstate.fill.alpha = alpha
+    syncFillDye()
   }
 
   mutating func setStrokeColor(_ c: BCRGBColor) {
-    current.stroke.color = c
+    gstate.stroke.dye = .color(c)
+    syncStrokeDye()
+    
   }
 
   mutating func setStrokeAlpha(_ alpha: CGFloat) {
-    current.stroke.alpha = alpha
+    gstate.stroke.alpha = alpha
+    syncStrokeDye()
   }
-}
-
-private func setRGB(to rgba: inout GState.RGBA, from rgb: BCRGBColor) {
-  rgba.red = rgb.red
-  rgba.green = rgb.green
-  rgba.blue = rgb.blue
+  
+  private func syncFillDye() {
+    let paint = gstate.fill
+    switch paint.dye {
+    case let .color(color):
+      cg.setFillColor(color, alpha: paint.alpha)
+    case .gradient, nil:
+      cg.setFillColor(.clear)
+    }
+  }
+  
+  private func syncStrokeDye() {
+    let paint = gstate.stroke
+    switch paint.dye {
+    case let .color(color):
+      cg.setStrokeColor(color, alpha: paint.alpha)
+    case .gradient, nil:
+      cg.setStrokeColor(.clear)
+    }
+  }
+  
+  fileprivate func fillAndStroke() throws {
+    switch (gstate.stroke.dye, gstate.fill.dye) {
+    case (.color, .color):
+      switch gstate.fillRule {
+      case .winding:
+        cg.drawPath(using: .fillStroke)
+      case .evenOdd:
+        cg.drawPath(using: .eoFillStroke)
+      }
+    case (nil, .color):
+      switch gstate.fillRule {
+      case .winding:
+        cg.drawPath(using: .fill)
+      case .evenOdd:
+        cg.drawPath(using: .eoFill)
+      }
+    case (.color, nil):
+      cg.drawPath(using: .stroke)
+    case let (.gradient(stroke), .gradient(fill)):
+      guard let path = cg.path else { return }
+      fillWithGradient(fill)
+      strokeWithGradient(stroke, path: path)
+    case let (.gradient(stroke), .color):
+      guard let path = cg.path else { return }
+      cg.fillPath(using: .init(gstate.fillRule))
+      strokeWithGradient(stroke, path: path)
+    case let (.color, .gradient(fill)):
+      guard let path = cg.path else { return }
+      fillWithGradient(fill)
+      cg.addPath(path)
+      cg.strokePath()
+    case let (.gradient(stroke), nil):
+      strokeWithGradient(stroke)
+    case let (nil, .gradient(fill)):
+      fillWithGradient(fill)
+    case (nil, nil):
+      cg.beginPath()
+    }
+  }
+  
+  fileprivate func fillWithGradient(
+    _ gradient: GState.Dye.Gradient,
+    path: CGPath? = nil
+  ) {
+    cg.savingGState {
+      if let path = path {
+        cg.beginPath()
+        cg.addPath(path)
+      }
+      clip()
+      cg.setAlpha(gstate.fill.alpha)
+      drawGradient(gradient)
+    }
+  }
+  
+  fileprivate func strokeWithGradient(
+    _ gradient: GState.Dye.Gradient,
+    path: CGPath? = nil
+  ) {
+    cg.savingGState {
+      if let path = path {
+        cg.beginPath()
+        cg.addPath(path)
+      }
+      cg.replacePathWithStrokedPath()
+      clip()
+      cg.setAlpha(gstate.stroke.alpha)
+      drawGradient(gradient)
+    }
+  }
+  
+  func drawGradient(_ gradient: GState.Dye.Gradient) {
+    switch gradient.1 {
+    case let .linear(options):
+      drawLinearGradient(gradient.0, options: options)
+    case let .radial(options):
+      drawRadialGradient(gradient.0, options: options)
+    }
+  }
+  
+  func drawLinearGradient(
+    _ gradient: CGGradient,
+    options: BCLinearGradientDrawingOptions
+  ) {
+    cg.drawLinearGradient(
+      gradient,
+      start: options.start,
+      end: options.end,
+      options: options.options
+    )
+  }
+  
+  func drawRadialGradient(
+    _ gradient: CGGradient,
+    options: BCRadialGradientDrawingOptions
+  ) {
+    cg.drawRadialGradient(
+      gradient,
+      startCenter: options.startCenter,
+      startRadius: options.startRadius,
+      endCenter: options.endCenter,
+      endRadius: options.endRadius,
+      options: options.drawingOptions
+    )
+  }
+  
+  mutating func drawShadow(_ shadow: BCShadow) {
+    let ctm = cg.ctm
+    let cs = gstate.fillColorSpace
+    let a = ctm.a
+    let c = ctm.c
+    let scaleX = sqrt(a * a + c * c)
+    let offset = shadow.offset.applying(ctm)
+    let blur = floor(shadow.blur * scaleX + 0.5)
+    let color = CGColor(colorSpace: cs, components: shadow.color.components)
+    cg.setShadow(offset: offset, blur: blur, color: color)
+  }
 }
 
 extension CGContext {
-  fileprivate func setFillColor(_ rgba: GState.RGBA) {
+  fileprivate func setFillColor(_ rgb: BCRGBColor, alpha: CGFloat) {
     setFillColor(
-      red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
+      red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: alpha
     )
   }
 
-  fileprivate func setStrokeColor(_ rgba: GState.RGBA) {
+  fileprivate func setStrokeColor(_ rgb: BCRGBColor, alpha: CGFloat) {
     setStrokeColor(
-      red: rgba.red, green: rgba.green, blue: rgba.blue, alpha: rgba.alpha
+      red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: alpha
     )
   }
 
   fileprivate func setDash(_ dash: GState.DashPattern) {
     guard let lenghts = dash.lengths else { return }
     setLineDash(phase: dash.phase, lengths: lenghts)
+  }
+  
+  fileprivate func savingGState<T>(_ code: () throws -> T) rethrows -> T {
+    saveGState()
+    defer {
+      restoreGState()
+    }
+    return try code()
   }
 }
 
@@ -462,5 +581,25 @@ extension CGPathFillRule {
     case .evenOdd:
       self = .evenOdd
     }
+  }
+}
+
+extension CGGradient {
+  static func make(
+    _ bc: BCGradient,
+    colorSpace cs: CGColorSpace
+  ) throws -> CGGradient {
+    let sz = bc.count
+    let colors = bc.flatMap(\.color.components)
+    let locations = bc.map(\.location)
+    guard let gradient = CGGradient(
+      colorSpace: cs,
+      colorComponents: colors,
+      locations: locations,
+      count: sz
+    ) else {
+      throw Error.failedToCreateGradient
+    }
+    return gradient
   }
 }

@@ -71,7 +71,7 @@ class BCCompilationTests: XCTestCase {
       "caps_joins.svg",
       "clip_path.svg",
       "dashes.svg",
-      "different_blur_radius.svg",
+      "shadow_blur_radius.svg",
       "fill.svg",
       "gradient.svg",
       "lines.svg",
