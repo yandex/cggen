@@ -31,9 +31,9 @@ internal func unzipComponent(val: UInt8) -> CGFloat {
 }
 
 public struct BCRGBAColor {
-  public var red: CGFloat
-  public var green: CGFloat
-  public var blue: CGFloat
+  public var red: UInt8
+  public var green: UInt8
+  public var blue: UInt8
   public var alpha: CGFloat
 
   @inlinable
@@ -43,17 +43,17 @@ public struct BCRGBAColor {
     b: UInt8,
     alpha: CGFloat
   ) {
-    red = unzipComponent(val: r)
-    green = unzipComponent(val: g)
-    blue = unzipComponent(val: b)
+    red = r
+    green = g
+    blue = b
     self.alpha = alpha
   }
 }
 
 public struct BCRGBColor {
-  public var red: CGFloat
-  public var green: CGFloat
-  public var blue: CGFloat
+  public var red: UInt8
+  public var green: UInt8
+  public var blue: UInt8
 
   @inlinable
   public init(
@@ -61,9 +61,9 @@ public struct BCRGBColor {
     g: UInt8,
     b: UInt8
   ) {
-    red = unzipComponent(val: r)
-    green = unzipComponent(val: g)
-    blue = unzipComponent(val: b)
+    red = r
+    green = g
+    blue = b
   }
 }
 
@@ -136,7 +136,7 @@ public struct BCShadow {
   }
 }
 
-public enum BCFillRule: Int {
+public enum BCFillRule: UInt8 {
   case winding, evenOdd
 }
 

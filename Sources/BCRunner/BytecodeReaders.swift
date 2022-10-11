@@ -1,11 +1,6 @@
 import CoreGraphics
-import Foundation
 
 import BCCommon
-
-protocol BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> Self
-}
 
 public struct InvalidRawValue<T: RawRepresentable>: Swift.Error {
   public typealias enumType = T
@@ -16,167 +11,221 @@ public struct InvalidRawValue<T: RawRepresentable>: Swift.Error {
   }
 }
 
-extension BytecodeElement where Self: FixedWidthInteger {
-  internal static func readFrom(_ runner: inout BytecodeRunner) throws -> Self {
-    try runner.readInt()
+// MARK: - Bytecode
+
+struct Bytecode {
+  enum ReadingError: Swift.Error {
+    case outOfBounds(left: Int, required: Int)
+    case isNotPOD(Any.Type)
+  }
+
+  var base: UnsafeRawPointer
+  var count: Int
+
+  init(base: UnsafeRawPointer, count: Int) {
+    self.base = base
+    self.count = count
+  }
+
+  mutating func read<T: FixedWidthInteger>(type _: T.Type) throws -> T {
+    let size = MemoryLayout<T>.size
+
+    guard _isPOD(T.self) else { throw ReadingError.isNotPOD(T.self) }
+    guard size <= count else {
+      throw ReadingError.outOfBounds(left: count, required: size)
+    }
+
+    var value: T = 0
+    memcpy(&value, base, size)
+    base = base.advanced(by: size)
+    count -= size
+
+    return T(littleEndian: value)
+  }
+
+  mutating func advance(count: Int) -> Self {
+    defer {
+      base = base.advanced(by: count)
+      self.count -= count
+    }
+    return Self(base: base, count: count)
   }
 }
 
-extension UInt8: BytecodeElement {}
-extension UInt32: BytecodeElement {}
-extension UInt16: BytecodeElement {}
+protocol BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws
+}
 
-extension BytecodeElement where Self: RawRepresentable,
-  RawValue: FixedWidthInteger {
-  internal static func readFrom(_ runner: inout BytecodeRunner) throws -> Self {
-    let rawValue: UInt8 = try runner.readInt()
+// MARK: Conforamnces
+
+extension BytecodeDecodable
+where Self: RawRepresentable, RawValue: FixedWidthInteger {
+  init(bytecode: inout Bytecode) throws {
+    let rawValue = try bytecode.read(type: UInt8.self)
     let converted = Self.RawValue(rawValue)
     guard let ret = Self(rawValue: converted) else {
       throw InvalidRawValue<Self>(rawValue: converted)
     }
-    return ret
+    self = ret
   }
 }
 
-extension CGBlendMode: BytecodeElement {}
-extension CGPathDrawingMode: BytecodeElement {}
-extension BCFillRule: BytecodeElement {}
-extension BCCoordinateUnits: BytecodeElement {}
+extension Command: BytecodeDecodable {}
+extension BCFillRule: BytecodeDecodable {}
+extension BCCoordinateUnits: BytecodeDecodable {}
 
-extension CGFloat: BytecodeElement {
-  internal static func readFrom(_ runner: inout BytecodeRunner) throws -> CGFloat {
-    try .init(Float32(bitPattern: runner.readInt()))
-  }
-}
-
-extension CGPoint: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> CGPoint {
-    try .init(x: .readFrom(&runner), y: .readFrom(&runner))
-  }
-}
-
-extension CGSize: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> CGSize {
-    try .init(width: .readFrom(&runner), height: .readFrom(&runner))
-  }
-}
-
-extension CGRect: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> CGRect {
-    try .init(origin: .readFrom(&runner), size: .readFrom(&runner))
-  }
-}
-
-extension Bool: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> Bool {
-    try UInt8.readFrom(&runner) != 0
-  }
-}
-
-extension Array: BytecodeElement where Element: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> [Element] {
-    let sz = try BCSizeType.readFrom(&runner)
-    let arr: [Element] = try (0..<sz).map { _ in try .readFrom(&runner) }
-    return arr
-  }
-}
-
-extension BCDashPattern: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> BCDashPattern {
-    try .init(phase: .readFrom(&runner), lengths: .readFrom(&runner))
-  }
-}
-
-extension CGAffineTransform: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> CGAffineTransform {
-    try .init(
-      a: .readFrom(&runner),
-      b: .readFrom(&runner),
-      c: .readFrom(&runner),
-      d: .readFrom(&runner),
-      tx: .readFrom(&runner),
-      ty: .readFrom(&runner)
+extension BCDashPattern: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      phase: .init(bytecode: &bytecode), lengths: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension CGLineJoin: BytecodeElement {}
-extension CGLineCap: BytecodeElement {}
-
-extension BCRGBAColor: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> Self {
-    try Self(
-      r: .readFrom(&runner),
-      g: .readFrom(&runner),
-      b: .readFrom(&runner),
-      alpha: .readFrom(&runner)
+extension BCRGBAColor: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      r: .init(bytecode: &bytecode),
+      g: .init(bytecode: &bytecode),
+      b: .init(bytecode: &bytecode),
+      alpha: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension BCRGBColor: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> Self {
-    try Self(
-      r: .readFrom(&runner),
-      g: .readFrom(&runner),
-      b: .readFrom(&runner)
+extension BCRGBColor: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      r: .init(bytecode: &bytecode),
+      g: .init(bytecode: &bytecode),
+      b: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension CGGradientDrawingOptions: BytecodeElement {}
-
-extension BCLinearGradientDrawingOptions: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws
-    -> BCLinearGradientDrawingOptions {
-    try .init(
-      start: .readFrom(&runner),
-      end: .readFrom(&runner),
-      options: .readFrom(&runner),
-      units: .readFrom(&runner)
+extension BCLinearGradientDrawingOptions: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      start: .init(bytecode: &bytecode),
+      end: .init(bytecode: &bytecode),
+      options: .init(bytecode: &bytecode),
+      units: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension BCRadialGradientDrawingOptions: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws
-    -> BCRadialGradientDrawingOptions {
-    try .init(
-      startCenter: .readFrom(&runner),
-      startRadius: .readFrom(&runner),
-      endCenter: .readFrom(&runner),
-      endRadius: .readFrom(&runner),
-      drawingOptions: .readFrom(&runner)
+extension BCRadialGradientDrawingOptions: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      startCenter: .init(bytecode: &bytecode),
+      startRadius: .init(bytecode: &bytecode),
+      endCenter: .init(bytecode: &bytecode),
+      endRadius: .init(bytecode: &bytecode),
+      drawingOptions: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension BCLocationAndColor: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> BCLocationAndColor {
-    try .init(location: .readFrom(&runner), color: .readFrom(&runner))
-  }
-}
-
-extension BCShadow: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> BCShadow {
-    try .init(
-      offset: .readFrom(&runner),
-      blur: .readFrom(&runner),
-      color: .readFrom(&runner)
+extension BCLocationAndColor: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      location: .init(bytecode: &bytecode), color: .init(bytecode: &bytecode)
     )
   }
 }
 
-extension CGColorRenderingIntent: BytecodeElement {}
-
-extension Command: BytecodeElement {}
-
-extension BCCubicCurve: BytecodeElement {
-  static func readFrom(_ runner: inout BytecodeRunner) throws -> BCCubicCurve {
-    try .init(
-      control1: .readFrom(&runner),
-      control2: .readFrom(&runner),
-      to: .readFrom(&runner)
+extension BCShadow: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      offset: .init(bytecode: &bytecode),
+      blur: .init(bytecode: &bytecode),
+      color: .init(bytecode: &bytecode)
     )
+  }
+}
+
+extension BCCubicCurve: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      control1: .init(bytecode: &bytecode),
+      control2: .init(bytecode: &bytecode),
+      to: .init(bytecode: &bytecode)
+    )
+  }
+}
+
+// MARK: Legacy Conforamnces
+
+// It's suspicious to conform types from SDK to custom protocols
+
+extension BytecodeDecodable where Self: FixedWidthInteger {
+  init(bytecode: inout Bytecode) throws {
+    self = try bytecode.read(type: Self.self)
+  }
+}
+
+extension UInt8: BytecodeDecodable {}
+extension UInt32: BytecodeDecodable {}
+extension UInt16: BytecodeDecodable {}
+
+extension CGBlendMode: BytecodeDecodable {}
+extension CGPathDrawingMode: BytecodeDecodable {}
+extension CGLineJoin: BytecodeDecodable {}
+extension CGLineCap: BytecodeDecodable {}
+extension CGGradientDrawingOptions: BytecodeDecodable {}
+extension CGColorRenderingIntent: BytecodeDecodable {}
+
+extension CGFloat: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    let float32 = try Float32(bitPattern: bytecode.read(type: UInt32.self))
+    self.init(float32)
+  }
+}
+
+extension CGPoint: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(x: .init(bytecode: &bytecode), y: .init(bytecode: &bytecode))
+  }
+}
+
+extension CGSize: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      width: .init(bytecode: &bytecode), height: .init(bytecode: &bytecode)
+    )
+  }
+}
+
+extension CGRect: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      origin: .init(bytecode: &bytecode), size: .init(bytecode: &bytecode)
+    )
+  }
+}
+
+extension Array: BytecodeDecodable where Element: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    let size = try bytecode.read(type: BCSizeType.self)
+    self.init(try (0..<size).map { _ in try .init(bytecode: &bytecode) })
+  }
+}
+
+extension CGAffineTransform: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      a: .init(bytecode: &bytecode),
+      b: .init(bytecode: &bytecode),
+      c: .init(bytecode: &bytecode),
+      d: .init(bytecode: &bytecode),
+      tx: .init(bytecode: &bytecode),
+      ty: .init(bytecode: &bytecode)
+    )
+  }
+}
+
+extension Bool: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(UInt8(bytecode: &bytecode) != 0)
   }
 }

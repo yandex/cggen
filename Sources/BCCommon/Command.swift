@@ -15,75 +15,182 @@ import Foundation
  CGAffineTransform            = a: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat, tx: CGFloat, ty: CGFloat
  CGLineJoin                   = miter = 0 | round = 1 | bevel   = 2
  CGLineCap                    = butt  = 0 | round = 1 | square  = 2
- RGBACGColor                  = red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat
+ BCRGBAColor                  = red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat
  CGGradientDrawingOptions     = {} = 0 | {.drawsBeforeStartLocation} = 1 | {.drawsAfterEndLocation} = 2 | {.drawsBeforeStartLocation, .drawsAfterEndLocation} = 3
  LinearGradientDrawingOptions =
   startPoint: CGPoint,
   endPoint: CGPoint,
   options: CGGradientDrawingOptions
  RadialGradientDrawingOptions = startCenter: CGPoint, startRadius: CGFloat, endCenter: CGPoint, endRadius: CGFloat, options: CGGradientDrawingOptions
- Gradient                     = locationAndColors: [(CGFloat, RGBACGColor)]
- Shadow                       = offset: CGSize, blur: CGFloat, color: RGBACGColor
+ Gradient                     = locationAndColors: [(CGFloat, BCRGBAColor)]
+ Shadow                       = offset: CGSize, blur: CGFloat, color: BCRGBAColor
  CGBlendMode                  = 0..27    (rawValue)
  */
 public enum Command: UInt8 {
+  public typealias NoArgs = ()
+
   case saveGState = 0
+  public typealias SaveGStateArgs = NoArgs
+
   case restoreGState
+  public typealias RestoreGStateArgs = NoArgs
 
-  case moveTo // (CGPoint)
-  case curveTo // (CGPoint, CGPoint, CGPoint)
-  case lineTo // (CGPoint)
-  case appendRectangle // (CGRect)
-  case appendRoundedRect // (CGRect, rx: CGFloat, ry: CGFloat)
-  case addArc // (center: CGPoint, radius: CGFloat, startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool)
+  case moveTo
+  public typealias MoveToArgs = CGPoint
+
+  case curveTo
+  public typealias CurveToArgs = BCCubicCurve
+
+  case lineTo
+  public typealias LineToArgs = CGPoint
+
+  case appendRectangle
+  public typealias AppendRectangleArgs = CGRect
+
+  case appendRoundedRect
+  public typealias AppendRoundedRectArgs = (CGRect, rx: CGFloat, ry: CGFloat)
+
+  case addArc
+  public typealias AddArcArgs = (
+    center: CGPoint, radius: CGFloat,
+    startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool
+  )
+
   case closePath
-  case replacePathWithStrokePath
+  public typealias ClosePathArgs = NoArgs
 
-  case lines // ([CGPoint])
+  case replacePathWithStrokePath
+  public typealias ReplacePathWithStrokePathArgs = NoArgs
+
+  case lines
+  public typealias LinesArgs = [CGPoint]
 
   case clip
-  case clipWithRule // (CGPathFillRule)
-  case clipToRect // (CGRect)
-  case dash // (DashPattern)
-  case dashPhase // (CGFloat)
-  case dashLenghts // ([CGFloat])
+  public typealias ClipArgs = NoArgs
+
+  case clipWithRule
+  public typealias ClipWithRuleArgs = BCFillRule
+
+  case clipToRect
+  public typealias ClipToRectArgs = CGRect
+
+  case dash
+  public typealias DashArgs = BCDashPattern
+
+  case dashPhase
+  public typealias DashPhaseArgs = CGFloat
+
+  case dashLenghts
+  public typealias DashLenghtsArgs = [CGFloat]
 
   case fill
-  case fillWithRule // (CGPathFillRule)
-  case fillEllipse // (in: CGRect)
+  public typealias FillArgs = NoArgs
+
+  case fillWithRule
+  public typealias FillWithRuleArgs = BCFillRule
+
+  case fillEllipse
+  public typealias FillEllipseArgs = CGRect
+
   case stroke
-  case drawPath // (mode: CGPathDrawingMode)
-  case addEllipse // (in: CGRect)
+  public typealias StrokeArgs = NoArgs
+
+  case drawPath
+  public typealias DrawPathArgs = CGPathDrawingMode
+
+  case addEllipse
+  public typealias AddEllipseArgs = CGRect
+
   case fillAndStroke
+  public typealias FillAndStrokeArgs = NoArgs
+
   case setGlobalAlphaToFillAlpha
+  public typealias SetGlobalAlphaToFillAlphaArgs = NoArgs
 
-  case concatCTM // (CGAffineTransform)
+  case concatCTM
+  public typealias ConcatCTMArgs = CGAffineTransform
 
-  case flatness // (CGFloat)
-  case lineWidth // (CGFloat)
-  case lineJoinStyle // (CGLineJoin)
-  case lineCapStyle // (CGLineCap)
+  case flatness
+  public typealias FlatnessArgs = CGFloat
 
-  case colorRenderingIntent // (CGColorRenderingIntent)
-  case globalAlpha // (CGFloat)
-  case strokeColor // (RGBACGColor)
-  case strokeAlpha // (CGFloat)
+  case lineWidth
+  public typealias LineWidthArgs = CGFloat
+
+  case lineJoinStyle
+  public typealias LineJoinStyleArgs = CGLineJoin
+
+  case lineCapStyle
+  public typealias LineCapStyleArgs = CGLineCap
+
+  case colorRenderingIntent
+  public typealias ColorRenderingIntentArgs = CGColorRenderingIntent
+
+  case globalAlpha
+  public typealias GlobalAlphaArgs = CGFloat
+
+  case strokeColor
+  public typealias StrokeColorArgs = BCRGBColor
+
+  case strokeAlpha
+  public typealias StrokeAlphaArgs = CGFloat
+
   case strokeNone
-  case fillColor // (RGBACGColor)
-  case fillAlpha // (CGFloat)
-  case fillNone
-  case fillRule // (CGPathFillRule)
+  public typealias StrokeNoneArgs = NoArgs
 
-  case linearGradient // (id: UInt32, LinearGradientDrawingOptions)
-  case radialGradient // (id: UInt32, RadialGradientDrawingOptions)
-  case fillLinearGradient // (id: UInt32, LinearGradientDrawingOptions)
-  case fillRadialGradient // (id: UInt32, RadialGradientDrawingOptions)
-  case strokeLinearGradient // (id: UInt32, LinearGradientDrawingOptions)
-  case strokeRadialGradient // (id: UInt32, RadialGradientDrawingOptions)
-  case subrouteWithId // (id: UInt32)
-  case shadow // (Shadow)
-  case blendMode // (CGBlendMode)
+  case fillColor
+  public typealias FillColorArgs = BCRGBColor
+
+  case fillAlpha
+  public typealias FillAlphaArgs = CGFloat
+
+  case fillNone
+  public typealias FillNoneArgs = NoArgs
+
+  case fillRule
+  public typealias FillRuleArgs = BCFillRule
+
+  case linearGradient
+  public typealias LinearGradientArgs = (
+    id: UInt32, BCLinearGradientDrawingOptions
+  )
+
+  case radialGradient
+  public typealias RadialGradientArgs = (
+    id: UInt32, BCRadialGradientDrawingOptions
+  )
+
+  case fillLinearGradient
+  public typealias FillLinearGradientArgs = (
+    id: UInt32, BCLinearGradientDrawingOptions
+  )
+
+  case fillRadialGradient
+  public typealias FillRadialGradientArgs = (
+    id: UInt32, BCRadialGradientDrawingOptions
+  )
+
+  case strokeLinearGradient
+  public typealias StrokeLinearGradientArgs = (
+    id: UInt32, BCLinearGradientDrawingOptions
+  )
+
+  case strokeRadialGradient
+  public typealias StrokeRadialGradientArgs = (
+    id: UInt32, BCRadialGradientDrawingOptions
+  )
+
+  case subrouteWithId
+  public typealias SubrouteWithIdArgs = UInt32
+
+  case shadow
+  public typealias ShadowArgs = BCShadow
+
+  case blendMode
+  public typealias BlendModeArgs = CGBlendMode
 
   case beginTransparencyLayer
+  public typealias BeginTransparencyLayerArgs = NoArgs
+
   case endTransparencyLayer
+  public typealias EndTransparencyLayerArgs = NoArgs
 }
