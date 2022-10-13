@@ -528,6 +528,7 @@ private func processCommandKind(
         point(for: $0.cp2, currentPoint),
         point(for: $0.to, currentPoint)
       )
+      cgpath.addCurve(to: to, control1: cp1, control2: cp2)
       currentPoint = to
       prevCurveControlPoint.value = cp2
       return .curveTo(cp1, cp2, to)
@@ -550,6 +551,7 @@ private func processCommandKind(
         point(for: $0.cp2, currentPoint),
         point(for: $0.to, currentPoint)
       )
+      cgpath.addCurve(to: to, control1: cp1, control2: cp2)
       currentPoint = to
       prevCurveControlPoint.value = cp2
       return .curveTo(cp1, cp2, to)
@@ -565,6 +567,7 @@ private func processCommandKind(
         modificator = { $0.x += x.cgfloat }
       }
       let point = modified(current, modificator)
+      cgpath.addLine(to: point)
       currentPoint = point
       return .lineTo(point)
     }
@@ -579,6 +582,7 @@ private func processCommandKind(
         modificator = { $0.y += y.cgfloat }
       }
       let point = modified(current, modificator)
+      cgpath.addLine(to: point)
       currentPoint = point
       return .lineTo(point)
     }
