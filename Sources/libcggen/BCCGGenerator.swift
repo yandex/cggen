@@ -3,51 +3,113 @@ import BCCommon
 import CoreGraphics
 import Foundation
 
-private protocol ByteCodable {
-  var byteCode: [UInt8] { get }
+typealias Bytecode = [UInt8]
+
+private protocol BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode)
 }
 
-extension UInt32: ByteCodable {
-  var byteCode: [UInt8] {
-    withUnsafeBytes(of: littleEndian, Array.init)
+private func >>(_: (), _: inout Bytecode) {}
+
+private func >> <T: BytecodeEncodable>(value: T, bytecode: inout Bytecode) {
+  value.encode(to: &bytecode)
+}
+
+private func >> <
+  T0: BytecodeEncodable, T1: BytecodeEncodable
+>(value: (T0, T1), bytecode: inout Bytecode) {
+  value.0 >> bytecode
+  value.1 >> bytecode
+}
+
+private func >> <
+  T0: BytecodeEncodable, T1: BytecodeEncodable, T2: BytecodeEncodable
+>(value: (T0, T1, T2), bytecode: inout Bytecode) {
+  value.0 >> bytecode
+  value.1 >> bytecode
+  value.2 >> bytecode
+}
+
+private func >> <
+  T0: BytecodeEncodable, T1: BytecodeEncodable,
+  T2: BytecodeEncodable, T3: BytecodeEncodable
+>(value: (T0, T1, T2, T3), bytecode: inout Bytecode) {
+  value.0 >> bytecode
+  value.1 >> bytecode
+  value.2 >> bytecode
+  value.3 >> bytecode
+}
+
+private func >> <
+  T0: BytecodeEncodable, T1: BytecodeEncodable, T2: BytecodeEncodable,
+  T3: BytecodeEncodable, T4: BytecodeEncodable
+>(value: (T0, T1, T2, T3, T4), bytecode: inout Bytecode) {
+  value.0 >> bytecode
+  value.1 >> bytecode
+  value.2 >> bytecode
+  value.3 >> bytecode
+  value.4 >> bytecode
+}
+
+extension UInt8: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    bytecode.append(self)
   }
 }
 
-extension CGFloat: ByteCodable {
-  var byteCode: [UInt8] {
-    Float32(self).bitPattern.byteCode
+extension UInt32: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    withUnsafeBytes(of: littleEndian) { bytecode.append(contentsOf: $0) }
   }
 }
 
-extension Bool: ByteCodable {
-  var byteCode: [UInt8] {
-    [self ? 1 : 0]
+extension CGFloat: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    Float32(self).bitPattern >> bytecode
   }
 }
 
-extension CGPoint: ByteCodable {
-  var byteCode: [UInt8] {
-    x.byteCode + y.byteCode
+extension Bool: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    bytecode.append(self ? 1 : 0)
   }
 }
 
-extension Array: ByteCodable where Element: ByteCodable {
-  var byteCode: [UInt8] {
-    UInt32(count).byteCode + flatMap(\.byteCode)
+extension CGPoint: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    (x, y) >> bytecode
   }
 }
 
-extension CGRect: ByteCodable {
-  var byteCode: [UInt8] {
-    origin.byteCode + size.byteCode
+extension CGSize: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    (width, height) >> bytecode
   }
 }
 
-extension BCFillRule: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
+extension Array: BytecodeEncodable where Element: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    UInt32(count) >> bytecode
+    forEach { $0 >> bytecode }
   }
+}
 
+extension CGRect: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    origin >> bytecode
+    size >> bytecode
+  }
+}
+
+extension RawRepresentable where RawValue: FixedWidthInteger {
+  func encode(to bytecode: inout Bytecode) {
+    bytecode.append(UInt8(rawValue))
+  }
+}
+
+extension Command: BytecodeEncodable {}
+
+extension BCFillRule: BytecodeEncodable {
   init(_ cg: CGPathFillRule) {
     switch cg {
     case .winding:
@@ -60,98 +122,87 @@ extension BCFillRule: ByteCodable {
   }
 }
 
-extension DashPattern: ByteCodable {
-  var byteCode: [UInt8] {
-    phase.byteCode + lengths.byteCode
+extension BCDashPattern: BytecodeEncodable {
+  init(_ other: DashPattern) {
+    self.init(phase: other.phase, lengths: other.lengths)
+  }
+
+  func encode(to bytecode: inout Bytecode) {
+    (phase, lengths) >> bytecode
   }
 }
 
-extension CGPathDrawingMode: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
+extension CGPathDrawingMode: BytecodeEncodable {}
+
+extension CGAffineTransform: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    [a, b, c, d, tx, ty].forEach { $0 >> bytecode }
   }
 }
 
-extension CGAffineTransform: ByteCodable {
-  var byteCode: [UInt8] {
-    [a, b, c, d, tx, ty].flatMap(\.byteCode)
-  }
-}
+extension CGLineJoin: BytecodeEncodable {}
 
-extension CGLineJoin: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
-  }
-}
+extension CGLineCap: BytecodeEncodable {}
 
-extension CGLineCap: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
-  }
-}
-
-extension CGColorRenderingIntent: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
-  }
-}
+extension CGColorRenderingIntent: BytecodeEncodable {}
 
 private func zipComponent(val: CGFloat) -> UInt8 {
   UInt8(val * CGFloat(UInt8.max))
 }
 
-extension RGBACGColor {
-  var byteCode: [UInt8] {
-    [red, green, blue].map(zipComponent) + alpha.byteCode
+extension BCRGBColor: BytecodeEncodable {
+  init(_ other: RGBCGColor) {
+    let denormed = other.denorm(UInt8.self)
+    self.init(r: denormed.red, g: denormed.green, b: denormed.blue)
+  }
+
+  func encode(to bytecode: inout Bytecode) {
+    (red, green, blue) >> bytecode
   }
 }
 
-extension RGBCGColor {
-  var byteCode: [UInt8] {
-    [red, green, blue].map(zipComponent)
+extension BCRGBAColor: BytecodeEncodable {
+  init(_ other: RGBACGColor) {
+    let denormed = other.denormColor(UInt8.self)
+    self.init(
+      r: denormed.red, g: denormed.green, b: denormed.blue,
+      alpha: denormed.alpha
+    )
+  }
+
+  func encode(to bytecode: inout Bytecode) {
+    (red, green, blue, alpha) >> bytecode
   }
 }
 
-// swiftformat:disable redundantSelf
-extension ByteCodable where Self == [(CGFloat, RGBACGColor)] {
-  var byteCode: [UInt8] {
-    UInt32(self.count).byteCode + self.flatMap { $0.0.byteCode + $0.1.byteCode }
+private func >>(value: [(CGFloat, RGBACGColor)], bytecode: inout Bytecode) {
+  UInt32(value.count) >> bytecode
+  value.forEach { ($0.0, BCRGBAColor($0.1)) >> bytecode }
+}
+
+extension Gradient: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    locationAndColors >> bytecode
   }
 }
 
-// swiftformat:enable redundantSelf
+extension BCShadow: BytecodeEncodable {
+  init(_ other: Shadow) {
+    self.init(
+      offset: other.offset, blur: other.blur, color: BCRGBAColor(other.color)
+    )
+  }
 
-extension Gradient: ByteCodable {
-  var byteCode: [UInt8] {
-    locationAndColors.byteCode
+  func encode(to bytecode: inout Bytecode) {
+    (offset, blur, color) >> bytecode
   }
 }
 
-extension CGSize: ByteCodable {
-  var byteCode: [UInt8] {
-    width.byteCode + height.byteCode
-  }
-}
+extension CGBlendMode: BytecodeEncodable {}
 
-extension Shadow: ByteCodable {
-  var byteCode: [UInt8] {
-    offset.byteCode + blur.byteCode + color.byteCode
-  }
-}
+extension CGGradientDrawingOptions: BytecodeEncodable {}
 
-extension CGBlendMode: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
-  }
-}
-
-extension CGGradientDrawingOptions: ByteCodable {
-  var byteCode: [UInt8] {
-    [UInt8(rawValue)]
-  }
-}
-
-extension BCCoordinateUnits: ByteCodable {
+extension BCCoordinateUnits: BytecodeEncodable {
   init(_ units: DrawStep.Units) {
     switch units {
     case .objectBoundingBox:
@@ -160,11 +211,9 @@ extension BCCoordinateUnits: ByteCodable {
       self = .userSpaceOnUse
     }
   }
-
-  var byteCode: [UInt8] { [rawValue] }
 }
 
-extension BCLinearGradientDrawingOptions: ByteCodable {
+extension BCLinearGradientDrawingOptions: BytecodeEncodable {
   init(_ opts: DrawStep.LinearGradientDrawingOptions) {
     self.init(
       start: opts.startPoint,
@@ -173,16 +222,19 @@ extension BCLinearGradientDrawingOptions: ByteCodable {
       units: BCCoordinateUnits(opts.units)
     )
   }
-  
-  var byteCode: [UInt8] {
-    start.byteCode +
-    end.byteCode +
-    options.byteCode +
-    units.byteCode
+
+  func encode(to bytecode: inout Bytecode) {
+    (start, end, options, units) >> bytecode
   }
 }
 
-extension BCRadialGradientDrawingOptions: ByteCodable {
+extension BCCubicCurve: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    (control1, control2, to) >> bytecode
+  }
+}
+
+extension BCRadialGradientDrawingOptions: BytecodeEncodable {
   init(_ opts: DrawStep.RadialGradientDrawingOptions) {
     self.init(
       startCenter: opts.startCenter,
@@ -192,159 +244,189 @@ extension BCRadialGradientDrawingOptions: ByteCodable {
       drawingOptions: opts.options
     )
   }
-  
-  var byteCode: [UInt8] {
-    startCenter.byteCode +
-    startRadius.byteCode +
-    endCenter.byteCode +
-    endRadius.byteCode +
-    drawingOptions.byteCode
+
+  func encode(to bytecode: inout Bytecode) {
+    (startCenter, startRadius, endCenter, endRadius, drawingOptions) >> bytecode
   }
 }
 
-private func byteCommand(_ code: Command, _ args: ByteCodable...) -> [UInt8] {
-  [code.rawValue] + args.flatMap(\.byteCode)
-}
-
-private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
-  steps.flatMap { (step: DrawStep) -> [UInt8] in
+private func generateSteps(
+  steps: [DrawStep],
+  context: Context,
+  bytecode: inout Bytecode
+) {
+  func encode<T>(
+    _ command: Command,
+    _: T.Type, _ value: T, _ encoder: (T, inout Bytecode) -> Void
+  ) {
+    command >> bytecode
+    encoder(value, &bytecode)
+  }
+  func gradient(
+    _ name: String, _ options: DrawStep.LinearGradientDrawingOptions
+  ) -> (UInt32, BCLinearGradientDrawingOptions) {
+    (context.gradientsIds[name]!, BCLinearGradientDrawingOptions(options))
+  }
+  func gradient(
+    _ name: String, _ options: DrawStep.RadialGradientDrawingOptions
+  ) -> (UInt32, BCRadialGradientDrawingOptions) {
+    (context.gradientsIds[name]!, BCRadialGradientDrawingOptions(options))
+  }
+  steps.forEach { (step: DrawStep) in
     switch step {
     case .saveGState:
-      return byteCommand(.saveGState)
+      encode(.saveGState, Command.SaveGStateArgs.self, (), >>)
     case .restoreGState:
-      return byteCommand(.restoreGState)
+      encode(.restoreGState, Command.RestoreGStateArgs.self, (), >>)
     case let .moveTo(to):
-      return byteCommand(.moveTo, to)
+      encode(.moveTo, Command.MoveToArgs.self, to, >>)
     case let .curveTo(c1, c2, end):
-      return byteCommand(.curveTo, c1, c2, end)
+      encode(
+        .curveTo,
+        Command.CurveToArgs.self,
+        BCCubicCurve(control1: c1, control2: c2, to: end), >>
+      )
     case let .lineTo(to):
-      return byteCommand(.lineTo, to)
+      encode(.lineTo, Command.LineToArgs.self, to, >>)
     case let .appendRectangle(rect):
-      return byteCommand(.appendRectangle, rect)
+      encode(.appendRectangle, Command.AppendRectangleArgs.self, rect, >>)
     case let .appendRoundedRect(rect, rx, ry):
-      return byteCommand(.appendRoundedRect, rect, rx, ry)
+      encode(
+        .appendRoundedRect,
+        Command.AppendRoundedRectArgs.self,
+        (rect, rx: rx, ry: ry), >>
+      )
     case let .addArc(center, radius, startAngle, endAngle, clockwise):
-      return byteCommand(
+      encode(
         .addArc,
-        center,
-        radius,
-        startAngle,
-        endAngle,
-        clockwise
+        Command.AddArcArgs.self,
+        (center, radius, startAngle, endAngle, clockwise), >>
       )
     case .closePath:
-      return byteCommand(.closePath)
+      encode(.closePath, Command.ClosePathArgs.self, (), >>)
     case .replacePathWithStrokePath:
-      return byteCommand(.replacePathWithStrokePath)
+      encode(
+        .replacePathWithStrokePath,
+        Command.ReplacePathWithStrokePathArgs.self, (), >>
+      )
     case let .lines(lines):
-      return byteCommand(.lines, lines)
+      encode(.lines, Command.LinesArgs.self, lines, >>)
     case .clip:
-      return byteCommand(.clip)
+      encode(.clip, Command.ClipArgs.self, (), >>)
     case let .clipWithRule(rule):
-      return byteCommand(.clipWithRule, BCFillRule(rule))
+      encode(.clipWithRule, Command.ClipWithRuleArgs.self, BCFillRule(rule), >>)
     case let .clipToRect(rect):
-      return byteCommand(.clipToRect, rect)
+      encode(.clipToRect, Command.ClipToRectArgs.self, rect, >>)
     case let .dash(pattern):
-      return byteCommand(.dash, pattern)
+      encode(.dash, Command.DashArgs.self, BCDashPattern(pattern), >>)
     case let .dashPhase(phase):
-      return byteCommand(.dashPhase, phase)
+      encode(.dashPhase, Command.DashPhaseArgs.self, phase, >>)
     case let .dashLenghts(lenghts):
-      return byteCommand(.dashLenghts, lenghts)
+      encode(.dashLenghts, Command.DashLenghtsArgs.self, lenghts, >>)
     case .fill:
-      return byteCommand(.fill)
+      encode(.fill, Command.FillArgs.self, (), >>)
     case let .fillWithRule(rule):
-      return byteCommand(.fillWithRule, BCFillRule(rule))
+      encode(.fillWithRule, Command.FillWithRuleArgs.self, BCFillRule(rule), >>)
     case let .fillEllipse(rect):
-      return byteCommand(.fillEllipse, rect)
+      encode(.fillEllipse, Command.FillEllipseArgs.self, rect, >>)
     case .stroke:
-      return byteCommand(.stroke)
+      encode(.stroke, Command.StrokeArgs.self, (), >>)
     case let .drawPath(mode):
-      return byteCommand(.drawPath, mode)
+      encode(.drawPath, Command.DrawPathArgs.self, mode, >>)
     case let .addEllipse(rect):
-      return byteCommand(.addEllipse, rect)
+      encode(.addEllipse, Command.AddEllipseArgs.self, rect, >>)
     case let .concatCTM(transform):
-      return byteCommand(.concatCTM, transform)
+      encode(.concatCTM, Command.ConcatCTMArgs.self, transform, >>)
     case let .flatness(f):
-      return byteCommand(.flatness, f)
+      encode(.flatness, Command.FlatnessArgs.self, f, >>)
     case let .lineWidth(width):
-      return byteCommand(.lineWidth, width)
+      encode(.lineWidth, Command.LineWidthArgs.self, width, >>)
     case let .lineJoinStyle(lineJoin):
-      return byteCommand(.lineJoinStyle, lineJoin)
+      encode(.lineJoinStyle, Command.LineJoinStyleArgs.self, lineJoin, >>)
     case let .lineCapStyle(cap):
-      return byteCommand(.lineCapStyle, cap)
+      encode(.lineCapStyle, Command.LineCapStyleArgs.self, cap, >>)
     case let .colorRenderingIntent(intent):
-      return byteCommand(.colorRenderingIntent, intent)
+      encode(
+        .colorRenderingIntent,
+        Command.ColorRenderingIntentArgs.self, intent, >>
+      )
     case let .globalAlpha(alpha):
-      return byteCommand(.globalAlpha, alpha)
+      encode(.globalAlpha, Command.GlobalAlphaArgs.self, alpha, >>)
     case let .strokeColor(color):
-      return byteCommand(.strokeColor) + color.byteCode
+      encode(.strokeColor, Command.StrokeColorArgs.self, BCRGBColor(color), >>)
     case let .strokeAlpha(alpha):
-      return byteCommand(.strokeAlpha, alpha)
+      encode(.strokeAlpha, Command.StrokeAlphaArgs.self, alpha, >>)
     case let .fillColor(color):
-      return byteCommand(.fillColor) + color.byteCode
+      encode(.fillColor, Command.FillColorArgs.self, BCRGBColor(color), >>)
     case let .fillAlpha(alpha):
-      return byteCommand(.fillAlpha, alpha)
+      encode(.fillAlpha, Command.FillAlphaArgs.self, alpha, >>)
     case .strokeNone:
-      return byteCommand(.strokeNone)
+      encode(.strokeNone, Command.StrokeNoneArgs.self, (), >>)
     case .fillNone:
-      return byteCommand(.fillNone)
+      encode(.fillNone, Command.FillNoneArgs.self, (), >>)
     case let .fillRule(rule):
-      return byteCommand(.fillRule, BCFillRule(rule))
+      encode(.fillRule, Command.FillRuleArgs.self, BCFillRule(rule), >>)
     case .fillAndStroke:
-      return byteCommand(.fillAndStroke)
+      encode(.fillAndStroke, Command.FillAndStrokeArgs.self, (), >>)
     case .setGlobalAlphaToFillAlpha:
-      return byteCommand(.setGlobalAlphaToFillAlpha)
+      encode(
+        .setGlobalAlphaToFillAlpha,
+        Command.SetGlobalAlphaToFillAlphaArgs.self, (), >>
+      )
     case let .linearGradient(name, options):
-      return byteCommand(
+      encode(
         .linearGradient,
-        context.gradientsIds[name]!,
-        BCLinearGradientDrawingOptions(options)
+        Command.LinearGradientArgs.self, gradient(name, options), >>
       )
     case let .radialGradient(name, options):
-      return byteCommand(
+      encode(
         .radialGradient,
-        context.gradientsIds[name]!,
-        BCRadialGradientDrawingOptions(options)
+        Command.RadialGradientArgs.self, gradient(name, options), >>
       )
     case let .fillLinearGradient(name, options):
-      return byteCommand(
+      encode(
         .fillLinearGradient,
-        context.gradientsIds[name]!,
-        BCLinearGradientDrawingOptions(options)
+        Command.FillLinearGradientArgs.self, gradient(name, options), >>
       )
     case let .fillRadialGradient(name, options):
-      return byteCommand(
+      encode(
         .fillRadialGradient,
-        context.gradientsIds[name]!,
-        BCRadialGradientDrawingOptions(options)
+        Command.FillRadialGradientArgs.self, gradient(name, options), >>
       )
     case let .strokeLinearGradient(name, options):
-      return byteCommand(
+      encode(
         .strokeLinearGradient,
-        context.gradientsIds[name]!,
-        BCLinearGradientDrawingOptions(options)
+        Command.StrokeLinearGradientArgs.self, gradient(name, options), >>
       )
     case let .strokeRadialGradient(name, options):
-      return byteCommand(
+      encode(
         .strokeRadialGradient,
-        context.gradientsIds[name]!,
-        BCRadialGradientDrawingOptions(options)
+        Command.StrokeRadialGradientArgs.self, gradient(name, options), >>
       )
     case let .subrouteWithName(name):
-      return byteCommand(.subrouteWithId, context.subroutesIds[name]!)
+      encode(
+        .subrouteWithId,
+        Command.SubrouteWithIdArgs.self, context.subroutesIds[name]!, >>
+      )
     case let .shadow(shadow):
-      return byteCommand(.shadow, shadow)
+      encode(.shadow, Command.ShadowArgs.self, BCShadow(shadow), >>)
     case let .blendMode(mode):
-      return byteCommand(.blendMode, mode)
+      encode(.blendMode, Command.BlendModeArgs.self, mode, >>)
     case .beginTransparencyLayer:
-      return byteCommand(.beginTransparencyLayer)
+      encode(
+        .beginTransparencyLayer,
+        Command.BeginTransparencyLayerArgs.self, (), >>
+      )
     case .endTransparencyLayer:
-      return byteCommand(.endTransparencyLayer)
+      encode(
+        .endTransparencyLayer,
+        Command.EndTransparencyLayerArgs.self, (), >>
+      )
     case let .composite(steps):
-      return generateSteps(steps: steps, context: context)
+      generateSteps(steps: steps, context: context, bytecode: &bytecode)
     case .endPath:
-      // .endPath is rather important, this should be fixed in future
-      return []
+      // FIXME: Implement end path
+      break
     case .fillColorSpace, .strokeColorSpace:
       fatalError("Not implemented")
     }
@@ -353,39 +435,57 @@ private func generateSteps(steps: [DrawStep], context: Context) -> [UInt8] {
 
 private func generateSubroutes(
   subroutes: [String: DrawRoutine],
-  context: Context
-) -> [UInt8] {
-  var res = UInt32(subroutes.count).byteCode
+  context: Context,
+  bytecode: inout Bytecode
+) {
+  UInt32(subroutes.count) >> bytecode
   for subroute in subroutes {
     let counter = UInt32(context.subroutesIds.count)
     context.subroutesIds[subroute.key] = counter
-    let subrouteBytecode = generateRoute(
+    counter >> bytecode
+
+    var subrouteBytecode = Bytecode()
+    generateRoute(
       route: subroute.value,
-      context: context
+      context: context,
+      bytecode: &subrouteBytecode
     )
-    res += counter.byteCode + UInt32(subrouteBytecode.count)
-      .byteCode + subrouteBytecode
+    UInt32(subrouteBytecode.count) >> bytecode
+    bytecode.append(contentsOf: subrouteBytecode)
   }
-  return res
 }
 
 private func generateGradients(
   gradients: [String: Gradient],
-  context: Context
-) -> [UInt8] {
-  var res = UInt32(gradients.count).byteCode
+  context: Context,
+  bytecode: inout Bytecode
+) {
+  UInt32(gradients.count) >> bytecode
+  var counter: UInt32 = 0
   for gradient in gradients {
-    let counter = UInt32(context.gradientsIds.count)
+    counter += 1
     context.gradientsIds[gradient.key] = counter
-    res += counter.byteCode + gradient.value.byteCode
+    counter >> bytecode
+    gradient.value >> bytecode
   }
-  return res
 }
 
-private func generateRoute(route: DrawRoutine, context: Context) -> [UInt8] {
-  generateGradients(gradients: route.gradients, context: context)
-    + generateSubroutes(subroutes: route.subroutines, context: context)
-    + generateSteps(steps: route.steps, context: context)
+private func generateRoute(
+  route: DrawRoutine,
+  context: Context,
+  bytecode: inout Bytecode
+) {
+  generateGradients(
+    gradients: route.gradients,
+    context: context,
+    bytecode: &bytecode
+  )
+  generateSubroutes(
+    subroutes: route.subroutines,
+    context: context,
+    bytecode: &bytecode
+  )
+  generateSteps(steps: route.steps, context: context, bytecode: &bytecode)
 }
 
 private class Context {
@@ -394,7 +494,9 @@ private class Context {
 }
 
 func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
-  generateRoute(route: route, context: Context())
+  var bytecode = Bytecode()
+  generateRoute(route: route, context: Context(), bytecode: &bytecode)
+  return bytecode
 }
 
 struct BCCGGenerator: CoreGraphicsGenerator {
@@ -417,8 +519,9 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     static const uint8_t \(bytecodeName)[] = {
       \(bytecode.map(\.description).joined(separator: ", "))
     };
-    \(params.style.drawingHandlerPrefix)void \(params.prefix)Draw\(image.name
-      .upperCamelCase)ImageInContext(CGContextRef context) {
+    \(params.style.drawingHandlerPrefix)void \(params.prefix)Draw\(
+      image.name.upperCamelCase
+    )ImageInContext(CGContextRef context) {
       runBytecode(context, \(bytecodeName), \(bytecode.count));
     }
     """ + params.descriptorLines(for: image).joined(separator: "\n")

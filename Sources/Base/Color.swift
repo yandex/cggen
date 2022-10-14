@@ -38,13 +38,13 @@ public struct RGBAColorType<Component: Numeric, Alpha: Numeric>: Equatable {
 
   @inlinable
   public func map<C: Numeric, A: Numeric>(
-    Component: (Component) -> C,
+    component: (Component) -> C,
     alphaT: (Alpha) -> A
   ) -> RGBAColorType<C, A> {
     .init(
-      red: Component(red),
-      green: Component(green),
-      blue: Component(blue),
+      red: component(red),
+      green: component(green),
+      blue: component(blue),
       alpha: alphaT(alpha)
     )
   }
@@ -71,7 +71,7 @@ extension RGBAColorType where Alpha == Ø {
 
   @inlinable
   public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBColor<U> {
-    map(Component: transform, alphaT: identity)
+    map(component: transform, alphaT: identity)
   }
 
   @inlinable
@@ -97,7 +97,7 @@ extension RGBAColorType where Alpha == Ø, Component: FixedWidthInteger {
 extension RGBAColorType where Component == Alpha {
   @inlinable
   public func map<U: Numeric>(_ transform: (Component) -> U) -> RGBAColor<U> {
-    map(Component: transform, alphaT: transform)
+    map(component: transform, alphaT: transform)
   }
 
   @inlinable
@@ -121,5 +121,23 @@ extension RGBAColorType where Component: FixedWidthInteger, Alpha == Component {
     _: F.Type = F.self
   ) -> RGBAColor<F> {
     map { F($0) / F(Component.max) }
+  }
+}
+
+extension RGBAColorType where Component: BinaryFloatingPoint {
+  @inlinable
+  public func denormColor<F: FixedWidthInteger>(
+    _: F.Type = F.self
+  ) -> RGBAColorType<F, Alpha> {
+    map(component: { F($0 * Component(F.max)) }, alphaT: identity)
+  }
+}
+
+extension RGBAColorType where Component: BinaryFloatingPoint, Alpha == Ø {
+  @inlinable
+  public func denorm<F: FixedWidthInteger>(
+    _: F.Type = F.self
+  ) -> RGBColor<F> {
+    map { F($0 * Component(F.max)) }
   }
 }

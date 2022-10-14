@@ -176,7 +176,7 @@ class SVGShadowTests: XCTestCase {
   func testSimpleShadow() {
     test(svg: "shadow_simple", tolerance: 0.019)
   }
-  
+
   func testShadowColors() {
     test(svg: "shadow_colors", tolerance: 0.016)
   }
