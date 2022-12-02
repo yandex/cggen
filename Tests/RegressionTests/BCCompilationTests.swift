@@ -77,6 +77,7 @@ class BCCompilationTests: XCTestCase {
       "lines.svg",
       "shapes.svg",
       "transforms.svg",
+//      "path_smooth_curve_defs.svg",
     ].map { svgSamplesPath.appendingPathComponent($0) }
     try test(
       snapshot: {

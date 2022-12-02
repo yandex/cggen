@@ -1,4 +1,4 @@
-import Foundation
+import CoreGraphics
 
 /*
  A: [T]                       = size: UInt32, A[0], A[1], ..., A[size-1]
@@ -26,7 +26,7 @@ import Foundation
  Shadow                       = offset: CGSize, blur: CGFloat, color: BCRGBAColor
  CGBlendMode                  = 0..27    (rawValue)
  */
-public enum Command: UInt8 {
+public enum DrawCommand: UInt8 {
   public typealias NoArgs = ()
 
   case saveGState = 0
@@ -193,4 +193,54 @@ public enum Command: UInt8 {
 
   case endTransparencyLayer
   public typealias EndTransparencyLayerArgs = NoArgs
+}
+
+public enum PathCommand: UInt8 {
+  public typealias NoArgs = ()
+
+  case moveTo = 0
+  public typealias MoveToArgs = CGPoint
+
+  case curveTo
+  public typealias CurveToArgs = BCCubicCurve
+
+  case lineTo
+  public typealias LineToArgs = CGPoint
+
+  case appendRectangle
+  public typealias AppendRectangleArgs = CGRect
+
+  case appendRoundedRect
+  public typealias AppendRoundedRectArgs = (CGRect, rx: CGFloat, ry: CGFloat)
+
+  case addArc
+  public typealias AddArcArgs = (
+    center: CGPoint, radius: CGFloat,
+    startAngle: CGFloat, endAngle: CGFloat, clockwise: Bool
+  )
+
+  case closePath
+  public typealias ClosePathArgs = NoArgs
+
+  case lines
+  public typealias LinesArgs = [CGPoint]
+
+  case addEllipse
+  public typealias AddEllipseArgs = CGRect
+}
+
+extension DrawCommand {
+  public init(_ pathCommand: PathCommand) {
+    switch pathCommand {
+    case .moveTo: self = .moveTo
+    case .curveTo: self = .curveTo
+    case .lineTo: self = .lineTo
+    case .appendRectangle: self = .appendRectangle
+    case .appendRoundedRect: self = .appendRoundedRect
+    case .addArc: self = .addArc
+    case .closePath: self = .closePath
+    case .lines: self = .lines
+    case .addEllipse: self = .addEllipse
+    }
+  }
 }

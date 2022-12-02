@@ -438,7 +438,7 @@ func testBC(
   tolerance: Double
 ) throws {
   let reference = try referenceRenderer(path)
-  let bytecode = try getBytecode(from: path)
+  let bytecode = try getImageBytecode(from: path)
 
   let cs = CGColorSpaceCreateDeviceRGB()
   guard let context = CGContext(

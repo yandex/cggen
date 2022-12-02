@@ -11,6 +11,14 @@ public func runBytecode(_ context: CGContext, fromData data: Data) throws {
   }
 }
 
+public func runPathBytecode(_ path: CGMutablePath, fromData data: Data) throws {
+  let sz = data.count
+  try data.withUnsafeBytes {
+    let ptr = $0.baseAddress!
+    try PathBytecodeRunner.run(path, ptr, sz)
+  }
+}
+
 @_cdecl("runBytecode")
 public func runBytecode(
   _ context: CGContext,
@@ -19,6 +27,19 @@ public func runBytecode(
 ) {
   do {
     try BytecodeRunner.run(context, start, len)
+  } catch let t {
+    assertionFailure("Failed to run bytecode with error: \(t)")
+  }
+}
+
+@_cdecl("runPathBytecode")
+public func runPathBytecode(
+  _ path: CGMutablePath,
+  _ start: UnsafePointer<UInt8>,
+  _ len: Int
+) {
+  do {
+    try PathBytecodeRunner.run(path, start, len)
   } catch let t {
     assertionFailure("Failed to run bytecode with error: \(t)")
   }
@@ -49,6 +70,98 @@ extension BCRGBAColor {
 extension BCRGBColor {
   var norm: (r: CGFloat, g: CGFloat, b: CGFloat) {
     (normalize(red), normalize(green), normalize(blue))
+  }
+}
+
+public struct PathBytecodeRunner {
+  private var programCounter: Bytecode
+  private var exec: PathCommandExecution
+
+  fileprivate init(bytecode: Bytecode, exec: PathCommandExecution) {
+    self.programCounter = bytecode
+    self.exec = exec
+  }
+
+  static func run(
+    _ path: CGMutablePath,
+    _ start: UnsafeRawPointer,
+    _ len: Int
+  ) throws {
+    let bytecode = Bytecode(base: start, count: len)
+    var runner = PathBytecodeRunner(bytecode: bytecode, exec: .init(path: path))
+    try runner.run()
+  }
+
+  mutating func run() throws {
+    while programCounter.count > 0 {
+      let command = try PathCommand(bytecode: &programCounter)
+      switch command {
+      case .moveTo:
+        try exec.moveTo(read())
+      case .curveTo:
+        try exec.curveTo(read())
+      case .lineTo:
+        try exec.lineTo(read())
+      case .appendRectangle:
+        try exec.appendRectangle(read())
+      case .appendRoundedRect:
+        try exec.appendRoundedRect(read())
+      case .addArc:
+        try exec.addArc(read())
+      case .closePath:
+        try exec.closePath(read())
+      case .lines:
+        try exec.lines(read())
+      case .addEllipse:
+        try exec.addEllipse(read())
+      }
+    }
+  }
+
+  func read() throws {}
+
+  mutating func read<T: BytecodeDecodable>(_: T.Type = T.self) throws -> T {
+    try T(bytecode: &programCounter)
+  }
+
+  mutating func read<
+    T0: BytecodeDecodable, T1: BytecodeDecodable
+  >(
+    _: (T0, T1).Type = (T0, T1).self
+  ) throws -> (T0, T1) {
+    return try (
+      read(T0.self), read(T1.self)
+    )
+  }
+
+  mutating func read<
+    T0: BytecodeDecodable, T1: BytecodeDecodable, T2: BytecodeDecodable
+  >(
+    _: (T0, T1, T2).Type = (T0, T1, T2).self
+  ) throws -> (T0, T1, T2) {
+    return try (
+      read(T0.self), read(T1.self), read(T2.self)
+    )
+  }
+
+  mutating func read<
+    T0: BytecodeDecodable, T1: BytecodeDecodable, T2: BytecodeDecodable,
+    T3: BytecodeDecodable, T4: BytecodeDecodable
+  >(
+    _: (T0, T1, T2, T3, T4).Type = (T0, T1, T2, T3, T4).self
+  ) throws -> (T0, T1, T2, T3, T4) {
+    return try (
+      read(T0.self), read(T1.self), read(T2.self),
+      read(T3.self), read(T4.self)
+    )
+  }
+
+  mutating func readSubroute() throws -> Bytecode {
+    let sz = try Int(programCounter.read(type: BCSizeType.self))
+    guard sz <= programCounter.count else {
+      throw Error.outOfBounds(left: programCounter.count, required: sz)
+    }
+    return programCounter.advance(count: sz)
   }
 }
 
@@ -93,7 +206,7 @@ public struct BytecodeRunner {
     // MARK: Executing commands
 
     while programCounter.count > 0 {
-      let command = try Command(bytecode: &programCounter)
+      let command = try DrawCommand(bytecode: &programCounter)
       switch command {
       case .addArc:
         try exec.addArc(read())
@@ -320,11 +433,11 @@ private struct CommandExecution {
     return try .make(gradient, colorSpace: ctx.fillColorSpace)
   }
 
-  func moveTo(_ args: Command.MoveToArgs) {
+  func moveTo(_ args: DrawCommand.MoveToArgs) {
     cg.move(to: args)
   }
 
-  func curveTo(_ args: Command.CurveToArgs) {
+  func curveTo(_ args: DrawCommand.CurveToArgs) {
     cg.addCurve(
       to: args.to,
       control1: args.control1,
@@ -332,15 +445,15 @@ private struct CommandExecution {
     )
   }
 
-  func lineTo(_ args: Command.LineToArgs) {
+  func lineTo(_ args: DrawCommand.LineToArgs) {
     cg.addLine(to: args)
   }
 
-  func appendRectangle(_ args: Command.AppendRectangleArgs) {
+  func appendRectangle(_ args: DrawCommand.AppendRectangleArgs) {
     cg.addRect(args)
   }
 
-  func appendRoundedRect(_ args: Command.AppendRoundedRectArgs) {
+  func appendRoundedRect(_ args: DrawCommand.AppendRoundedRectArgs) {
     let path = CGPath(
       roundedRect: args.0,
       cornerWidth: args.rx,
@@ -350,7 +463,7 @@ private struct CommandExecution {
     cg.addPath(path)
   }
 
-  func addArc(_ args: Command.AddArcArgs) {
+  func addArc(_ args: DrawCommand.AddArcArgs) {
     cg.addArc(
       center: args.center,
       radius: args.radius,
@@ -360,112 +473,112 @@ private struct CommandExecution {
     )
   }
 
-  func lines(_ args: Command.LinesArgs) {
+  func lines(_ args: DrawCommand.LinesArgs) {
     cg.addLines(between: args)
   }
 
-  func clipWithRule(_ args: Command.ClipWithRuleArgs) {
+  func clipWithRule(_ args: DrawCommand.ClipWithRuleArgs) {
     cg.clip(using: .init(args))
   }
 
-  func clipToRect(_ args: Command.ClipToRectArgs) {
+  func clipToRect(_ args: DrawCommand.ClipToRectArgs) {
     cg.clip(to: args)
   }
 
-  mutating func dash(_ args: Command.DashArgs) {
+  mutating func dash(_ args: DrawCommand.DashArgs) {
     ctx.dash = .init(args)
     cg.setDash(ctx.dash)
   }
 
-  mutating func dashPhase(_ args: Command.DashPhaseArgs) {
+  mutating func dashPhase(_ args: DrawCommand.DashPhaseArgs) {
     ctx.dash.phase = args
     cg.setDash(ctx.dash)
   }
 
-  mutating func dashLenghts(_ args: Command.DashLenghtsArgs) {
+  mutating func dashLenghts(_ args: DrawCommand.DashLenghtsArgs) {
     ctx.dash.lengths = args
     cg.setDash(ctx.dash)
   }
 
-  func fillWithRule(_ args: Command.FillWithRuleArgs) {
+  func fillWithRule(_ args: DrawCommand.FillWithRuleArgs) {
     cg.fillPath(using: .init(args))
   }
 
-  func fillEllipse(_ args: Command.FillEllipseArgs) {
+  func fillEllipse(_ args: DrawCommand.FillEllipseArgs) {
     cg.fillEllipse(in: args)
   }
 
-  func drawPath(_ args: Command.DrawPathArgs) {
+  func drawPath(_ args: DrawCommand.DrawPathArgs) {
     cg.drawPath(using: args)
   }
 
-  func addEllipse(_ args: Command.AddEllipseArgs) {
+  func addEllipse(_ args: DrawCommand.AddEllipseArgs) {
     cg.addEllipse(in: args)
   }
 
-  func concatCTM(_ args: Command.ConcatCTMArgs) {
+  func concatCTM(_ args: DrawCommand.ConcatCTMArgs) {
     cg.concatenate(args)
   }
 
-  func flatness(_ args: Command.FlatnessArgs) {
+  func flatness(_ args: DrawCommand.FlatnessArgs) {
     cg.setFlatness(args)
   }
 
-  func lineWidth(_ args: Command.LineWidthArgs) {
+  func lineWidth(_ args: DrawCommand.LineWidthArgs) {
     cg.setLineWidth(args)
   }
 
-  func lineJoinStyle(_ args: Command.LineJoinStyleArgs) {
+  func lineJoinStyle(_ args: DrawCommand.LineJoinStyleArgs) {
     cg.setLineJoin(args)
   }
 
-  func lineCapStyle(_ args: Command.LineCapStyleArgs) {
+  func lineCapStyle(_ args: DrawCommand.LineCapStyleArgs) {
     cg.setLineCap(args)
   }
 
-  func colorRenderingIntent(_ args: Command.ColorRenderingIntentArgs) {
+  func colorRenderingIntent(_ args: DrawCommand.ColorRenderingIntentArgs) {
     cg.setRenderingIntent(args)
   }
 
-  func globalAlpha(_ args: Command.GlobalAlphaArgs) {
+  func globalAlpha(_ args: DrawCommand.GlobalAlphaArgs) {
     cg.setAlpha(args)
   }
 
-  mutating func strokeColor(_ args: Command.StrokeColorArgs) {
+  mutating func strokeColor(_ args: DrawCommand.StrokeColorArgs) {
     ctx.setStrokeColor(args)
   }
 
-  mutating func strokeAlpha(_ args: Command.StrokeAlphaArgs) {
+  mutating func strokeAlpha(_ args: DrawCommand.StrokeAlphaArgs) {
     ctx.setStrokeAlpha(args)
   }
 
-  mutating func fillColor(_ args: Command.FillColorArgs) {
+  mutating func fillColor(_ args: DrawCommand.FillColorArgs) {
     ctx.setFillColor(args)
   }
 
-  mutating func fillAlpha(_ args: Command.FillAlphaArgs) {
+  mutating func fillAlpha(_ args: DrawCommand.FillAlphaArgs) {
     ctx.setFillAlpha(args)
   }
 
-  mutating func fillRule(_ args: Command.FillRuleArgs) {
+  mutating func fillRule(_ args: DrawCommand.FillRuleArgs) {
     ctx.fillRule = args
   }
 
-  func linearGradient(_ args: Command.LinearGradientArgs) throws {
+  func linearGradient(_ args: DrawCommand.LinearGradientArgs) throws {
     try ctx.drawLinearGradient(
       getGradient(id: args.id),
       options: args.1
     )
   }
 
-  func radialGradient(_ args: Command.RadialGradientArgs) throws {
+  func radialGradient(_ args: DrawCommand.RadialGradientArgs) throws {
     try ctx.drawRadialGradient(
       getGradient(id: args.id), options: args.1
     )
   }
 
   mutating func fillLinearGradient(
-    _ args: Command.FillLinearGradientArgs
+    _ args: DrawCommand.FillLinearGradientArgs
   ) throws {
     try ctx.fill.dye = .gradient((
       getGradient(id: args.id),
@@ -474,7 +587,7 @@ private struct CommandExecution {
   }
 
   mutating func fillRadialGradient(
-    _ args: Command.FillRadialGradientArgs
+    _ args: DrawCommand.FillRadialGradientArgs
   ) throws {
     try ctx.fill.dye = .gradient((
       getGradient(id: args.id),
@@ -483,7 +596,7 @@ private struct CommandExecution {
   }
 
   mutating func strokeLinearGradient(
-    _ args: Command.StrokeLinearGradientArgs
+    _ args: DrawCommand.StrokeLinearGradientArgs
   ) throws {
     try ctx.stroke.dye = .gradient((
       getGradient(id: args.id),
@@ -492,7 +605,7 @@ private struct CommandExecution {
   }
 
   mutating func strokeRadialGradient(
-    _ args: Command.StrokeRadialGradientArgs
+    _ args: DrawCommand.StrokeRadialGradientArgs
   ) throws {
     try ctx.stroke.dye = .gradient((
       getGradient(id: args.id),
@@ -500,7 +613,7 @@ private struct CommandExecution {
     ))
   }
 
-  func subrouteWithId(_ args: Command.SubrouteWithIdArgs) throws {
+  func subrouteWithId(_ args: DrawCommand.SubrouteWithIdArgs) throws {
     guard let subroute = subroutes[args] else {
       throw Error.invalidSubrouteId(id: args)
     }
@@ -508,82 +621,133 @@ private struct CommandExecution {
     try runner.run()
   }
 
-  mutating func shadow(_ args: Command.ShadowArgs) {
+  mutating func shadow(_ args: DrawCommand.ShadowArgs) {
     ctx.drawShadow(args)
   }
 
-  func blendMode(_ args: Command.BlendModeArgs) {
+  func blendMode(_ args: DrawCommand.BlendModeArgs) {
     _ = args
     cg.setBlendMode(args)
   }
 
-  mutating func saveGState(_ args: Command.SaveGStateArgs) {
+  mutating func saveGState(_ args: DrawCommand.SaveGStateArgs) {
     _ = args
     ctx.saveGState()
   }
 
-  mutating func restoreGState(_ args: Command.RestoreGStateArgs) {
+  mutating func restoreGState(_ args: DrawCommand.RestoreGStateArgs) {
     _ = args
     ctx.restoreGState()
   }
 
-  func closePath(_ args: Command.ClosePathArgs) {
+  func closePath(_ args: DrawCommand.ClosePathArgs) {
     _ = args
     cg.closePath()
   }
 
   func replacePathWithStrokePath(
-    _ args: Command.ReplacePathWithStrokePathArgs
+    _ args: DrawCommand.ReplacePathWithStrokePathArgs
   ) {
     _ = args
     cg.replacePathWithStrokedPath()
   }
 
-  func clip(_ args: Command.ClipArgs) {
+  func clip(_ args: DrawCommand.ClipArgs) {
     _ = args
     ctx.clip()
   }
 
-  func fill(_ args: Command.FillArgs) {
+  func fill(_ args: DrawCommand.FillArgs) {
     _ = args
     cg.fillPath(using: .init(ctx.fillRule))
   }
 
-  func stroke(_ args: Command.StrokeArgs) {
+  func stroke(_ args: DrawCommand.StrokeArgs) {
     _ = args
     cg.strokePath()
   }
 
-  func fillAndStroke(_ args: Command.FillAndStrokeArgs) throws {
+  func fillAndStroke(_ args: DrawCommand.FillAndStrokeArgs) throws {
     _ = args
     try ctx.fillAndStroke()
   }
 
   func setGlobalAlphaToFillAlpha(
-    _ args: Command.SetGlobalAlphaToFillAlphaArgs
+    _ args: DrawCommand.SetGlobalAlphaToFillAlphaArgs
   ) {
     _ = args
     cg.setAlpha(ctx.fill.alpha)
   }
 
-  mutating func strokeNone(_ args: Command.StrokeNoneArgs) {
+  mutating func strokeNone(_ args: DrawCommand.StrokeNoneArgs) {
     _ = args
     ctx.stroke.dye = nil
   }
 
-  mutating func fillNone(_ args: Command.FillNoneArgs) {
+  mutating func fillNone(_ args: DrawCommand.FillNoneArgs) {
     _ = args
     ctx.fill.dye = nil
   }
 
-  func beginTransparencyLayer(_ args: Command.BeginTransparencyLayerArgs) {
+  func beginTransparencyLayer(_ args: DrawCommand.BeginTransparencyLayerArgs) {
     _ = args
     cg.beginTransparencyLayer(auxiliaryInfo: nil)
   }
 
-  func endTransparencyLayer(_ args: Command.EndTransparencyLayerArgs) {
+  func endTransparencyLayer(_ args: DrawCommand.EndTransparencyLayerArgs) {
     _ = args
     cg.endTransparencyLayer()
+  }
+}
+
+private struct PathCommandExecution {
+  var path: CGMutablePath
+
+  func moveTo(_ args: PathCommand.MoveToArgs) {
+    path.move(to: args)
+  }
+
+  func curveTo(_ args: PathCommand.CurveToArgs) {
+    path.addCurve(
+      to: args.to,
+      control1: args.control1,
+      control2: args.control2
+    )
+  }
+
+  func lineTo(_ args: PathCommand.LineToArgs) {
+    path.addLine(to: args)
+  }
+
+  func appendRectangle(_ args: PathCommand.AppendRectangleArgs) {
+    path.addRect(args)
+  }
+
+  func appendRoundedRect(_ args: PathCommand.AppendRoundedRectArgs) {
+    path.addRoundedRect(in: args.0, cornerWidth: args.rx, cornerHeight: args.ry)
+  }
+
+  func addArc(_ args: PathCommand.AddArcArgs) {
+    path.addArc(
+      center: args.center,
+      radius: args.radius,
+      startAngle: args.startAngle,
+      endAngle: args.endAngle,
+      clockwise: args.clockwise
+    )
+  }
+
+  func lines(_ args: PathCommand.LinesArgs) {
+    path.addLines(between: args)
+  }
+
+  func addEllipse(_ args: PathCommand.AddEllipseArgs) {
+    path.addEllipse(in: args)
+  }
+
+  func closePath(_ args: PathCommand.ClosePathArgs) {
+    _ = args
+    path.closeSubpath()
   }
 }
 

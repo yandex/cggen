@@ -105,7 +105,7 @@ extension PDFOperator {
       throw DrawError("Not implemented")
 
     case let .curveTo(p1, p2, p3):
-      return .curveTo(p1, p2, p3)
+      return .pathSegment(.curveTo(p1, p2, p3))
     case let .concatCTM(transform):
       return .concatCTM(transform)
     case .colorSpaceStroke:
@@ -167,7 +167,7 @@ extension PDFOperator {
       }
       return .composite(steps)
     case .closeSubpath:
-      return .closePath
+      return .pathSegment(.closePath)
     case let .setFlatnessTolerance(flatness):
       return .flatness(flatness)
 
@@ -190,9 +190,9 @@ extension PDFOperator {
       throw DrawError("Not implemented")
 
     case let .lineTo(point):
-      return .lineTo(point)
+      return .pathSegment(.lineTo(point))
     case let .moveTo(point):
-      return .moveTo(point)
+      return .pathSegment(.moveTo(point))
 
     case .miterLimit:
       throw DrawError("Not implemented")
@@ -200,13 +200,13 @@ extension PDFOperator {
       throw DrawError("Not implemented")
 
     case .endPath:
-      return .endPath
+      return .pathSegment(.endPath)
     case .saveGState:
       return .saveGState
     case .restoreGState:
       return .restoreGState
     case let .appendRectangle(rect):
-      return .appendRectangle(rect)
+      return .pathSegment(.appendRectangle(rect))
     case let .rgbColorStroke(color):
       return .strokeColor(color)
     case let .rgbColorNonstroke(color):
@@ -214,7 +214,7 @@ extension PDFOperator {
     case let .colorRenderingIntent(name):
       return .colorRenderingIntent(CGColorRenderingIntent(pdfIntent: name))
     case .closeAndStrokePath:
-      return .composite([.closePath, .stroke])
+      return .composite([.pathSegment(.closePath), .stroke])
     case .strokePath:
       return .stroke
     case let .colorStroke(color):

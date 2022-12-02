@@ -107,7 +107,8 @@ extension RawRepresentable where RawValue: FixedWidthInteger {
   }
 }
 
-extension Command: BytecodeEncodable {}
+extension DrawCommand: BytecodeEncodable {}
+extension PathCommand: BytecodeEncodable {}
 
 extension BCFillRule: BytecodeEncodable {
   init(_ cg: CGPathFillRule) {
@@ -250,13 +251,13 @@ extension BCRadialGradientDrawingOptions: BytecodeEncodable {
   }
 }
 
-private func generateSteps(
+private func generateDrawSteps(
   steps: [DrawStep],
   context: Context,
   bytecode: inout Bytecode
 ) {
   func encode<T>(
-    _ command: Command,
+    _ command: DrawCommand,
     _: T.Type, _ value: T, _ encoder: (T, inout Bytecode) -> Void
   ) {
     command >> bytecode
@@ -275,158 +276,142 @@ private func generateSteps(
   steps.forEach { (step: DrawStep) in
     switch step {
     case .saveGState:
-      encode(.saveGState, Command.SaveGStateArgs.self, (), >>)
+      encode(.saveGState, DrawCommand.SaveGStateArgs.self, (), >>)
     case .restoreGState:
-      encode(.restoreGState, Command.RestoreGStateArgs.self, (), >>)
-    case let .moveTo(to):
-      encode(.moveTo, Command.MoveToArgs.self, to, >>)
-    case let .curveTo(c1, c2, end):
-      encode(
-        .curveTo,
-        Command.CurveToArgs.self,
-        BCCubicCurve(control1: c1, control2: c2, to: end), >>
-      )
-    case let .lineTo(to):
-      encode(.lineTo, Command.LineToArgs.self, to, >>)
-    case let .appendRectangle(rect):
-      encode(.appendRectangle, Command.AppendRectangleArgs.self, rect, >>)
-    case let .appendRoundedRect(rect, rx, ry):
-      encode(
-        .appendRoundedRect,
-        Command.AppendRoundedRectArgs.self,
-        (rect, rx: rx, ry: ry), >>
-      )
-    case let .addArc(center, radius, startAngle, endAngle, clockwise):
-      encode(
-        .addArc,
-        Command.AddArcArgs.self,
-        (center, radius, startAngle, endAngle, clockwise), >>
-      )
-    case .closePath:
-      encode(.closePath, Command.ClosePathArgs.self, (), >>)
+      encode(.restoreGState, DrawCommand.RestoreGStateArgs.self, (), >>)
+    case let .pathSegment(segment):
+      PathSegmentEncoding.encode(as: .drawCommand, segment, bytecode: &bytecode)
     case .replacePathWithStrokePath:
       encode(
         .replacePathWithStrokePath,
-        Command.ReplacePathWithStrokePathArgs.self, (), >>
+        DrawCommand.ReplacePathWithStrokePathArgs.self, (), >>
       )
-    case let .lines(lines):
-      encode(.lines, Command.LinesArgs.self, lines, >>)
     case .clip:
-      encode(.clip, Command.ClipArgs.self, (), >>)
+      encode(.clip, DrawCommand.ClipArgs.self, (), >>)
     case let .clipWithRule(rule):
-      encode(.clipWithRule, Command.ClipWithRuleArgs.self, BCFillRule(rule), >>)
+      encode(
+        .clipWithRule,
+        DrawCommand.ClipWithRuleArgs.self,
+        BCFillRule(rule),
+        >>
+      )
     case let .clipToRect(rect):
-      encode(.clipToRect, Command.ClipToRectArgs.self, rect, >>)
+      encode(.clipToRect, DrawCommand.ClipToRectArgs.self, rect, >>)
     case let .dash(pattern):
-      encode(.dash, Command.DashArgs.self, BCDashPattern(pattern), >>)
+      encode(.dash, DrawCommand.DashArgs.self, BCDashPattern(pattern), >>)
     case let .dashPhase(phase):
-      encode(.dashPhase, Command.DashPhaseArgs.self, phase, >>)
+      encode(.dashPhase, DrawCommand.DashPhaseArgs.self, phase, >>)
     case let .dashLenghts(lenghts):
-      encode(.dashLenghts, Command.DashLenghtsArgs.self, lenghts, >>)
+      encode(.dashLenghts, DrawCommand.DashLenghtsArgs.self, lenghts, >>)
     case .fill:
-      encode(.fill, Command.FillArgs.self, (), >>)
+      encode(.fill, DrawCommand.FillArgs.self, (), >>)
     case let .fillWithRule(rule):
-      encode(.fillWithRule, Command.FillWithRuleArgs.self, BCFillRule(rule), >>)
+      encode(
+        .fillWithRule,
+        DrawCommand.FillWithRuleArgs.self,
+        BCFillRule(rule),
+        >>
+      )
     case let .fillEllipse(rect):
-      encode(.fillEllipse, Command.FillEllipseArgs.self, rect, >>)
+      encode(.fillEllipse, DrawCommand.FillEllipseArgs.self, rect, >>)
     case .stroke:
-      encode(.stroke, Command.StrokeArgs.self, (), >>)
+      encode(.stroke, DrawCommand.StrokeArgs.self, (), >>)
     case let .drawPath(mode):
-      encode(.drawPath, Command.DrawPathArgs.self, mode, >>)
-    case let .addEllipse(rect):
-      encode(.addEllipse, Command.AddEllipseArgs.self, rect, >>)
+      encode(.drawPath, DrawCommand.DrawPathArgs.self, mode, >>)
     case let .concatCTM(transform):
-      encode(.concatCTM, Command.ConcatCTMArgs.self, transform, >>)
+      encode(.concatCTM, DrawCommand.ConcatCTMArgs.self, transform, >>)
     case let .flatness(f):
-      encode(.flatness, Command.FlatnessArgs.self, f, >>)
+      encode(.flatness, DrawCommand.FlatnessArgs.self, f, >>)
     case let .lineWidth(width):
-      encode(.lineWidth, Command.LineWidthArgs.self, width, >>)
+      encode(.lineWidth, DrawCommand.LineWidthArgs.self, width, >>)
     case let .lineJoinStyle(lineJoin):
-      encode(.lineJoinStyle, Command.LineJoinStyleArgs.self, lineJoin, >>)
+      encode(.lineJoinStyle, DrawCommand.LineJoinStyleArgs.self, lineJoin, >>)
     case let .lineCapStyle(cap):
-      encode(.lineCapStyle, Command.LineCapStyleArgs.self, cap, >>)
+      encode(.lineCapStyle, DrawCommand.LineCapStyleArgs.self, cap, >>)
     case let .colorRenderingIntent(intent):
       encode(
         .colorRenderingIntent,
-        Command.ColorRenderingIntentArgs.self, intent, >>
+        DrawCommand.ColorRenderingIntentArgs.self, intent, >>
       )
     case let .globalAlpha(alpha):
-      encode(.globalAlpha, Command.GlobalAlphaArgs.self, alpha, >>)
+      encode(.globalAlpha, DrawCommand.GlobalAlphaArgs.self, alpha, >>)
     case let .strokeColor(color):
-      encode(.strokeColor, Command.StrokeColorArgs.self, BCRGBColor(color), >>)
+      encode(
+        .strokeColor,
+        DrawCommand.StrokeColorArgs.self,
+        BCRGBColor(color),
+        >>
+      )
     case let .strokeAlpha(alpha):
-      encode(.strokeAlpha, Command.StrokeAlphaArgs.self, alpha, >>)
+      encode(.strokeAlpha, DrawCommand.StrokeAlphaArgs.self, alpha, >>)
     case let .fillColor(color):
-      encode(.fillColor, Command.FillColorArgs.self, BCRGBColor(color), >>)
+      encode(.fillColor, DrawCommand.FillColorArgs.self, BCRGBColor(color), >>)
     case let .fillAlpha(alpha):
-      encode(.fillAlpha, Command.FillAlphaArgs.self, alpha, >>)
+      encode(.fillAlpha, DrawCommand.FillAlphaArgs.self, alpha, >>)
     case .strokeNone:
-      encode(.strokeNone, Command.StrokeNoneArgs.self, (), >>)
+      encode(.strokeNone, DrawCommand.StrokeNoneArgs.self, (), >>)
     case .fillNone:
-      encode(.fillNone, Command.FillNoneArgs.self, (), >>)
+      encode(.fillNone, DrawCommand.FillNoneArgs.self, (), >>)
     case let .fillRule(rule):
-      encode(.fillRule, Command.FillRuleArgs.self, BCFillRule(rule), >>)
+      encode(.fillRule, DrawCommand.FillRuleArgs.self, BCFillRule(rule), >>)
     case .fillAndStroke:
-      encode(.fillAndStroke, Command.FillAndStrokeArgs.self, (), >>)
+      encode(.fillAndStroke, DrawCommand.FillAndStrokeArgs.self, (), >>)
     case .setGlobalAlphaToFillAlpha:
       encode(
         .setGlobalAlphaToFillAlpha,
-        Command.SetGlobalAlphaToFillAlphaArgs.self, (), >>
+        DrawCommand.SetGlobalAlphaToFillAlphaArgs.self, (), >>
       )
     case let .linearGradient(name, options):
       encode(
         .linearGradient,
-        Command.LinearGradientArgs.self, gradient(name, options), >>
+        DrawCommand.LinearGradientArgs.self, gradient(name, options), >>
       )
     case let .radialGradient(name, options):
       encode(
         .radialGradient,
-        Command.RadialGradientArgs.self, gradient(name, options), >>
+        DrawCommand.RadialGradientArgs.self, gradient(name, options), >>
       )
     case let .fillLinearGradient(name, options):
       encode(
         .fillLinearGradient,
-        Command.FillLinearGradientArgs.self, gradient(name, options), >>
+        DrawCommand.FillLinearGradientArgs.self, gradient(name, options), >>
       )
     case let .fillRadialGradient(name, options):
       encode(
         .fillRadialGradient,
-        Command.FillRadialGradientArgs.self, gradient(name, options), >>
+        DrawCommand.FillRadialGradientArgs.self, gradient(name, options), >>
       )
     case let .strokeLinearGradient(name, options):
       encode(
         .strokeLinearGradient,
-        Command.StrokeLinearGradientArgs.self, gradient(name, options), >>
+        DrawCommand.StrokeLinearGradientArgs.self, gradient(name, options), >>
       )
     case let .strokeRadialGradient(name, options):
       encode(
         .strokeRadialGradient,
-        Command.StrokeRadialGradientArgs.self, gradient(name, options), >>
+        DrawCommand.StrokeRadialGradientArgs.self, gradient(name, options), >>
       )
     case let .subrouteWithName(name):
       encode(
         .subrouteWithId,
-        Command.SubrouteWithIdArgs.self, context.subroutesIds[name]!, >>
+        DrawCommand.SubrouteWithIdArgs.self, context.subroutesIds[name]!, >>
       )
     case let .shadow(shadow):
-      encode(.shadow, Command.ShadowArgs.self, BCShadow(shadow), >>)
+      encode(.shadow, DrawCommand.ShadowArgs.self, BCShadow(shadow), >>)
     case let .blendMode(mode):
-      encode(.blendMode, Command.BlendModeArgs.self, mode, >>)
+      encode(.blendMode, DrawCommand.BlendModeArgs.self, mode, >>)
     case .beginTransparencyLayer:
       encode(
         .beginTransparencyLayer,
-        Command.BeginTransparencyLayerArgs.self, (), >>
+        DrawCommand.BeginTransparencyLayerArgs.self, (), >>
       )
     case .endTransparencyLayer:
       encode(
         .endTransparencyLayer,
-        Command.EndTransparencyLayerArgs.self, (), >>
+        DrawCommand.EndTransparencyLayerArgs.self, (), >>
       )
-    case let .composite(steps):
-      generateSteps(steps: steps, context: context, bytecode: &bytecode)
-    case .endPath:
-      // FIXME: Implement end path
-      break
+    case let DrawStep.composite(steps):
+      generateDrawSteps(steps: steps, context: context, bytecode: &bytecode)
     case .fillColorSpace, .strokeColorSpace:
       fatalError("Not implemented")
     }
@@ -485,7 +470,7 @@ private func generateRoute(
     context: context,
     bytecode: &bytecode
   )
-  generateSteps(steps: route.steps, context: context, bytecode: &bytecode)
+  generateDrawSteps(steps: route.steps, context: context, bytecode: &bytecode)
 }
 
 private class Context {
@@ -499,6 +484,16 @@ func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
   return bytecode
 }
 
+func generatePathBytecode(route: PathRoutine) -> [UInt8] {
+  var bytecode = Bytecode()
+  PathSegmentEncoding.generateSteps(
+    as: .pathCommand,
+    steps: route.content,
+    bytecode: &bytecode
+  )
+  return bytecode
+}
+
 struct BCCGGenerator: CoreGraphicsGenerator {
   var params: GenerationParams
   var headerImportPath: String?
@@ -508,7 +503,7 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     return """
     \(importLine)
     void runBytecode(CGContextRef context, const uint8_t* arr, int len);
-
+    void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
     """
   }
 
@@ -527,7 +522,175 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     """ + params.descriptorLines(for: image).joined(separator: "\n")
   }
 
+  func generatePathFuncton(path: PathRoutine) -> String {
+    let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
+    let bytecode = generatePathBytecode(route: path)
+    let camel = path.id.upperCamelCase
+    return """
+    static const uint8_t \(bytecodeName)[] = {
+      \(bytecode.map(\.description).joined(separator: ", "))
+    };
+    void \(params.prefix)\(camel)Path(CGMutablePathRef path) {
+      runPathBytecode(path, \(bytecodeName), \(bytecode.count));
+    }
+    """
+  }
+
   func fileEnding() -> String {
     ""
+  }
+}
+
+enum PathSegmentEncoding {
+  enum PathSegmentCommandKind {
+    case drawCommand
+    case pathCommand
+  }
+
+  static func encode(
+    as kind: PathSegmentCommandKind,
+    _ segment: PathSegment,
+    bytecode: inout Bytecode
+  ) {
+    switch kind {
+    case .drawCommand:
+      encodeAsDrawCommand(segment, bytecode: &bytecode)
+    case .pathCommand:
+      encodeAsPathCommand(segment, bytecode: &bytecode)
+    }
+  }
+
+  static func generateSteps(
+    as kind: PathSegmentCommandKind,
+    steps: [PathSegment],
+    bytecode: inout Bytecode
+  ) {
+    switch kind {
+    case .drawCommand:
+      generateStepsAsDrawCommands(steps: steps, bytecode: &bytecode)
+    case .pathCommand:
+      generateStepsAsPathCommands(steps: steps, bytecode: &bytecode)
+    }
+  }
+
+  private static func generateStepsAsPathCommands(
+    steps segments: [PathSegment],
+    bytecode: inout Bytecode
+  ) {
+    segments.forEach { segment in
+      encodeAsPathCommand(segment, bytecode: &bytecode)
+    }
+  }
+
+  private static func generateStepsAsDrawCommands(
+    steps segments: [PathSegment],
+    bytecode: inout Bytecode
+  ) {
+    segments.forEach { segment in
+      encodeAsDrawCommand(segment, bytecode: &bytecode)
+    }
+  }
+
+  private static func encodeAsPathCommand(
+    _ segment: PathSegment,
+    bytecode: inout Bytecode
+  ) {
+    func encode<T>(
+      _ pathCommand: PathCommand,
+      _: T.Type, _ value: T, _ encoder: (T, inout Bytecode) -> Void
+    ) {
+      pathCommand >> bytecode
+      encoder(value, &bytecode)
+    }
+
+    switch segment {
+    case let .moveTo(to):
+      encode(.moveTo, PathCommand.MoveToArgs.self, to, >>)
+    case let .curveTo(c1, c2, end):
+      encode(
+        .curveTo,
+        PathCommand.CurveToArgs.self,
+        BCCubicCurve(control1: c1, control2: c2, to: end), >>
+      )
+    case let .lineTo(to):
+      encode(.lineTo, PathCommand.LineToArgs.self, to, >>)
+    case let .appendRectangle(rect):
+      encode(.appendRectangle, PathCommand.AppendRectangleArgs.self, rect, >>)
+    case let .appendRoundedRect(rect, rx, ry):
+      encode(
+        .appendRoundedRect,
+        PathCommand.AppendRoundedRectArgs.self,
+        (rect, rx: rx, ry: ry), >>
+      )
+    case let .addEllipse(rect):
+      encode(.addEllipse, PathCommand.AddEllipseArgs.self, rect, >>)
+    case let .addArc(center, radius, startAngle, endAngle, clockwise):
+      encode(
+        .addArc,
+        PathCommand.AddArcArgs.self,
+        (center, radius, startAngle, endAngle, clockwise), >>
+      )
+    case .closePath:
+      encode(.closePath, PathCommand.ClosePathArgs.self, (), >>)
+    case .endPath:
+      // FIXME: Implement end path
+      break
+
+    case let .lines(lines):
+      encode(.lines, PathCommand.LinesArgs.self, lines, >>)
+    case let .composite(steps):
+      generateStepsAsPathCommands(steps: steps, bytecode: &bytecode)
+    }
+  }
+
+  private static func encodeAsDrawCommand(
+    _ segment: PathSegment,
+    bytecode: inout Bytecode
+  ) {
+    func encode<T>(
+      _ pathCommand: PathCommand,
+      _: T.Type, _ value: T, _ encoder: (T, inout Bytecode) -> Void
+    ) {
+      DrawCommand(pathCommand) >> bytecode
+      encoder(value, &bytecode)
+    }
+
+    switch segment {
+    case let .moveTo(to):
+      encode(.moveTo, PathCommand.MoveToArgs.self, to, >>)
+    case let .curveTo(c1, c2, end):
+      encode(
+        .curveTo,
+        PathCommand.CurveToArgs.self,
+        BCCubicCurve(control1: c1, control2: c2, to: end), >>
+      )
+    case let .lineTo(to):
+      encode(.lineTo, PathCommand.LineToArgs.self, to, >>)
+    case let .appendRectangle(rect):
+      encode(.appendRectangle, PathCommand.AppendRectangleArgs.self, rect, >>)
+    case let .appendRoundedRect(rect, rx, ry):
+      encode(
+        .appendRoundedRect,
+        PathCommand.AppendRoundedRectArgs.self,
+        (rect, rx: rx, ry: ry), >>
+      )
+    case let .addEllipse(rect):
+      encode(.addEllipse, PathCommand.AddEllipseArgs.self, rect, >>)
+    case let .addArc(center, radius, startAngle, endAngle, clockwise):
+      encode(
+        .addArc,
+        PathCommand.AddArcArgs.self,
+        (center, radius, startAngle, endAngle, clockwise), >>
+      )
+    case .closePath:
+      encode(.closePath, PathCommand.ClosePathArgs.self, (), >>)
+    case .endPath:
+      // FIXME: Implement end path
+      break
+    case let .lines(lines):
+      encode(.lines, PathCommand.LinesArgs.self, lines, >>)
+    case let .composite(steps):
+      generateStepsAsDrawCommands(steps: steps, bytecode: &bytecode)
+    }
   }
 }

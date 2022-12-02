@@ -201,6 +201,12 @@ class SVGCustomCheckTests: XCTestCase {
   }
 }
 
+class PathExtractionTests: XCTestCase {
+  func testLinesAndCurves() {
+    test(args: linesAndCurvesArgs)
+  }
+}
+
 private func blackSquareHTML(size: Int) -> String {
   let fsize = SVG.Float(size)
   let svgSize = SVG.Length(fsize)
@@ -262,9 +268,48 @@ private func test(
   ))
 }
 
+private func test(
+  args: PathTestArguments
+) {
+  try? testPathExtraction(
+    path: CGPath.from(args.segments),
+    svg: sample(named: args.svgName)
+  )
+}
+
 private func sample(named name: String) -> URL {
   svgSamplesPath.appendingPathComponent(name).appendingPathExtension("svg")
 }
 
 let svgSamplesPath =
   getCurentFilePath().appendingPathComponent("svg_samples")
+
+typealias PathTestArguments = (svgName: String, segments: [PathSegment])
+
+let linesAndCurvesArgs: PathTestArguments = (
+  svgName: "lines_and_curves",
+  segments: [
+    .moveTo(CGPoint(x: 0, y: 1)),
+    .lineTo(CGPoint(x: 2, y: 2)),
+    .lineTo(CGPoint(x: 5, y: 2)),
+    .lineTo(CGPoint(x: 5, y: -4)),
+    .curveTo(
+      CGPoint(x: 3, y: -4),
+      CGPoint(x: 4, y: -8),
+      CGPoint(x: 0, y: -7)
+    ),
+    .curveTo(
+      CGPoint(x: -4, y: -6),
+      CGPoint(x: -1, y: -14),
+      CGPoint(x: -7, y: -10)
+    ),
+    .addArc(
+      center: CGPoint(x: -7, y: -5),
+      radius: 5,
+      startAngle: -.pi / 2,
+      endAngle: .pi / 2,
+      clockwise: true
+    ),
+    .lineTo(CGPoint(x: 0, y: 1)),
+  ]
+)
