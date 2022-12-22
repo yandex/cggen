@@ -10,6 +10,10 @@ struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
     params.description(for: image)
   }
 
+  func generatePathFuncton(path: PathRoutine) -> String {
+    params.description(for: path)
+  }
+
   func fileEnding() -> String {
     ""
   }
@@ -50,5 +54,10 @@ extension GenerationParams {
         CF_SWIFT_NAME(\(descriptorTypename).\(image.name.lowerCamelCase));
         """
     }
+  }
+
+  fileprivate func description(for path: PathRoutine) -> String {
+    let camel = path.id.upperCamelCase
+    return "void \(prefix)\(camel)Path(CGMutablePathRef path);"
   }
 }

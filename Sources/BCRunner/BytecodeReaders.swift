@@ -59,7 +59,7 @@ protocol BytecodeDecodable {
 // MARK: Conforamnces
 
 extension BytecodeDecodable
-where Self: RawRepresentable, RawValue: FixedWidthInteger {
+  where Self: RawRepresentable, RawValue: FixedWidthInteger {
   init(bytecode: inout Bytecode) throws {
     let rawValue = try bytecode.read(type: UInt8.self)
     let converted = Self.RawValue(rawValue)
@@ -70,7 +70,8 @@ where Self: RawRepresentable, RawValue: FixedWidthInteger {
   }
 }
 
-extension Command: BytecodeDecodable {}
+extension DrawCommand: BytecodeDecodable {}
+extension PathCommand: BytecodeDecodable {}
 extension BCFillRule: BytecodeDecodable {}
 extension BCCoordinateUnits: BytecodeDecodable {}
 

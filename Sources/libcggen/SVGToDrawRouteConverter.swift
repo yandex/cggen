@@ -3,7 +3,7 @@ import CoreGraphics
 import Base
 
 enum SVGToDrawRouteConverter {
-  static func convert(document: SVG.Document) throws -> DrawRoutine {
+  static func convert(document: SVG.Document) throws -> Routines {
     let boundingRect = document.boundingRect
     let height = boundingRect.size.height
     let gradients = try Dictionary(
@@ -13,6 +13,16 @@ enum SVGToDrawRouteConverter {
       uniqueKeysWithValues: document.children.flatMap(filters(svg:))
     )
     let defenitions = try defs(from: .svg(document))
+
+    let pathRoutines: [PathRoutine] = defenitions.compactMap { id, svgs in
+      guard id.hasPathPrefix,
+            let svg = svgs.firstAndOnly,
+            let content = pathSegmentsFromSVG(svg) else {
+        return nil
+      }
+      return PathRoutine(id: id.withoutPathPrefix, content: content)
+    }
+
     var context = Context(
       objectBoundingBox: boundingRect,
       drawingBounds: boundingRect,
@@ -22,7 +32,8 @@ enum SVGToDrawRouteConverter {
     )
     let initialContextPrep =
       try context.apply(document.presentation, area: boundingRect)
-    return try .init(
+
+    let drawRoutine = try DrawRoutine(
       boundingRect: boundingRect,
       gradients: gradients.mapValues(\.1),
       subroutines: [:],
@@ -30,7 +41,17 @@ enum SVGToDrawRouteConverter {
         document.children.map { try drawstep(svg: $0, ctx: &context)
         }
     )
+
+    return Routines(drawRoutine: drawRoutine, pathRoutines: pathRoutines)
   }
+}
+
+func pathSegmentsFromSVG(_ svg: SVG) -> [PathSegment]? {
+  guard case let .path(path) = svg,
+        case let .composite(segments) = try? pathConstruction(from: path.data)?.0 else {
+    return nil
+  }
+  return segments
 }
 
 extension SVG.Document {
@@ -112,7 +133,6 @@ private struct Context {
         return .fillNone
       }
     }
-
 
     let stroke: DrawStep? = presentation.stroke.flatMap { paint in
       switch paint {
@@ -233,7 +253,7 @@ private struct Context {
 }
 
 private func drawShape(
-  pathConstruction: DrawStep,
+  pathConstruction: PathSegment,
   presentation: SVG.PresentationAttributes,
   transform: [SVG.Transform]?,
   area: CGRect,
@@ -255,7 +275,7 @@ private func drawShape(
     post.append(.endTransparencyLayer)
   }
   post.append(.restoreGState)
-  return try .composite(pre + [ctx.drawPath(path: pathConstruction)] + post)
+  return try .composite(pre + [ctx.drawPath(path: .pathSegment(pathConstruction))] + post)
 }
 
 private func group(
@@ -364,9 +384,9 @@ private func drawstep(svg: SVG, ctx: inout Context) throws -> DrawStep {
 
 private func pathConstruction(
   from rect: SVG.RectData
-) -> (DrawStep, boundingBox: CGRect)? {
+) -> (PathSegment, boundingBox: CGRect)? {
   let cgrect = CGRect(rect)
-  let pathConstruction: DrawStep
+  let pathConstruction: PathSegment
   switch (
     rect.rx.map { CGFloat($0.number) },
     rect.ry.map { CGFloat($0.number) }
@@ -385,7 +405,7 @@ private func pathConstruction(
 
 private func pathConstruction(
   from polygon: SVG.PolygonData
-) -> (DrawStep, boundingBox: CGRect)? {
+) -> (PathSegment, boundingBox: CGRect)? {
   guard let points = polygon.points else { return nil }
   let cgpoints = points.map {
     CGPoint(x: $0._1, y: $0._2)
@@ -394,12 +414,12 @@ private func pathConstruction(
     $0.addLines(between: cgpoints)
     $0.closeSubpath()
   }.boundingBox
-  return (.composite([.lines(cgpoints), .closePath]), box)
+  return (.composite([.lines(cgpoints), PathSegment.closePath]), box)
 }
 
 private func pathConstruction(
   from ellipse: SVG.EllipseData
-) -> (DrawStep, boundingBox: CGRect)? {
+) -> (PathSegment, boundingBox: CGRect)? {
   guard let cx = ellipse.cx, let cy = ellipse.cy,
         let rx = ellipse.rx, let ry = ellipse.ry,
         rx.number != 0, ry.number != 0 else { return nil }
@@ -413,7 +433,7 @@ private func pathConstruction(
 
 private func pathConstruction(
   from circle: SVG.CircleData
-) -> (DrawStep, boundingBox: CGRect)? {
+) -> (PathSegment, boundingBox: CGRect)? {
   guard let r = circle.r else { return nil }
   let cx = circle.cx ?? 0
   let cy = circle.cy ?? 0
@@ -448,13 +468,13 @@ private struct Resetable<T> {
 
 private func pathConstruction(
   from path: SVG.PathData
-) throws -> (DrawStep, boundingBox: CGRect)? {
+) throws -> (PathSegment, boundingBox: CGRect)? {
   guard let commands = path.d else { return nil }
   let cgpath = CGMutablePath()
   var currentPoint: CGPoint?
   var subPathStartPoint: CGPoint?
   var prevCurveControlPoint = Resetable<CGPoint>()
-  let steps: [DrawStep] = try commands.flatMap { command -> [DrawStep] in
+  let steps: [PathSegment] = try commands.flatMap { command -> [PathSegment] in
     defer {
       prevCurveControlPoint.reset()
     }
@@ -474,7 +494,7 @@ private func processCommandKind(
   currentPoint: inout CGPoint?,
   subPathStartPoint: inout CGPoint?,
   prevCurveControlPoint: inout Resetable<CGPoint>
-) throws -> [DrawStep] {
+) throws -> [PathSegment] {
   func point(
     for pair: SVG.CoordinatePair,
     _ currentPoint: CGPoint?
@@ -503,7 +523,7 @@ private func processCommandKind(
     } else {
       moveToPoint = first
     }
-    let moveToStep = DrawStep.moveTo(moveToPoint)
+    let moveToStep = PathSegment.moveTo(moveToPoint)
     currentPoint = moveToPoint
     subPathStartPoint = moveToPoint
     cgpath.move(to: moveToPoint)
@@ -755,8 +775,8 @@ private func filters(svg: SVG) throws -> [(String, SVGFilterNode)] {
 
 private func defs(from svg: SVG) throws -> Defenitions {
   var result = Defenitions()
-  if let parent = svg.core?.id {
-    result[parent] = (result[parent] ?? []) + [svg]
+  if let _self = svg.core?.id {
+    result[_self] = (result[_self] ?? []) + [svg]
   }
   if let children = svg.children {
     result = try children.map(defs(from:)).reduce(into: result) {
@@ -827,14 +847,14 @@ extension SVG.Shape {
   func shapeConstruction() throws -> (DrawStep, CGRect)? {
     try shapeConstructionWithoutTransform().map { path, box in
       let transformed = transform.flatMap(DrawStep.concatCTM).map {
-        DrawStep.savingGState($0, path)
+        DrawStep.savingGState($0, .pathSegment(path))
       }
-      return (transformed ?? path, box)
+      return (transformed ?? .pathSegment(path), box)
     }
   }
 
   private func shapeConstructionWithoutTransform(
-  ) throws -> (DrawStep, CGRect)? {
+  ) throws -> (PathSegment, CGRect)? {
     switch self {
     case let .circle(e):
       return pathConstruction(from: e.data)
@@ -1176,10 +1196,11 @@ extension SVGFilterNode.ColorMatrix {
     // Check if input color doesn't affect output
     let isConst: (T) -> Bool = {
       $0.c1.isAlmostZero() && $0.c2.isAlmostZero() && $0.c3.isAlmostZero() &&
-      $0.c4.isAlmostZero()
+        $0.c4.isAlmostZero()
     }
     guard isConst(r1), isConst(r2), isConst(r3),
-            isConst(r4) || !r4.c4.isAlmostZero() // Allow nonzero alpha multiplier
+          isConst(r4) || !r4.c4
+          .isAlmostZero() // Allow nonzero alpha multiplier
     else { return nil }
     let color = RGBACGColor(red: r1.c5, green: r2.c5, blue: r3.c5, alpha: r4.c5)
     return (r4.c4, color)
@@ -1188,7 +1209,7 @@ extension SVGFilterNode.ColorMatrix {
 
 extension SVG.PresentationAttributes {
   var dashPatternUpdate: DrawStep? {
-    let lengths: [CGFloat]? = self.strokeDashArray.flatMap { lengths in
+    let lengths: [CGFloat]? = strokeDashArray.flatMap { lengths in
       guard lengths.count > 0 else { return nil }
       let lenghts = lengths.map { CGFloat($0.number) }
       if lengths.count.isMultiple(of: 2) {
@@ -1221,3 +1242,16 @@ extension DrawStep.Units {
     }
   }
 }
+
+extension String {
+  var hasPathPrefix: Bool {
+    hasPrefix(pathPrefix)
+  }
+
+  var withoutPathPrefix: String {
+    guard hasPathPrefix else { return self }
+    return String(dropFirst(pathPrefix.count))
+  }
+}
+
+private var pathPrefix = "cggen."

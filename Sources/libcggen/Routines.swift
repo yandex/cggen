@@ -48,23 +48,8 @@ enum DrawStep {
   case saveGState
   case restoreGState
 
-  case moveTo(CGPoint)
-  case curveTo(CGPoint, CGPoint, CGPoint)
-  case lineTo(CGPoint)
-  case appendRectangle(CGRect)
-  case appendRoundedRect(CGRect, rx: CGFloat, ry: CGFloat)
-  case addArc(
-    center: CGPoint,
-    radius: CGFloat,
-    startAngle: CGFloat,
-    endAngle: CGFloat,
-    clockwise: Bool
-  )
-  case closePath
-  case endPath
+  case pathSegment(PathSegment)
   case replacePathWithStrokePath
-
-  case lines([CGPoint])
 
   case clip
   case clipWithRule(CGPathFillRule)
@@ -78,7 +63,6 @@ enum DrawStep {
   case fillEllipse(in: CGRect)
   case stroke
   case drawPath(mode: CGPathDrawingMode)
-  case addEllipse(in: CGRect)
   case fillAndStroke
 
   case concatCTM(CGAffineTransform)
@@ -123,6 +107,29 @@ enum DrawStep {
   }
 }
 
+public enum PathSegment {
+  case moveTo(CGPoint)
+  case curveTo(CGPoint, CGPoint, CGPoint)
+  case lineTo(CGPoint)
+  case appendRectangle(CGRect)
+  case appendRoundedRect(CGRect, rx: CGFloat, ry: CGFloat)
+  case addEllipse(in: CGRect)
+  case addArc(
+    center: CGPoint,
+    radius: CGFloat,
+    startAngle: CGFloat,
+    endAngle: CGFloat,
+    clockwise: Bool
+  )
+  case closePath
+  case endPath
+
+  case lines([CGPoint])
+  case composite([PathSegment])
+
+  public static let empty: PathSegment = .composite([])
+}
+
 struct DrawRoutine {
   var boundingRect: CGRect
   var gradients: [String: Gradient]
@@ -139,5 +146,20 @@ struct DrawRoutine {
     self.gradients = gradients
     self.subroutines = subroutines
     self.steps = steps
+  }
+}
+
+struct PathRoutine {
+  var id: String
+  var content: [PathSegment]
+}
+
+struct Routines {
+  var drawRoutine: DrawRoutine
+  var pathRoutines: [PathRoutine]
+
+  init(drawRoutine: DrawRoutine, pathRoutines: [PathRoutine] = []) {
+    self.drawRoutine = drawRoutine
+    self.pathRoutines = pathRoutines
   }
 }

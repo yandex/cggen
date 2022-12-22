@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <defs>
+    <path id="cggen.curve" d="M0 1 2 2H5V-4C3-4 4-8 0-7S-1-14-7-10A1 1 0 00-7 0L0 1"/>
+  </defs>
+  <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" stroke-linejoin="round">
+    <use xlink:href="#cggen.curve" stroke="indianred" stroke-width="1"/>
+  </g>
+</svg>

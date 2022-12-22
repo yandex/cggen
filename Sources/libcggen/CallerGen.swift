@@ -75,6 +75,11 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       """
   }
 
+  func generatePathFuncton(path _: PathRoutine) -> String {
+    // TODO: should be implemented, but not needed yet
+    ""
+  }
+
   func fileEnding() -> String {
     "  return retCode;\n}"
   }
