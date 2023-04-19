@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
   name: "cggen",
   platforms: [
-    .macOS(.v10_14), .iOS(.v12),
+    .macOS(.v10_15), .iOS(.v12),
   ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),

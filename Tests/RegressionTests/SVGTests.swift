@@ -22,6 +22,25 @@ class SVGTest: XCTestCase {
     }
   }
 
+  func testMergedBytecode() {
+    test(
+      paths: [
+        sample(named: "fill"),
+        sample(named: "lines"),
+        sample(named: "alpha"),
+        sample(named: "group_opacity"),
+        sample(named: "shapes"),
+        sample(named: "caps_joins"),
+        sample(named: "dashes"),
+        sample(named: "use_tag"),
+        sample(named: "use_referencing_not_in_defs"),
+        sample(named: "simple_mask"),
+        sample(named: "clip_path"),
+        sample(named: "transforms")
+      ]
+    )
+  }
+
   func testSimpliestSVG() {
     test(svg: "fill")
   }
@@ -258,6 +277,24 @@ private func test(
 ) {
   XCTAssertNoThrow(try testBC(
     path: svg,
+    referenceRenderer: {
+      try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
+        .cgimg()
+    },
+    scale: scale,
+    resultAdjust: { $0.redraw(with: .white) },
+    tolerance: tolerance
+  ))
+}
+
+private func test(
+  paths: [URL],
+  tolerance: Double = defaultTolerance,
+  scale: CGFloat = defaultScale,
+  size: CGSize = CGSize(width: 50, height: 50)
+) {
+  XCTAssertNoThrow(try testMBC(
+    paths: paths,
     referenceRenderer: {
       try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
         .cgimg()

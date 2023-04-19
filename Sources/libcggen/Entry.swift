@@ -1,4 +1,5 @@
 import Foundation
+import BCCommon
 
 import Base
 import PDFParse
@@ -17,6 +18,7 @@ public struct Args {
   let module: String?
   let verbose: Bool
   let files: [String]
+  let shouldMergeBytecode: Bool
 
   public init(
     objcHeader: String?,
@@ -31,7 +33,8 @@ public struct Args {
     cggenSupportHeaderPath: String?,
     module: String?,
     verbose: Bool,
-    files: [String]
+    files: [String],
+    shouldMergeBytecode: Bool
   ) {
     self.objcHeader = objcHeader
     self.objcPrefix = objcPrefix
@@ -46,6 +49,7 @@ public struct Args {
     self.module = module
     self.verbose = verbose
     self.files = files
+    self.shouldMergeBytecode = shouldMergeBytecode
   }
 }
 
@@ -66,7 +70,7 @@ public func runCggen(with args: Args) throws {
 
   if let objcHeaderPath = args.objcHeader {
     let headerGenerator = ObjcHeaderCGGenerator(params: params)
-    let fileStr = headerGenerator.generateFile(outputs: outputs)
+    let fileStr = try headerGenerator.generateFile(outputs: outputs)
     try fileStr.write(
       toFile: objcHeaderPath,
       atomically: true,
@@ -76,11 +80,15 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcImplPath = args.objcImpl {
-    let implGenerator = BCCGGenerator(
-      params: params,
-      headerImportPath: args.objcHeaderImportPath
-    )
-    let fileStr = implGenerator.generateFile(outputs: outputs)
+    var implGenerator: CoreGraphicsGenerator {
+      if #available(macOS 10.15, *), args.shouldMergeBytecode {
+        return MBCCGGenerator(params: params, headerImportPath: args.objcHeaderImportPath)
+      } else {
+        return BCCGGenerator(params: params, headerImportPath: args.objcHeaderImportPath)
+      }
+    }
+
+    let fileStr = try implGenerator.generateFile(outputs: outputs)
     try fileStr.write(
       toFile: objcImplPath,
       atomically: true,
@@ -107,7 +115,7 @@ public func runCggen(with args: Args) throws {
       prefix: objcPrefix,
       outputPath: pngOutputPath
     )
-    let fileStr = callerGenerator.generateFile(outputs: outputs)
+    let fileStr = try callerGenerator.generateFile(outputs: outputs)
     try fileStr.write(
       toFile: objcCallerPath,
       atomically: true,
@@ -209,4 +217,23 @@ public func getImageBytecode(from file: URL) throws -> [UInt8] {
 public func getPathBytecode(from file: URL) throws -> [UInt8] {
   let img = try generateImagesAndPaths(from: [file])[0]
   return generatePathBytecode(route: img.pathRoutines[0])
+}
+
+@available(macOS 10.15, *)
+public func getImagesMergedBytecodeAndPositions(
+  from files: [URL]
+) throws -> ([UInt8], [(Int, Int)], Int) {
+  let images = try generateImagesAndPaths(from: files).map(\.image)
+
+  var imagePossitions: [(Int, Int)] = []
+  var mergedBytecodes: [UInt8] = []
+
+  images.forEach { image in
+    let bytecode = generateRouteBytecode(route: image.route)
+
+    imagePossitions.append((mergedBytecodes.count, mergedBytecodes.count + bytecode.count - 1))
+    mergedBytecodes += bytecode
+  }
+
+  return (try compressBytecode(mergedBytecodes), imagePossitions, mergedBytecodes.count)
 }

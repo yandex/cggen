@@ -64,7 +64,11 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       .joined(separator: "\n") + filePreambleLegacy()
   }
 
-  func generateImageFunction(image: Image) -> String {
+  func generateImageFunctions(images: [Image]) throws -> String {
+    images.map { generateImageFunction(image: $0) }.joined(separator: "\n\n")
+  }
+
+  private func generateImageFunction(image: Image) -> String {
     let camel = image.name.upperCamelCase
     let function = ObjCGen.functionName(imageName: camel, prefix: prefix)
     return

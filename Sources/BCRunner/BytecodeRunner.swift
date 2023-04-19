@@ -1,4 +1,5 @@
 import CoreGraphics
+import Compression
 import Foundation
 
 import BCCommon
@@ -16,6 +17,51 @@ public func runPathBytecode(_ path: CGMutablePath, fromData data: Data) throws {
   try data.withUnsafeBytes {
     let ptr = $0.baseAddress!
     try PathBytecodeRunner.run(path, ptr, sz)
+  }
+}
+
+public func runMergedBytecode(
+  fromData data: Data,
+  _ context: CGContext,
+  _ decompressedLen: Int,
+  _ startIndex: Int,
+  _ endIndex: Int
+) throws {
+  let sz = data.count
+  try data.withUnsafeBytes {
+    let ptr = $0.baseAddress!.assumingMemoryBound(to: UInt8.self)
+
+    let decompressedArray = try cache[ptr] ?? {
+      let bytecode = try decompressBytecode(ptr, sz, decompressedLen)
+      cache[ptr] = bytecode
+      return bytecode
+    }()
+
+    let partArray = Array(decompressedArray[startIndex...endIndex])
+    try BytecodeRunner.run(context, partArray, partArray.count)
+  }
+}
+
+@_cdecl("runMergedBytecode")
+public func runMergedBytecode(
+  _ context: CGContext,
+  _ start: UnsafePointer<UInt8>,
+  _ decompressedLen: Int,
+  _ len: Int,
+  _ startIndex: Int,
+  _ endIndex: Int
+) {
+  do {
+    let decompressedArray = try cache[start] ?? {
+      let bytecode = try decompressBytecode(start, len, decompressedLen)
+      cache[start] = bytecode
+      return bytecode
+    }()
+
+    let partArray = Array(decompressedArray[startIndex...endIndex])
+    try BytecodeRunner.run(context, partArray, partArray.count)
+  } catch let t {
+    assertionFailure("Failed to run bytecode with error: \(t)")
   }
 }
 
@@ -815,7 +861,7 @@ private struct ExtendedContext {
     case let .color(color):
       cg.setFillColor(color, alpha: paint.alpha)
     case .gradient, nil:
-      cg.setFillColor(.clear)
+      cg.setFillColor(CGColor(colorSpace: CGColorSpaceCreateDeviceRGB(), components: [0, 0, 0, 0])!)
     }
   }
 
@@ -825,7 +871,7 @@ private struct ExtendedContext {
     case let .color(color):
       cg.setStrokeColor(color, alpha: paint.alpha)
     case .gradient, nil:
-      cg.setStrokeColor(.clear)
+      cg.setStrokeColor(CGColor(colorSpace: CGColorSpaceCreateDeviceRGB(), components: [0, 0, 0, 0])!)
     }
   }
 
@@ -1007,3 +1053,47 @@ extension CGGradient {
     return gradient
   }
 }
+
+fileprivate func decompressBytecode(
+  _ start: UnsafePointer<UInt8>,
+  _ compressedLen: Int,
+  _ decompressedLen: Int
+) throws -> [UInt8] {
+  let decodedDestinationBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: decompressedLen)
+
+  let decompressedSize = compression_decode_buffer(
+    decodedDestinationBuffer,
+    decompressedLen,
+    start,
+    compressedLen,
+    nil,
+    COMPRESSION_LZFSE
+  )
+
+  return [UInt8](UnsafeBufferPointer(start: decodedDestinationBuffer, count: decompressedSize))
+}
+
+fileprivate final class Cache<Value> {
+  class WrappedValue {
+    let value: Value
+
+    init(_ value: Value) { self.value = value }
+  }
+
+  private let cache = NSCache<NSNumber, WrappedValue>()
+
+  subscript(key: UnsafePointer<UInt8>) -> Value? {
+    get {
+      cache.object(forKey: NSNumber(pointer: key))?.value
+    }
+    set {
+      if let newValue {
+        cache.setObject(WrappedValue(newValue), forKey: NSNumber(pointer: key))
+      } else {
+        cache.removeObject(forKey: NSNumber(pointer: key))
+      }
+    }
+  }
+}
+
+private let cache = Cache<[UInt8]>()
