@@ -111,7 +111,8 @@ func cggen(
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path }
+        files: files.map { $0.path },
+        shouldMergeBytecode: false
       )
     )
   }
@@ -468,6 +469,63 @@ func testBC(
       $0.add(.init(image: result, name: "result"))
       $0.add(.init(image: reference, name: "webkitsnapshot"))
       $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+    }
+  }
+}
+
+func testMBC(
+  paths: [URL],
+  referenceRenderer: (URL) throws -> CGImage,
+  scale: CGFloat,
+  antialiasing: Bool = true,
+  resultAdjust: (CGImage) -> CGImage = { $0 },
+  tolerance: Double
+) throws {
+  let references = try paths.map { try referenceRenderer($0) }
+  let (mergedBytecode, positions, decompressedSize) =
+    try getImagesMergedBytecodeAndPositions(from: paths)
+
+  let contexts = try references.map { reference in
+    guard let context = CGContext(
+      data: nil,
+      width: reference.width,
+      height: reference.height,
+      bitsPerComponent: 8,
+      bytesPerRow: 0,
+      space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ) else { throw Err("Failed to create CGContext") }
+
+    return context
+  }
+
+  let data = Data(mergedBytecode)
+  for ((context, position), (reference, path)) in zip(zip(contexts, positions), zip(references, paths)) {
+    context.concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
+    context.setAllowsAntialiasing(antialiasing)
+
+    try runMergedBytecode(
+      fromData: data,
+      context,
+      decompressedSize,
+      position.0,
+      position.1
+    )
+
+    guard let rawResult = context.makeImage() else {
+      throw Err("Failed to draw CGImage")
+    }
+
+    let result = resultAdjust(rawResult)
+    let diff = compare(reference, result)
+    XCTAssertLessThan(diff, tolerance)
+
+    if diff >= tolerance {
+      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+        $0.add(.init(image: result, name: "result"))
+        $0.add(.init(image: reference, name: "webkitsnapshot"))
+        $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+      }
     }
   }
 }

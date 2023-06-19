@@ -4,15 +4,14 @@ import Base
 
 protocol CoreGraphicsGenerator {
   func filePreamble() -> String
-  func generateImageFunction(image: Image) -> String
+  func generateImageFunctions(images: [Image]) throws -> String
   func generatePathFuncton(path: PathRoutine) -> String
   func fileEnding() -> String
 }
 
 extension CoreGraphicsGenerator {
-  func generateFile(outputs: [Output]) -> String {
-    let imageFunctions = outputs.map { generateImageFunction(image: $0.image) }
-      .joined(separator: "\n\n")
+  func generateFile(outputs: [Output]) throws -> String {
+    let imageFunctions = try generateImageFunctions(images: outputs.map(\.image))
     let pathFunctions = outputs.flatMap(\.pathRoutines).map(generatePathFuncton)
       .joined(separator: "\n\n")
     return

@@ -20,6 +20,7 @@ struct Main: ParsableCommand {
   @Option var moduleName = ""
   @Flag var verbose = false
   @Argument var files: [String]
+  @Flag var shouldMergeBytecode = false
 
   static let configuration = CommandConfiguration(
     commandName: "cggen",
@@ -40,7 +41,8 @@ struct Main: ParsableCommand {
       cggenSupportHeaderPath: cggenSupportHeaderPath,
       module: moduleName,
       verbose: verbose,
-      files: files
+      files: files,
+      shouldMergeBytecode: shouldMergeBytecode
     ))
   }
 }

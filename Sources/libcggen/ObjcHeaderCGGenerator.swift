@@ -2,12 +2,13 @@ import CoreGraphics
 
 struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
+
   func filePreamble() -> String {
     params.imports.renderText() + "\n"
   }
 
-  func generateImageFunction(image: Image) -> String {
-    params.description(for: image)
+  func generateImageFunctions(images: [Image]) throws -> String {
+    images.map { params.description(for: $0) }.joined(separator: "\n\n")
   }
 
   func generatePathFuncton(path: PathRoutine) -> String {

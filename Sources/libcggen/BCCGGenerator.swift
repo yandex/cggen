@@ -507,7 +507,11 @@ struct BCCGGenerator: CoreGraphicsGenerator {
     """
   }
 
-  func generateImageFunction(image: Image) -> String {
+  func generateImageFunctions(images: [Image]) throws -> String {
+    images.map { generateImageFunction(image: $0) }.joined(separator: "\n\n")
+  }
+
+  private func generateImageFunction(image: Image) -> String {
     let bytecodeName = "\(image.name.lowerCamelCase)Bytecode"
     let bytecode = generateRouteBytecode(route: image.route)
     return """

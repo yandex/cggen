@@ -49,7 +49,8 @@ class BCCompilationTests: XCTestCase {
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { variousFilenamesDir.appendingPathComponent($0).path }
+        files: files.map { variousFilenamesDir.appendingPathComponent($0).path },
+        shouldMergeBytecode: true
       )
     )
 
