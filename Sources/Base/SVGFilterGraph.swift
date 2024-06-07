@@ -65,9 +65,9 @@ private func processFilterPrimitive(
         ?? Matrix.scalar4x5(λ: 1, zero: 0)
       type = .matrix(matrix)
     case .saturate:
-      type = .saturate(try d.values.map(singleFromValues) ?? 1)
+      type = try .saturate(d.values.map(singleFromValues) ?? 1)
     case .hueRotate:
-      type = .hueRotate(try d.values.map(singleFromValues) ?? 1)
+      type = try .hueRotate(d.values.map(singleFromValues) ?? 1)
     case .luminanceToAlpha:
       type = .luminanceToAlpha
     }
@@ -78,14 +78,14 @@ private func processFilterPrimitive(
   case let .feGaussianBlur(d):
     let stddevX = d.stdDeviation?._1 ?? 0
     let stddevY = d.stdDeviation?._2 ?? stddevX
-    resultNode = .gaussianBlur(
-      in: try d.in |> nodeFromInput,
+    resultNode = try .gaussianBlur(
+      in: d.in |> nodeFromInput,
       stddevX: stddevX,
       stddevY: stddevY
     )
   case let .feOffset(d):
-    resultNode = .offset(
-      in: try d.in |> nodeFromInput,
+    resultNode = try .offset(
+      in: d.in |> nodeFromInput,
       dx: d.dx ?? 0, dy: d.dy ?? 0
     )
   }

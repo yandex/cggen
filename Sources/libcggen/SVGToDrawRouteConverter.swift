@@ -48,7 +48,8 @@ enum SVGToDrawRouteConverter {
 
 func pathSegmentsFromSVG(_ svg: SVG) -> [PathSegment]? {
   guard case let .path(path) = svg,
-        case let .composite(segments) = try? pathConstruction(from: path.data)?.0 else {
+        case let .composite(segments) = try? pathConstruction(from: path.data)?
+        .0 else {
     return nil
   }
   return segments
@@ -147,7 +148,8 @@ private struct Context {
       }
     }
 
-    let strokeAlpha = presentation.strokeOpacity.map { DrawStep.strokeAlpha($0) }
+    let strokeAlpha = presentation.strokeOpacity
+      .map { DrawStep.strokeAlpha($0) }
     let fillAlpha = presentation.fillOpacity.map { DrawStep.fillAlpha($0) }
 
     let strokeWidth = try presentation.strokeWidth.map { l -> DrawStep in
@@ -275,7 +277,10 @@ private func drawShape(
     post.append(.endTransparencyLayer)
   }
   post.append(.restoreGState)
-  return try .composite(pre + [ctx.drawPath(path: .pathSegment(pathConstruction))] + post)
+  return try .composite(
+    pre +
+      [ctx.drawPath(path: .pathSegment(pathConstruction))] + post
+  )
 }
 
 private func group(
@@ -898,11 +903,11 @@ extension SVG {
       let summaryTransform =
         zipLongest(use.transform, translate, fillFirst: [], fillSecond: [])
           .map(+)
-      return .group(.init(
+      return try .group(.init(
         core: use.core,
         presentation: use.presentation,
         transform: summaryTransform,
-        children: [try def.resolvingUses(from: defenitions)]
+        children: [def.resolvingUses(from: defenitions)]
       ))
     default:
       return self

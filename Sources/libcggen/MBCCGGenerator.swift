@@ -63,24 +63,33 @@ extension MBCCGGenerator {
     decompressedSize: Int,
     compressedSize: Int
   ) -> String {
-    return """
+    """
     \(params.style.drawingHandlerPrefix)void \(params.prefix)Draw\(
       image.name.upperCamelCase
     )ImageInContext(CGContextRef context) {
-      runMergedBytecode(context, mergedBytecodes, \(decompressedSize), \(compressedSize), \(imagePossition.0), \(imagePossition.1));
+      runMergedBytecode(context, mergedBytecodes, \(decompressedSize), \(
+        compressedSize
+      ), \(
+      imagePossition
+        .0
+    ), \(imagePossition.1));
     }
     """ + params.descriptorLines(for: image).joined(separator: "\n")
   }
 
-  func generateMergedBytecodeArray(images: [Image]) throws -> (String, [ImagePossition], Int, Int) {
+  func generateMergedBytecodeArray(images: [Image]) throws
+    -> (String, [ImagePossition], Int, Int) {
     var imagePossitions: [ImagePossition] = []
     var mergedBytecodes: [UInt8] = []
     let bytecodeName = "mergedBytecodes"
 
-    images.forEach { image in
+    for image in images {
       let bytecode = generateRouteBytecode(route: image.route)
 
-      imagePossitions.append((mergedBytecodes.count, mergedBytecodes.count + bytecode.count - 1))
+      imagePossitions.append((
+        mergedBytecodes.count,
+        mergedBytecodes.count + bytecode.count - 1
+      ))
       mergedBytecodes += bytecode
     }
 
@@ -91,7 +100,12 @@ extension MBCCGGenerator {
     };
     """
 
-    return (bytecodeString, imagePossitions, mergedBytecodes.count, compressedBytecode.count)
+    return (
+      bytecodeString,
+      imagePossitions,
+      mergedBytecodes.count,
+      compressedBytecode.count
+    )
   }
 }
 
@@ -102,27 +116,27 @@ func compressBytecode(_ bytecode: [UInt8]) throws -> [UInt8] {
   var compressedData = Data()
 
   let outputFilter = try OutputFilter(
-   .compress,
-   using: .lzfse,
-   writingTo: { (data: Data?) -> Void in
-     if let data {
-       compressedData.append(data)
-     }
-   }
+    .compress,
+    using: .lzfse,
+    writingTo: { (data: Data?) in
+      if let data {
+        compressedData.append(data)
+      }
+    }
   )
 
   var index = 0
   let bufferSize = sourceData.count
 
   while true {
-   let rangeLength = min(pageSize, bufferSize - index)
+    let rangeLength = min(pageSize, bufferSize - index)
 
-   let subdata = sourceData.subdata(in: index ..< index + rangeLength)
-   index += rangeLength
+    let subdata = sourceData.subdata(in: index..<index + rangeLength)
+    index += rangeLength
 
-   try outputFilter.write(subdata)
+    try outputFilter.write(subdata)
 
-   if (rangeLength == 0) { break }
+    if rangeLength == 0 { break }
   }
   return [UInt8](compressedData)
 }

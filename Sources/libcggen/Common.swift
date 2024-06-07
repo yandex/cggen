@@ -10,7 +10,7 @@ public enum GenerationStyle: String {
 }
 
 extension GenerationStyle {
-  internal var drawingHandlerPrefix: String {
+  var drawingHandlerPrefix: String {
     switch self {
     case .plain:
       return ""

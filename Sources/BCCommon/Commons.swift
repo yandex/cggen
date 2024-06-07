@@ -26,7 +26,7 @@ public struct BCCubicCurve {
 }
 
 @usableFromInline
-internal func unzipComponent(val: UInt8) -> CGFloat {
+func unzipComponent(val: UInt8) -> CGFloat {
   CGFloat(val) / CGFloat(UInt8.max)
 }
 

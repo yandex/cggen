@@ -6,11 +6,13 @@ import Base
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) throws -> [PDFOperator] {
     var context = Context()
-    let operatorTable = makeOperatorTable()
-    let scanner = CGPDFScannerCreate(stream, operatorTable, &context)
-    CGPDFScannerScan(scanner)
-    CGPDFScannerRelease(scanner)
-    CGPDFContentStreamRelease(stream)
+    withUnsafeMutablePointer(to: &context) { contextPtr in
+      let operatorTable = makeOperatorTable()
+      let scanner = CGPDFScannerCreate(stream, operatorTable, contextPtr)
+      CGPDFScannerScan(scanner)
+      CGPDFScannerRelease(scanner)
+      CGPDFContentStreamRelease(stream)
+    }
     return try context.operators.map { try $0.get() }
   }
 
@@ -115,7 +117,7 @@ enum PDFContentStreamParser {
         guard let phase = scanner.popNumber(),
               let array = scanner.popArray(),
               let lengths = try? array.map({
-                CGFloat(try $0.realFromIntOrReal() !! Error.parsingError())
+                try CGFloat($0.realFromIntOrReal() !! Error.parsingError())
               }) else {
           return nil
         }

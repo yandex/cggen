@@ -273,7 +273,7 @@ private func generateDrawSteps(
   ) -> (UInt32, BCRadialGradientDrawingOptions) {
     (context.gradientsIds[name]!, BCRadialGradientDrawingOptions(options))
   }
-  steps.forEach { (step: DrawStep) in
+  for step in steps {
     switch step {
     case .saveGState:
       encode(.saveGState, DrawCommand.SaveGStateArgs.self, (), >>)
@@ -581,7 +581,7 @@ enum PathSegmentEncoding {
     steps segments: [PathSegment],
     bytecode: inout Bytecode
   ) {
-    segments.forEach { segment in
+    for segment in segments {
       encodeAsPathCommand(segment, bytecode: &bytecode)
     }
   }
@@ -590,7 +590,7 @@ enum PathSegmentEncoding {
     steps segments: [PathSegment],
     bytecode: inout Bytecode
   ) {
-    segments.forEach { segment in
+    for segment in segments {
       encodeAsDrawCommand(segment, bytecode: &bytecode)
     }
   }

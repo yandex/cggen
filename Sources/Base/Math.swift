@@ -42,8 +42,10 @@ extension Array where Element: LinearInterpolatable {
         return self[range]
       }
       let (idxOfMaxError, maxError) = maxLinearInterpolationError(in: range)
-      // Check whether linear interpolation has acceptable accuracy on this segment.
-      // If not, split this segment into two, for each of which we recursively check
+      // Check whether linear interpolation has acceptable accuracy on this
+      // segment.
+      // If not, split this segment into two, for each of which we recursively
+      // check
       // if linear interpolation is OK.
       if maxError > tolerance {
         let r1 = range.lowerBound...idxOfMaxError
@@ -133,7 +135,7 @@ public enum Matrix {
 extension Comparable {
   @inlinable
   public func clamped(to limits: ClosedRange<Self>) -> Self {
-    return min(max(self, limits.lowerBound), limits.upperBound)
+    min(max(self, limits.lowerBound), limits.upperBound)
   }
 }
 

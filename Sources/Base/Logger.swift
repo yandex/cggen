@@ -21,7 +21,7 @@ public func log(_ s: String) {
 
 extension OSLog {
   @usableFromInline
-  internal class Guard {
+  class Guard {
     var expectDealloc = false
     var reentranceGuard = true
 

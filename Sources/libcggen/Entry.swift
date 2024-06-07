@@ -1,5 +1,5 @@
-import Foundation
 import BCCommon
+import Foundation
 
 import Base
 import PDFParse
@@ -82,9 +82,15 @@ public func runCggen(with args: Args) throws {
   if let objcImplPath = args.objcImpl {
     var implGenerator: CoreGraphicsGenerator {
       if #available(macOS 10.15, *), args.shouldMergeBytecode {
-        return MBCCGGenerator(params: params, headerImportPath: args.objcHeaderImportPath)
+        return MBCCGGenerator(
+          params: params,
+          headerImportPath: args.objcHeaderImportPath
+        )
       } else {
-        return BCCGGenerator(params: params, headerImportPath: args.objcHeaderImportPath)
+        return BCCGGenerator(
+          params: params,
+          headerImportPath: args.objcHeaderImportPath
+        )
       }
     }
 
@@ -199,9 +205,9 @@ private func generateImagesAndPaths(
   }
 
   return try generated.map {
-    let image = Image(
+    let image = try Image(
       name: $0.0.deletingPathExtension().lastPathComponent,
-      route: try $0.1.get().drawRoutine
+      route: $0.1.get().drawRoutine
     )
 
     let pathRoutines = try $0.1.get().pathRoutines
@@ -228,12 +234,19 @@ public func getImagesMergedBytecodeAndPositions(
   var imagePossitions: [(Int, Int)] = []
   var mergedBytecodes: [UInt8] = []
 
-  images.forEach { image in
+  for image in images {
     let bytecode = generateRouteBytecode(route: image.route)
 
-    imagePossitions.append((mergedBytecodes.count, mergedBytecodes.count + bytecode.count - 1))
+    imagePossitions.append((
+      mergedBytecodes.count,
+      mergedBytecodes.count + bytecode.count - 1
+    ))
     mergedBytecodes += bytecode
   }
 
-  return (try compressBytecode(mergedBytecodes), imagePossitions, mergedBytecodes.count)
+  return try (
+    compressBytecode(mergedBytecodes),
+    imagePossitions,
+    mergedBytecodes.count
+  )
 }

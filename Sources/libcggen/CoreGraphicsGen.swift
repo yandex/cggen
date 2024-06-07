@@ -11,7 +11,10 @@ protocol CoreGraphicsGenerator {
 
 extension CoreGraphicsGenerator {
   func generateFile(outputs: [Output]) throws -> String {
-    let imageFunctions = try generateImageFunctions(images: outputs.map(\.image))
+    let imageFunctions = try generateImageFunctions(
+      images: outputs
+        .map(\.image)
+    )
     let pathFunctions = outputs.flatMap(\.pathRoutines).map(generatePathFuncton)
       .joined(separator: "\n\n")
     return

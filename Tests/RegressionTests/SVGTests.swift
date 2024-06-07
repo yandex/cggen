@@ -36,7 +36,7 @@ class SVGTest: XCTestCase {
         sample(named: "use_referencing_not_in_defs"),
         sample(named: "simple_mask"),
         sample(named: "clip_path"),
-        sample(named: "transforms")
+        sample(named: "transforms"),
       ]
     )
   }
