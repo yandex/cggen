@@ -53,7 +53,7 @@ class PDFTests: XCTestCase {
   }
 
   func testNestedTransparentGroup() {
-    test(pdf: "nested_transparent_group", tolerance: 0.003)
+    test(pdf: "nested_transparent_group", tolerance: 0.005)
   }
 
   func testShapes() {

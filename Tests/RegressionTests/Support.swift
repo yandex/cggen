@@ -209,6 +209,7 @@ func clang(
     "clang",
     "-Weverything",
     "-Werror",
+    "-Wno-declaration-after-statement",
     "-fmodules",
     "-isysroot",
     sdkPath,
