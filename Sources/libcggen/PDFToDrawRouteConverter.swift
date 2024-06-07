@@ -19,7 +19,7 @@ enum PDFToDrawRouteConverter {
       prepend += [
         .fillAlpha(1),
         .strokeAlpha(1),
-        .beginTransparencyLayer
+        .beginTransparencyLayer,
       ]
       append.append(.endTransparencyLayer)
     }
@@ -70,7 +70,7 @@ enum PDFToDrawRouteConverter {
     resources: PDFResources,
     gradients: [String: PDFGradientDrawingOptions]
   ) throws -> [DrawStep] {
-    return try ops.map {
+    try ops.map {
       try $0.drawStep(
         resources: resources,
         gradients: gradients

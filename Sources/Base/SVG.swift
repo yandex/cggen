@@ -884,13 +884,13 @@ public enum SVGParser {
       width, height, viewBox(.viewBox),
       with: identity
     ) <<~ version <<~ xml <<~ endof()).run(el.attrs).get()
-    return .init(
+    return try .init(
       core: attrs.0,
       presentation: attrs.1,
       width: attrs.2,
       height: attrs.3,
       viewBox: attrs.4,
-      children: try el.children.map(element(from:))
+      children: el.children.map(element(from:))
     )
   }
 
@@ -1275,32 +1275,32 @@ private func attributeParser<T>(
 
 public enum SVGAttributeParsers {
   typealias Parser<T> = Base.Parser<Substring, T>
-  internal static let wsp: Parser<Void> = oneOf(
+  static let wsp: Parser<Void> = oneOf(
     [0x20, 0x9, 0xD, 0xA]
       .map(Unicode.Scalar.init).map(Character.init)
       .map(consume)
   )
-  internal static let comma: Parser<Void> = ","
+  static let comma: Parser<Void> = ","
 
   // (wsp+ comma? wsp*) | (comma wsp*)
-  internal static let commaWsp: Parser<Void> =
+  static let commaWsp: Parser<Void> =
     (wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp*).map(always(()))
-  internal static let number: Parser<SVG.Float> = double()
-  internal static let listOfNumbers = zeroOrMore(number, separator: commaWsp)
-  internal static let numberOptionalNumber = zip(
+  static let number: Parser<SVG.Float> = double()
+  static let listOfNumbers = zeroOrMore(number, separator: commaWsp)
+  static let numberOptionalNumber = zip(
     number,
     (commaWsp ~>> number)~?,
     with: SVG.NumberOptionalNumber.init
   )
-  internal static let coord: Parser<SVG.Float> = number
+  static let coord: Parser<SVG.Float> = number
 
-  internal static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
-  internal static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
+  static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
+  static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
     .map { SVG.Length(number: $0.0, unit: $0.1) }
-  internal static let flag: Parser<Bool> =
+  static let flag: Parser<Bool> =
     oneOf(consume("0").map(always(false)), consume("1").map(always(true)))
 
-  internal static let viewBox: Parser<SVG.ViewBox> =
+  static let viewBox: Parser<SVG.ViewBox> =
     zip(
       number <<~ commaWsp, number <<~ commaWsp, number <<~ commaWsp, number,
       with: SVG.ViewBox.init
@@ -1308,7 +1308,7 @@ public enum SVGAttributeParsers {
 
   // Has no equivalent in specification, for code deduplication only.
   // "$name" wsp* "(" wsp* parser wsp* ")"
-  internal static func namedTransform(
+  static func namedTransform(
     _ name: String,
     _ value: Parser<SVG.Transform>
   ) -> Parser<SVG.Transform> {
@@ -1316,13 +1316,13 @@ public enum SVGAttributeParsers {
   }
 
   // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
-  internal static let translate: Parser<SVG.Transform> = namedTransform(
+  static let translate: Parser<SVG.Transform> = namedTransform(
     "translate",
     zip(number, (commaWsp ~>> number)~?, with: SVG.Transform.translate)
   )
 
   // "scale" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
-  internal static let scale: Parser<SVG.Transform> = namedTransform(
+  static let scale: Parser<SVG.Transform> = namedTransform(
     "scale",
     zip(number, (commaWsp ~>> number)~?, with: SVG.Transform.scale)
   )
@@ -1335,18 +1335,19 @@ public enum SVGAttributeParsers {
 
   private static let angle: Parser<SVG.Angle> = number.map(SVG.Angle.init)
 
-  // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp* ")"
-  internal static let rotate: Parser<SVG.Transform> = namedTransform(
+  // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp*
+  // ")"
+  static let rotate: Parser<SVG.Transform> = namedTransform(
     "rotate",
     zip(angle, anchor~?, with: SVG.Transform.rotate)
   )
 
   // "skewX" wsp* "(" wsp* number wsp* ")"
-  internal static let skewX: Parser<SVG.Transform> = namedTransform(
+  static let skewX: Parser<SVG.Transform> = namedTransform(
     "skewX", angle.map(SVG.Transform.skewX)
   )
   // "skewX" wsp* "(" wsp* number wsp* ")"
-  internal static let skewY: Parser<SVG.Transform> = namedTransform(
+  static let skewY: Parser<SVG.Transform> = namedTransform(
     "skewY", angle.map(SVG.Transform.skewY)
   )
 
@@ -1359,7 +1360,7 @@ public enum SVGAttributeParsers {
       number comma-wsp
       number wsp* ")"
    */
-  internal static let matrix: Parser<SVG.Transform> = namedTransform(
+  static let matrix: Parser<SVG.Transform> = namedTransform(
     "matrix", zip(
       number <<~ commaWsp,
       number <<~ commaWsp,
@@ -1371,9 +1372,9 @@ public enum SVGAttributeParsers {
     )
   )
 
-  internal static let transformsList: Parser<[SVG.Transform]> =
+  static let transformsList: Parser<[SVG.Transform]> =
     wsp* ~>> oneOrMore(transform, separator: commaWsp+) <<~ wsp*
-  internal static let transform: Parser<SVG.Transform> = oneOf([
+  static let transform: Parser<SVG.Transform> = oneOf([
     translate,
     scale,
     rotate,
@@ -1382,12 +1383,12 @@ public enum SVGAttributeParsers {
     matrix,
   ])
 
-  internal static let hexByteFromSingle: Parser<UInt8> = readOne().flatMap {
+  static let hexByteFromSingle: Parser<UInt8> = readOne().flatMap {
     guard let value = hexFromChar($0) else { return .never() }
     return .always(value << 4 | value)
   }
 
-  internal static let hexByte: Parser<UInt8> = (readOne() ~ readOne()).flatMap {
+  static let hexByte: Parser<UInt8> = (readOne() ~ readOne()).flatMap {
     guard let v1 = hexFromChar($0.0),
           let v2 = hexFromChar($0.1) else { return .never() }
     return .always(v1 << 4 | v2)
@@ -1412,12 +1413,12 @@ public enum SVGAttributeParsers {
     oneOf(SVGColorKeyword.self).map(\.color),
   ])
 
-  internal static let iri: Parser<String> =
+  static let iri: Parser<String> =
     "#" ~>> consume(while: always(true)).map(String.init)
-  internal static let funciri: Parser<String> =
+  static let funciri: Parser<String> =
     "url(#" ~>> consume(while: { $0 != ")" }).map(String.init) <<~ ")"
 
-  internal static let paint: Parser<SVG.Paint> =
+  static let paint: Parser<SVG.Paint> =
     consume("none").map(always(.none)) |
     rgbcolor.map(SVG.Paint.rgb) |
     funciri.map(SVG.Paint.funciri(id:))
@@ -1432,13 +1433,13 @@ public enum SVGAttributeParsers {
   // coordinate-pairs:
   //   coordinate-pair
   //   | coordinate-pair comma-wsp coordinate-pairs
-  internal static let listOfPoints: Parser<SVG.CoordinatePairs> =
+  static let listOfPoints: Parser<SVG.CoordinatePairs> =
     wsp* ~>> zeroOrMore(coordinatePair, separator: commaWsp) <<~ wsp*
 
   // elliptical-arc-argument:
   //   nonnegative-number comma-wsp? nonnegative-number comma-wsp?
   //     number comma-wsp flag comma-wsp? flag comma-wsp? coordinate-pair
-  internal static
+  static
   let ellipticalArcArg: Parser<SVG.PathData.EllipticalArcArgument> =
     zip(
       number <<~ commaWsp~?, number <<~ commaWsp~?,
@@ -1447,10 +1448,10 @@ public enum SVGAttributeParsers {
       with: SVG.PathData.EllipticalArcArgument.init
     )
 
-  internal static let identifier: Parser<String> =
+  static let identifier: Parser<String> =
     Parser<Substring>.identity().map(String.init)
 
-  internal static let stopOffset: Parser<SVG.Stop.Offset> = (number ~ "%"~?)
+  static let stopOffset: Parser<SVG.Stop.Offset> = (number ~ "%"~?)
     .map {
       switch $0.1 {
       case .some:
@@ -1475,7 +1476,7 @@ public enum SVGAttributeParsers {
     positioning(of: "Z").map { .init(positioning: $0, kind: .closepath) },
   ])
 
-  internal static let pathData =
+  static let pathData =
     wsp* ~>> oneOrMore(anyCommand, separator: wsp*) <<~ wsp*
 
   private static let quadraticCurveArgument = zip(
@@ -1526,12 +1527,12 @@ public enum SVGAttributeParsers {
   }
 
   // Dash Array
-  internal static let dashArray = oneOrMore(length, separator: commaWsp)
+  static let dashArray = oneOrMore(length, separator: commaWsp)
 
   private static let filterPrimitiveInPredefined:
     Parser<SVG.FilterPrimitiveIn.Predefined> = oneOf()
 
-  internal static let filterPrimitiveIn: Parser<SVG.FilterPrimitiveIn> =
+  static let filterPrimitiveIn: Parser<SVG.FilterPrimitiveIn> =
     Parser<Substring>.identity()
       .map {
         let value = String($0)
@@ -1539,7 +1540,7 @@ public enum SVGAttributeParsers {
           .map(SVG.FilterPrimitiveIn.predefined) ?? .previous(value)
       }
 
-  internal static let blendMode: Parser<SVG.BlendMode> = oneOf()
+  static let blendMode: Parser<SVG.BlendMode> = oneOf()
 }
 
 // MARK: - Render

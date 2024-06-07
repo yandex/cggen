@@ -9,7 +9,7 @@ extension GenerationParams {
     ObjCGen.functionName(imageName: imageName.upperCamelCase, prefix: prefix)
   }
 
-  internal func descriptorLines(for image: Image) -> [String] {
+  func descriptorLines(for image: Image) -> [String] {
     switch style {
     case .plain:
       return []

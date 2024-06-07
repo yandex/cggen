@@ -88,11 +88,13 @@ extension CGPathElement {
     }
   }
 }
+
 extension CGPath {
   func isAlmostEqual(to other: CGPath, tolerance: CGFloat) -> Bool {
     let pairs = zip(segments, other.segments)
     for (lhsElement, rhsElement) in pairs {
-      guard lhsElement.isAlmostEqual(to: rhsElement, tolerance: tolerance) else { return false }
+      guard lhsElement.isAlmostEqual(to: rhsElement, tolerance: tolerance)
+      else { return false }
     }
     return true
   }

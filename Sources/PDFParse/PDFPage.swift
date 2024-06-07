@@ -9,7 +9,7 @@ public struct PDFPage {
   public let operators: [PDFOperator]
   public let bbox: CGRect
 
-  internal init(page: CGPDFPage) throws {
+  init(page: CGPDFPage) throws {
     let stream = CGPDFContentStreamCreateWithPage(page)
     let operators = try PDFContentStreamParser
       .parse(stream: CGPDFContentStreamCreateWithPage(page))

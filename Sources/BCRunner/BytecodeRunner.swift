@@ -1,5 +1,5 @@
-import CoreGraphics
 import Compression
+import CoreGraphics
 import Foundation
 
 import BCCommon
@@ -124,7 +124,7 @@ public struct PathBytecodeRunner {
   private var exec: PathCommandExecution
 
   fileprivate init(bytecode: Bytecode, exec: PathCommandExecution) {
-    self.programCounter = bytecode
+    programCounter = bytecode
     self.exec = exec
   }
 
@@ -175,7 +175,7 @@ public struct PathBytecodeRunner {
   >(
     _: (T0, T1).Type = (T0, T1).self
   ) throws -> (T0, T1) {
-    return try (
+    try (
       read(T0.self), read(T1.self)
     )
   }
@@ -185,7 +185,7 @@ public struct PathBytecodeRunner {
   >(
     _: (T0, T1, T2).Type = (T0, T1, T2).self
   ) throws -> (T0, T1, T2) {
-    return try (
+    try (
       read(T0.self), read(T1.self), read(T2.self)
     )
   }
@@ -196,7 +196,7 @@ public struct PathBytecodeRunner {
   >(
     _: (T0, T1, T2, T3, T4).Type = (T0, T1, T2, T3, T4).self
   ) throws -> (T0, T1, T2, T3, T4) {
-    return try (
+    try (
       read(T0.self), read(T1.self), read(T2.self),
       read(T3.self), read(T4.self)
     )
@@ -369,7 +369,7 @@ public struct BytecodeRunner {
   >(
     _: (T0, T1).Type = (T0, T1).self
   ) throws -> (T0, T1) {
-    return try (
+    try (
       read(T0.self), read(T1.self)
     )
   }
@@ -379,7 +379,7 @@ public struct BytecodeRunner {
   >(
     _: (T0, T1, T2).Type = (T0, T1, T2).self
   ) throws -> (T0, T1, T2) {
-    return try (
+    try (
       read(T0.self), read(T1.self), read(T2.self)
     )
   }
@@ -390,7 +390,7 @@ public struct BytecodeRunner {
   >(
     _: (T0, T1, T2, T3, T4).Type = (T0, T1, T2, T3, T4).self
   ) throws -> (T0, T1, T2, T3, T4) {
-    return try (
+    try (
       read(T0.self), read(T1.self), read(T2.self),
       read(T3.self), read(T4.self)
     )
@@ -861,7 +861,10 @@ private struct ExtendedContext {
     case let .color(color):
       cg.setFillColor(color, alpha: paint.alpha)
     case .gradient, nil:
-      cg.setFillColor(CGColor(colorSpace: CGColorSpaceCreateDeviceRGB(), components: [0, 0, 0, 0])!)
+      cg.setFillColor(CGColor(
+        colorSpace: CGColorSpaceCreateDeviceRGB(),
+        components: [0, 0, 0, 0]
+      )!)
     }
   }
 
@@ -871,7 +874,10 @@ private struct ExtendedContext {
     case let .color(color):
       cg.setStrokeColor(color, alpha: paint.alpha)
     case .gradient, nil:
-      cg.setStrokeColor(CGColor(colorSpace: CGColorSpaceCreateDeviceRGB(), components: [0, 0, 0, 0])!)
+      cg.setStrokeColor(CGColor(
+        colorSpace: CGColorSpaceCreateDeviceRGB(),
+        components: [0, 0, 0, 0]
+      )!)
     }
   }
 
@@ -1054,12 +1060,13 @@ extension CGGradient {
   }
 }
 
-fileprivate func decompressBytecode(
+private func decompressBytecode(
   _ start: UnsafePointer<UInt8>,
   _ compressedLen: Int,
   _ decompressedLen: Int
 ) throws -> [UInt8] {
-  let decodedDestinationBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: decompressedLen)
+  let decodedDestinationBuffer = UnsafeMutablePointer<UInt8>
+    .allocate(capacity: decompressedLen)
 
   let decompressedSize = compression_decode_buffer(
     decodedDestinationBuffer,
@@ -1070,10 +1077,13 @@ fileprivate func decompressBytecode(
     COMPRESSION_LZFSE
   )
 
-  return [UInt8](UnsafeBufferPointer(start: decodedDestinationBuffer, count: decompressedSize))
+  return [UInt8](UnsafeBufferPointer(
+    start: decodedDestinationBuffer,
+    count: decompressedSize
+  ))
 }
 
-fileprivate final class Cache<Value> {
+private final class Cache<Value> {
   class WrappedValue {
     let value: Value
 

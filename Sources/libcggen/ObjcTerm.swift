@@ -384,7 +384,8 @@ extension ObjcTerm {
 
   // MARK: Swift bridging
 
-  // typedef struct CF_BRIDGED_TYPE(id) objcName *objcNameRef CF_SWIFT_NAME(namespace);
+  // typedef struct CF_BRIDGED_TYPE(id) objcName *objcNameRef
+  // CF_SWIFT_NAME(namespace);
   static func swiftNamespace(_ namespace: String, cPref: String) -> ObjcTerm {
     .cdecl(.init(specifiers: [
       .storage(.typedef),

@@ -117,7 +117,7 @@ enum PDFContentStreamParser {
         guard let phase = scanner.popNumber(),
               let array = scanner.popArray(),
               let lengths = try? array.map({
-                CGFloat(try $0.realFromIntOrReal() !! Error.parsingError())
+                try CGFloat($0.realFromIntOrReal() !! Error.parsingError())
               }) else {
           return nil
         }

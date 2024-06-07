@@ -194,7 +194,7 @@ private func subprocess(
   return task.terminationStatus
 }
 
-internal func clang(
+func clang(
   out: URL?,
   files: [URL],
   syntaxOnly: Bool = false,
@@ -246,15 +246,15 @@ let testLog = OSLog(
   category: .pointsOfInterest
 )
 
-internal let signpost = testLog.signpost
-internal func signpostRegion<T>(
+let signpost = testLog.signpost
+func signpostRegion<T>(
   _ desc: StaticString,
   _ region: () throws -> T
 ) rethrows -> T {
   try testLog.signpostRegion(desc, region)
 }
 
-internal func test(
+func test(
   snapshot: (URL) throws -> CGImage,
   adjustImage: (CGImage) -> CGImage = { $0 },
   antialiasing: Bool,
@@ -500,8 +500,14 @@ func testMBC(
   }
 
   let data = Data(mergedBytecode)
-  for ((context, position), (reference, path)) in zip(zip(contexts, positions), zip(references, paths)) {
-    context.concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
+  for ((context, position), (reference, path)) in zip(
+    zip(contexts, positions),
+    zip(references, paths)
+  ) {
+    context.concatenate(CGAffineTransform(
+      scaleX: CGFloat(scale),
+      y: CGFloat(scale)
+    ))
     context.setAllowsAntialiasing(antialiasing)
 
     try runMergedBytecode(

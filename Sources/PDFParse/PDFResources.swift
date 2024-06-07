@@ -7,7 +7,7 @@ public struct PDFResources {
   public let gStates: [String: PDFExtGState]
   public let xObjects: [String: PDFXObject]
 
-  internal init(obj: PDFObject, parentStream: CGPDFContentStreamRef) throws {
+  init(obj: PDFObject, parentStream: CGPDFContentStreamRef) throws {
     guard case let .dictionary(dict) = obj
     else { throw Error.parsingError() }
     let xobjFactory = partial(PDFXObject.init, arg2: parentStream)

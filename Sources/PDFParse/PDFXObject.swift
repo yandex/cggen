@@ -12,8 +12,8 @@ public struct PDFXObject {
   public let group: Group?
   public let matrix: CGAffineTransform?
 
-  internal typealias Factory = (PDFObject) throws -> PDFXObject
-  internal init(obj: PDFObject, parentStream: CGPDFContentStreamRef) throws {
+  typealias Factory = (PDFObject) throws -> PDFXObject
+  init(obj: PDFObject, parentStream: CGPDFContentStreamRef) throws {
     guard case let .stream(stream) = obj,
           case let dict = stream.dict,
           case let .name(type)? = dict["Type"],

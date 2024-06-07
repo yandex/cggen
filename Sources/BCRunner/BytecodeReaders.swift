@@ -208,7 +208,7 @@ extension CGRect: BytecodeDecodable {
 extension Array: BytecodeDecodable where Element: BytecodeDecodable {
   init(bytecode: inout Bytecode) throws {
     let size = try bytecode.read(type: BCSizeType.self)
-    self.init(try (0..<size).map { _ in try .init(bytecode: &bytecode) })
+    try self.init((0..<size).map { _ in try .init(bytecode: &bytecode) })
   }
 }
 

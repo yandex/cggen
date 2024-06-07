@@ -1,9 +1,9 @@
 import CoreGraphics
 import Foundation
 
-internal typealias PDFDictionary = [String: PDFObject]
+typealias PDFDictionary = [String: PDFObject]
 
-internal enum PDFObject {
+enum PDFObject {
   case null
   case boolean(CGPDFBoolean)
   case integer(CGPDFInteger)
@@ -141,7 +141,7 @@ internal enum PDFObject {
 }
 
 extension CGRect {
-  internal static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
+  static func fromPDFArray(_ array: [PDFObject]) -> CGRect? {
     guard array.count == 4, let x = array[0].realFromIntOrReal(),
           let y = array[1].realFromIntOrReal(),
           let w = array[2].realFromIntOrReal(),
@@ -151,7 +151,7 @@ extension CGRect {
 }
 
 extension CGAffineTransform {
-  internal init?(pdfArray array: [PDFObject]) {
+  init?(pdfArray array: [PDFObject]) {
     guard array.count == 6,
           let a = array[0].realFromIntOrReal(),
           let b = array[1].realFromIntOrReal(),
