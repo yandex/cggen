@@ -64,15 +64,17 @@ internal enum PDFObject {
 
   static func processDict(_ dict: CGPDFDictionaryRef) -> [String: PDFObject] {
     var result = NSMutableDictionary()
-    CGPDFDictionaryApplyFunction(dict, { key, obj, info in
-      let result = info!.load(as: NSMutableDictionary.self)
-      let key = String(cString: key)
-      if key == "Parent" {
-        result[key] = PDFObject.null
-        return
-      }
-      result[key] = PDFObject(pdfObj: obj)
-    }, &result)
+    withUnsafeMutablePointer(to: &result) { resultPtr in
+      CGPDFDictionaryApplyFunction(dict, { key, obj, info in
+        let result = info!.load(as: NSMutableDictionary.self)
+        let key = String(cString: key)
+        if key == "Parent" {
+          result[key] = PDFObject.null
+          return
+        }
+        result[key] = PDFObject(pdfObj: obj)
+      }, resultPtr)
+    }
     return result as! [String: PDFObject]
   }
 
