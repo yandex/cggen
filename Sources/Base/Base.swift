@@ -169,6 +169,10 @@ extension Collection where Index == Int {
   }
 }
 
+struct UncheckedSendable<T>: @unchecked Sendable {
+  var value: T
+}
+
 extension Array {
   public func appendToAll<T>(a: T) -> [(T, Element)] {
     map { (a, $0) }
@@ -181,12 +185,12 @@ extension Array {
     let lock = NSLock()
     var barrier: Error?
     DispatchQueue.concurrentPerform(iterations: count) { i in
-      guard lock.locked({ barrier == nil }) else { return }
+      guard lock.withLock({ barrier == nil }) else { return }
       do {
         let val = try transform(self[i])
-        lock.locked { result[i] = val }
+        lock.withLock { result[i] = val }
       } catch {
-        lock.locked { barrier = error }
+        lock.withLock { barrier = error }
       }
     }
     if let error = barrier {
@@ -195,15 +199,17 @@ extension Array {
     return result.map { $0! }
   }
 
-  public func concurrentMap<T>(_ transform: (Element) -> T) -> [T] {
+  public func concurrentMap<T>(
+    _ transform: (Element) -> T
+  ) -> [T] {
     [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
-      let low = buffer.baseAddress!
       finalCount = count
       let bufferAccess = NSLock()
+      let uncheckedBuffer = UncheckedSendable(value: buffer)
       DispatchQueue.concurrentPerform(iterations: count) { i in
         let val = transform(self[i])
-        bufferAccess.locked {
-          low.advanced(by: i).initialize(to: val)
+        bufferAccess.withLock {
+          uncheckedBuffer.value.initializeElement(at: i, to: val)
         }
       }
     }
@@ -454,14 +460,6 @@ public func apply<T>(_ f: () -> T) -> T {
 extension CaseIterable where Self: RawRepresentable, RawValue: Hashable {
   public static var rawValues: Set<AllCases.Element.RawValue> {
     Set(allCases.map { $0.rawValue })
-  }
-}
-
-extension NSLock {
-  func locked<T>(_ block: () -> T) -> T {
-    lock()
-    defer { unlock() }
-    return block()
   }
 }
 
