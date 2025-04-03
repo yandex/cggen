@@ -965,26 +965,36 @@ private struct ExtendedContext {
     _ gradient: CGGradient,
     options: BCLinearGradientDrawingOptions
   ) {
-    cg.drawLinearGradient(
-      gradient,
-      start: options.start,
-      end: options.end,
-      options: options.options
-    )
+    cg.savingGState {
+      if let transform = options.transform {
+        cg.concatenate(transform)
+      }
+      cg.drawLinearGradient(
+        gradient,
+        start: options.start,
+        end: options.end,
+        options: options.options
+      )
+    }
   }
 
   func drawRadialGradient(
     _ gradient: CGGradient,
     options: BCRadialGradientDrawingOptions
   ) {
-    cg.drawRadialGradient(
-      gradient,
-      startCenter: options.startCenter,
-      startRadius: options.startRadius,
-      endCenter: options.endCenter,
-      endRadius: options.endRadius,
-      options: options.drawingOptions
-    )
+    cg.savingGState {
+      if let transform = options.transform {
+        cg.concatenate(transform)
+      }
+      cg.drawRadialGradient(
+        gradient,
+        startCenter: options.startCenter,
+        startRadius: options.startRadius,
+        endCenter: options.endCenter,
+        endRadius: options.endRadius,
+        options: options.drawingOptions
+      )
+    }
   }
 
   mutating func drawShadow(_ shadow: BCShadow) {

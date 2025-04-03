@@ -1,0 +1,21 @@
+<svg width="50" height="50" viewBox="0 0 50 50"
+  xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="g1" cx="0.5" cy="0.5" r="0.7"
+      gradientUnits="objectBoundingBox"
+      gradientTransform="translate(0, 0) scale(0.7) rotate(10) skewX(5) skewY(5) matrix(1, 0.1, 0.1, 1, 0, 0)">
+      <stop offset="0%" stop-color="red" />
+      <stop offset="100%" stop-color="blue" />
+    </radialGradient>
+    <radialGradient id="g2" cx="25" cy="38.5" r="18"
+      gradientUnits="userSpaceOnUse"
+      gradientTransform="translate(0, -5) scale(0.9) rotate(10) skewX(5) skewY(5) matrix(1, 0.1, 0.1, 1, 0, 0)">
+      <stop offset="0%" stop-color="red" />
+      <stop offset="100%" stop-color="blue" />
+    </radialGradient>
+  </defs>
+  <g>
+    <rect x="0" y="0" width="50" height="23" fill="url(#g1)"/>
+    <rect x="0" y="27" width="50" height="23" fill="url(#g2)"/>
+  </g>
+</svg>

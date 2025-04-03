@@ -466,6 +466,7 @@ public enum SVG: Equatable {
     public var y1: Coordinate?
     public var x2: Coordinate?
     public var y2: Coordinate?
+    public var gradientTransform: [Transform]?
     public var stops: [Stop]
   }
 
@@ -981,7 +982,7 @@ public enum SVGParser {
   ) throws -> SVG.LinearGradient {
     let attrs = try (zip(
       core, presentation, units(.gradientUnits),
-      coord(.x1), coord(.y1), coord(.x2), coord(.y2),
+      coord(.x1), coord(.y1), coord(.x2), coord(.y2), transform(.gradientTransform),
       with: identity
     ) <<~ endof()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
@@ -1000,6 +1001,7 @@ public enum SVGParser {
       y1: attrs.4,
       x2: attrs.5,
       y2: attrs.6,
+      gradientTransform: attrs.7,
       stops: subelements.map(stops(from:))
     )
   }

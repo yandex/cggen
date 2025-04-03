@@ -94,6 +94,18 @@ extension Array: BytecodeEncodable where Element: BytecodeEncodable {
   }
 }
 
+extension Optional: BytecodeEncodable where Wrapped: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    switch self {
+    case .some(let value):
+      true >> bytecode
+      value >> bytecode
+    case .none:
+      false >> bytecode
+    }
+  }
+}
+
 extension CGRect: BytecodeEncodable {
   func encode(to bytecode: inout Bytecode) {
     origin >> bytecode
@@ -220,12 +232,14 @@ extension BCLinearGradientDrawingOptions: BytecodeEncodable {
       start: opts.startPoint,
       end: opts.endPoint,
       options: opts.options,
-      units: BCCoordinateUnits(opts.units)
+      units: BCCoordinateUnits(opts.units),
+      transform: opts.transform
     )
   }
 
   func encode(to bytecode: inout Bytecode) {
     (start, end, options, units) >> bytecode
+    transform >> bytecode
   }
 }
 
@@ -242,12 +256,14 @@ extension BCRadialGradientDrawingOptions: BytecodeEncodable {
       startRadius: opts.startRadius,
       endCenter: opts.endCenter,
       endRadius: opts.endRadius,
-      drawingOptions: opts.options
+      drawingOptions: opts.options,
+      transform: opts.transform
     )
   }
 
   func encode(to bytecode: inout Bytecode) {
     (startCenter, startRadius, endCenter, endRadius, drawingOptions) >> bytecode
+    transform >> bytecode
   }
 }
 
