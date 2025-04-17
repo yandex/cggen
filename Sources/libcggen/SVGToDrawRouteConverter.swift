@@ -83,7 +83,6 @@ private enum Err: Swift.Error {
   case tooComplexFilter(SVGFilterNode)
   case invalidElementInClipPath(SVG)
   case ellipsesAreNotSupportedInPathsYet
-  case gradientTransformIsNotSupportedYet
 }
 
 private struct Context {
@@ -698,17 +697,27 @@ private func gradients(
     let steps: GradientStepsProvider = { arg in
       let (objectBox, drawingArea, operation) = arg
       let coordinates: CGRect
-      switch g.unit ?? .objectBoundingBox {
+      let unit = g.unit ?? .objectBoundingBox
+      switch unit {
       case .objectBoundingBox:
         coordinates = objectBox
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
+      var startPoint = g.startPoint(in: coordinates)
+      var endPoint = g.endPoint(in: coordinates)
+      var transform = g.gradientTransform.map(makeTransform)
+      if transform != nil && unit == .objectBoundingBox {
+        startPoint.normalize(from: objectBox)
+        endPoint.normalize(from: objectBox)
+        transform?.adjustTo(objectBox)
+      }
       let options = DrawStep.LinearGradientDrawingOptions(
-        startPoint: g.startPoint(in: coordinates),
-        endPoint: g.endPoint(in: coordinates),
+        startPoint: startPoint,
+        endPoint: endPoint,
         options: g.options,
-        units: g.unit.map(DrawStep.Units.init) ?? .objectBoundingBox
+        units: g.unit.map(DrawStep.Units.init) ?? .objectBoundingBox,
+        transform: transform
       )
       switch operation {
       case .stroke:
@@ -720,8 +729,6 @@ private func gradients(
     return [(id, (steps, gradient))]
   case let .radialGradient(g):
     guard let id = g.core.id else { return [] }
-    try
-      check(g.gradientTransform == nil, Err.gradientTransformIsNotSupportedYet)
     let stops = g.stops
     let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
       let color = try $0.presentation.stopColor !! Err.noStopColor
@@ -739,18 +746,29 @@ private func gradients(
     let steps: GradientStepsProvider = { arg in
       let (objectBox, drawingArea, operation) = arg
       let coordinates: CGRect
-      switch g.unit ?? .objectBoundingBox {
+      let unit = g.unit ?? .objectBoundingBox
+      switch unit {
       case .objectBoundingBox:
         coordinates = objectBox
       case .userSpaceOnUse:
         coordinates = drawingArea
       }
+      var coordSpace = coordinates
+      var transform = CGAffineTransform?.none
+      if let gradientTransform = g.gradientTransform {
+        coordSpace = drawingArea
+        transform = makeTransform(from: gradientTransform)
+        if unit == .objectBoundingBox {
+          transform?.adjustTo(objectBox)
+        }
+      }
       let options = DrawStep.RadialGradientDrawingOptions(
-        startCenter: g.startCenter(in: coordinates),
+        startCenter: g.startCenter(in: coordSpace),
         startRadius: 0,
-        endCenter: g.endCenter(in: coordinates),
-        endRadius: g.endRadius(in: coordinates),
-        options: g.options
+        endCenter: g.endCenter(in: coordSpace),
+        endRadius: g.endRadius(in: coordSpace),
+        options: g.options,
+        transform: transform
       )
       switch operation {
       case .stroke:
@@ -762,6 +780,12 @@ private func gradients(
     return [(id, (steps, gradient))]
   default:
     return []
+  }
+}
+
+private func makeTransform(from transforms: [SVG.Transform]) -> CGAffineTransform {
+  transforms.reversed().reduce(CGAffineTransform.identity) {
+    $0.concatenating(.init(svgTransform: $1))
   }
 }
 
@@ -789,6 +813,20 @@ private func defs(from svg: SVG) throws -> Defenitions {
     }
   }
   return result
+}
+
+extension CGAffineTransform {
+  mutating func adjustTo(_ objectBox: CGRect) {
+    let scaleTransform = CGAffineTransform(
+      scaleX: objectBox.width,
+      y: objectBox.height
+    )
+    let translationTransform = CGAffineTransform(
+      translationX: objectBox.origin.x,
+      y: objectBox.origin.y
+    )
+    self = self.concatenating(scaleTransform).concatenating(translationTransform)
+  }
 }
 
 extension SVG {
@@ -1018,6 +1056,15 @@ extension CGAffineTransform {
         ty: CGFloat(f)
       )
     }
+  }
+}
+
+extension CGPoint {
+  mutating func normalize(from objectBox: CGRect) {
+    self = CGPoint(
+      x: (self.x - objectBox.origin.x) / objectBox.width,
+      y: (self.y - objectBox.origin.y) / objectBox.height
+    )
   }
 }
 

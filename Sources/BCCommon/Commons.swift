@@ -72,18 +72,21 @@ public struct BCLinearGradientDrawingOptions {
   public var end: CGPoint
   public var options: CGGradientDrawingOptions
   public var units: BCCoordinateUnits
+  public var transform: CGAffineTransform?
 
   @inlinable
   public init(
     start: CGPoint,
     end: CGPoint,
     options: CGGradientDrawingOptions,
-    units: BCCoordinateUnits
+    units: BCCoordinateUnits,
+    transform: CGAffineTransform?
   ) {
     self.start = start
     self.end = end
     self.options = options
     self.units = units
+    self.transform = transform
   }
 }
 
@@ -93,6 +96,7 @@ public struct BCRadialGradientDrawingOptions {
   public var endCenter: CGPoint
   public var endRadius: CGFloat
   public var drawingOptions: CGGradientDrawingOptions
+  public var transform: CGAffineTransform?
 
   @inlinable
   public init(
@@ -100,13 +104,15 @@ public struct BCRadialGradientDrawingOptions {
     startRadius: CGFloat,
     endCenter: CGPoint,
     endRadius: CGFloat,
-    drawingOptions: CGGradientDrawingOptions
+    drawingOptions: CGGradientDrawingOptions,
+    transform: CGAffineTransform?
   ) {
     self.startCenter = startCenter
     self.startRadius = startRadius
     self.endCenter = endCenter
     self.endRadius = endRadius
     self.drawingOptions = drawingOptions
+    self.transform = transform
   }
 }
 

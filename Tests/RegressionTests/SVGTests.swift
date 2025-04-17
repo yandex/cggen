@@ -170,6 +170,14 @@ class SVGGradientTests: XCTestCase {
     test(svg: "gradient_three_dots")
   }
 
+  func testLinearGradientTransform() {
+    test(svg: "gradient_transform_linear")
+  }
+
+  func testRadialGradientTransform() {
+    test(svg: "gradient_transform_radial")
+  }
+
   func testGradientWithMask() {
     test(svg: "gradient_with_mask")
   }

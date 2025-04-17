@@ -110,7 +110,8 @@ extension BCLinearGradientDrawingOptions: BytecodeDecodable {
       start: .init(bytecode: &bytecode),
       end: .init(bytecode: &bytecode),
       options: .init(bytecode: &bytecode),
-      units: .init(bytecode: &bytecode)
+      units: .init(bytecode: &bytecode),
+      transform: .init(bytecode: &bytecode)
     )
   }
 }
@@ -122,7 +123,8 @@ extension BCRadialGradientDrawingOptions: BytecodeDecodable {
       startRadius: .init(bytecode: &bytecode),
       endCenter: .init(bytecode: &bytecode),
       endRadius: .init(bytecode: &bytecode),
-      drawingOptions: .init(bytecode: &bytecode)
+      drawingOptions: .init(bytecode: &bytecode),
+      transform: .init(bytecode: &bytecode)
     )
   }
 }
@@ -209,6 +211,16 @@ extension Array: BytecodeDecodable where Element: BytecodeDecodable {
   init(bytecode: inout Bytecode) throws {
     let size = try bytecode.read(type: BCSizeType.self)
     try self.init((0..<size).map { _ in try .init(bytecode: &bytecode) })
+  }
+}
+
+extension Optional where Wrapped: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    if try Bool(bytecode: &bytecode) {
+      self = .some(try Wrapped(bytecode: &bytecode))
+    } else {
+      self = .none
+    }
   }
 }
 

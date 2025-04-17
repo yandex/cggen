@@ -32,6 +32,7 @@ enum DrawStep {
     var endCenter: CGPoint
     var endRadius: CGFloat
     var options: CGGradientDrawingOptions
+    var transform: CGAffineTransform?
   }
 
   public enum Units {
@@ -43,6 +44,7 @@ enum DrawStep {
     var endPoint: CGPoint
     var options: CGGradientDrawingOptions
     var units: Units
+    var transform: CGAffineTransform?
   }
 
   case saveGState
