@@ -217,7 +217,7 @@ extension Array: BytecodeDecodable where Element: BytecodeDecodable {
 extension Optional where Wrapped: BytecodeDecodable {
   init(bytecode: inout Bytecode) throws {
     if try Bool(bytecode: &bytecode) {
-      self = .some(try Wrapped(bytecode: &bytecode))
+      self = try .some(Wrapped(bytecode: &bytecode))
     } else {
       self = .none
     }

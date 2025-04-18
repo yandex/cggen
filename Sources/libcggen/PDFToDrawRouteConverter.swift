@@ -103,7 +103,6 @@ extension PDFOperator {
       throw DrawError("Not implemented")
     case .compatabilitySectionBegin:
       throw DrawError("Not implemented")
-
     case let .curveTo(p1, p2, p3):
       return .pathSegment(.curveTo(p1, p2, p3))
     case let .concatCTM(transform):
@@ -115,12 +114,10 @@ extension PDFOperator {
     case let .dash(phase, lengths):
       let pattern = DashPattern(phase: phase, lengths: lengths)
       return .dash(pattern)
-
     case .glyphWidthInType3Font:
       throw DrawError("Not implemented")
     case .glyphWidthAndBoundingBoxInType3Font:
       throw DrawError("Not implemented")
-
     case let .invokeXObject(name):
       return .composite([
         .saveGState,
@@ -128,7 +125,6 @@ extension PDFOperator {
         .subrouteWithName(name),
         .restoreGState,
       ])
-
     case .markedContentPointWithPListDefine:
       throw DrawError("Not implemented")
     case .inlineImageEnd:
@@ -139,17 +135,14 @@ extension PDFOperator {
       throw DrawError("Not implemented")
     case .compatabilitySectionEnd:
       throw DrawError("Not implemented")
-
     case .fillWinding:
       return .fillWithRule(.winding)
     case .fillEvenOdd:
       return .fillWithRule(.evenOdd)
-
     case .grayLevelStroke:
       throw DrawError("Not implemented")
     case .grayLevelNonstroke:
       throw DrawError("Not implemented")
-
     case let .applyGState(name):
       let state = resources.gStates[name]!
       let steps = try state.commands.map { cmd -> DrawStep in
@@ -170,7 +163,6 @@ extension PDFOperator {
       return .pathSegment(.closePath)
     case let .setFlatnessTolerance(flatness):
       return .flatness(flatness)
-
     case .inlineImageDataBegin:
       throw DrawError("Not implemented")
     case let .lineJoinStyle(styleRaw):
@@ -183,22 +175,18 @@ extension PDFOperator {
         throw DrawError("Unknown line cap style: \(styleRaw)")
       }
       return .lineCapStyle(style)
-
     case .cmykColorStroke:
       throw DrawError("Not implemented")
     case .cmykColorNonstroke:
       throw DrawError("Not implemented")
-
     case let .lineTo(point):
       return .pathSegment(.lineTo(point))
     case let .moveTo(point):
       return .pathSegment(.moveTo(point))
-
     case .miterLimit:
       throw DrawError("Not implemented")
     case .markedContentPointDefine:
       throw DrawError("Not implemented")
-
     case .endPath:
       return .pathSegment(.endPath)
     case .saveGState:

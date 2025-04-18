@@ -982,7 +982,8 @@ public enum SVGParser {
   ) throws -> SVG.LinearGradient {
     let attrs = try (zip(
       core, presentation, units(.gradientUnits),
-      coord(.x1), coord(.y1), coord(.x2), coord(.y2), transform(.gradientTransform),
+      coord(.x1), coord(.y1), coord(.x2), coord(.y2),
+      transform(.gradientTransform),
       with: identity
     ) <<~ endof()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
