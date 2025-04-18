@@ -97,7 +97,7 @@ extension Array: BytecodeEncodable where Element: BytecodeEncodable {
 extension Optional: BytecodeEncodable where Wrapped: BytecodeEncodable {
   func encode(to bytecode: inout Bytecode) {
     switch self {
-    case .some(let value):
+    case let .some(value):
       true >> bytecode
       value >> bytecode
     case .none:
@@ -655,7 +655,6 @@ enum PathSegmentEncoding {
     case .endPath:
       // FIXME: Implement end path
       break
-
     case let .lines(lines):
       encode(.lines, PathCommand.LinesArgs.self, lines, >>)
     case let .composite(steps):

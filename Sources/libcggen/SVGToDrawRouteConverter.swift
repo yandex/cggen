@@ -707,7 +707,7 @@ private func gradients(
       var startPoint = g.startPoint(in: coordinates)
       var endPoint = g.endPoint(in: coordinates)
       var transform = g.gradientTransform.map(makeTransform)
-      if transform != nil && unit == .objectBoundingBox {
+      if transform != nil, unit == .objectBoundingBox {
         startPoint.normalize(from: objectBox)
         endPoint.normalize(from: objectBox)
         transform?.adjustTo(objectBox)
@@ -783,7 +783,9 @@ private func gradients(
   }
 }
 
-private func makeTransform(from transforms: [SVG.Transform]) -> CGAffineTransform {
+private func makeTransform(
+  from transforms: [SVG.Transform]
+)   -> CGAffineTransform {
   transforms.reversed().reduce(CGAffineTransform.identity) {
     $0.concatenating(.init(svgTransform: $1))
   }
@@ -825,7 +827,7 @@ extension CGAffineTransform {
       translationX: objectBox.origin.x,
       y: objectBox.origin.y
     )
-    self = self.concatenating(scaleTransform).concatenating(translationTransform)
+    self = concatenating(scaleTransform).concatenating(translationTransform)
   }
 }
 
@@ -1062,8 +1064,8 @@ extension CGAffineTransform {
 extension CGPoint {
   mutating func normalize(from objectBox: CGRect) {
     self = CGPoint(
-      x: (self.x - objectBox.origin.x) / objectBox.width,
-      y: (self.y - objectBox.origin.y) / objectBox.height
+      x: (x - objectBox.origin.x) / objectBox.width,
+      y: (y - objectBox.origin.y) / objectBox.height
     )
   }
 }
