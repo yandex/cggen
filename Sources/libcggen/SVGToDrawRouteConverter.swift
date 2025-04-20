@@ -785,7 +785,7 @@ private func gradients(
 
 private func makeTransform(
   from transforms: [SVG.Transform]
-)   -> CGAffineTransform {
+) -> CGAffineTransform {
   transforms.reversed().reduce(CGAffineTransform.identity) {
     $0.concatenating(.init(svgTransform: $1))
   }

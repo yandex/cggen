@@ -69,6 +69,12 @@ class BCCompilationTests: XCTestCase {
     else {
       throw XCTSkip("This test supported only in xcode")
     }
+    XCTExpectFailure("""
+     Undefined symbols for architecture arm64:
+       "___llvm_profile_runtime", referenced from:
+           ___llvm_profile_runtime_user in BCCommon.o
+           ___llvm_profile_runtime_user in BCRunner.o
+    """)
     let files = [
       "caps_joins.svg",
       "clip_path.svg",

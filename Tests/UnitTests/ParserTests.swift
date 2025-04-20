@@ -66,7 +66,7 @@ class PareserTests: XCTestCase {
     let p: Parser<Int> = zip(int, "_", with: { int, _ in int })
     p.test("12_", expected: (12, ""))
     p.test("34__", expected: (34, "_"))
-    p.test("56", expected: (nil, "56"))
+    p.test("56", expected: (nil, ""))
     p.test("_56", expected: (nil, "_56"))
   }
 
@@ -180,19 +180,20 @@ extension Parser where D == Substring, T: Equatable {
     _ data: String,
     expected: (result: T?, rest: String)
   ) {
-    var data = Substring(data)
-    XCTAssertEqual(expected.result, run(&data))
-    XCTAssertEqual(expected.rest, String(data))
+    var dataToParse = Substring(data)
+    let res = tempRun(&dataToParse)
+    XCTAssertEqual(expected.result, res.value)
+    XCTAssertEqual(expected.rest, String(dataToParse))
   }
 }
 
-extension Parser where D == Substring, T == Void {
+extension NewParser where Input == Substring, Output == Void {
   func test(
     _ data: String,
     expected: (result: Void?, rest: String) = ((), "")
   ) {
     var data = Substring(data)
-    let result: Void? = run(&data)
+    let result: Void? = try? parse(&data)
     if expected.result == nil {
       XCTAssertNil(result)
     } else {

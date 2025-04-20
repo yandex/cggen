@@ -173,12 +173,12 @@ extension NamedColor {
 
   var caseHandling: String {
     """
-        case .\(name):
-          return SVG.Color(red: \(value.red), green: \(
-            value
-              .green
+    case .\(name):
+    return SVG.Color(red: \(value.red), green: \(
+      value
+        .green
     ), blue: \(value.blue))
-          """
+    """
   }
 }
 
