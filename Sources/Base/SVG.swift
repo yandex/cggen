@@ -1,6 +1,8 @@
 import CoreGraphics
 import Foundation
 
+import Parsing
+
 // https://www.w3.org/TR/SVG11/
 public enum SVG: Equatable {
   public typealias NotImplemented = Never
@@ -1266,36 +1268,41 @@ public enum SVGParser {
 }
 
 private func attributeParser<T>(
-  _ parser: SVGAttributeParsers.Parser<T>
+  _ parser: some SVGAttributeParsers.NewParser<T>
 ) -> (Attribute) -> Parser<[String: String], T?> {
   {
     key(key: $0.rawValue)~?.flatMapResult {
       guard let value = $0 else { return .success(nil) }
-      return parser.map(Optional.some).whole(value)
+      return parser.oldParser.map(Optional.some).whole(value)
     }
   }
 }
 
 public enum SVGAttributeParsers {
   typealias Parser<T> = Base.Parser<Substring, T>
-  static let wsp: Parser<Void> = oneOf(
-    [0x20, 0x9, 0xD, 0xA]
-      .map(Unicode.Scalar.init).map(Character.init)
-      .map(consume)
-  )
-  static let comma: Parser<Void> = ","
+  typealias NewParser<T> = Base.NewParser<Substring, T>
+
+  static let comma: String = ","
+  static let wsps = [0x20, 0x9, 0xD, 0xA].map { String.UTF8View([$0]) }
+  static let wsp = From(.utf8) { OneOf {
+    for s in wsps {
+      s
+    }
+  }}
 
   // (wsp+ comma? wsp*) | (comma wsp*)
-  static let commaWsp: Parser<Void> =
+  static let commaWsp: some NewParser<Void> =
     (wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp*).map(always(()))
-  static let number: Parser<SVG.Float> = double()
+  static let number: some NewParser<SVG.Float> =
+    From(.utf8) { SVG.Float.parser() }
   static let listOfNumbers = zeroOrMore(number, separator: commaWsp)
-  static let numberOptionalNumber = zip(
-    number,
-    (commaWsp ~>> number)~?,
-    with: SVG.NumberOptionalNumber.init
-  )
-  static let coord: Parser<SVG.Float> = number
+  static let numberOptionalNumber: some NewParser<SVG.NumberOptionalNumber> = Parse {
+    SVG.NumberOptionalNumber(_1: $0.0, _2: $0.1)
+  } with: {
+    number
+    (commaWsp ~>> number)~?
+  }
+  static let coord: some NewParser<SVG.Float> = number
 
   static let lengthUnit: Parser<SVG.Length.Unit> = oneOf()
   static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
@@ -1313,7 +1320,7 @@ public enum SVGAttributeParsers {
   // "$name" wsp* "(" wsp* parser wsp* ")"
   static func namedTransform(
     _ name: String,
-    _ value: Parser<SVG.Transform>
+    _ value: some NewParser<SVG.Transform>
   ) -> Parser<SVG.Transform> {
     (consume(name) ~ wsp* ~ "(" ~ wsp*) ~>> value <<~ (wsp* ~ ")")
   }
@@ -1336,7 +1343,8 @@ public enum SVGAttributeParsers {
     with: SVG.Transform.Anchor.init
   )
 
-  private static let angle: Parser<SVG.Angle> = number.map(SVG.Angle.init)
+  private static let angle: some NewParser<SVG.Angle> =
+    number.map(SVG.Angle.init)
 
   // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp*
   // ")"
@@ -1503,7 +1511,7 @@ public enum SVGAttributeParsers {
 
   private static func command<T>(
     _ cmd: Character,
-    arg: Parser<T>,
+    arg: some NewParser<T>,
     builder: @escaping ([T]) -> SVG.PathData.CommandKind
   ) -> Parser<SVG.PathData.Command> {
     zip(
@@ -1521,7 +1529,7 @@ public enum SVGAttributeParsers {
       | consume(cmd.uppercased()).map(always(.absolute))
   }
 
-  private static func argumentSequence<T>(_ p: Parser<T>) -> Parser<[T]> {
+  private static func argumentSequence<T>(_ p: some NewParser<T>) -> Parser<[T]> {
     oneOrMore(p, separator: commaWsp~?)
   }
 

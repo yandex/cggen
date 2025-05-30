@@ -1,5 +1,7 @@
 import Darwin
 
+import Parsing
+
 precedencegroup StreamAddition {
   higherThan: AdditionPrecedence
   associativity: right
@@ -34,7 +36,30 @@ postfix operator +
 // "Zero or one"
 postfix operator ~?
 
-public struct Parser<D, T> {
+public typealias NewParser = Parsing.Parser
+
+public struct AdhocParser<Input, Output>: NewParser {
+  public var parseImpl: (inout Input) -> Result<Output, Error>
+
+  public init(_ parse: @escaping (inout Input) -> Result<Output, Error>) {
+    parseImpl = parse
+  }
+
+  public func parse(_ input: inout Input) throws -> Output {
+    try parseImpl(&input).get()
+  }
+}
+
+extension NewParser {
+  public var oldParser: Parser<Input, Output> {
+    .init(self)
+  }
+}
+
+public struct Parser<D, T>: NewParser {
+  public typealias Input = D
+  public typealias Output = T
+
   public struct GenericError: Error {
     public var text: D
 
@@ -50,22 +75,40 @@ public struct Parser<D, T> {
 
   public typealias Error = Swift.Error
 
-  public var parse: (inout D) -> Result<T, Error>
+  public var newParser: any NewParser<D, T>
+
+  public func parse(_ input: inout D) throws -> T {
+    try newParser.parse(&input)
+  }
 
   @inlinable
   public func run(_ data: inout D) -> T? {
-    parse(&data).value
+    try? newParser.parse(&data)
   }
 
   @inlinable
   public func run(_ data: D) -> Result<T, Error> {
-    var copy = data
-    return parse(&copy)
+    Result {
+      var copy = data
+      return try newParser.parse(&copy)
+    }
+  }
+
+  @inlinable
+  public func tempRun(_ data: inout D) -> Result<T, Error> {
+    Result {
+      try newParser.parse(&data)
+    }
   }
 
   @inlinable
   public init(_ parse: @escaping (inout D) -> Result<T, Error>) {
-    self.parse = parse
+    newParser = AdhocParser(parse)
+  }
+
+  @inlinable
+  public init(_ p: any NewParser<D, T>) {
+    newParser = p
   }
 
   @inlinable
@@ -91,14 +134,14 @@ public struct Parser<D, T> {
       guard var datum = $0 else {
         return .failure(ParseError.gotNilExpected(type: D.self))
       }
-      let result = self.parse(&datum)
+      let result = self.tempRun(&datum)
       return result
     }
   }
 
   @inlinable
   public func map<T1>(_ t: @escaping (T) -> T1) -> Parser<D, T1> {
-    .init { self.parse(&$0).map(t) }
+    .init { self.tempRun(&$0).map(t) }
   }
 
   @inlinable
@@ -107,7 +150,7 @@ public struct Parser<D, T> {
   ) -> Parser<D, T1> {
     Parser<D, T1> { data in
       let original = data
-      let res = self.parse(&data).flatMap { t($0).parse(&data) }
+      let res = self.tempRun(&data).flatMap { t($0).tempRun(&data) }
       res.onFailure { data = original }
       return res
     }
@@ -118,7 +161,7 @@ public struct Parser<D, T> {
     _ t: @escaping (T) -> (Result<T1, Error>)
   ) -> Parser<D, T1> {
     Parser<D, T1> { data in
-      self.parse(&data).flatMap(t)
+      self.tempRun(&data).flatMap(t)
     }
   }
 
@@ -129,7 +172,7 @@ public struct Parser<D, T> {
   ) -> Parser<D1, T> {
     .init {
       var d = get($0)
-      let result = self.parse(&d)
+      let result = self.tempRun(&d)
       set(&$0, d)
       return result
     }
@@ -192,41 +235,34 @@ public func key<K, V>(key: K) -> Parser<[K: V], V> {
 @inlinable
 public func maybe<D, T>(_ p: Parser<D, T>) -> Parser<D, T?> {
   .init {
-    p.parse(&$0).map(Optional.some).flatMapError(always(.success(nil)))
+    p.tempRun(&$0).map(Optional.some).flatMapError(always(.success(nil)))
   }
 }
 
 @inlinable
 public func maybe<D>(_ p: Parser<D, Void>) -> Parser<D, Void> {
   .init {
-    p.parse(&$0).flatMapError(always(.success(())))
+    p.tempRun(&$0).flatMapError(always(.success(())))
   }
 }
 
 @inlinable
 public func zeroOrMore<D, A, S>(
-  _ p: Parser<D, A>,
-  separator: Parser<D, S>
+  _ p: some NewParser<D, A>,
+  separator: some NewParser<D, S>
 ) -> Parser<D, [A]> {
-  .init {
-    var matches: [A] = []
-    var lastBeforeSeparator = $0
-    var firstOrHasSeparatorBefore = true
-    while case let .success(match) = p.parse(&$0), firstOrHasSeparatorBefore {
-      matches.append(match)
-      lastBeforeSeparator = $0
-      firstOrHasSeparatorBefore = separator.parse(&$0).isSucceed
-    }
-    $0 = lastBeforeSeparator
-    return .success(matches)
-  }
+  Many {
+    p
+  } separator: {
+    separator
+  }.oldParser
 }
 
 @inlinable
 public func zeroOrMore<D, A>(
   _ p: Parser<D, A>
 ) -> Parser<D, [A]> {
-  zeroOrMore(p, separator: .always(()))
+  zeroOrMore(p, separator: Parser.always(()))
 }
 
 public enum ParseError: Error {
@@ -245,8 +281,8 @@ public enum ParseError: Error {
 
 @inlinable
 public func oneOrMore<D, A, S>(
-  _ p: Parser<D, A>,
-  separator: Parser<D, S>
+  _ p: some NewParser<D, A>,
+  separator: some NewParser<D, S>
 ) -> Parser<D, [A]> {
   zeroOrMore(p, separator: separator).flatMapResult {
     $0.count == 0 ? .failure(ParseError.atLeastOneExpected) : .success($0)
@@ -255,9 +291,9 @@ public func oneOrMore<D, A, S>(
 
 @inlinable
 public func oneOrMore<D, A>(
-  _ p: Parser<D, A>
+  _ p: some NewParser<D, A>
 ) -> Parser<D, [A]> {
-  oneOrMore(p, separator: .always(()))
+  oneOrMore(p, separator: Parser.always(()))
 }
 
 @inlinable
@@ -327,7 +363,7 @@ public func skipOneOrMore<C: Collection>(
 public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
   .opt { str in
     for p in ps {
-      if case let .success(match) = p.parse(&str) {
+      if case let .success(match) = p.tempRun(&str) {
         return match
       }
     }
@@ -352,7 +388,7 @@ public func longestOneOf<D: Collection, A>(
     var result: A?
     for p in ps {
       str = initial
-      if case let .success(match) = p.parse(&str),
+      if case let .success(match) = p.tempRun(&str),
          initialLen - str.count > maxlen {
         maxlen = initialLen - str.count
         result = match
@@ -387,7 +423,9 @@ public func oneOf<D: Collection, T: CaseIterable & RawRepresentable>(
   parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
   _: T.Type = T.self
 ) -> Parser<D, T> {
-  oneOf(T.allCases.map { parserFactory($0.rawValue).map(always($0)) })
+  oneOf(T.allCases.map {
+    parserFactory($0.rawValue).map(always($0)).oldParser
+  })
 }
 
 @inlinable
@@ -396,7 +434,9 @@ public func longestOneOf<D: Collection, T: CaseIterable & RawRepresentable>(
   _: T.Type = T.self
 ) -> Parser<D, T> {
   longestOneOf(
-    T.allCases.map { parserFactory($0.rawValue).map(always($0)) }
+    T.allCases.map {
+      parserFactory($0.rawValue).map(always($0)).oldParser
+    }
   )
 }
 
@@ -411,43 +451,59 @@ public func endof<D: Collection>(_: D.Type = D.self) -> Parser<D, Void> {
 
 @inlinable
 public func ~>> <D, T, T1>(
-  lhs: Parser<D, T1>, rhs: Parser<D, T>
+  lhs: some NewParser<D, T1>,
+  rhs: some NewParser<D, T>
 ) -> Parser<D, T> {
-  zip(lhs, rhs) { $1 }
+  Parse {
+    lhs
+    rhs
+  }.map { $0.1 }.oldParser
 }
 
 @inlinable
 public func <<~< D, T, T1 > (
-  lhs: Parser<D, T>, rhs: Parser<D, T1>
+  lhs: some NewParser<D, T>, rhs: some NewParser<D, T1>
 ) -> Parser<D, T> {
-  zip(lhs, rhs) { lhs, _ in lhs }
+  Parse {
+    lhs
+    rhs
+  }.map { $0.0 }.oldParser
 }
 
 @inlinable
-public func | <D, T>(lhs: Parser<D, T>, rhs: Parser<D, T>) -> Parser<D, T> {
-  oneOf([lhs, rhs])
+public func | <D, T>(
+  lhs: some NewParser<D, T>,
+  rhs: some NewParser<D, T>
+) -> Parser<D, T> {
+  OneOf {
+    lhs
+    rhs
+  }.oldParser
 }
 
 @inlinable
 public func ~ <D, T1, T2>(
-  lhs: Parser<D, T1>, rhs: Parser<D, T2>
+  lhs: some NewParser<D, T1>, rhs: some NewParser<D, T2>
 ) -> Parser<D, (T1, T2)> {
-  zip(lhs, rhs, with: identity)
+  Parse {
+    lhs
+    rhs
+  }.oldParser
 }
 
 @inlinable
-public postfix func ~? <D, T>(p: Parser<D, T>) -> Parser<D, T?> {
-  maybe(p)
+public postfix func ~? <D, T>(p: some NewParser<D, T>) -> Parser<D, T?> {
+  Optionally { p }.oldParser
 }
 
 @inlinable
-public postfix func * <D, T>(p: Parser<D, T>) -> Parser<D, [T]> {
-  zeroOrMore(p)
+public postfix func * <D, T>(p: some NewParser<D, T>) -> Parser<D, [T]> {
+  Many { p }.oldParser
 }
 
 @inlinable
-public postfix func + <D, T>(p: Parser<D, T>) -> Parser<D, [T]> {
-  oneOrMore(p)
+public postfix func + <D, T>(p: some NewParser<D, T>) -> Parser<D, [T]> {
+  Many(1...) { p }.oldParser
 }
 
 // String parsers
@@ -487,7 +543,7 @@ extension Parser where D == Substring {
   @inlinable
   public func whole(_ s: String) -> Result<T, Error> {
     var copy = D(s)
-    return (self <<~ endof()).parse(&copy)
+    return (self <<~ endof()).tempRun(&copy)
   }
 }
 

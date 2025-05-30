@@ -8,4 +8,5 @@ timeline.xctimeline
 *.pyc
 .swiftpm
 .idea
+.vscode
 Package.resolved

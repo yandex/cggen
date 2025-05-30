@@ -18,6 +18,10 @@ let package = Package(
       url: "https://github.com/apple/swift-argument-parser",
       .upToNextMinor(from: "0.4.0")
     ),
+    .package(
+      url: "https://github.com/pointfreeco/swift-parsing",
+      .upToNextMajor(from: "0.14.1")
+    ),
   ],
   targets: [
     .target(
@@ -40,7 +44,10 @@ let package = Package(
       dependencies: ["Base", "PDFParse", "BCCommon"]
     ),
     .target(
-      name: "Base"
+      name: "Base",
+      dependencies: [
+        .product(name: "Parsing", package: "swift-parsing"),
+      ]
     ),
     .target(
       name: "PDFParse",
