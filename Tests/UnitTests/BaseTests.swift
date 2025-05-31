@@ -7,7 +7,7 @@ class BaseTests: XCTestCase {
     XCTAssertEqual((0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
     XCTAssertEqual(Array(0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
 
-    class Test {
+    class Test: @unchecked Sendable {
       var i: Int
       init(_ i: Int) { self.i = i }
     }

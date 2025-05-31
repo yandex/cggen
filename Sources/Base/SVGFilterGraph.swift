@@ -1,6 +1,6 @@
-public indirect enum SVGFilterNode: Equatable {
+public indirect enum SVGFilterNode: Equatable, Sendable {
   public typealias ColorMatrix = Matrix.D4x5<SVG.Float>
-  public enum ColorMatrixType: Equatable {
+  public enum ColorMatrixType: Equatable, Sendable {
     case matrix(ColorMatrix)
     case saturate(SVG.Float)
     case hueRotate(SVG.Float)
@@ -35,7 +35,7 @@ extension SVGFilterNode {
   }
 }
 
-private struct FilterPrimitiveProcessAccumulator {
+private struct FilterPrimitiveProcessAccumulator: Sendable {
   var prev: SVGFilterNode
   var preceding: [String: SVGFilterNode]
 

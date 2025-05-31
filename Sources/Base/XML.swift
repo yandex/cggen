@@ -1,7 +1,7 @@
 import Foundation
 
-public enum XML: Equatable {
-  public struct Element: Equatable {
+public enum XML: Equatable, Sendable {
+  public struct Element: Equatable, Sendable {
     var tag: String
     var attrs: [String: String]
     var children: [XML]

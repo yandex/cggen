@@ -2,7 +2,7 @@ import CoreGraphics
 
 import BCCommon
 
-public struct InvalidRawValue<T: RawRepresentable>: Swift.Error {
+public struct InvalidRawValue<T: RawRepresentable>: Swift.Error where T.RawValue: Sendable {
   public typealias enumType = T
   public typealias rawType = T.RawValue
   public var rawValue: rawType
@@ -59,7 +59,7 @@ protocol BytecodeDecodable {
 // MARK: Conforamnces
 
 extension BytecodeDecodable
-  where Self: RawRepresentable, RawValue: FixedWidthInteger {
+  where Self: RawRepresentable, RawValue: FixedWidthInteger & Sendable {
   init(bytecode: inout Bytecode) throws {
     let rawValue = try bytecode.read(type: UInt8.self)
     let converted = Self.RawValue(rawValue)

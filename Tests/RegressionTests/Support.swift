@@ -62,7 +62,7 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
   return ziped.rootMeanSquare()
 }
 
-func getCurentFilePath(_ file: StaticString = #file) -> URL {
+func getCurentFilePath(_ file: StaticString = #filePath) -> URL {
   URL(fileURLWithPath: file.description, isDirectory: false)
     .deletingLastPathComponent()
 }
@@ -298,10 +298,12 @@ func test(
       diff, tolerance, "Calculated diff exceeds tolerance"
     )
     if diff >= tolerance {
-      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-        $0.add(.init(image: img, name: "result"))
-        $0.add(.init(image: ref, name: "webkitsnapshot"))
-        $0.add(.init(image: .diff(lhs: ref, rhs: img), name: "diff"))
+      MainActor.assumeIsolated {
+        XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+          $0.add(.init(image: img, name: "result"))
+          $0.add(.init(image: ref, name: "webkitsnapshot"))
+          $0.add(.init(image: .diff(lhs: ref, rhs: img), name: "diff"))
+        }
       }
     }
   }
@@ -370,13 +372,17 @@ class WKWebViewSnapshoter {
     }
   }
 
+  @MainActor
   private let webView = WKWebView()
+  @MainActor
   private let delegate = WKDelegate()
 
+  @MainActor
   init() {
     webView.navigationDelegate = delegate
   }
 
+  @MainActor
   func take(
     html: String,
     viewport: CGRect,
@@ -422,6 +428,7 @@ class WKWebViewSnapshoter {
 }
 
 extension WKWebViewSnapshoter {
+  @MainActor
   func take(sample: URL, scale: CGFloat, size: CGSize) throws -> NSImage {
     try take(
       html: String(contentsOf: sample),
@@ -466,10 +473,12 @@ func testBC(
   let diff = compare(reference, result)
   XCTAssertLessThan(diff, tolerance)
   if diff >= tolerance {
-    XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-      $0.add(.init(image: result, name: "result"))
-      $0.add(.init(image: reference, name: "webkitsnapshot"))
-      $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+    MainActor.assumeIsolated {
+      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+        $0.add(.init(image: result, name: "result"))
+        $0.add(.init(image: reference, name: "webkitsnapshot"))
+        $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+      }
     }
   }
 }
@@ -528,10 +537,12 @@ func testMBC(
     XCTAssertLessThan(diff, tolerance)
 
     if diff >= tolerance {
-      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-        $0.add(.init(image: result, name: "result"))
-        $0.add(.init(image: reference, name: "webkitsnapshot"))
-        $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+      MainActor.assumeIsolated {
+        XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
+          $0.add(.init(image: result, name: "result"))
+          $0.add(.init(image: reference, name: "webkitsnapshot"))
+          $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
+        }
       }
     }
   }

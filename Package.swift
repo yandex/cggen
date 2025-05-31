@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to
 // build this package.
 
@@ -16,7 +16,7 @@ let package = Package(
   dependencies: [
     .package(
       url: "https://github.com/apple/swift-argument-parser",
-      .upToNextMinor(from: "0.4.0")
+      .upToNextMajor(from: "1.5.1")
     ),
     .package(
       url: "https://github.com/pointfreeco/swift-parsing",

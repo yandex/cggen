@@ -137,7 +137,7 @@ public enum Error: Swift.Error {
   case imageGenerationFailed([(URL, Swift.Error)])
 }
 
-private typealias Generator = (URL) throws -> Routines
+private typealias Generator = @Sendable (URL) throws -> Routines
 
 private let pdfAndSvgGenerator: Generator = {
   switch $0.pathExtension {
@@ -185,7 +185,7 @@ private func generateImagesAndPaths(
   from files: [URL],
   generator: @escaping Generator = generator
 ) throws -> [Output] {
-  let generator: (URL) -> Result<Routines, Swift.Error> = { url in
+  let generator: @Sendable (URL) -> Result<Routines, Swift.Error> = { url in
     Result(catching: { try generator(url) })
   }
 
