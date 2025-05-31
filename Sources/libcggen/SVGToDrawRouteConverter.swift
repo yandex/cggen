@@ -67,7 +67,7 @@ extension SVG.Document {
 
 private typealias Defenitions = [String: [SVG]]
 
-private enum Err: Swift.Error {
+private enum Err: Swift.Error, @unchecked Sendable {
   case widthLessThan0(SVG.Rect)
   case heightLessThan0(SVG.Rect)
   case noStopColor
@@ -1308,4 +1308,4 @@ extension String {
   }
 }
 
-private var pathPrefix = "cggen."
+private let pathPrefix = "cggen."

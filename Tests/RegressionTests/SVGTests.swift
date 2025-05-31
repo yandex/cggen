@@ -6,6 +6,7 @@ import libcggen
 import Parsing
 
 class SVGTest: XCTestCase {
+  @MainActor
   func testSnapshotsNotFlacking() throws {
     let snapshot = WKWebViewSnapshoter()
     let blackPixel = RGBAPixel(bufferPiece: [.zero, .zero, .zero, .max])
@@ -217,6 +218,7 @@ class SVGShadowTests: XCTestCase {
 // Sometimes it is usefull to pass some arbitrary svg to check that it is
 // correctly handled.
 class SVGCustomCheckTests: XCTestCase {
+  nonisolated(unsafe)
   static let sizeParser = Parse(input: Substring.self) {
     Int.parser()
     "x"
@@ -287,16 +289,18 @@ private func test(
   scale: CGFloat = defaultScale,
   size: CGSize
 ) {
-  XCTAssertNoThrow(try testBC(
-    path: svg,
-    referenceRenderer: {
-      try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
-        .cgimg()
-    },
-    scale: scale,
-    resultAdjust: { $0.redraw(with: .white) },
-    tolerance: tolerance
-  ))
+  XCTAssertNoThrow(try MainActor.assumeIsolated {
+    try testBC(
+      path: svg,
+      referenceRenderer: {
+        try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
+          .cgimg()
+      },
+      scale: scale,
+      resultAdjust: { $0.redraw(with: .white) },
+      tolerance: tolerance
+    )
+  })
 }
 
 private func test(
@@ -305,16 +309,18 @@ private func test(
   scale: CGFloat = defaultScale,
   size: CGSize = CGSize(width: 50, height: 50)
 ) {
-  XCTAssertNoThrow(try testMBC(
-    paths: paths,
-    referenceRenderer: {
-      try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
-        .cgimg()
-    },
-    scale: scale,
-    resultAdjust: { $0.redraw(with: .white) },
-    tolerance: tolerance
-  ))
+  XCTAssertNoThrow(try MainActor.assumeIsolated {
+    try testMBC(
+      paths: paths,
+      referenceRenderer: {
+        try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
+          .cgimg()
+      },
+      scale: scale,
+      resultAdjust: { $0.redraw(with: .white) },
+      tolerance: tolerance
+    )
+  })
 }
 
 private func test(

@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-public struct BCDashPattern {
+public struct BCDashPattern: Sendable {
   public var phase: CGFloat
   public var lengths: [CGFloat]
 
@@ -12,7 +12,7 @@ public struct BCDashPattern {
   }
 }
 
-public struct BCCubicCurve {
+public struct BCCubicCurve: Sendable {
   public var control1: CGPoint
   public var control2: CGPoint
   public var to: CGPoint
@@ -30,7 +30,7 @@ func unzipComponent(val: UInt8) -> CGFloat {
   CGFloat(val) / CGFloat(UInt8.max)
 }
 
-public struct BCRGBAColor {
+public struct BCRGBAColor: Sendable {
   public var red: UInt8
   public var green: UInt8
   public var blue: UInt8
@@ -50,7 +50,7 @@ public struct BCRGBAColor {
   }
 }
 
-public struct BCRGBColor {
+public struct BCRGBColor: Sendable {
   public var red: UInt8
   public var green: UInt8
   public var blue: UInt8
@@ -67,7 +67,7 @@ public struct BCRGBColor {
   }
 }
 
-public struct BCLinearGradientDrawingOptions {
+public struct BCLinearGradientDrawingOptions: Sendable {
   public var start: CGPoint
   public var end: CGPoint
   public var options: CGGradientDrawingOptions
@@ -90,7 +90,7 @@ public struct BCLinearGradientDrawingOptions {
   }
 }
 
-public struct BCRadialGradientDrawingOptions {
+public struct BCRadialGradientDrawingOptions: Sendable {
   public var startCenter: CGPoint
   public var startRadius: CGFloat
   public var endCenter: CGPoint
@@ -116,7 +116,7 @@ public struct BCRadialGradientDrawingOptions {
   }
 }
 
-public struct BCLocationAndColor {
+public struct BCLocationAndColor: Sendable {
   public var location: CGFloat
   public var color: BCRGBAColor
 
@@ -129,7 +129,7 @@ public struct BCLocationAndColor {
 
 public typealias BCGradient = [BCLocationAndColor]
 
-public struct BCShadow {
+public struct BCShadow: Sendable {
   public var offset: CGSize
   public var blur: CGFloat
   public var color: BCRGBAColor
@@ -142,14 +142,14 @@ public struct BCShadow {
   }
 }
 
-public enum BCFillRule: UInt8 {
+public enum BCFillRule: UInt8, Sendable {
   case winding, evenOdd
 }
 
 public typealias BCIdType = UInt32
 public typealias BCSizeType = UInt32
 
-public enum BCCoordinateUnits: UInt8 {
+public enum BCCoordinateUnits: UInt8, Sendable {
   case objectBoundingBox
   case userSpaceOnUse
 }

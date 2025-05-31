@@ -63,6 +63,7 @@ class BCCompilationTests: XCTestCase {
     )
   }
 
+  @MainActor
   func testCompilationAndDrawing() throws {
     // FIXME: Figure out how to link bcrunner code to binaries in tests
     guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil

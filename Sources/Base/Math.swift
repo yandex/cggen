@@ -74,7 +74,7 @@ extension Sequence where Element: FloatingPoint {
 }
 
 public enum Matrix {
-  public struct Column5<T: Equatable>: Equatable {
+  public struct Column5<T: Equatable & Sendable>: Equatable, Sendable {
     public var c1: T
     public var c2: T
     public var c3: T
@@ -94,7 +94,7 @@ public enum Matrix {
     public var components: [T] { [c1, c2, c3, c4, c5] }
   }
 
-  public struct Row4<T: Equatable>: Equatable {
+  public struct Row4<T: Equatable & Sendable>: Equatable, Sendable {
     public var r1: T
     public var r2: T
     public var r3: T
@@ -115,7 +115,7 @@ public enum Matrix {
   public typealias D4x5<T: Equatable> = Row4<Column5<T>>
 
   @inlinable
-  public static func diagonal4x5<T: Equatable>(
+  public static func diagonal4x5<T: Equatable & Sendable>(
     r1c1: T, r2c2: T, r3c3: T, r4c4: T, zero: T
   ) -> D4x5<T> {
     .init(
@@ -127,7 +127,9 @@ public enum Matrix {
   }
 
   @inlinable
-  public static func scalar4x5<T: Equatable>(λ: T, zero: T) -> D4x5<T> {
+  public static func scalar4x5<T: Equatable & Sendable>(
+    λ: T, zero: T
+  ) -> D4x5<T> {
     diagonal4x5(r1c1: λ, r2c2: λ, r3c3: λ, r4c4: λ, zero: zero)
   }
 }

@@ -179,10 +179,12 @@ extension Array {
   }
 
   public func concurrentMap<T>(
-    _ transform: (Element) throws -> T
-  ) throws -> [T] {
+    _ transform: @Sendable (Element) throws -> T
+  ) throws -> [T] where Element: Sendable, T: Sendable {
+    nonisolated(unsafe)
     var result = [T?](repeating: nil, count: count)
     let lock = NSLock()
+    nonisolated(unsafe)
     var barrier: Error?
     DispatchQueue.concurrentPerform(iterations: count) { i in
       guard lock.withLock({ barrier == nil }) else { return }
@@ -200,8 +202,8 @@ extension Array {
   }
 
   public func concurrentMap<T>(
-    _ transform: (Element) -> T
-  ) -> [T] {
+    _ transform: @Sendable (Element) -> T
+  ) -> [T] where Element: Sendable, T: Sendable {
     [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
       finalCount = count
       let bufferAccess = NSLock()
@@ -243,7 +245,10 @@ extension Array where Element == String {
 }
 
 extension Sequence {
-  public func concurrentMap<T>(_ transform: @escaping (Element) -> T) -> [T] {
+  public func concurrentMap<T>(
+    _ transform: @Sendable @escaping (Element) -> T
+  ) -> [T] where Element: Sendable, T: Sendable {
+    nonisolated(unsafe)
     var result = [T?]()
     let syncQueue = DispatchQueue(label: "sync_queue")
     let workQueue = DispatchQueue(label: "work_queue", attributes: .concurrent)
@@ -348,19 +353,28 @@ public func partial<A1, A2, T>(
   { try f($0, arg2) }
 }
 
-@inlinable
-public func always<T, U>(_ value: T) -> (U) -> T {
-  { _ in value }
+@inlinable @Sendable
+public func always<T, U>(_ value: T) -> @Sendable (U) -> T {
+  unsafeBitCast(
+      { (_: U) -> T in value },
+      to: (@Sendable (U) -> T).self
+  )
 }
 
 @inlinable
-public func always<T, U1, U2>(_ value: T) -> (U1, U2) -> T {
-  { _, _ in value }
+public func always<T, U1, U2>(_ value: T) -> @Sendable (U1, U2) -> T {
+  unsafeBitCast(
+      { (_: U1, _: U2) -> T in value },
+      to: (@Sendable (U1, U2) -> T).self
+  )
 }
 
 @inlinable
-public func always<T, U>(_ value: T) -> (inout U) -> T {
-  { _ in value }
+public func always<T, U>(_ value: T) -> @Sendable (inout U) -> T {
+  unsafeBitCast(
+      { (_: inout U) -> T in value },
+      to: (@Sendable (inout U) -> T).self
+  )
 }
 
 @inlinable
@@ -412,12 +426,26 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
 
 extension KeyPath {
   @inlinable
-  public var getter: (Root) -> Value { { $0[keyPath: self] } }
+  public var getter: @Sendable (Root) -> Value {
+    unsafeBitCast(
+      { (root: Root) -> Value in
+        root[keyPath: self]
+      },
+      to: (@Sendable (Root) -> Value).self
+    )
+  }
 }
 
 extension WritableKeyPath {
   @inlinable
-  public var setter: (inout Root, Value) -> Void { { $0[keyPath: self] = $1 } }
+  public var setter: @Sendable (inout Root, Value) -> Void {
+    unsafeBitCast(
+      { (root: inout Root, value: Value) in
+        root[keyPath: self] = value
+      },
+      to: (@Sendable (inout Root, Value) -> Void).self
+    )
+  }
 }
 
 public func waitCallbackOnMT(_ operation: (@escaping () -> Void) -> Void) {

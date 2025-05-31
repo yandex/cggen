@@ -1,6 +1,6 @@
 import Darwin
 
-import Parsing
+@preconcurrency import Parsing
 
 precedencegroup StreamAddition {
   higherThan: AdditionPrecedence
@@ -39,9 +39,9 @@ postfix operator ~?
 public typealias NewParser = Parsing.Parser
 
 public struct AdhocParser<Input, Output>: NewParser {
-  public var parseImpl: (inout Input) -> Result<Output, Error>
+  public var parseImpl: @Sendable (inout Input) -> Result<Output, Error>
 
-  public init(_ parse: @escaping (inout Input) -> Result<Output, Error>) {
+  public init(_ parse: @escaping @Sendable (inout Input) -> Result<Output, Error>) {
     parseImpl = parse
   }
 
@@ -56,11 +56,11 @@ extension NewParser {
   }
 }
 
-public struct Parser<D, T>: NewParser {
+public struct Parser<D, T>: Parsing.Parser, @unchecked Sendable {
   public typealias Input = D
   public typealias Output = T
 
-  public struct GenericError: Error {
+  public struct GenericError: Error, @unchecked Sendable {
     public var text: D
 
     var localizedDescription: String {
@@ -102,7 +102,7 @@ public struct Parser<D, T>: NewParser {
   }
 
   @inlinable
-  public init(_ parse: @escaping (inout D) -> Result<T, Error>) {
+  public init(_ parse: @escaping @Sendable (inout D) -> Result<T, Error>) {
     newParser = AdhocParser(parse)
   }
 
@@ -112,7 +112,9 @@ public struct Parser<D, T>: NewParser {
   }
 
   @inlinable
-  public static func opt(parse: @escaping (inout D) -> T?) -> Parser<D, T> {
+  public static func opt(
+    parse: @escaping @Sendable (inout D) -> T?
+  ) -> Parser<D, T> {
     .init {
       .init(optional: parse(&$0), or: GenericError($0))
     }
@@ -140,13 +142,15 @@ public struct Parser<D, T>: NewParser {
   }
 
   @inlinable
-  public func map<T1>(_ t: @escaping (T) -> T1) -> Parser<D, T1> {
+  public func map<T1>(
+    _ t: @Sendable @escaping (T) -> T1
+  ) -> Parser<D, T1> {
     .init { self.tempRun(&$0).map(t) }
   }
 
   @inlinable
   public func flatMap<T1>(
-    _ t: @escaping (T) -> (Parser<D, T1>)
+    _ t: @Sendable @escaping (T) -> (Parser<D, T1>)
   ) -> Parser<D, T1> {
     Parser<D, T1> { data in
       let original = data
@@ -158,7 +162,7 @@ public struct Parser<D, T>: NewParser {
 
   @inlinable
   public func flatMapResult<T1>(
-    _ t: @escaping (T) -> (Result<T1, Error>)
+    _ t: @Sendable @escaping (T) -> (Result<T1, Error>)
   ) -> Parser<D, T1> {
     Parser<D, T1> { data in
       self.tempRun(&data).flatMap(t)
@@ -167,8 +171,8 @@ public struct Parser<D, T>: NewParser {
 
   @inlinable
   public func pullback<D1>(
-    get: @escaping (D1) -> D,
-    set: @escaping (inout D1, D) -> Void
+    get: @Sendable @escaping (D1) -> D,
+    set: @Sendable @escaping (inout D1, D) -> Void
   ) -> Parser<D1, T> {
     .init {
       var d = get($0)
@@ -186,6 +190,8 @@ public struct Parser<D, T>: NewParser {
   }
 }
 
+extension AdhocParser: @unchecked Sendable where Input: Sendable, Output: Sendable {}
+
 extension Parser where D == T, D: RangeReplaceableCollection {
   @inlinable
   public static func identity() -> Parser<D, D> {
@@ -200,7 +206,10 @@ extension Parser where D: Collection, D.SubSequence == D {
   static func next(
     _ parse: @escaping (D.Element) -> Result<T, Error>
   ) -> Parser<D, T> {
-    .init { data in
+    let parse = unsafeBitCast(
+      parse, to: (@Sendable (D.Element) -> Result<T, Error>).self
+    )
+    return .init { data in
       let initial = data
       guard let next = data.popFirst() else {
         return .failure(ParseError.atLeastOneExpected)
@@ -220,13 +229,13 @@ extension Parser where D == T? {
 
 public func atIndex<D: RangeReplaceableCollection>(
   idx: D.Index
-) -> Parser<D, D.Element> {
+) -> Parser<D, D.Element> where D.Index: Sendable {
   .opt {
     $0.remove(at: idx)
   }
 }
 
-public func key<K, V>(key: K) -> Parser<[K: V], V> {
+public func key<K, V>(key: K) -> Parser<[K: V], V> where K: Sendable {
   .opt {
     $0.removeValue(forKey: key)
   }
@@ -299,7 +308,7 @@ public func oneOrMore<D, A>(
 @inlinable
 public func consume<C: Collection>(
   element: C.Element
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Equatable {
+) -> Parser<C, Void> where C.SubSequence == C, C.Element: Equatable & Sendable {
   .opt {
     guard let first = $0.first, element == first else {
       return nil
@@ -311,7 +320,7 @@ public func consume<C: Collection>(
 
 @inlinable
 public func consume<C: Collection>(
-  while predicate: @escaping (C.Element) -> Bool
+  while predicate: @Sendable @escaping (C.Element) -> Bool
 ) -> Parser<C, C.SubSequence> where C.SubSequence == C {
   .opt {
     let result = $0.prefix(while: predicate)
@@ -323,7 +332,7 @@ public func consume<C: Collection>(
 @inlinable
 public func skipZeroOrMore<C: Collection>(
   chars: Set<C.Element>
-) -> Parser<C, Void> where C.SubSequence == C {
+) -> Parser<C, Void> where C.SubSequence == C, C.Element: Sendable {
   .init {
     let prefix = $0.prefix(while: chars.contains)
     $0.removeFirst(prefix.count)
@@ -334,14 +343,14 @@ public func skipZeroOrMore<C: Collection>(
 @inlinable
 public func skipZeroOrMore<C: Collection>(
   char: C.Element
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable {
+) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable & Sendable {
   skipZeroOrMore(chars: [char])
 }
 
 @inlinable
 public func skipOneOrMore<C: Collection>(
   chars: Set<C.Element>
-) -> Parser<C, Void> where C.SubSequence == C {
+) -> Parser<C, Void> where C.SubSequence == C, C.Element: Sendable {
   .opt {
     let prefix = $0.prefix(while: chars.contains)
     guard prefix.count == 0 else {
@@ -355,7 +364,7 @@ public func skipOneOrMore<C: Collection>(
 @inlinable
 public func skipOneOrMore<C: Collection>(
   char: C.Element
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable {
+) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable & Sendable {
   skipOneOrMore(chars: [char])
 }
 

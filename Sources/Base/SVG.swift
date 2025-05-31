@@ -1,10 +1,10 @@
 import CoreGraphics
 import Foundation
 
-import Parsing
+@preconcurrency import Parsing
 
 // https://www.w3.org/TR/SVG11/
-public enum SVG: Equatable {
+public enum SVG: Equatable, Sendable {
   public typealias NotImplemented = Never
   public typealias NotNeeded = Never
 
@@ -13,8 +13,8 @@ public enum SVG: Equatable {
   public typealias Float = Swift.Double
   public typealias Color = RGBColor<UInt8>
 
-  public struct Length: Equatable {
-    public enum Unit: String, CaseIterable {
+  public struct Length: Equatable, Sendable {
+    public enum Unit: String, CaseIterable, Sendable {
       case px, pt
       case percent = "%"
     }
@@ -27,7 +27,7 @@ public enum SVG: Equatable {
 
   // Should be tuple, when Equatable synthesys improves
   // https://bugs.swift.org/browse/SR-1222
-  public struct CoordinatePair: Equatable {
+  public struct CoordinatePair: Equatable, Sendable {
     public var _1: Float
     public var _2: Float
     public init(_ pair: (Float, Float)) {
@@ -43,13 +43,13 @@ public enum SVG: Equatable {
     public var _2: Float?
   }
 
-  public struct Angle: Equatable {
+  public struct Angle: Equatable, Sendable {
     public var degrees: Float
   }
 
   public typealias CoordinatePairs = [CoordinatePair]
 
-  public struct ViewBox: Equatable {
+  public struct ViewBox: Equatable, Sendable {
     public var minx: Float
     public var miny: Float
     public var width: Float
@@ -80,8 +80,8 @@ public enum SVG: Equatable {
     case evenodd
   }
 
-  public enum Transform: Equatable {
-    public struct Anchor: Equatable {
+  public enum Transform: Equatable, Sendable {
+    public struct Anchor: Equatable, Sendable {
       public var cx: Float
       public var cy: Float
     }
@@ -94,7 +94,7 @@ public enum SVG: Equatable {
     case skewY(Angle)
   }
 
-  public enum Units: String, CaseIterable {
+  public enum Units: String, CaseIterable, Sendable {
     case userSpaceOnUse, objectBoundingBox
   }
 
@@ -112,7 +112,7 @@ public enum SVG: Equatable {
     case previous(String)
   }
 
-  public enum BlendMode: String, CaseIterable {
+  public enum BlendMode: String, CaseIterable, Sendable {
     case normal, multiply, screen, darken, lighten
   }
 
@@ -122,7 +122,7 @@ public enum SVG: Equatable {
 
   // MARK: Attribute group
 
-  public struct CoreAttributes: Equatable {
+  public struct CoreAttributes: Equatable, Sendable {
     public var id: String?
 
     public init(id: String?) {
@@ -138,7 +138,7 @@ public enum SVG: Equatable {
     case miter, round, bevel
   }
 
-  public struct PresentationAttributes: Equatable {
+  public struct PresentationAttributes: Equatable, @unchecked Sendable {
     public var clipPath: String?
     public var clipRule: FillRule?
     public var mask: String?
@@ -230,7 +230,7 @@ public enum SVG: Equatable {
 
   // MARK: Elements
 
-  public struct Document: Equatable {
+  public struct Document: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var width: Length?
@@ -255,7 +255,7 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct ShapeElement<T: Equatable>: Equatable {
+  public struct ShapeElement<T: Equatable & Sendable>: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
@@ -275,7 +275,7 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct RectData: Equatable {
+  public struct RectData: Equatable, Sendable {
     public var x: Coordinate?
     public var y: Coordinate?
     public var rx: Length?
@@ -300,21 +300,21 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct CircleData: Equatable {
+  public struct CircleData: Equatable, Sendable {
     public var cx: Coordinate?
     public var cy: Coordinate?
     public var r: Length?
   }
 
-  public struct EllipseData: Equatable {
+  public struct EllipseData: Equatable, Sendable {
     public var cx: Coordinate?
     public var cy: Coordinate?
     public var rx: Length?
     public var ry: Length?
   }
 
-  public struct PathData: Equatable {
-    public enum Positioning {
+  public struct PathData: Equatable, Sendable {
+    public enum Positioning: Sendable, Equatable {
       case relative
       case absolute
     }
@@ -357,7 +357,7 @@ public enum SVG: Equatable {
       }
     }
 
-    public enum CommandKind: Equatable {
+    public enum CommandKind: Equatable, @unchecked Sendable {
       case closepath
       case moveto([CoordinatePair])
       case lineto([CoordinatePair])
@@ -370,7 +370,7 @@ public enum SVG: Equatable {
       case ellipticalArc([EllipticalArcArgument])
     }
 
-    public struct Command: Equatable {
+    public struct Command: Equatable, Sendable {
       public var positioning: Positioning
       public var kind: CommandKind
     }
@@ -379,7 +379,7 @@ public enum SVG: Equatable {
     public var pathLength: Float?
   }
 
-  public struct PolygonData: Equatable {
+  public struct PolygonData: Equatable, Sendable {
     public var points: [CoordinatePair]?
   }
 
@@ -391,7 +391,7 @@ public enum SVG: Equatable {
   public typealias Polyline = ShapeElement<NotImplemented>
   public typealias Polygon = ShapeElement<PolygonData>
 
-  public struct Group: Equatable {
+  public struct Group: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
@@ -410,7 +410,7 @@ public enum SVG: Equatable {
     }
   }
 
-  public struct Use: Equatable {
+  public struct Use: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
@@ -421,14 +421,14 @@ public enum SVG: Equatable {
     public var xlinkHref: String?
   }
 
-  public struct Defs: Equatable {
+  public struct Defs: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
     public var children: [SVG]
   }
 
-  public struct Mask: Equatable {
+  public struct Mask: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
@@ -441,7 +441,7 @@ public enum SVG: Equatable {
     public var children: [SVG]
   }
 
-  public struct ClipPath: Equatable {
+  public struct ClipPath: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var transform: [Transform]?
@@ -449,8 +449,8 @@ public enum SVG: Equatable {
     public var children: [SVG]
   }
 
-  public struct Stop: Equatable {
-    public enum Offset: Equatable {
+  public struct Stop: Equatable, Sendable {
+    public enum Offset: Equatable, Sendable {
       case number(SVG.Float)
       case percentage(SVG.Float)
     }
@@ -460,7 +460,7 @@ public enum SVG: Equatable {
     public var offset: Offset?
   }
 
-  public struct LinearGradient: Equatable {
+  public struct LinearGradient: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var unit: Units?
@@ -472,7 +472,7 @@ public enum SVG: Equatable {
     public var stops: [Stop]
   }
 
-  public struct RadialGradient: Equatable {
+  public struct RadialGradient: Equatable, Sendable {
     public var core: CoreAttributes
     public var presentation: PresentationAttributes
     public var unit: Units?
@@ -562,7 +562,7 @@ public enum SVG: Equatable {
   public struct ElementWithChildren<
     Attributes: Equatable,
     Child: Equatable
-  >: Equatable {
+  >: Equatable, @unchecked Sendable {
     public var attributes: Attributes
     public var children: [Child]
 
@@ -766,7 +766,8 @@ public enum SVGParser {
     case notImplemented
   }
 
-  private typealias ParserForAttribute<T> = (Attribute) -> AttributeParser<T>
+  private typealias ParserForAttribute<T> =
+    @Sendable (Attribute) -> AttributeParser<T>
   private typealias AttributeParser<T> = Base.Parser<[String: String], T?>
   private typealias AttributeGroupParser<T> = Base.Parser<[String: String], T>
 
@@ -1185,7 +1186,7 @@ public enum SVGParser {
     with: SVG.FilterPrimitiveFeOffset.init
   ) |> filterPrimitive >>> element(tag: .feOffset)
 
-  private static
+  private static nonisolated(unsafe)
   let filterPrimitiveContent: some NewParser<XML, SVG.FilterPrimitiveContent> = oneOf([
     feBlend.map(SVG.FilterPrimitiveContent.feBlend),
     feColorMatrix.map(SVG.FilterPrimitiveContent.feColorMatrix),
@@ -1271,8 +1272,9 @@ public enum SVGParser {
 
 private func attributeParser<T>(
   _ parser: some SVGAttributeParsers.NewParser<T>
-) -> (Attribute) -> Parser<[String: String], T?> {
-  {
+) -> @Sendable (Attribute) -> Parser<[String: String], T?> {
+  nonisolated(unsafe) let parser = parser
+  return {
     key(key: $0.rawValue)~?.flatMapResult {
       guard let value = $0 else { return .success(nil) }
       return Result { try parser.map(Optional.some).parse(value) }
@@ -1293,22 +1295,28 @@ public enum SVGAttributeParsers {
   }}
 
   // (wsp+ comma? wsp*) | (comma wsp*)
+  nonisolated(unsafe)
   static let commaWsp: some NewParser<Void> =
     (wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp*).map(always(()))
+  nonisolated(unsafe)
   static let number: some NewParser<SVG.Float> =
     From(.utf8) { SVG.Float.parser() }
   static let listOfNumbers = zeroOrMore(number, separator: commaWsp)
+  nonisolated(unsafe)
   static let numberOptionalNumber: some NewParser<SVG.NumberOptionalNumber> = Parse {
     SVG.NumberOptionalNumber(_1: $0.0, _2: $0.1)
   } with: {
     number
     (commaWsp ~>> number)~?
   }
+  nonisolated(unsafe)
   static let coord: some NewParser<SVG.Float> = number
 
+  nonisolated(unsafe)
   static let lengthUnit: some NewParser<SVG.Length.Unit> = oneOf()
   static let length: Parser<SVG.Length> = (number ~ lengthUnit~?)
     .map { SVG.Length(number: $0.0, unit: $0.1) }
+  nonisolated(unsafe)
   static let flag: some NewParser<Bool> =
     oneOf("0".map(always(false)), "1".map(always(true)))
 
@@ -1345,6 +1353,7 @@ public enum SVGAttributeParsers {
     with: SVG.Transform.Anchor.init
   )
 
+  nonisolated(unsafe)
   private static let angle: some NewParser<SVG.Angle> =
     number.map(SVG.Angle.init)
 
@@ -1387,6 +1396,7 @@ public enum SVGAttributeParsers {
 
   static let transformsList: Parser<[SVG.Transform]> =
     wsp* ~>> oneOrMore(transform, separator: commaWsp+) <<~ wsp*
+  nonisolated(unsafe)
   static let transform: some NewParser<SVG.Transform> = oneOf([
     translate,
     scale,
@@ -1421,6 +1431,7 @@ public enum SVGAttributeParsers {
     with: SVG.Color.init
   )
 
+  nonisolated(unsafe)
   public static let rgbcolor: some NewParser<SVG.Color> = oneOf([
     "#" ~>> (rgb | shortRGB),
     oneOf(SVGColorKeyword.self).map(\.color),
@@ -1476,6 +1487,7 @@ public enum SVGAttributeParsers {
 
   // MARK: Path
 
+  nonisolated(unsafe)
   private static let anyCommand: some NewParser<SVG.PathData.Command> = oneOf([
     command("M", arg: coordinatePair) { .moveto($0) },
     command("L", arg: coordinatePair) { .lineto($0) },
@@ -1542,6 +1554,7 @@ public enum SVGAttributeParsers {
   // Dash Array
   static let dashArray = oneOrMore(length, separator: commaWsp)
 
+  nonisolated(unsafe)
   private static let filterPrimitiveInPredefined:
     some NewParser<SVG.FilterPrimitiveIn.Predefined> = oneOf()
 
@@ -1553,6 +1566,7 @@ public enum SVGAttributeParsers {
           .map(SVG.FilterPrimitiveIn.predefined) ?? .previous(value)
       }
 
+  nonisolated(unsafe)
   static let blendMode: some NewParser<SVG.BlendMode> = oneOf()
 }
 

@@ -1,5 +1,5 @@
 import Compression
-import CoreGraphics
+@preconcurrency import CoreGraphics
 import Foundation
 
 import BCCommon
@@ -405,8 +405,8 @@ public struct BytecodeRunner {
   }
 }
 
-private struct GState {
-  struct DashPattern {
+private struct GState: Sendable {
+  struct DashPattern: Sendable {
     var phase: CGFloat
     var lengths: [CGFloat]?
 
@@ -421,8 +421,8 @@ private struct GState {
     }
   }
 
-  enum Dye {
-    enum GradientType {
+  enum Dye: Sendable {
+    enum GradientType: Sendable {
       case linear(BCLinearGradientDrawingOptions)
       case radial(BCRadialGradientDrawingOptions)
     }
@@ -433,7 +433,7 @@ private struct GState {
     case gradient(Gradient)
   }
 
-  struct Paint {
+  struct Paint: Sendable {
     var dye: Dye?
     var alpha: CGFloat
 
@@ -1093,7 +1093,7 @@ private func decompressBytecode(
   ))
 }
 
-private final class Cache<Value> {
+private final class Cache<Value>: @unchecked Sendable {
   class WrappedValue {
     let value: Value
 

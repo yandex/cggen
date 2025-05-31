@@ -21,6 +21,7 @@ enum ObjcTerm {
         NotImplemented
       )
 
+      nonisolated(unsafe)
       static let array = DirectAbstractDeclarator.array(of: nil)
     }
 
@@ -296,6 +297,7 @@ extension ObjcTerm {
     return .composite(terms)
   }
 
+  nonisolated(unsafe)
   static let hasFeatureSupport: ObjcTerm = .ifndef(
     "__has_feature",
     .preprocessorDirective(.define("__has_feature(x)", to: "0"))

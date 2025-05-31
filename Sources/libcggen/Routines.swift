@@ -1,4 +1,4 @@
-import CoreGraphics
+@preconcurrency import CoreGraphics
 import Foundation
 
 import Base
@@ -25,7 +25,7 @@ struct DashPattern {
   }
 }
 
-enum DrawStep {
+enum DrawStep: Sendable {
   struct RadialGradientDrawingOptions {
     var startCenter: CGPoint
     var startRadius: CGFloat
@@ -109,7 +109,7 @@ enum DrawStep {
   }
 }
 
-public enum PathSegment {
+public enum PathSegment: Sendable {
   case moveTo(CGPoint)
   case curveTo(CGPoint, CGPoint, CGPoint)
   case lineTo(CGPoint)
@@ -132,7 +132,7 @@ public enum PathSegment {
   public static let empty: PathSegment = .composite([])
 }
 
-struct DrawRoutine {
+struct DrawRoutine: Sendable {
   var boundingRect: CGRect
   var gradients: [String: Gradient]
   var subroutines: [String: DrawRoutine]
@@ -156,7 +156,7 @@ struct PathRoutine {
   var content: [PathSegment]
 }
 
-struct Routines {
+struct Routines: Sendable {
   var drawRoutine: DrawRoutine
   var pathRoutines: [PathRoutine]
 
