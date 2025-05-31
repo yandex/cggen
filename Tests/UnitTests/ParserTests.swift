@@ -1,12 +1,18 @@
 import XCTest
 
 import Base
+import Parsing
 
 class PareserTests: XCTestCase {
   typealias Parser<T> = Base.Parser<Substring, T>
+  typealias NewParser<T> = Base.NewParser<Substring, T>
 
-  private let int: Parser<Int> = Base.int()
-  private let double: Parser<Double> = Base.double()
+  private let int = Parse(input: Substring.self) {
+    Int.parser()
+  }
+  private let double = Parse(input: Substring.self) {
+    Double.parser()
+  }
 
   func testDoubleParser() {
     double.test("123", expected: (123, ""))
@@ -36,7 +42,7 @@ class PareserTests: XCTestCase {
   }
 
   func testConsumeStringParser() {
-    let p: Parser<Void> = "foo"
+    let p: some NewParser<Void> = "foo"
     p.test("foo")
     p.test("foo___", expected: ((), "___"))
     p.test("___foo", expected: (nil, "___foo"))
@@ -57,7 +63,7 @@ class PareserTests: XCTestCase {
   }
 
   func testMap() {
-    let p: Parser<String> = int.map { "_\($0 + 1)_" }
+    let p: some NewParser<String> = int.map { "_\($0 + 1)_" }
     p.test("42", expected: ("_43_", ""))
     p.test("15_", expected: ("_16_", "_"))
   }
@@ -86,7 +92,7 @@ class PareserTests: XCTestCase {
   }
 
   func testOneOrMore() {
-    let p: Parser<[Int]> = (int <<~ "_")+
+    let p: some NewParser<[Int]> = (int <<~ "_")+
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: (nil, "foobar"))
@@ -117,7 +123,7 @@ class PareserTests: XCTestCase {
   }
 
   func testOneOfParser() {
-    let p: Parser<Int> = oneOf(["{" ~>> int <<~ "}", "[" ~>> int <<~ "]"])
+    let p: some NewParser<Int> = oneOf(["{" ~>> int <<~ "}", "[" ~>> int <<~ "]"])
     p.test("{1}", expected: (1, ""))
     p.test("[2]", expected: (2, ""))
     p.test("{1}[2]", expected: (1, "[2]"))
@@ -127,7 +133,9 @@ class PareserTests: XCTestCase {
   }
 
   func testLongestOneOf() {
-    let p: Parser<Void> = longestOneOf(["1", "12", "123", .always(())])
+    let p: Parser<Void> = longestOneOf(
+      ["1", "12", "123", Parser.always(())]
+    )
     p.test("1_", expected: ((), "_"))
     p.test("12_", expected: ((), "_"))
     p.test("123_", expected: ((), "_"))
@@ -139,7 +147,7 @@ class PareserTests: XCTestCase {
     enum InnerPlanets: String, CaseIterable {
       case mercury, venus, earth, mars
     }
-    let p: Parser<InnerPlanets> = oneOf()
+    let p: some NewParser<InnerPlanets> = oneOf()
     p.test("mars", expected: (.mars, ""))
     p.test("earthmars", expected: (.earth, "mars"))
     p.test("marsearth", expected: (.mars, "earth"))
@@ -149,7 +157,7 @@ class PareserTests: XCTestCase {
     enum Colors: String, CaseIterable {
       case aqua, aquamarine
     }
-    let p: Parser<Colors> = oneOf()
+    let p: some NewParser<Colors> = oneOf()
     p.test("aqua", expected: (.aqua, ""))
     p.test("aquamarine", expected: (.aquamarine, ""))
   }
@@ -175,13 +183,13 @@ class PareserTests: XCTestCase {
   }
 }
 
-extension Parser where D == Substring, T: Equatable {
+extension NewParser where Input == Substring, Output: Equatable {
   func test(
     _ data: String,
-    expected: (result: T?, rest: String)
+    expected: (result: Output?, rest: String)
   ) {
     var dataToParse = Substring(data)
-    let res = tempRun(&dataToParse)
+    let res = Result { try parse(&dataToParse) }
     XCTAssertEqual(expected.result, res.value)
     XCTAssertEqual(expected.rest, String(dataToParse))
   }

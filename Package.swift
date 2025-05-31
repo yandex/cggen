@@ -1,4 +1,4 @@
-// swift-tools-version:5.1
+// swift-tools-version: 5.9
 // The swift-tools-version declares the minimum version of Swift required to
 // build this package.
 
@@ -7,7 +7,7 @@ import PackageDescription
 let package = Package(
   name: "cggen",
   platforms: [
-    .macOS(.v10_15), .iOS(.v12),
+    .macOS(.v14), .iOS(.v13),
   ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
@@ -31,7 +31,7 @@ let package = Package(
       name: "BCRunner",
       dependencies: ["BCCommon"]
     ),
-    .target(
+    .executableTarget(
       name: "cggen",
       dependencies: [
         "libcggen",
