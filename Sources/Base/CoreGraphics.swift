@@ -272,7 +272,7 @@ extension CGImage {
   public func write(fileURL: CFURL) throws {
     guard let destination = CGImageDestinationCreateWithURL(
       fileURL,
-      kUTTypePNG,
+      UTType.png.identifier as CFString,
       1,
       nil
     )

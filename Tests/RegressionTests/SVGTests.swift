@@ -3,6 +3,7 @@ import XCTest
 
 import Base
 import libcggen
+import Parsing
 
 class SVGTest: XCTestCase {
   func testSnapshotsNotFlacking() throws {
@@ -216,12 +217,15 @@ class SVGShadowTests: XCTestCase {
 // Sometimes it is usefull to pass some arbitrary svg to check that it is
 // correctly handled.
 class SVGCustomCheckTests: XCTestCase {
-  static let sizeParser: Parser<Substring, CGSize> =
-    (int() <<~ "x" ~ int()).map(CGSize.init)
+  static let sizeParser = Parse(input: Substring.self) {
+    Int.parser()
+    "x"
+    Int.parser()
+  }.map(CGSize.init)
   func testSvgFromArgs() throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
-          let size = args[safe: 2].flatMap(Self.sizeParser.whole >>> \.value)
+          let size = args[safe: 2].flatMap({ try? Self.sizeParser.parse($0) })
     else { throw XCTSkip() }
     print("Checking svg at \(path.path)")
     test(svg: path, size: size)

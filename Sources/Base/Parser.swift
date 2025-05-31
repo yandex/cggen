@@ -360,10 +360,12 @@ public func skipOneOrMore<C: Collection>(
 }
 
 @inlinable
-public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
-  .opt { str in
+public func oneOf<D, A>(
+  _ ps: [any NewParser<D, A>]
+) -> some NewParser<D, A> {
+  Parser.opt { str in
     for p in ps {
-      if case let .success(match) = p.tempRun(&str) {
+      if case let .success(match) = p.oldParser.tempRun(&str) {
         return match
       }
     }
@@ -372,13 +374,15 @@ public func oneOf<D, A>(_ ps: [Parser<D, A>]) -> Parser<D, A> {
 }
 
 @inlinable
-public func oneOf<D, A>(_ ps: Parser<D, A>...) -> Parser<D, A> {
+public func oneOf<D, A>(
+  _ ps: any NewParser<D, A>...
+) -> some NewParser<D, A> {
   oneOf(ps)
 }
 
 @inlinable
 public func longestOneOf<D: Collection, A>(
-  _ ps: [Parser<D, A>]
+  _ ps: [any NewParser<D, A>]
 ) -> Parser<D, A> {
   .opt { str in
     let initial = str
@@ -388,7 +392,7 @@ public func longestOneOf<D: Collection, A>(
     var result: A?
     for p in ps {
       str = initial
-      if case let .success(match) = p.tempRun(&str),
+      if case let .success(match) = Result(catching: { try p.parse(&str) }),
          initialLen - str.count > maxlen {
         maxlen = initialLen - str.count
         result = match
@@ -422,7 +426,7 @@ public func readOne<D: Collection>(
 public func oneOf<D: Collection, T: CaseIterable & RawRepresentable>(
   parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
   _: T.Type = T.self
-) -> Parser<D, T> {
+) -> some NewParser<D, T> {
   oneOf(T.allCases.map {
     parserFactory($0.rawValue).map(always($0)).oldParser
   })
@@ -430,12 +434,13 @@ public func oneOf<D: Collection, T: CaseIterable & RawRepresentable>(
 
 @inlinable
 public func longestOneOf<D: Collection, T: CaseIterable & RawRepresentable>(
-  parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
+  parserFactory: @escaping (T.RawValue) -> some NewParser<D, Void>,
   _: T.Type = T.self
-) -> Parser<D, T> {
+) -> some NewParser<D, T> {
   longestOneOf(
-    T.allCases.map {
-      parserFactory($0.rawValue).map(always($0)).oldParser
+    T.allCases.map { case_ in
+      parserFactory(case_.rawValue).map { always(case_)($0) }
+        .oldParser
     }
   )
 }
@@ -502,117 +507,22 @@ public postfix func * <D, T>(p: some NewParser<D, T>) -> Parser<D, [T]> {
 }
 
 @inlinable
-public postfix func + <D, T>(p: some NewParser<D, T>) -> Parser<D, [T]> {
-  Many(1...) { p }.oldParser
-}
-
-// String parsers
-
-extension Parser:
-  ExpressibleByStringLiteral,
-  ExpressibleByExtendedGraphemeClusterLiteral,
-  ExpressibleByUnicodeScalarLiteral
-  where D: StringProtocol, T == Void, D.SubSequence == D {
-  @inlinable
-  public init(stringLiteral value: StaticString) {
-    let s = value.description
-    self.init { data -> Result<Void, Error> in
-      guard data.hasPrefix(s) else {
-        return .failure(ParseError.consume(
-          expected: value.description,
-          got: data.prefix(s.count).description
-        ))
-      }
-      data.removeFirst(s.count)
-      return .success(())
-    }
-  }
-
-  @inlinable
-  public init(extendedGraphemeClusterLiteral value: StaticString) {
-    self.init(stringLiteral: value)
-  }
-
-  @inlinable
-  public init(unicodeScalarLiteral value: StaticString) {
-    self.init(stringLiteral: value)
-  }
-}
-
-extension Parser where D == Substring {
-  @inlinable
-  public func whole(_ s: String) -> Result<T, Error> {
-    var copy = D(s)
-    return (self <<~ endof()).tempRun(&copy)
-  }
+public postfix func + <D, T>(
+  p: some NewParser<D, T>
+) -> some NewParser<D, [T]> {
+  Many(1...) { p }
 }
 
 @inlinable
-public func oneOf<D: StringProtocol, T: CaseIterable & RawRepresentable>(
+public func oneOf<T: CaseIterable & RawRepresentable>(
   _: T.Type = T.self
-) -> Parser<D, T>
-  where T.RawValue: StringProtocol, D.SubSequence == D {
-  longestOneOf(parserFactory: consume(_:))
+) -> some NewParser<Substring, T> where T.RawValue == String {
+  longestOneOf(parserFactory: { $0 })
 }
 
-@inlinable
-public func consume<D: StringProtocol, S: StringProtocol>(
-  _ s: S
-) -> Parser<D, Void> where D.SubSequence == D {
-  .init { data -> Result<Void, Error> in
-    guard data.hasPrefix(s) else {
-      return .failure(
-        ParseError.consume(
-          expected: String(s),
-          got: data.prefix(s.count).description
-        )
-      )
-    }
-    data.removeFirst(s.count)
-    return .success(())
-  }
-}
-
-@inlinable
-public func int<S: StringProtocol>(
-  from _: S.Type = S.self,
-  radix: Int32 = 10
-) -> Parser<S, Int> where S.SubSequence == S {
-  .opt {
-    // Fail on any leading whitespace, as `strtol` skips it.
-    guard let first = $0.first, !first.isWhitespace else { return nil }
-    let (res, len) = $0.withCString { cstr -> (Int, Int) in
-      var endPointer: UnsafeMutablePointer<Int8>?
-      let res = strtol(cstr, &endPointer, radix)
-      guard let intEndPointee = endPointer else { return (0, 0) }
-      let len = cstr.distance(to: intEndPointee)
-      return (res, len)
-    }
-    guard len > 0 else {
-      return nil
-    }
-    $0.removeFirst(len)
-    return res
-  }
-}
-
-@inlinable
-public func double<S: StringProtocol>(
-) -> Parser<S, Double> where S.SubSequence == S {
-  .opt {
-    // Fail on any leading whitespace, as `strtod` skips it.
-    guard let first = $0.first, !first.isWhitespace else { return nil }
-    let (res, len) = $0.withCString { cstr -> (Double, Int) in
-      var endPointer: UnsafeMutablePointer<Int8>?
-      let res = strtod(cstr, &endPointer)
-      guard let doubleEndPointee = endPointer else { return (0, 0) }
-      let len = cstr.distance(to: doubleEndPointee)
-      return (res, len)
-    }
-    guard len > 0 else {
-      return nil
-    }
-    $0.removeFirst(len)
-    return res
+extension String {
+  var substring: Substring {
+    get { self[...] }
+    set { self = String(newValue) }
   }
 }
