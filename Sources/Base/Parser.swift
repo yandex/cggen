@@ -369,51 +369,6 @@ public func skipOneOrMore<C: Collection>(
 }
 
 @inlinable
-public func oneOf<D, A>(
-  _ ps: [any NewParser<D, A>]
-) -> some NewParser<D, A> {
-  Parser.opt { str in
-    for p in ps {
-      if case let .success(match) = p.oldParser.tempRun(&str) {
-        return match
-      }
-    }
-    return nil
-  }
-}
-
-@inlinable
-public func oneOf<D, A>(
-  _ ps: any NewParser<D, A>...
-) -> some NewParser<D, A> {
-  oneOf(ps)
-}
-
-@inlinable
-public func longestOneOf<D: Collection, A>(
-  _ ps: [any NewParser<D, A>]
-) -> Parser<D, A> {
-  .opt { str in
-    let initial = str
-    let initialLen = str.count
-    var maxlen: Int = -1
-    var resultData = str
-    var result: A?
-    for p in ps {
-      str = initial
-      if case let .success(match) = Result(catching: { try p.parse(&str) }),
-         initialLen - str.count > maxlen {
-        maxlen = initialLen - str.count
-        result = match
-        resultData = str
-      }
-    }
-    str = resultData
-    return result
-  }
-}
-
-@inlinable
 public func read<D: Collection>(
   exactly n: Int
 ) -> Parser<D, D.SubSequence> where D.SubSequence == D {
@@ -429,38 +384,6 @@ public func read<D: Collection>(
 public func readOne<D: Collection>(
 ) -> Parser<D, D.Element> where D.SubSequence == D {
   .opt { $0.popFirst() }
-}
-
-@inlinable
-public func oneOf<D: Collection, T: CaseIterable & RawRepresentable>(
-  parserFactory: @escaping (T.RawValue) -> Parser<D, Void>,
-  _: T.Type = T.self
-) -> some NewParser<D, T> {
-  oneOf(T.allCases.map {
-    parserFactory($0.rawValue).map(always($0)).oldParser
-  })
-}
-
-@inlinable
-public func longestOneOf<D: Collection, T: CaseIterable & RawRepresentable>(
-  parserFactory: @escaping (T.RawValue) -> some NewParser<D, Void>,
-  _: T.Type = T.self
-) -> some NewParser<D, T> {
-  longestOneOf(
-    T.allCases.map { case_ in
-      parserFactory(case_.rawValue).map { always(case_)($0) }
-        .oldParser
-    }
-  )
-}
-
-@inlinable
-public func endof<D: Collection>(_: D.Type = D.self) -> Parser<D, Void> {
-  .init {
-    $0.count == 0 ?
-      .success(()) :
-      .failure(ParseError.parsingNotComplete(left: "\($0)"))
-  }
 }
 
 @inlinable
@@ -488,26 +411,28 @@ public func <<~< D, T, T1 > (
 public func | <D, T>(
   lhs: some NewParser<D, T>,
   rhs: some NewParser<D, T>
-) -> Parser<D, T> {
+) -> some NewParser<D, T> {
   OneOf {
     lhs
     rhs
-  }.oldParser
+  }
 }
 
 @inlinable
 public func ~ <D, T1, T2>(
   lhs: some NewParser<D, T1>, rhs: some NewParser<D, T2>
-) -> Parser<D, (T1, T2)> {
+) -> some NewParser<D, (T1, T2)> {
   Parse {
     lhs
     rhs
-  }.oldParser
+  }
 }
 
 @inlinable
-public postfix func ~? <D, T>(p: some NewParser<D, T>) -> Parser<D, T?> {
-  Optionally { p }.oldParser
+public postfix func ~? <D, T>(
+  p: some NewParser<D, T>
+) -> some NewParser<D, T?> {
+  Optionally { p }
 }
 
 @inlinable
@@ -520,13 +445,6 @@ public postfix func + <D, T>(
   p: some NewParser<D, T>
 ) -> some NewParser<D, [T]> {
   Many(1...) { p }
-}
-
-@inlinable
-public func oneOf<T: CaseIterable & RawRepresentable>(
-  _: T.Type = T.self
-) -> some NewParser<Substring, T> where T.RawValue == String {
-  longestOneOf(parserFactory: { $0 })
 }
 
 extension String {
