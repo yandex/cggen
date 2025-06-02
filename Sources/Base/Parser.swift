@@ -168,26 +168,6 @@ public struct Parser<D, T>: Parsing.Parser, @unchecked Sendable {
       self.tempRun(&data).flatMap(t)
     }
   }
-
-  @inlinable
-  public func pullback<D1>(
-    get: @Sendable @escaping (D1) -> D,
-    set: @Sendable @escaping (inout D1, D) -> Void
-  ) -> Parser<D1, T> {
-    .init {
-      var d = get($0)
-      let result = self.tempRun(&d)
-      set(&$0, d)
-      return result
-    }
-  }
-
-  @inlinable
-  public func pullback<D1>(
-    _ kp: WritableKeyPath<D1, D>
-  ) -> Parser<D1, T> {
-    pullback(get: kp.getter, set: kp.setter)
-  }
 }
 
 extension AdhocParser: @unchecked Sendable where Input: Sendable, Output: Sendable {}
@@ -330,81 +310,24 @@ public func consume<C: Collection>(
 }
 
 @inlinable
-public func skipZeroOrMore<C: Collection>(
-  chars: Set<C.Element>
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Sendable {
-  .init {
-    let prefix = $0.prefix(while: chars.contains)
-    $0.removeFirst(prefix.count)
-    return .success(())
-  }
-}
-
-@inlinable
-public func skipZeroOrMore<C: Collection>(
-  char: C.Element
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable & Sendable {
-  skipZeroOrMore(chars: [char])
-}
-
-@inlinable
-public func skipOneOrMore<C: Collection>(
-  chars: Set<C.Element>
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Sendable {
-  .opt {
-    let prefix = $0.prefix(while: chars.contains)
-    guard prefix.count == 0 else {
-      return nil
-    }
-    $0.removeFirst(prefix.count)
-    return ()
-  }
-}
-
-@inlinable
-public func skipOneOrMore<C: Collection>(
-  char: C.Element
-) -> Parser<C, Void> where C.SubSequence == C, C.Element: Hashable & Sendable {
-  skipOneOrMore(chars: [char])
-}
-
-@inlinable
-public func read<D: Collection>(
-  exactly n: Int
-) -> Parser<D, D.SubSequence> where D.SubSequence == D {
-  .opt { data in
-    let prefix = data.prefix(n)
-    guard prefix.count == n else { return nil }
-    data.removeFirst(n)
-    return prefix
-  }
-}
-
-@inlinable
-public func readOne<D: Collection>(
-) -> Parser<D, D.Element> where D.SubSequence == D {
-  .opt { $0.popFirst() }
-}
-
-@inlinable
 public func ~>> <D, T, T1>(
   lhs: some NewParser<D, T1>,
   rhs: some NewParser<D, T>
-) -> Parser<D, T> {
+) -> some NewParser<D, T> {
   Parse {
     lhs
     rhs
-  }.map { $0.1 }.oldParser
+  }.map { $0.1 }
 }
 
 @inlinable
 public func <<~< D, T, T1 > (
   lhs: some NewParser<D, T>, rhs: some NewParser<D, T1>
-) -> Parser<D, T> {
+) -> some NewParser<D, T> {
   Parse {
     lhs
     rhs
-  }.map { $0.0 }.oldParser
+  }.map { $0.0 }
 }
 
 @inlinable
@@ -436,8 +359,8 @@ public postfix func ~? <D, T>(
 }
 
 @inlinable
-public postfix func * <D, T>(p: some NewParser<D, T>) -> Parser<D, [T]> {
-  Many { p }.oldParser
+public postfix func * <D, T>(p: some NewParser<D, T>) -> some NewParser<D, [T]> {
+  Many { p }
 }
 
 @inlinable
@@ -451,5 +374,18 @@ extension String {
   var substring: Substring {
     get { self[...] }
     set { self = String(newValue) }
+  }
+}
+
+extension Array {
+  var slice: ArraySlice<Element> {
+    get { self[...] }
+    set { self = Array(newValue) }
+  }
+}
+
+extension NewParser {
+  func run(_ data: Input) -> Result<Output, Error> {
+    Result { try parse(data) }
   }
 }

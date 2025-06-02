@@ -55,13 +55,6 @@ class PareserTests: XCTestCase {
     p.test("_f_", expected: (nil, "_f_"))
   }
 
-  func testReadExactlyParser() {
-    let p: Parser<String> = read(exactly: 3).map { String($0) }
-    p.test("123456", expected: (result: "123", rest: "456"))
-    p.test("12🍏45🍏", expected: (result: "12🍏", rest: "45🍏"))
-    p.test("12", expected: (result: nil, rest: "12"))
-  }
-
   func testMap() {
     let p: some NewParser<String> = int.map { "_\($0 + 1)_" }
     p.test("42", expected: ("_43_", ""))
@@ -77,7 +70,7 @@ class PareserTests: XCTestCase {
   }
 
   func testZeroOrMore() {
-    let p: Parser<[Int]> = (int <<~ "_")*
+    let p: some NewParser<[Int]> = (int <<~ "_")*
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: ([], "foobar"))
@@ -105,7 +98,7 @@ class PareserTests: XCTestCase {
   }
 
   func testIntoParser() {
-    let p: Parser<Int> = "{" ~>> " "* ~>> int <<~ " "* <<~ "}"
+    let p: some NewParser<Int> = "{" ~>> " "* ~>> int <<~ " "* <<~ "}"
     p.test("{123}", expected: (123, ""))
     p.test("{123}}", expected: (123, "}"))
     p.test("{  45 }", expected: (45, ""))
