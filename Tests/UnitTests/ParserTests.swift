@@ -99,7 +99,7 @@ class PareserTests: XCTestCase {
   }
 
   func testMayBe() {
-    let p: Parser<Int?> = (int <<~ "_")~?
+    let p: some NewParser<Int?> = (int <<~ "_")~?
     p.test("123_", expected: (123, ""))
     p.test("_", expected: (.some(nil), "_"))
   }
@@ -116,38 +116,18 @@ class PareserTests: XCTestCase {
       var t: T
       var u: U
     }
-    let pair: Parser<(Int, Double)> =
+    let pair: some NewParser<(Int, Double)> =
       "{" ~>> int <<~ "}" ~ "{" ~>> double <<~ "}"
-    let p: Parser<Pair<Int, Double>> = pair.map { .init(t: $0.0, u: $0.1) }
+    let p: Parser<Pair<Int, Double>> = pair.oldParser
+      .map { .init(t: $0.0, u: $0.1) }
     p.test("{1}{2.3}{2}", expected: (.init(t: 1, u: 2.3), "{2}"))
-  }
-
-  func testOneOfParser() {
-    let p: some NewParser<Int> = oneOf(["{" ~>> int <<~ "}", "[" ~>> int <<~ "]"])
-    p.test("{1}", expected: (1, ""))
-    p.test("[2]", expected: (2, ""))
-    p.test("{1}[2]", expected: (1, "[2]"))
-    p.test("[2]{1}", expected: (2, "{1}"))
-    p.test("(2){1}", expected: (nil, "(2){1}"))
-    p.test("{1}(1)", expected: (1, "(1)"))
-  }
-
-  func testLongestOneOf() {
-    let p: Parser<Void> = longestOneOf(
-      ["1", "12", "123", Parser.always(())]
-    )
-    p.test("1_", expected: ((), "_"))
-    p.test("12_", expected: ((), "_"))
-    p.test("123_", expected: ((), "_"))
-    p.test("1234_", expected: ((), "4_"))
-    p.test("_123", expected: ((), "_123"))
   }
 
   func testOneOfCaseIterableParser() {
     enum InnerPlanets: String, CaseIterable {
       case mercury, venus, earth, mars
     }
-    let p: some NewParser<InnerPlanets> = oneOf()
+    let p: some NewParser<InnerPlanets> = InnerPlanets.parser()
     p.test("mars", expected: (.mars, ""))
     p.test("earthmars", expected: (.earth, "mars"))
     p.test("marsearth", expected: (.mars, "earth"))
@@ -157,7 +137,7 @@ class PareserTests: XCTestCase {
     enum Colors: String, CaseIterable {
       case aqua, aquamarine
     }
-    let p: some NewParser<Colors> = oneOf()
+    let p: some NewParser<Colors> = Colors.parser()
     p.test("aqua", expected: (.aqua, ""))
     p.test("aquamarine", expected: (.aquamarine, ""))
   }
