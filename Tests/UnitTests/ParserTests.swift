@@ -77,7 +77,7 @@ class PareserTests: XCTestCase {
   }
 
   func testZeroOrMoreWithSeparator() {
-    let p: Parser<[Int]> = zeroOrMore(int, separator: " ")
+    let p: some NewParser<[Int]> = zeroOrMore(int, separator: " ")
     p.test("1 2 3", expected: ([1, 2, 3], ""))
     p.test("12 13 14 ", expected: ([12, 13, 14], " "))
     p.test("12 13 foo", expected: ([12, 13], " foo"))

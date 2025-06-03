@@ -179,12 +179,18 @@ public enum SVGParser {
   private static func transform(
     _ attribute: Attribute
   ) -> some AttributeParser<[SVG.Transform]> {
-    return attributeParser(SVGAttributeParsers.transformsList, attribute)
+    let parser = attributeParser(SVGAttributeParsers.transformsList, attribute)
+    return parser.map { tuple in
+      tuple.map { (_, transforms, _) in transforms }
+    }
   }
   private static func listOfPoints(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.CoordinatePairs> {
-    return attributeParser(SVGAttributeParsers.listOfPoints, attribute)
+    let parser = attributeParser(SVGAttributeParsers.listOfPoints, attribute)
+    return parser.map { tuple in
+      tuple.map { (_, points, _) in points }
+    }
   }
 
   private static func pathData(
@@ -732,7 +738,7 @@ public enum SVGParser {
 }
 
 private func attributeParser<T>(
-  _ parser: some SVGAttributeParsers.NewParser<T>
+  _ parser: some SVGAttributeParsers.Parser<T>
 ) -> @Sendable (Attribute) -> Parser<[String: String], T?> {
   nonisolated(unsafe) let parser = parser
   return {
@@ -744,7 +750,7 @@ private func attributeParser<T>(
 }
 
 private func attributeParser<T>(
-  _ parser: some SVGAttributeParsers.NewParser<T>,
+  _ parser: some SVGAttributeParsers.Parser<T>,
   _ attribute: Attribute
 ) -> some NewParser<[String: String], T?> {
   nonisolated(unsafe) let parser = parser
