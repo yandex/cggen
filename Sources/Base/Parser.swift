@@ -239,18 +239,18 @@ public func maybe<D>(_ p: Parser<D, Void>) -> Parser<D, Void> {
 public func zeroOrMore<D, A, S>(
   _ p: some NewParser<D, A>,
   separator: some NewParser<D, S>
-) -> Parser<D, [A]> {
+) -> some NewParser<D, [A]> {
   Many {
     p
   } separator: {
     separator
-  }.oldParser
+  }
 }
 
 @inlinable
 public func zeroOrMore<D, A>(
   _ p: Parser<D, A>
-) -> Parser<D, [A]> {
+) -> some NewParser<D, [A]> {
   zeroOrMore(p, separator: Parser.always(()))
 }
 
@@ -273,7 +273,7 @@ public func oneOrMore<D, A, S>(
   _ p: some NewParser<D, A>,
   separator: some NewParser<D, S>
 ) -> Parser<D, [A]> {
-  zeroOrMore(p, separator: separator).flatMapResult {
+  zeroOrMore(p, separator: separator).oldParser.flatMapResult {
     $0.count == 0 ? .failure(ParseError.atLeastOneExpected) : .success($0)
   }
 }
@@ -310,31 +310,30 @@ public func consume<C: Collection>(
 }
 
 @inlinable
-public func ~>> <D, T, T1>(
-  lhs: some NewParser<D, T1>,
-  rhs: some NewParser<D, T>
-) -> some NewParser<D, T> {
+public func ~>> <P1: NewParser, P2: NewParser>(
+  lhs: P1, rhs: P2
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipFirst<Skip<P1.Input, P1>, P2>> {
   Parse {
-    lhs
+    Skip { lhs }
     rhs
-  }.map { $0.1 }
+  }
 }
 
 @inlinable
-public func <<~< D, T, T1 > (
-  lhs: some NewParser<D, T>, rhs: some NewParser<D, T1>
-) -> some NewParser<D, T> {
+public func <<~< P1: NewParser, P2: NewParser > (
+  lhs: P1, rhs: P2
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipSecond<P1, Skip<P1.Input, P2>>> {
   Parse {
     lhs
-    rhs
-  }.map { $0.0 }
+    Skip { rhs }
+  }
 }
 
 @inlinable
-public func | <D, T>(
-  lhs: some NewParser<D, T>,
-  rhs: some NewParser<D, T>
-) -> some NewParser<D, T> {
+public func | <P1: NewParser, P2: NewParser>(
+  lhs: P1, rhs: P2
+) -> OneOf<P1.Input, P1.Output, OneOfBuilder<P1.Input, P1.Output>.OneOf2<P1, P2>>
+where P1.Input == P2.Input, P1.Output == P2.Output {
   OneOf {
     lhs
     rhs
@@ -342,9 +341,10 @@ public func | <D, T>(
 }
 
 @inlinable
-public func ~ <D, T1, T2>(
-  lhs: some NewParser<D, T1>, rhs: some NewParser<D, T2>
-) -> some NewParser<D, (T1, T2)> {
+public func ~ <P1: NewParser, P2: NewParser>(
+  lhs: P1, rhs: P2
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.Take2<P1, P2>.Map<(P1.Output, P2.Output)>>
+where P1.Input == P2.Input {
   Parse {
     lhs
     rhs
@@ -352,21 +352,23 @@ public func ~ <D, T1, T2>(
 }
 
 @inlinable
-public postfix func ~? <D, T>(
-  p: some NewParser<D, T>
-) -> some NewParser<D, T?> {
+public postfix func ~? <P: NewParser>(
+  p: P
+) -> Optionally<P.Input, P> {
   Optionally { p }
 }
 
 @inlinable
-public postfix func * <D, T>(p: some NewParser<D, T>) -> some NewParser<D, [T]> {
+public postfix func * <P: NewParser>(
+  p: P
+) -> Many<P.Input, P, [P.Output], Always<P.Input, ()>, Always<P.Input, ()>, ()> {
   Many { p }
 }
 
 @inlinable
-public postfix func + <D, T>(
-  p: some NewParser<D, T>
-) -> some NewParser<D, [T]> {
+public postfix func + <P: NewParser>(
+  p: P
+) -> Many<P.Input, P, [P.Output], Always<P.Input, ()>, Always<P.Input, ()>, ()> {
   Many(1...) { p }
 }
 
