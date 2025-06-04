@@ -1,9 +1,9 @@
-import XCTest
+import Testing
 
 import Base
 import Parsing
 
-class PareserTests: XCTestCase {
+@Suite struct PareserTests {
   typealias Parser<T> = Base.Parser<Substring, T>
   typealias NewParser<T> = Base.NewParser<Substring, T>
 
@@ -14,7 +14,7 @@ class PareserTests: XCTestCase {
     Double.parser()
   }
 
-  func testDoubleParser() {
+  @Test func testDoubleParser() {
     double.test("123", expected: (123, ""))
     double.test("12.3", expected: (12.3, ""))
     double.test("123hello", expected: (123, "hello"))
@@ -30,7 +30,7 @@ class PareserTests: XCTestCase {
     double.test("abc", expected: (nil, "abc"))
   }
 
-  func testIntParser() {
+  @Test func testIntParser() {
     int.test("123", expected: (123, ""))
     int.test("45.6", expected: (45, ".6"))
     int.test("7890 hello", expected: (7890, " hello"))
@@ -41,27 +41,27 @@ class PareserTests: XCTestCase {
     int.test("abc", expected: (nil, "abc"))
   }
 
-  func testConsumeStringParser() {
+  @Test func testConsumeStringParser() {
     let p: some NewParser<Void> = "foo"
     p.test("foo")
     p.test("foo___", expected: ((), "___"))
     p.test("___foo", expected: (nil, "___foo"))
   }
 
-  func testConsumeCharParser() {
+  @Test func testConsumeCharParser() {
     let p: Parser<Void> = consume(element: "f")
     p.test("f")
     p.test("fff", expected: ((), "ff"))
     p.test("_f_", expected: (nil, "_f_"))
   }
 
-  func testMap() {
+  @Test func testMap() {
     let p: some NewParser<String> = int.map { "_\($0 + 1)_" }
     p.test("42", expected: ("_43_", ""))
     p.test("15_", expected: ("_16_", "_"))
   }
 
-  func testZip() {
+  @Test func testZip() {
     let p: Parser<Int> = zip(int, "_", with: { int, _ in int })
     p.test("12_", expected: (12, ""))
     p.test("34__", expected: (34, "_"))
@@ -69,14 +69,14 @@ class PareserTests: XCTestCase {
     p.test("_56", expected: (nil, "_56"))
   }
 
-  func testZeroOrMore() {
+  @Test func testZeroOrMore() {
     let p: some NewParser<[Int]> = (int <<~ "_")*
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: ([], "foobar"))
   }
 
-  func testZeroOrMoreWithSeparator() {
+  @Test func testZeroOrMoreWithSeparator() {
     let p: some NewParser<[Int]> = zeroOrMore(int, separator: " ")
     p.test("1 2 3", expected: ([1, 2, 3], ""))
     p.test("12 13 14 ", expected: ([12, 13, 14], " "))
@@ -84,27 +84,27 @@ class PareserTests: XCTestCase {
     p.test("-12-13", expected: ([-12], "-13"))
   }
 
-  func testOneOrMore() {
+  @Test func testOneOrMore() {
     let p: some NewParser<[Int]> = (int <<~ "_")+
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: (nil, "foobar"))
   }
 
-  func testMayBe() {
+  @Test func testMayBe() {
     let p: some NewParser<Int?> = (int <<~ "_")~?
     p.test("123_", expected: (123, ""))
     p.test("_", expected: (.some(nil), "_"))
   }
 
-  func testIntoParser() {
+  @Test func testIntoParser() {
     let p: some NewParser<Int> = "{" ~>> " "* ~>> int <<~ " "* <<~ "}"
     p.test("{123}", expected: (123, ""))
     p.test("{123}}", expected: (123, "}"))
     p.test("{  45 }", expected: (45, ""))
   }
 
-  func testCombineParser() {
+  @Test func testCombineParser() {
     struct Pair<T: Equatable, U: Equatable>: Equatable {
       var t: T
       var u: U
@@ -116,7 +116,7 @@ class PareserTests: XCTestCase {
     p.test("{1}{2.3}{2}", expected: (.init(t: 1, u: 2.3), "{2}"))
   }
 
-  func testOneOfCaseIterableParser() {
+  @Test func testOneOfCaseIterableParser() {
     enum InnerPlanets: String, CaseIterable {
       case mercury, venus, earth, mars
     }
@@ -126,7 +126,7 @@ class PareserTests: XCTestCase {
     p.test("marsearth", expected: (.mars, "earth"))
   }
 
-  func testOneOfCaseIterable_OneIsPrefixToAnother() {
+  @Test func testOneOfCaseIterable_OneIsPrefixToAnother() {
     enum Colors: String, CaseIterable {
       case aqua, aquamarine
     }
@@ -135,22 +135,22 @@ class PareserTests: XCTestCase {
     p.test("aquamarine", expected: (.aquamarine, ""))
   }
 
-  func testIdentityParser() {
+  @Test func testIdentityParser() {
     let p: Parser<Substring> = .identity()
     p.test("foo bar", expected: ("foo bar", ""))
   }
 
-  func testAlwaysParser() {
+  @Test func testAlwaysParser() {
     let p: Parser<Int> = .always(156)
     p.test("hello", expected: (156, "hello"))
   }
 
-  func testNeverParser() {
+  @Test func testNeverParser() {
     let p: Parser<Int> = .never()
     p.test("1", expected: (nil, "1"))
   }
 
-  func testConsumeWhile() {
+  @Test func testConsumeWhile() {
     let p: Parser<Substring> = consume(while: { $0 != "_" })
     p.test("123_", expected: ("123", "_"))
   }
@@ -163,8 +163,8 @@ extension NewParser where Input == Substring, Output: Equatable {
   ) {
     var dataToParse = Substring(data)
     let res = Result { try parse(&dataToParse) }
-    XCTAssertEqual(expected.result, res.value)
-    XCTAssertEqual(expected.rest, String(dataToParse))
+    #expect(expected.result == res.value)
+    #expect(expected.rest == String(dataToParse))
   }
 }
 
@@ -176,10 +176,12 @@ extension NewParser where Input == Substring, Output == Void {
     var data = Substring(data)
     let result: Void? = try? parse(&data)
     if expected.result == nil {
-      XCTAssertNil(result)
+      #expect(result == nil)
     } else {
-      XCTAssertNotNil(result)
+      #expect(result != nil)
     }
-    XCTAssertEqual(String(data), expected.rest)
+    #expect(String(data) == expected.rest)
   }
 }
+
+

@@ -1,12 +1,11 @@
 @testable import libcggen
+import Testing
 
-import XCTest
-
-final class ObjcLexTests: XCTestCase {
+@Suite struct ObjcLexTests {
   typealias Declarator = ObjcTerm.Declarator
-  func testComments() {
-    XCTAssertEqual(
-      ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText(),
+  @Test func testComments() {
+    #expect(
+      ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText() ==
       """
       // Hello
       // World
@@ -14,13 +13,13 @@ final class ObjcLexTests: XCTestCase {
     )
   }
 
-  func testImports() {
-    XCTAssertEqual(
+  @Test func testImports() {
+    #expect(
       ObjcTerm.composite([
         .import(.coreFoundation, .foundation),
         .preprocessorDirective(.import(.angleBrackets(path: "System.h"))),
         .preprocessorDirective(.import(.doubleQuotes(path: "foo/bar/baz.h"))),
-      ]).renderText(),
+      ]).renderText() ==
       """
       #if __has_feature(modules)
       @import CoreFoundation;
@@ -35,8 +34,8 @@ final class ObjcLexTests: XCTestCase {
     )
   }
 
-  func testCDecl() {
-    XCTAssertEqual(
+  @Test func testCDecl() {
+    #expect(
       ObjcTerm.CDecl(specifiers: [
         .storage(.typedef),
         .type(.structOrUnion(
@@ -47,15 +46,15 @@ final class ObjcLexTests: XCTestCase {
         )),
       ], declarators: [
         .decl(.namedInSwift("SwiftT", decl: .pointed(.identifier("NewT")))),
-      ]).renderText(),
+      ]).renderText() ==
       """
       typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
       """
     )
   }
 
-  func testCStruct() {
-    XCTAssertEqual(
+  @Test func testCStruct() {
+    #expect(
       ObjcTerm.CDecl(specifiers: [
         .storage(.typedef),
         .type(.structOrUnion(
@@ -72,7 +71,7 @@ final class ObjcLexTests: XCTestCase {
         )),
       ], declarators: [
         .decl(.identifier("Foo")),
-      ]).renderText(),
+      ]).renderText() ==
       """
       typedef struct {
         CGSize size;
