@@ -215,9 +215,9 @@ public enum SVGAttributeParsers {
   }
 
   static let iri =
-    "#" ~>> consume(while: always(true)).map(String.init)
+    "#" ~>> Rest().map(String.init)
   static let funciri =
-    "url(#" ~>> consume(while: { $0 != ")" }).map(String.init) <<~ ")"
+    "url(#" ~>> Prefix(while: { $0 != ")" }).map(String.init) <<~ ")"
 
   static let paint =
     "none".map(always(.none)) |
@@ -321,7 +321,7 @@ public enum SVGAttributeParsers {
   }
 
   static let pathData =
-    wsp* ~>> oneOrMore(anyCommand, separator: wsp*) <<~ wsp*
+    wsp* ~>> Many(1...) { anyCommand } separator: { wsp* } <<~ wsp*
 
   private static let quadraticCurveArgument = Parse {
     SVG.PathData.QuadraticCurveArgument(cp1: $0.0, to: $0.1)

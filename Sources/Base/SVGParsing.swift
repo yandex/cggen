@@ -215,9 +215,12 @@ public enum SVGParser {
   }
 
   private static var version: some AttributeGroupParser<Void> {
-    identifier(.version).oldParser.flatMapResult {
-      $0.map { $0 == "1.1" ? .success(()) : .failure(Error.invalidVersion($0))
-      } ?? .success(())
+    identifier(.version).compactMap { value in
+      if let version = value {
+        return version == "1.1" ? () : nil
+      } else {
+        return ()
+      }
     }
   }
 
@@ -240,7 +243,7 @@ public enum SVGParser {
   }
 
   private static let ignoreAttribute =
-    attributeParser(consume(while: always(true)))
+    attributeParser(Rest())
   private nonisolated(unsafe)
   static let ignore: some AttributeGroupParser<Void> =
     ignoreAttribute(.maskType).map(always(()))
@@ -523,7 +526,7 @@ public enum SVGParser {
     attributes: some AttributeGroupParser<Attributes>,
     child: some Base.NewParser<XML, Child>
   ) -> some Base.NewParser<XML, SVG.ElementWithChildren<Attributes, Child>> {
-    let childParser = Parser<ArraySlice<XML>, Child>.next {
+    let childParser = OldParser<ArraySlice<XML>, Child>.next {
       child.oldParser.run($0)
     }
     let childrenParser: some NewParser<[XML], [Child]> =
@@ -746,13 +749,13 @@ public enum SVGParser {
 
 private func attributeParser<T>(
   _ parser: some SVGAttributeParsers.Parser<T>
-) -> @Sendable (Attribute) -> Parser<[String: String], T?> {
+) -> @Sendable (Attribute) -> OldParser<[String: String], T?> {
   nonisolated(unsafe) let parser = parser
   return {
-    key(key: $0.rawValue)~?.oldParser.flatMapResult {
-      guard let value = $0 else { return .success(nil) }
-      return Result { try parser.map(Optional.some).parse(value) }
-    }
+    OldParser(DicitionaryKey($0.rawValue).map { value in
+      guard let value = value else { return nil }
+      return try? parser.parse(value)
+    })
   }
 }
 
@@ -761,9 +764,9 @@ private func attributeParser<T>(
   _ attribute: Attribute
 ) -> some NewParser<[String: String], T?> {
   nonisolated(unsafe) let parser = parser
-  return key(key: attribute.rawValue)~?.oldParser.flatMapResult {
-    guard let value = $0 else { return .success(nil) }
-    return Result { try parser.map(Optional.some).parse(value) }
+  return DicitionaryKey(attribute.rawValue).map { value in
+    guard let value = value else { return nil }
+    return try? parser.parse(value)
   }
 }
 

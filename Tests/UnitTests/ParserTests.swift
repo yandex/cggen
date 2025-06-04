@@ -4,7 +4,7 @@ import Base
 import Parsing
 
 @Suite struct PareserTests {
-  typealias Parser<T> = Base.Parser<Substring, T>
+  typealias Parser<T> = Base.OldParser<Substring, T>
   typealias NewParser<T> = Base.NewParser<Substring, T>
 
   private let int = Parse(input: Substring.self) {
@@ -50,7 +50,7 @@ import Parsing
   }
 
   @Test func testConsumeCharParser() {
-    let p: Parser<Void> = consume(element: "f")
+    let p: some NewParser<Void> = "f".map { _ in () }
     p.test("f")
     p.test("fff", expected: ((), "ff"))
     p.test("_f_", expected: (nil, "_f_"))
@@ -78,7 +78,7 @@ import Parsing
   }
 
   @Test func testZeroOrMoreWithSeparator() {
-    let p: some NewParser<[Int]> = zeroOrMore(int, separator: " ")
+    let p: some NewParser<[Int]> = Many { int } separator: { " " }
     p.test("1 2 3", expected: ([1, 2, 3], ""))
     p.test("12 13 14 ", expected: ([12, 13, 14], " "))
     p.test("12 13 foo", expected: ([12, 13], " foo"))
@@ -112,7 +112,7 @@ import Parsing
     }
     let pair: some NewParser<(Int, Double)> =
       "{" ~>> int <<~ "}" ~ "{" ~>> double <<~ "}"
-    let p: Parser<Pair<Int, Double>> = pair.oldParser
+    let p: some NewParser<Pair<Int, Double>> = pair
       .map { .init(t: $0.0, u: $0.1) }
     p.test("{1}{2.3}{2}", expected: (.init(t: 1, u: 2.3), "{2}"))
   }
@@ -152,7 +152,7 @@ import Parsing
   }
 
   @Test func testConsumeWhile() {
-    let p: Parser<Substring> = consume(while: { $0 != "_" })
+    let p: some NewParser<Substring> = Prefix(while: { $0 != "_" })
     p.test("123_", expected: ("123", "_"))
   }
 }
