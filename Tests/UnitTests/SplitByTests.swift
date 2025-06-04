@@ -6,7 +6,7 @@ import Base
   @Test func testSplitBy() {
     #expect(
       Array([0, 1, 2, 3].splitBy(subSize: 2)) ==
-      [[0, 1], [2, 3]]
+        [[0, 1], [2, 3]]
     )
   }
 

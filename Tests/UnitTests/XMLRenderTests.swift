@@ -10,7 +10,7 @@ import Base
         .el("from", children: [.text("Jani")]),
         .el("body", children: [.text("Hello world!")]),
       ]).render() ==
-      "<note><to>Tove</to><from>Jani</from><body>Hello world!</body></note>"
+        "<note><to>Tove</to><from>Jani</from><body>Hello world!</body></note>"
     )
   }
 
@@ -20,7 +20,7 @@ import Base
         .el("square", attrs: ["size": "5"]),
         .text("Hello"),
       ]).render() ==
-      #"<rect size="10,20"><square size="5"></square>Hello</rect>"#
+        #"<rect size="10,20"><square size="5"></square>Hello</rect>"#
     )
   }
 }

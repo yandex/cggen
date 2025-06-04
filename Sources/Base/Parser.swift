@@ -41,7 +41,10 @@ public typealias NewParser = Parsing.Parser
 public struct AdhocParser<Input, Output>: NewParser {
   public var parseImpl: @Sendable (inout Input) -> Result<Output, Error>
 
-  public init(_ parse: @escaping @Sendable (inout Input) -> Result<Output, Error>) {
+  public init(_ parse: @escaping @Sendable (inout Input) -> Result<
+    Output,
+    Error
+  >) {
     parseImpl = parse
   }
 
@@ -170,7 +173,8 @@ public struct Parser<D, T>: Parsing.Parser, @unchecked Sendable {
   }
 }
 
-extension AdhocParser: @unchecked Sendable where Input: Sendable, Output: Sendable {}
+extension AdhocParser: @unchecked Sendable where Input: Sendable,
+  Output: Sendable {}
 
 extension Parser where D == T, D: RangeReplaceableCollection {
   @inlinable
@@ -312,7 +316,10 @@ public func consume<C: Collection>(
 @inlinable
 public func ~>> <P1: NewParser, P2: NewParser>(
   lhs: P1, rhs: P2
-) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipFirst<Skip<P1.Input, P1>, P2>> {
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipFirst<
+  Skip<P1.Input, P1>,
+  P2
+>> {
   Parse {
     Skip { lhs }
     rhs
@@ -322,7 +329,10 @@ public func ~>> <P1: NewParser, P2: NewParser>(
 @inlinable
 public func <<~< P1: NewParser, P2: NewParser > (
   lhs: P1, rhs: P2
-) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipSecond<P1, Skip<P1.Input, P2>>> {
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipSecond<
+  P1,
+  Skip<P1.Input, P2>
+>> {
   Parse {
     lhs
     Skip { rhs }
@@ -332,8 +342,11 @@ public func <<~< P1: NewParser, P2: NewParser > (
 @inlinable
 public func | <P1: NewParser, P2: NewParser>(
   lhs: P1, rhs: P2
-) -> OneOf<P1.Input, P1.Output, OneOfBuilder<P1.Input, P1.Output>.OneOf2<P1, P2>>
-where P1.Input == P2.Input, P1.Output == P2.Output {
+) -> OneOf<P1.Input, P1.Output, OneOfBuilder<P1.Input, P1.Output>.OneOf2<
+  P1,
+  P2
+>>
+  where P1.Input == P2.Input, P1.Output == P2.Output {
   OneOf {
     lhs
     rhs
@@ -343,8 +356,11 @@ where P1.Input == P2.Input, P1.Output == P2.Output {
 @inlinable
 public func ~ <P1: NewParser, P2: NewParser>(
   lhs: P1, rhs: P2
-) -> Parse<P1.Input, ParserBuilder<P1.Input>.Take2<P1, P2>.Map<(P1.Output, P2.Output)>>
-where P1.Input == P2.Input {
+) -> Parse<P1.Input, ParserBuilder<P1.Input>.Take2<P1, P2>.Map<(
+  P1.Output,
+  P2.Output
+)>>
+  where P1.Input == P2.Input {
   Parse {
     lhs
     rhs
@@ -361,14 +377,30 @@ public postfix func ~? <P: NewParser>(
 @inlinable
 public postfix func * <P: NewParser>(
   p: P
-) -> Many<P.Input, P, [P.Output], Always<P.Input, ()>, Always<P.Input, ()>, ()> {
+)
+  -> Many<
+    P.Input,
+    P,
+    [P.Output],
+    Always<P.Input, Void>,
+    Always<P.Input, Void>,
+    Void
+  > {
   Many { p }
 }
 
 @inlinable
 public postfix func + <P: NewParser>(
   p: P
-) -> Many<P.Input, P, [P.Output], Always<P.Input, ()>, Always<P.Input, ()>, ()> {
+)
+  -> Many<
+    P.Input,
+    P,
+    [P.Output],
+    Always<P.Input, Void>,
+    Always<P.Input, Void>,
+    Void
+  > {
   Many(1...) { p }
 }
 

@@ -6,10 +6,10 @@ import Testing
   @Test func testComments() {
     #expect(
       ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText() ==
-      """
-      // Hello
-      // World
-      """
+        """
+        // Hello
+        // World
+        """
     )
   }
 
@@ -20,17 +20,17 @@ import Testing
         .preprocessorDirective(.import(.angleBrackets(path: "System.h"))),
         .preprocessorDirective(.import(.doubleQuotes(path: "foo/bar/baz.h"))),
       ]).renderText() ==
-      """
-      #if __has_feature(modules)
-      @import CoreFoundation;
-      @import Foundation;
-      #else  // __has_feature(modules)
-      #import <CoreFoundation/CoreFoundation.h>
-      #import <Foundation/Foundation.h>
-      #endif  // __has_feature(modules)
-      #import <System.h>
-      #import "foo/bar/baz.h"
-      """
+        """
+        #if __has_feature(modules)
+        @import CoreFoundation;
+        @import Foundation;
+        #else  // __has_feature(modules)
+        #import <CoreFoundation/CoreFoundation.h>
+        #import <Foundation/Foundation.h>
+        #endif  // __has_feature(modules)
+        #import <System.h>
+        #import "foo/bar/baz.h"
+        """
     )
   }
 
@@ -47,9 +47,9 @@ import Testing
       ], declarators: [
         .decl(.namedInSwift("SwiftT", decl: .pointed(.identifier("NewT")))),
       ]).renderText() ==
-      """
-      typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
-      """
+        """
+        typedef struct CF_BRIDGED_TYPE(id) OldT *NewT CF_SWIFT_NAME(SwiftT);
+        """
     )
   }
 
@@ -72,12 +72,12 @@ import Testing
       ], declarators: [
         .decl(.identifier("Foo")),
       ]).renderText() ==
-      """
-      typedef struct {
-        CGSize size;
-        void (*drawingHandler)(CGContextRef);
-      } Foo;
-      """
+        """
+        typedef struct {
+          CGSize size;
+          void (*drawingHandler)(CGContextRef);
+        } Foo;
+        """
     )
   }
 }

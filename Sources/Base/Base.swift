@@ -356,24 +356,24 @@ public func partial<A1, A2, T>(
 @inlinable @Sendable
 public func always<T, U>(_ value: T) -> @Sendable (U) -> T {
   unsafeBitCast(
-      { (_: U) -> T in value },
-      to: (@Sendable (U) -> T).self
+    { (_: U) -> T in value },
+    to: (@Sendable (U) -> T).self
   )
 }
 
 @inlinable
 public func always<T, U1, U2>(_ value: T) -> @Sendable (U1, U2) -> T {
   unsafeBitCast(
-      { (_: U1, _: U2) -> T in value },
-      to: (@Sendable (U1, U2) -> T).self
+    { (_: U1, _: U2) -> T in value },
+    to: (@Sendable (U1, U2) -> T).self
   )
 }
 
 @inlinable
 public func always<T, U>(_ value: T) -> @Sendable (inout U) -> T {
   unsafeBitCast(
-      { (_: inout U) -> T in value },
-      to: (@Sendable (inout U) -> T).self
+    { (_: inout U) -> T in value },
+    to: (@Sendable (inout U) -> T).self
   )
 }
 
