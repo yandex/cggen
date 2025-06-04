@@ -141,15 +141,6 @@ import Parsing
     p.test("foo bar", expected: ("foo bar", ""))
   }
 
-  @Test func testAlwaysParser() {
-    let p: Parser<Int> = .always(156)
-    p.test("hello", expected: (156, "hello"))
-  }
-
-  @Test func testNeverParser() {
-    let p: Parser<Int> = .never()
-    p.test("1", expected: (nil, "1"))
-  }
 
   @Test func testConsumeWhile() {
     let p: some NewParser<Substring> = Prefix(while: { $0 != "_" })

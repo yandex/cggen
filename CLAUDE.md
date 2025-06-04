@@ -36,6 +36,8 @@ The project uses swift-parsing library with custom operators:
 - `*` / `+`: Zero/one or more
 - Custom parsers in `SVGAttributeParsers` for SVG attributes
 
+**Swift-parsing reference**: Available combinators and parsers documented at https://pointfreeco.github.io/swift-parsing/main/documentation/parsing/parser
+
 ### Key Patterns
 - **Functional composition**: Heavy use of `>>>` and `|>` operators
 - **Protocol-oriented**: `GenerationStyle` for swift-friendly vs plain output

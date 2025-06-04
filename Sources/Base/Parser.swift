@@ -38,7 +38,7 @@ postfix operator ~?
 
 public typealias NewParser = Parsing.Parser
 
-public struct AdhocParser<Input, Output>: NewParser {
+public struct __AdhocParser<Input, Output>: NewParser, @unchecked Sendable {
   public var parseImpl: @Sendable (inout Input) -> Result<Output, Error>
 
   public init(_ parse: @escaping @Sendable (inout Input) -> Result<
@@ -106,75 +106,14 @@ public struct OldParser<D, T>: Parsing.Parser, @unchecked Sendable {
 
   @inlinable
   public init(_ parse: @escaping @Sendable (inout D) -> Result<T, Error>) {
-    newParser = AdhocParser(parse)
+    newParser = __AdhocParser(parse)
   }
 
   @inlinable
   public init(_ p: any NewParser<D, T>) {
     newParser = p
   }
-
-  @inlinable
-  public static func opt(
-    parse: @escaping @Sendable (inout D) -> T?
-  ) -> OldParser<D, T> {
-    .init {
-      .init(optional: parse(&$0), or: GenericError($0))
-    }
-  }
-
-  @inlinable
-  public static func always(_ t: T) -> OldParser<D, T> {
-    .init(Base.always(.success(t)))
-  }
-
-  @inlinable
-  public static func never() -> OldParser<D, T> {
-    .init(Base.always(.failure(ParseError.never)))
-  }
-
-  @inlinable
-  public var optional: OldParser<D?, T> {
-    .init {
-      guard var datum = $0 else {
-        return .failure(ParseError.gotNilExpected(type: D.self))
-      }
-      let result = self.tempRun(&datum)
-      return result
-    }
-  }
-
-  @inlinable
-  public func map<T1>(
-    _ t: @Sendable @escaping (T) -> T1
-  ) -> OldParser<D, T1> {
-    .init { self.tempRun(&$0).map(t) }
-  }
-
-  @inlinable
-  public func flatMap<T1>(
-    _ t: @Sendable @escaping (T) -> (OldParser<D, T1>)
-  ) -> OldParser<D, T1> {
-    OldParser<D, T1> { data in
-      let original = data
-      let res = self.tempRun(&data).flatMap { t($0).tempRun(&data) }
-      res.onFailure { data = original }
-      return res
-    }
-  }
-
-  @inlinable
-  public func flatMapResult<T1>(
-    _ t: @Sendable @escaping (T) -> (Result<T1, Error>)
-  ) -> OldParser<D, T1> {
-    OldParser<D, T1> { data in
-      self.tempRun(&data).flatMap(t)
-    }
-  }
 }
-
-extension AdhocParser: @unchecked Sendable where Input: Sendable,
-  Output: Sendable {}
 
 extension OldParser where D == T, D: RangeReplaceableCollection {
   @inlinable
@@ -186,24 +125,6 @@ extension OldParser where D == T, D: RangeReplaceableCollection {
   }
 }
 
-extension OldParser where D: Collection, D.SubSequence == D {
-  static func next(
-    _ parse: @escaping (D.Element) -> Result<T, Error>
-  ) -> OldParser<D, T> {
-    let parse = unsafeBitCast(
-      parse, to: (@Sendable (D.Element) -> Result<T, Error>).self
-    )
-    return .init { data in
-      let initial = data
-      guard let next = data.popFirst() else {
-        return .failure(ParseError.atLeastOneExpected)
-      }
-      let result = parse(next)
-      result.onFailure { data = initial }
-      return result
-    }
-  }
-}
 
 extension OldParser where D == T? {
   static func unwrap() -> OldParser<D, T> {
@@ -212,7 +133,7 @@ extension OldParser where D == T? {
 }
 
 
-struct DicitionaryKey<Key: Hashable, Value>: NewParser {
+struct DicitionaryKey<Key: Hashable & Sendable, Value>: NewParser, Sendable {
   var key: Key
 
   init(_ key: Key) {
@@ -346,5 +267,21 @@ extension Array {
 extension NewParser {
   func run(_ data: Input) -> Result<Output, Error> {
     Result { try parse(data) }
+  }
+}
+
+struct OptionalInput<P: Parser>: Parser {
+  var parser: P
+
+  init(_ parser: P) {
+    self.parser = parser
+  }
+
+  func parse(_ input: inout P.Input?) throws -> P.Output {
+    guard var nonil = input else {
+      throw ParseError.gotNilExpected(type: P.Input.self)
+    }
+    defer { input = nonil }
+    return try parser.parse(&nonil)
   }
 }
