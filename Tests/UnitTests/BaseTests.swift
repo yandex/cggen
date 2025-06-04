@@ -1,11 +1,11 @@
-import XCTest
+import Testing
 
 import Base
 
-class BaseTests: XCTestCase {
-  func testConcurrentMap() {
-    XCTAssertEqual((0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
-    XCTAssertEqual(Array(0..<100).concurrentMap { $0 + 1 }, Array(1..<101))
+@Suite struct BaseTests {
+  @Test func testConcurrentMap() {
+    #expect((0..<100).concurrentMap { $0 + 1 } == Array(1..<101))
+    #expect(Array(0..<100).concurrentMap { $0 + 1 } == Array(1..<101))
 
     class Test: @unchecked Sendable {
       var i: Int
@@ -13,38 +13,38 @@ class BaseTests: XCTestCase {
     }
     let referenceCountedEntities = Array(0..<100).concurrentMap(Test.init)
     for (i, entity) in referenceCountedEntities.enumerated() {
-      XCTAssertEqual(entity.i, i)
+      #expect(entity.i == i)
     }
   }
 
-  func testThrowingConcurrentmap() throws {
+  @Test func testThrowingConcurrentmap() throws {
     struct TestError: Error, Equatable {}
     do {
       _ = try Array(0..<100).concurrentMap {
         guard $0 != 42 else { throw TestError() }
         return $0 + 1
       } as [Int]
-      XCTAssert(false)
+      Issue.record("Should have thrown TestError")
     } catch let error as TestError {
-      XCTAssertEqual(error, TestError())
+      #expect(error == TestError())
     }
   }
 
-  func testZip() {
+  @Test func testZip() {
     checkZip(zip(Int?.none, Int?.none), nil)
     checkZip(zip(42, Int?.none), nil)
     checkZip(zip(Int?.none, 42), nil)
     checkZip(zip(12, 42), (12, 42))
   }
 
-  func testZipLongest() {
+  @Test func testZipLongest() {
     checkZip(zipLongest(42, "42", fillFirst: 0, fillSecond: ""), (42, "42"))
     checkZip(zipLongest(nil, "42", fillFirst: 0, fillSecond: ""), (0, "42"))
     checkZip(zipLongest(42, nil, fillFirst: 0, fillSecond: ""), (42, ""))
     checkZip(zipLongest(nil, nil, fillFirst: 0, fillSecond: ""), nil)
 
     func failing() -> Int {
-      XCTFail()
+      Issue.record("Fill function should not be called")
       return -1
     }
     checkZip(
@@ -60,6 +60,6 @@ private func checkZip<T: Equatable, U: Equatable>(
   _ lhs: (T, U)?,
   _ rhs: (T, U)?
 ) {
-  XCTAssertEqual(lhs?.0, rhs?.0)
-  XCTAssertEqual(lhs?.1, rhs?.1)
+  #expect(lhs?.0 == rhs?.0)
+  #expect(lhs?.1 == rhs?.1)
 }

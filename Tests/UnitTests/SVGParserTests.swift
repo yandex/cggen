@@ -1,11 +1,11 @@
 @testable import Base
+import Parsing
+import Testing
 
-import XCTest
-
-class SVGParserTests: XCTestCase {
-  func testSimpleSVG() throws {
+@Suite struct SVGParserTests {
+  @Test func testSimpleSVG() throws {
     let dim = SVG.Length(50, .px)
-    XCTAssertEqual(try parse(simpleSVG), SVG.Document(
+    #expect(try parse(simpleSVG) == SVG.Document(
       core: .init(id: nil),
       presentation: .empty,
       width: dim, height: dim, viewBox: nil,
@@ -25,8 +25,8 @@ class SVGParserTests: XCTestCase {
   }
 }
 
-class SVGAttributesParserTest: XCTestCase {
-  func testUtils() {
+@Suite struct SVGAttributesParserTest {
+  @Test func testUtils() {
     let wsp = SVGAttributeParsers.wsp
     let commaWsp = SVGAttributeParsers.commaWsp
     let hexFromSingle = SVGAttributeParsers.hexByteFromSingle
@@ -65,7 +65,7 @@ class SVGAttributesParserTest: XCTestCase {
     ))
   }
 
-  func testTransform() {
+  @Test func testTransform() {
     let p = SVGAttributeParsers.transform
     p.test("translate(12, 13)", expected: (.translate(tx: 12, ty: 13), ""))
   }
