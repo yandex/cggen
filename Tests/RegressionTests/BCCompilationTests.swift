@@ -1,12 +1,12 @@
 import CoreGraphics
 import Foundation
-import XCTest
+import Testing
 
 import BCRunner
 import libcggen
 
-class BCCompilationTests: XCTestCase {
-  func testCompilation() throws {
+@Suite struct BCCompilationTests {
+  @Test func testCompilation() throws {
     let variousFilenamesDir =
       getCurentFilePath().appendingPathComponent("various_filenames")
     let files = [
@@ -64,46 +64,46 @@ class BCCompilationTests: XCTestCase {
   }
 
   @MainActor
-  func testCompilationAndDrawing() throws {
+  @Test func testCompilationAndDrawing() throws {
     // FIXME: Figure out how to link bcrunner code to binaries in tests
     guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil
     else {
-      throw XCTSkip("This test supported only in xcode")
+      return
     }
-    XCTExpectFailure("""
-     Undefined symbols for architecture arm64:
-       "___llvm_profile_runtime", referenced from:
-           ___llvm_profile_runtime_user in BCCommon.o
-           ___llvm_profile_runtime_user in BCRunner.o
-    """)
-    let files = [
-      "caps_joins.svg",
-      "clip_path.svg",
-      "dashes.svg",
-      "shadow_blur_radius.svg",
-      "fill.svg",
-      "gradient.svg",
-      "lines.svg",
-      "shapes.svg",
-      "transforms.svg",
-//      "path_smooth_curve_defs.svg",
-    ].map { svgSamplesPath.appendingPathComponent($0) }
-    try test(
-      snapshot: {
-        try WKWebViewSnapshoter()
-          .take(sample: $0, scale: CGFloat(defScale), size: defSize).cgimg()
-      },
-      adjustImage: {
-        // Unfortunately, snapshot from web view always comes with white
-        // background color
-        $0.redraw(with: .white)
-      },
-      antialiasing: true,
-      paths: files,
-      tolerance: 0.1,
-      scale: Double(defScale),
-      size: defSize
-    )
+    withKnownIssue {
+      // Undefined symbols for architecture arm64:
+      //   "___llvm_profile_runtime", referenced from:
+      //       ___llvm_profile_runtime_user in BCCommon.o
+      //       ___llvm_profile_runtime_user in BCRunner.o
+      let files = [
+        "caps_joins.svg",
+        "clip_path.svg",
+        "dashes.svg",
+        "shadow_blur_radius.svg",
+        "fill.svg",
+        "gradient.svg",
+        "lines.svg",
+        "shapes.svg",
+        "transforms.svg",
+        //      "path_smooth_curve_defs.svg",
+      ].map { svgSamplesPath.appendingPathComponent($0) }
+      try test(
+        snapshot: {
+          try WKWebViewSnapshoter()
+            .take(sample: $0, scale: CGFloat(defScale), size: defSize).cgimg()
+        },
+        adjustImage: {
+          // Unfortunately, snapshot from web view always comes with white
+          // background color
+          $0.redraw(with: .white)
+        },
+        antialiasing: true,
+        paths: files,
+        tolerance: 0.1,
+        scale: Double(defScale),
+        size: defSize
+      )
+    }
   }
 }
 

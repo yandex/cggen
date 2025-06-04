@@ -1,4 +1,6 @@
-import XCTest
+import CoreGraphics
+import Foundation
+import Testing
 
 import Base
 import BCRunner
@@ -13,7 +15,7 @@ func testPathExtraction(
   let pathAccumulator = CGMutablePath()
   try runPathBytecode(pathAccumulator, fromData: Data(bytecode))
 
-  XCTAssert(pathAccumulator.isAlmostEqual(to: path, tolerance: 0.0001))
+  #expect(pathAccumulator.isAlmostEqual(to: path, tolerance: 0.0001))
 }
 
 extension CGPath {

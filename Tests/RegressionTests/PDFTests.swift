@@ -1,70 +1,72 @@
-import XCTest
+import CoreGraphics
+import Foundation
+import Testing
 
 import Base
 import libcggen
 
-class PDFTests: XCTestCase {
-  func testAlpha() {
+@Suite struct PDFTests {
+  @Test func testAlpha() {
     test(pdf: "alpha")
   }
 
-  func testCapsJoins() {
+  @Test func testCapsJoins() {
     test(pdf: "caps_joins")
   }
 
-  func testDashes() {
+  @Test func testDashes() {
     test(pdf: "dashes")
   }
 
-  func testFill() {
+  @Test func testFill() {
     test(pdf: "fill")
   }
 
-  func testGradient() {
+  @Test func testGradient() {
     test(pdf: "gradient")
   }
 
-  func testGradientRadial() {
+  @Test func testGradientRadial() {
     test(pdf: "gradient_radial")
   }
 
-  func testGradientShape() {
+  @Test func testGradientShape() {
     test(pdf: "gradient_shape")
   }
 
-  func testGradientThreeDots() {
+  @Test func testGradientThreeDots() {
     test(pdf: "gradient_three_dots")
   }
 
-  func testGradientWithAlpha() {
+  @Test func testGradientWithAlpha() {
     test(pdf: "gradient_with_alpha")
   }
 
-  func testGradientWithMask() {
+  @Test func testGradientWithMask() {
     test(pdf: "gradient_with_mask")
   }
 
-  func testGroupOpacity() {
+  @Test func testGroupOpacity() {
     test(pdf: "group_opacity")
   }
 
-  func testLines() {
+  @Test func testLines() {
     test(pdf: "lines")
   }
 
-  func testNestedTransparentGroup() {
+  @Test func testNestedTransparentGroup() {
     test(pdf: "nested_transparent_group", tolerance: 0.005)
   }
 
-  func testShapes() {
+  @Test func testShapes() {
     test(pdf: "shapes", tolerance: 0.005)
   }
 
-  func testUnderlyingObjectWithTinyAlpha() {
+  @Test func testUnderlyingObjectWithTinyAlpha() {
     test(pdf: "underlying_object_with_tiny_alpha")
   }
 
-  func testWhiteCrossScnOperator() {
+  @Test func testWhiteCrossScnOperator() {
     test(pdf: "white_cross_scn_operator")
   }
 }
@@ -77,13 +79,17 @@ private func test(
   tolerance: Double = defaultTolerance,
   scale: CGFloat = defaultScale
 ) {
-  XCTAssertNoThrow(try testBC(
-    path: sample(named: pdf),
-    referenceRenderer: { try renderPDF(from: $0, scale: scale) },
-    scale: scale,
-    antialiasing: false,
-    tolerance: tolerance
-  ))
+  do {
+    try testBC(
+      path: sample(named: pdf),
+      referenceRenderer: { try renderPDF(from: $0, scale: scale) },
+      scale: scale,
+      antialiasing: false,
+      tolerance: tolerance
+    )
+  } catch {
+    Issue.record("Unexpected error: \(error)")
+  }
 }
 
 private func sample(named name: String) -> URL {

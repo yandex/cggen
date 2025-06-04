@@ -2,7 +2,8 @@ import CoreGraphics
 
 import BCCommon
 
-public struct InvalidRawValue<T: RawRepresentable>: Swift.Error where T.RawValue: Sendable {
+public struct InvalidRawValue<T: RawRepresentable>: Swift.Error
+  where T.RawValue: Sendable {
   public typealias enumType = T
   public typealias rawType = T.RawValue
   public var rawValue: rawType

@@ -10,6 +10,7 @@ import Parsing
   private let int = Parse(input: Substring.self) {
     Int.parser()
   }
+
   private let double = Parse(input: Substring.self) {
     Double.parser()
   }
@@ -183,5 +184,3 @@ extension NewParser where Input == Substring, Output == Void {
     #expect(String(data) == expected.rest)
   }
 }
-
-

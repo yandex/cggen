@@ -1,5 +1,5 @@
-@preconcurrency import Parsing
 import Foundation
+@preconcurrency import Parsing
 
 private enum Tag: String {
   // shape
@@ -127,86 +127,91 @@ public enum SVGParser {
   private static func len(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Length> {
-    return attributeParser(SVGAttributeParsers.length, attribute)
+    attributeParser(SVGAttributeParsers.length, attribute)
   }
 
   private static func coord(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Coordinate> {
-    return attributeParser(SVGAttributeParsers.length, attribute)
+    attributeParser(SVGAttributeParsers.length, attribute)
   }
 
   private static func color(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Color> {
-    return attributeParser(SVGAttributeParsers.rgbcolor, attribute)
+    attributeParser(SVGAttributeParsers.rgbcolor, attribute)
   }
+
   private static func paint(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Paint> {
-    return attributeParser(SVGAttributeParsers.paint, attribute)
+    attributeParser(SVGAttributeParsers.paint, attribute)
   }
 
   private static func viewBox(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.ViewBox> {
-    return attributeParser(SVGAttributeParsers.viewBox, attribute)
+    attributeParser(SVGAttributeParsers.viewBox, attribute)
   }
 
   private static func num(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Float> {
-    return attributeParser(SVGAttributeParsers.number, attribute)
+    attributeParser(SVGAttributeParsers.number, attribute)
   }
-  
+
   private static func numList(
     _ attribute: Attribute
   ) -> some AttributeParser<[SVG.Float]> {
-    return attributeParser(SVGAttributeParsers.listOfNumbers, attribute)
+    attributeParser(SVGAttributeParsers.listOfNumbers, attribute)
   }
-  
+
   private static func numberOptionalNumber(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.NumberOptionalNumber> {
-    return attributeParser(SVGAttributeParsers.numberOptionalNumber, attribute)
+    attributeParser(SVGAttributeParsers.numberOptionalNumber, attribute)
   }
-  
+
   private static func identifier(
     _ attribute: Attribute
   ) -> some AttributeParser<String> {
-    return attributeParser(SVGAttributeParsers.identifier, attribute)
+    attributeParser(SVGAttributeParsers.identifier, attribute)
   }
+
   private static func transform(
     _ attribute: Attribute
   ) -> some AttributeParser<[SVG.Transform]> {
     let parser = attributeParser(SVGAttributeParsers.transformsList, attribute)
     return parser.map { tuple in
-      tuple.map { (_, transforms, _) in transforms }
+      tuple.map { _, transforms, _ in transforms }
     }
   }
+
   private static func listOfPoints(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.CoordinatePairs> {
     let parser = attributeParser(SVGAttributeParsers.listOfPoints, attribute)
     return parser.map { tuple in
-      tuple.map { (_, points, _) in points }
+      tuple.map { _, points, _ in points }
     }
   }
 
   private static func pathData(
     _ attribute: Attribute
   ) -> some AttributeParser<[SVG.PathData.Command]> {
-    return attributeParser(SVGAttributeParsers.pathData, attribute)
+    attributeParser(SVGAttributeParsers.pathData, attribute)
   }
+
   private static func stopOffset(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.Stop.Offset> {
-    return attributeParser(SVGAttributeParsers.stopOffset, attribute)
+    attributeParser(SVGAttributeParsers.stopOffset, attribute)
   }
+
   private static func fillRule(
     _ attribute: Attribute
   ) -> some AttributeParser<SVG.FillRule> {
-    return attributeParser(SVG.FillRule.parser(), attribute)
+    attributeParser(SVG.FillRule.parser(), attribute)
   }
 
   private static var version: some AttributeGroupParser<Void> {
@@ -219,14 +224,14 @@ public enum SVGParser {
   private static let lineCap = attributeParser(SVG.LineCap.parser())
   private static let lineJoin = attributeParser(SVG.LineJoin.parser())
   private static let funciri = attributeParser(SVGAttributeParsers.funciri)
-  nonisolated(unsafe)
-  private static let x: some AttributeParser<SVG.Coordinate>  = coord(.x)
-  nonisolated(unsafe)
-  private static let y: some AttributeParser<SVG.Coordinate> = coord(.y)
-  nonisolated(unsafe)
-  private static let width: some AttributeParser<SVG.Length> = len(.width)
-  nonisolated(unsafe)
-  private static let height: some AttributeParser<SVG.Length> = len(.height)
+  private nonisolated(unsafe)
+  static let x: some AttributeParser<SVG.Coordinate> = coord(.x)
+  private nonisolated(unsafe)
+  static let y: some AttributeParser<SVG.Coordinate> = coord(.y)
+  private nonisolated(unsafe)
+  static let width: some AttributeParser<SVG.Length> = len(.width)
+  private nonisolated(unsafe)
+  static let height: some AttributeParser<SVG.Length> = len(.height)
   private static let colorInterpolation =
     attributeParser(SVG.ColorInterpolation.parser())
 
@@ -236,8 +241,8 @@ public enum SVGParser {
 
   private static let ignoreAttribute =
     attributeParser(consume(while: always(true)))
-  nonisolated(unsafe)
-  private static let ignore: some AttributeGroupParser<Void> =
+  private nonisolated(unsafe)
+  static let ignore: some AttributeGroupParser<Void> =
     ignoreAttribute(.maskType).map(always(()))
 
   private static let dashArray = attributeParser(SVGAttributeParsers.dashArray)
@@ -264,8 +269,8 @@ public enum SVGParser {
     with: SVG.PresentationAttributes.init
   )
 
-  nonisolated(unsafe)
-  private static let core: some AttributeGroupParser<SVG.CoreAttributes> =
+  private nonisolated(unsafe)
+  static let core: some AttributeGroupParser<SVG.CoreAttributes> =
     identifier(.id).map(SVG.CoreAttributes.init)
 
   public static func root(from data: Data) throws -> SVG.Document {
@@ -302,7 +307,7 @@ public enum SVGParser {
 
   private typealias ShapeParser<T: Equatable & Sendable> =
     AttributeGroupParser<SVG.ShapeElement<T>>
-  
+
   private static func shape<T: Equatable & Sendable>(
     _ parser: some AttributeGroupParser<T>
   ) -> some ShapeParser<T> {
@@ -312,28 +317,28 @@ public enum SVGParser {
     )
   }
 
-  nonisolated(unsafe)
-  private static let rect: some ShapeParser<SVG.RectData> = shape(zip(
+  private nonisolated(unsafe)
+  static let rect: some ShapeParser<SVG.RectData> = shape(zip(
     x, y, len(.rx), len(.ry),
     width, height,
     with: SVG.RectData.init
   ))
-  nonisolated(unsafe)
-  private static let polygon: some ShapeParser<SVG.PolygonData> = shape(
+  private nonisolated(unsafe)
+  static let polygon: some ShapeParser<SVG.PolygonData> = shape(
     listOfPoints(.points).map(SVG.PolygonData.init)
   )
-  nonisolated(unsafe)
-  private static let circle: some ShapeParser<SVG.CircleData> = shape(zip(
+  private nonisolated(unsafe)
+  static let circle: some ShapeParser<SVG.CircleData> = shape(zip(
     coord(.cx), coord(.cy), coord(.r),
     with: SVG.CircleData.init
   ))
-  nonisolated(unsafe)
-  private static let ellipse: some ShapeParser<SVG.EllipseData> = shape(zip(
+  private nonisolated(unsafe)
+  static let ellipse: some ShapeParser<SVG.EllipseData> = shape(zip(
     coord(.cx), coord(.cy), len(.rx), len(.ry),
     with: SVG.EllipseData.init
   ))
-  nonisolated(unsafe)
-  private static let path: some ShapeParser<SVG.PathData> = shape(zip(
+  private nonisolated(unsafe)
+  static let path: some ShapeParser<SVG.PathData> = shape(zip(
     pathData(.d), num(.pathLength), with: SVG.PathData.init
   ))
 
@@ -457,8 +462,8 @@ public enum SVGParser {
 
   private static let iri: ParserForAttribute<String> =
     attributeParser(SVGAttributeParsers.iri)
-  nonisolated(unsafe)
-  private static let use: some AttributeGroupParser<SVG.Use> = zip(
+  private nonisolated(unsafe)
+  static let use: some AttributeGroupParser<SVG.Use> = zip(
     core, presentation,
     transform(.transform),
     x, y, width, height,
@@ -505,7 +510,7 @@ public enum SVGParser {
     )
   }
 
-  nonisolated(unsafe) private static
+  private nonisolated(unsafe) static
   let filterAttributes: some AttributeGroupParser<SVG.FilterAttributes> = zip(
     core, presentation,
     x, y, width, height, units(.filterUnits),
@@ -537,15 +542,17 @@ public enum SVGParser {
     attributes: some AttributeGroupParser<Attributes>
   ) -> some NewParser<XML, Attributes> {
     let tag: some NewParser<XML.Element, Void> =
-    tag.rawValue.oldParser
-      .pullback(\.substring)
-      .pullback(\XML.Element.tag)
-    
-    return (tag ~>> (attributes <<~ End())
-      .oldParser.pullback(\.attrs)).oldParser
+      tag.rawValue.oldParser
+        .pullback(\.substring)
+        .pullback(\XML.Element.tag)
+
+    return (
+      tag ~>> (attributes <<~ End())
+        .oldParser.pullback(\.attrs)
+    ).oldParser
       .optional.oldParser.pullback(\XML.el)
   }
-  
+
   private static let filterPrimitiveAttributes = zip(
     identifier(.result),
     height, width, x, y,
@@ -570,15 +577,15 @@ public enum SVGParser {
   typealias FilterPrimitiveParser<T: Equatable> = NewParser<
     XML, SVG.FilterPrimitiveElement<T>
   >
-  
+
   private static func elementTagFeBlend<Attributes>(
     _ attributes: some AttributeGroupParser<Attributes>
   ) -> some NewParser<XML, Attributes> {
     element(tag: .feBlend, attributes: attributes)
   }
-  
-  nonisolated(unsafe)
-  private static let feBlend: some FilterPrimitiveParser<
+
+  private nonisolated(unsafe)
+  static let feBlend: some FilterPrimitiveParser<
     SVG.FilterPrimitiveFeBlend
   > = zip(
     filterPrimitiveIn(.in),
@@ -592,9 +599,9 @@ public enum SVGParser {
   ) -> some NewParser<XML, Attributes> {
     element(tag: .feColorMatrix, attributes: attributes)
   }
-  
-  nonisolated(unsafe)
-  private static let feColorMatrix: some FilterPrimitiveParser<
+
+  private nonisolated(unsafe)
+  static let feColorMatrix: some FilterPrimitiveParser<
     SVG.FilterPrimitiveFeColorMatrix
   > = zip(
     filterPrimitiveIn(.in),
@@ -608,59 +615,59 @@ public enum SVGParser {
   ) -> some NewParser<XML, Attributes> {
     element(tag: .feFlood, attributes: attributes)
   }
-  
-  nonisolated(unsafe)
-  private static let feFlood: some FilterPrimitiveParser<
+
+  private nonisolated(unsafe)
+  static let feFlood: some FilterPrimitiveParser<
     SVG.FilterPrimitiveFeFlood
-  >  = zip(
+  > = zip(
     color(.floodColor),
     num(.floodOpacity),
     with: SVG.FilterPrimitiveFeFlood.init
   ) |> filterPrimitive >>> elementTagFeFlood
 
-    private static func elementTagFeGaussianBlur<Attributes>(
-      _ attributes: some AttributeGroupParser<Attributes>
-    ) -> some NewParser<XML, Attributes> {
-      element(tag: .feGaussianBlur, attributes: attributes)
-    }
+  private static func elementTagFeGaussianBlur<Attributes>(
+    _ attributes: some AttributeGroupParser<Attributes>
+  ) -> some NewParser<XML, Attributes> {
+    element(tag: .feGaussianBlur, attributes: attributes)
+  }
 
-    nonisolated(unsafe)
-    private static let feGaussianBlur: some FilterPrimitiveParser<
-      SVG.FilterPrimitiveFeGaussianBlur
-    >  = zip(
-      filterPrimitiveIn(.in),
-      numberOptionalNumber(.stdDeviation),
-      with: SVG.FilterPrimitiveFeGaussianBlur.init
-    ) |> filterPrimitive >>> elementTagFeGaussianBlur
+  private nonisolated(unsafe)
+  static let feGaussianBlur: some FilterPrimitiveParser<
+    SVG.FilterPrimitiveFeGaussianBlur
+  > = zip(
+    filterPrimitiveIn(.in),
+    numberOptionalNumber(.stdDeviation),
+    with: SVG.FilterPrimitiveFeGaussianBlur.init
+  ) |> filterPrimitive >>> elementTagFeGaussianBlur
 
-    private static func elementTagFeOffset<Attributes>(
-      _ attributes: some AttributeGroupParser<Attributes>
-    ) -> some NewParser<XML, Attributes> {
-      element(tag: .feOffset, attributes: attributes)
-    }
+  private static func elementTagFeOffset<Attributes>(
+    _ attributes: some AttributeGroupParser<Attributes>
+  ) -> some NewParser<XML, Attributes> {
+    element(tag: .feOffset, attributes: attributes)
+  }
 
-    nonisolated(unsafe)
-    private static let feOffset: some FilterPrimitiveParser<
-      SVG.FilterPrimitiveFeOffset
-    >  = zip(
-      filterPrimitiveIn(.in),
-      num(.dx),
-      num(.dy),
-      with: SVG.FilterPrimitiveFeOffset.init
-    ) |> filterPrimitive >>> elementTagFeOffset
+  private nonisolated(unsafe)
+  static let feOffset: some FilterPrimitiveParser<
+    SVG.FilterPrimitiveFeOffset
+  > = zip(
+    filterPrimitiveIn(.in),
+    num(.dx),
+    num(.dy),
+    with: SVG.FilterPrimitiveFeOffset.init
+  ) |> filterPrimitive >>> elementTagFeOffset
 
-    private static nonisolated(unsafe)
-    let filterPrimitiveContent: some NewParser<
-      XML, SVG.FilterPrimitiveContent
-    > = OneOf {
-      feBlend.map(SVG.FilterPrimitiveContent.feBlend)
-      feColorMatrix.map(SVG.FilterPrimitiveContent.feColorMatrix)
-      feFlood.map(SVG.FilterPrimitiveContent.feFlood)
-      feGaussianBlur.map(SVG.FilterPrimitiveContent.feGaussianBlur)
-      feOffset.map(SVG.FilterPrimitiveContent.feOffset)
-    }
+  private nonisolated(unsafe)
+  static let filterPrimitiveContent: some NewParser<
+    XML, SVG.FilterPrimitiveContent
+  > = OneOf {
+    feBlend.map(SVG.FilterPrimitiveContent.feBlend)
+    feColorMatrix.map(SVG.FilterPrimitiveContent.feColorMatrix)
+    feFlood.map(SVG.FilterPrimitiveContent.feFlood)
+    feGaussianBlur.map(SVG.FilterPrimitiveContent.feGaussianBlur)
+    feOffset.map(SVG.FilterPrimitiveContent.feOffset)
+  }
 
-  nonisolated(unsafe) private static let filter: some NewParser<
+  private nonisolated(unsafe) static let filter: some NewParser<
     XML, SVG.Filter
   > = elementWithChildren(
     attributes: filterAttributes, child: filterPrimitiveContent

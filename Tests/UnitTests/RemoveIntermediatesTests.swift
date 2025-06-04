@@ -58,7 +58,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     let points = stride(from: 0.0, to: 2.0, by: 0.01).map(l)
     #expect(
       points.removeIntermediates(tolerance: Double.ulpOfOne) ==
-      [points.first!, points.last!]
+        [points.first!, points.last!]
     )
   }
 
@@ -67,7 +67,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     let points = stride(from: -10.0, through: 2.0, by: 0.01).map(l)
     #expect(
       points.removeIntermediates(tolerance: delta) ==
-      [points.first!, points.last!]
+        [points.first!, points.last!]
     )
   }
 
@@ -80,7 +80,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     let expected = [points1.first!, points2.first!, points2.last!]
     #expect(
       points.removeIntermediates(tolerance: delta) ==
-      expected
+        expected
     )
   }
 
@@ -93,7 +93,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     let expected = [points1.first!, points2.first!, points2.last!]
     #expect(
       points.removeIntermediates(tolerance: 0.1) ==
-      expected
+        expected
     )
   }
 }

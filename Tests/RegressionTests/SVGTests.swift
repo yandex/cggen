@@ -1,4 +1,20 @@
+// NOTE: SVG tests remain in XCTest due to WebKit integration issues
+//
+// The SVG tests use WKWebViewSnapshoter which depends on WebKit's navigation
+// callbacks and RunLoop.current.spin() for synchronous waiting. This
+// architecture is incompatible with Swift Testing's execution model:
+//
+// - XCTest: Runs tests on main thread with active RunLoop
+// - Swift Testing: Different execution context, RunLoop.current.spin() hangs
+//
+// The WebKit navigation callbacks (waitCallbackOnMT) never complete in
+// Swift Testing, causing tests to hang indefinitely. To fix this would
+// require rewriting the WebKit testing infrastructure to use async/await.
+//
+// PathExtractionTests were successfully migrated as they don't use WebKit.
+
 import os.log
+import Testing
 import XCTest
 
 import Base
@@ -234,8 +250,8 @@ class SVGCustomCheckTests: XCTestCase {
   }
 }
 
-class PathExtractionTests: XCTestCase {
-  func testLinesAndCurves() {
+@Suite struct PathExtractionTests {
+  @Test func testLinesAndCurves() {
     test(args: linesAndCurvesArgs)
   }
 }
