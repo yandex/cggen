@@ -1,5 +1,7 @@
 import Foundation
+import CasePaths
 
+@CasePathable
 public enum XML: Equatable, Sendable {
   public struct Element: Equatable, Sendable {
     var tag: String
