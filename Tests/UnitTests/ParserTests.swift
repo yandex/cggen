@@ -62,13 +62,7 @@ import Parsing
     p.test("15_", expected: ("_16_", "_"))
   }
 
-  @Test func testZip() {
-    let p: Parser<Int> = zip(int, "_", with: { int, _ in int })
-    p.test("12_", expected: (12, ""))
-    p.test("34__", expected: (34, "_"))
-    p.test("56", expected: (nil, ""))
-    p.test("_56", expected: (nil, "_56"))
-  }
+  // Note: testZip removed since zip function is deprecated and replaced with Parse builders
 
   @Test func testZeroOrMore() {
     let p: some NewParser<[Int]> = (int <<~ "_")*
@@ -140,7 +134,6 @@ import Parsing
     let p: Parser<Substring> = .identity()
     p.test("foo bar", expected: ("foo bar", ""))
   }
-
 
   @Test func testConsumeWhile() {
     let p: some NewParser<Substring> = Prefix(while: { $0 != "_" })

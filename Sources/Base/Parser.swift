@@ -125,13 +125,11 @@ extension OldParser where D == T, D: RangeReplaceableCollection {
   }
 }
 
-
 extension OldParser where D == T? {
   static func unwrap() -> OldParser<D, T> {
     fatalError()
   }
 }
-
 
 struct DicitionaryKey<Key: Hashable & Sendable, Value>: NewParser, Sendable {
   var key: Key
