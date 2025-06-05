@@ -608,12 +608,12 @@ public enum SVGParser {
     Attributes: Equatable, Child: Equatable
   >(
     attributes: AttributeGroupParser<Attributes>,
-    child: some Base.NewParser<XML, Child>
+    child: some Parser<XML, Child>
   ) -> some Parser<XML, SVG.ElementWithChildren<Attributes, Child>> {
     let childParser = First<ArraySlice<XML>>().compactMap { element in
       try? child.parse(element)
     }
-    let childrenParser: some NewParser<[XML], [Child]> =
+    let childrenParser: some Parser<[XML], [Child]> =
       (childParser* <<~ End())
         .pullback(\.slice)
     let attrs = (attributes <<~ End())
@@ -626,8 +626,8 @@ public enum SVGParser {
   private static func element<Attributes>(
     tag: Tag,
     attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
-    let tag: some NewParser<XML.Element, Void> =
+  ) -> some Parser<XML, Attributes> {
+    let tag: some Parser<XML.Element, Void> =
       tag.rawValue
         .pullback(\.substring)
         .pullback(\XML.Element.tag)
@@ -682,13 +682,13 @@ public enum SVGParser {
     attributeParser(SVG.FilterPrimitiveFeColorMatrix.Kind.parser(), attribute)
   }
 
-  typealias FilterPrimitiveParser<T: Equatable> = NewParser<
+  typealias FilterPrimitiveParser<T: Equatable> = Parser<
     XML, SVG.FilterPrimitiveElement<T>
   >
 
   private static func elementTagFeBlend<Attributes>(
     _ attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
+  ) -> some Parser<XML, Attributes> {
     element(tag: .feBlend, attributes: attributes)
   }
 
@@ -703,7 +703,7 @@ public enum SVGParser {
 
   private static func elementTagFeColorMatrix<Attributes>(
     _ attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
+  ) -> some Parser<XML, Attributes> {
     element(tag: .feColorMatrix, attributes: attributes)
   }
 
@@ -718,7 +718,7 @@ public enum SVGParser {
 
   private static func elementTagFeFlood<Attributes>(
     _ attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
+  ) -> some Parser<XML, Attributes> {
     element(tag: .feFlood, attributes: attributes)
   }
 
@@ -732,7 +732,7 @@ public enum SVGParser {
 
   private static func elementTagFeGaussianBlur<Attributes>(
     _ attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
+  ) -> some Parser<XML, Attributes> {
     element(tag: .feGaussianBlur, attributes: attributes)
   }
 
@@ -746,7 +746,7 @@ public enum SVGParser {
 
   private static func elementTagFeOffset<Attributes>(
     _ attributes: AttributeGroupParser<Attributes>
-  ) -> some NewParser<XML, Attributes> {
+  ) -> some Parser<XML, Attributes> {
     element(tag: .feOffset, attributes: attributes)
   }
 
@@ -760,7 +760,7 @@ public enum SVGParser {
   }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeOffset
 
   private nonisolated(unsafe)
-  static let filterPrimitiveContent: some NewParser<
+  static let filterPrimitiveContent: some Parser<
     XML, SVG.FilterPrimitiveContent
   > = OneOf {
     AnyParser(feBlend).map(SVG.FilterPrimitiveContent.feBlend)
@@ -770,7 +770,7 @@ public enum SVGParser {
     AnyParser(feOffset).map(SVG.FilterPrimitiveContent.feOffset)
   }
 
-  private nonisolated(unsafe) static let filter: some NewParser<
+  private nonisolated(unsafe) static let filter: some Parser<
     XML, SVG.Filter
   > = elementWithChildren(
     attributes: filterAttributes, child: filterPrimitiveContent

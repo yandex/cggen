@@ -4,8 +4,7 @@ import Base
 import Parsing
 
 @Suite struct PareserTests {
-  typealias Parser<T> = Base.OldParser<Substring, T>
-  typealias NewParser<T> = Base.NewParser<Substring, T>
+  typealias Parser<T> = Parsing.Parser<Substring, T>
 
   private let int = Parse(input: Substring.self) {
     Int.parser()
@@ -43,21 +42,21 @@ import Parsing
   }
 
   @Test func testConsumeStringParser() {
-    let p: some NewParser<Void> = "foo"
+    let p: some Parser<Void> = "foo"
     p.test("foo")
     p.test("foo___", expected: ((), "___"))
     p.test("___foo", expected: (nil, "___foo"))
   }
 
   @Test func testConsumeCharParser() {
-    let p: some NewParser<Void> = "f".map { _ in () }
+    let p: some Parser<Void> = "f".map { _ in () }
     p.test("f")
     p.test("fff", expected: ((), "ff"))
     p.test("_f_", expected: (nil, "_f_"))
   }
 
   @Test func testMap() {
-    let p: some NewParser<String> = int.map { "_\($0 + 1)_" }
+    let p: some Parser<String> = int.map { "_\($0 + 1)_" }
     p.test("42", expected: ("_43_", ""))
     p.test("15_", expected: ("_16_", "_"))
   }
@@ -65,14 +64,14 @@ import Parsing
   // Note: testZip removed since zip function is deprecated and replaced with Parse builders
 
   @Test func testZeroOrMore() {
-    let p: some NewParser<[Int]> = (int <<~ "_")*
+    let p: some Parser<[Int]> = (int <<~ "_")*
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: ([], "foobar"))
   }
 
   @Test func testZeroOrMoreWithSeparator() {
-    let p: some NewParser<[Int]> = Many { int } separator: { " " }
+    let p: some Parser<[Int]> = Many { int } separator: { " " }
     p.test("1 2 3", expected: ([1, 2, 3], ""))
     p.test("12 13 14 ", expected: ([12, 13, 14], " "))
     p.test("12 13 foo", expected: ([12, 13], " foo"))
@@ -80,20 +79,20 @@ import Parsing
   }
 
   @Test func testOneOrMore() {
-    let p: some NewParser<[Int]> = (int <<~ "_")+
+    let p: some Parser<[Int]> = (int <<~ "_")+
     p.test("12_13_14_", expected: ([12, 13, 14], ""))
     p.test("12_13_14", expected: ([12, 13], "14"))
     p.test("foobar", expected: (nil, "foobar"))
   }
 
   @Test func testMayBe() {
-    let p: some NewParser<Int?> = (int <<~ "_")~?
+    let p: some Parser<Int?> = (int <<~ "_")~?
     p.test("123_", expected: (123, ""))
     p.test("_", expected: (.some(nil), "_"))
   }
 
   @Test func testIntoParser() {
-    let p: some NewParser<Int> = "{" ~>> " "* ~>> int <<~ " "* <<~ "}"
+    let p: some Parser<Int> = "{" ~>> " "* ~>> int <<~ " "* <<~ "}"
     p.test("{123}", expected: (123, ""))
     p.test("{123}}", expected: (123, "}"))
     p.test("{  45 }", expected: (45, ""))
@@ -104,9 +103,9 @@ import Parsing
       var t: T
       var u: U
     }
-    let pair: some NewParser<(Int, Double)> =
+    let pair: some Parser<(Int, Double)> =
       "{" ~>> int <<~ "}" ~ "{" ~>> double <<~ "}"
-    let p: some NewParser<Pair<Int, Double>> = pair
+    let p: some Parser<Pair<Int, Double>> = pair
       .map { .init(t: $0.0, u: $0.1) }
     p.test("{1}{2.3}{2}", expected: (.init(t: 1, u: 2.3), "{2}"))
   }
@@ -115,7 +114,7 @@ import Parsing
     enum InnerPlanets: String, CaseIterable {
       case mercury, venus, earth, mars
     }
-    let p: some NewParser<InnerPlanets> = InnerPlanets.parser()
+    let p: some Parser<InnerPlanets> = InnerPlanets.parser()
     p.test("mars", expected: (.mars, ""))
     p.test("earthmars", expected: (.earth, "mars"))
     p.test("marsearth", expected: (.mars, "earth"))
@@ -125,23 +124,23 @@ import Parsing
     enum Colors: String, CaseIterable {
       case aqua, aquamarine
     }
-    let p: some NewParser<Colors> = Colors.parser()
+    let p: some Parser<Colors> = Colors.parser()
     p.test("aqua", expected: (.aqua, ""))
     p.test("aquamarine", expected: (.aquamarine, ""))
   }
 
   @Test func testIdentityParser() {
-    let p: Parser<Substring> = .identity()
+    let p: some Parser<Substring> = Rest()
     p.test("foo bar", expected: ("foo bar", ""))
   }
 
   @Test func testConsumeWhile() {
-    let p: some NewParser<Substring> = Prefix(while: { $0 != "_" })
+    let p: some Parser<Substring> = Prefix(while: { $0 != "_" })
     p.test("123_", expected: ("123", "_"))
   }
 }
 
-extension NewParser where Input == Substring, Output: Equatable {
+extension Parser where Input == Substring, Output: Equatable {
   func test(
     _ data: String,
     expected: (result: Output?, rest: String)
@@ -153,7 +152,7 @@ extension NewParser where Input == Substring, Output: Equatable {
   }
 }
 
-extension NewParser where Input == Substring, Output == Void {
+extension Parser where Input == Substring, Output == Void {
   func test(
     _ data: String,
     expected: (result: Void?, rest: String) = ((), "")
