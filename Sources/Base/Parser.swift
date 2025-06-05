@@ -36,14 +36,15 @@ postfix operator +
 // "Zero or one"
 postfix operator ~?
 
-struct DicitionaryKey<Key: Hashable & Sendable, Value>: Parser, Sendable {
-  var key: Key
+public struct DicitionaryKey<Key: Hashable & Sendable, Value>: Parser,
+  Sendable {
+  public var key: Key
 
-  init(_ key: Key) {
+  public init(_ key: Key) {
     self.key = key
   }
 
-  func parse(_ input: inout [Key: Value]) throws -> Value? {
+  public func parse(_ input: inout [Key: Value]) throws -> Value? {
     input.removeValue(forKey: key)
   }
 }
@@ -154,33 +155,33 @@ public postfix func + <P: Parser>(
 }
 
 extension String {
-  var substring: Substring {
+  public var substring: Substring {
     get { self[...] }
     set { self = String(newValue) }
   }
 }
 
 extension Array {
-  var slice: ArraySlice<Element> {
+  public var slice: ArraySlice<Element> {
     get { self[...] }
     set { self = Array(newValue) }
   }
 }
 
 extension Parser {
-  func run(_ data: Input) -> Result<Output, Error> {
+  public func run(_ data: Input) -> Result<Output, Error> {
     Result { try parse(data) }
   }
 }
 
-struct OptionalInput<P: Parser>: Parser {
-  var parser: P
+public struct OptionalInput<P: Parser>: Parser {
+  public var parser: P
 
-  init(_ parser: P) {
+  public init(_ parser: P) {
     self.parser = parser
   }
 
-  func parse(_ input: inout P.Input?) throws -> P.Output {
+  public func parse(_ input: inout P.Input?) throws -> P.Output {
     guard var nonil = input else {
       throw ParseError.gotNilExpected(type: P.Input.self)
     }

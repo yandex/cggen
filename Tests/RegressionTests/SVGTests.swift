@@ -20,6 +20,7 @@ import XCTest
 import Base
 import libcggen
 import Parsing
+import SVGParse
 
 class SVGTest: XCTestCase {
   @MainActor

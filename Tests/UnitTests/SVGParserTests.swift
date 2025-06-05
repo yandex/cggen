@@ -1,5 +1,6 @@
 @testable import Base
 import Parsing
+@testable import SVGParse
 import Testing
 
 @Suite struct SVGParserTests {
@@ -54,7 +55,7 @@ import Testing
       "#123456F",
       expected: (.init(red: 0x12, green: 0x34, blue: 0x56), "F")
     )
-    paint.test("none", expected: (.some(.none), ""))
+    paint.test("none", expected: (SVG.Paint.none, ""))
     filterIn.test("BackgroundImageFix", expected: (
       result: SVG.FilterPrimitiveIn.previous("BackgroundImageFix"),
       rest: ""
@@ -67,7 +68,10 @@ import Testing
 
   @Test func testTransform() {
     let p = SVGAttributeParsers.transform
-    p.test("translate(12, 13)", expected: (.translate(tx: 12, ty: 13), ""))
+    p.test(
+      "translate(12, 13)",
+      expected: (SVG.Transform.translate(tx: 12, ty: 13), "")
+    )
   }
 }
 
@@ -81,3 +85,31 @@ private let simpleSVG = """
   <rect fill="#50E3C2" x="0" y="0" width="50" height="50" id="test_rect"></rect>
 </svg>
 """
+
+extension Parser where Input == Substring, Output: Equatable {
+  func test(
+    _ data: String,
+    expected: (result: Output?, rest: String)
+  ) {
+    var dataToParse = Substring(data)
+    let res = Result { try parse(&dataToParse) }
+    #expect(expected.result == res.value)
+    #expect(expected.rest == String(dataToParse))
+  }
+}
+
+extension Parser where Input == Substring, Output == Void {
+  func test(
+    _ data: String,
+    expected: (result: Void?, rest: String) = ((), "")
+  ) {
+    var data = Substring(data)
+    let result: Void? = try? parse(&data)
+    if expected.result == nil {
+      #expect(result == nil)
+    } else {
+      #expect(result != nil)
+    }
+    #expect(String(data) == expected.rest)
+  }
+}

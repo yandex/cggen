@@ -3,6 +3,7 @@ import Foundation
 
 import Base
 import PDFParse
+import SVGParse
 
 public struct Args {
   let objcHeader: String?

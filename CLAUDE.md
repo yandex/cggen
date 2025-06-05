@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Lint and Type Checking
 - Format check: `swiftformat --lint .`
 - Format fix: `swiftformat .`
+- **Run formatter before commit**
 
 ## Architecture
 
@@ -114,3 +115,6 @@ The migration from legacy parser infrastructure to swift-parsing is now complete
 **Key infrastructure**:
 - `DicitionaryKey<Key, Value>: Parser` - Direct dictionary key extraction
 - Custom parser operators (`~>>`, `<<~`, `~`, `*`, `+`, `~?`) for parsing DSL
+
+## Project Memories
+- Consider updating your project memory before finishing the task

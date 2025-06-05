@@ -41,11 +41,18 @@ let package = Package(
     ),
     .target(
       name: "libcggen",
-      dependencies: ["Base", "PDFParse", "BCCommon"]
+      dependencies: ["Base", "SVGParse", "PDFParse", "BCCommon"]
     ),
     .target(
       name: "Base",
       dependencies: [
+        .product(name: "Parsing", package: "swift-parsing"),
+      ]
+    ),
+    .target(
+      name: "SVGParse",
+      dependencies: [
+        "Base",
         .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
@@ -55,7 +62,7 @@ let package = Package(
     ),
     .testTarget(
       name: "UnitTests",
-      dependencies: ["Base", "libcggen"],
+      dependencies: ["Base", "SVGParse", "libcggen"],
       resources: [
         .copy("UnitTests.xctestplan"),
       ]
