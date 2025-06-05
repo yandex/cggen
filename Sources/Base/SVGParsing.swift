@@ -255,12 +255,16 @@ public enum SVGParser {
     attributeParser(Rest())
   private nonisolated(unsafe)
   static let ignore: AttributeGroupParser<Void> =
-    DicitionaryKey<String, String>(Attribute.maskType.rawValue).map { _ in () }.eraseToAnyParser()
+    DicitionaryKey<String, String>(Attribute.maskType.rawValue).map { _ in () }
+      .eraseToAnyParser()
 
   private static let dashArray: ParserForAttribute<[SVG.Length]> =
     attributeParser(SVGAttributeParsers.dashArray)
 
-  private static let presentation: AttributeGroupParser<SVG.PresentationAttributes> = Parse(SVG.PresentationAttributes.init) {
+  private static let presentation: AttributeGroupParser<
+    SVG
+      .PresentationAttributes
+  > = Parse(SVG.PresentationAttributes.init) {
     funciri(.clipPath)
     fillRule(.clipRule)
     funciri(.mask)
@@ -453,18 +457,19 @@ public enum SVGParser {
   public static func linearGradient(
     from el: XML.Element
   ) throws -> SVG.LinearGradient {
-    let attrs = try (Parse { core, presentation, units, x1, y1, x2, y2, transform in
-      (core, presentation, units, x1, y1, x2, y2, transform)
-    } with: {
-      core
-      presentation
-      units(.gradientUnits)
-      coord(.x1)
-      coord(.y1)
-      coord(.x2)
-      coord(.y2)
-      transform(.gradientTransform)
-    } <<~ End()).run(el.attrs).get()
+    let attrs =
+      try (Parse { core, presentation, units, x1, y1, x2, y2, transform in
+        (core, presentation, units, x1, y1, x2, y2, transform)
+      } with: {
+        core
+        presentation
+        units(.gradientUnits)
+        coord(.x1)
+        coord(.y1)
+        coord(.x2)
+        coord(.y2)
+        transform(.gradientTransform)
+      } <<~ End()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
       switch $0 {
       case let .el(el):
@@ -489,19 +494,20 @@ public enum SVGParser {
   public static func radialGradient(
     from el: XML.Element
   ) throws -> SVG.RadialGradient {
-    let attrs = try (Parse { core, presentation, units, cx, cy, r, fx, fy, transform in
-      (core, presentation, units, cx, cy, r, fx, fy, transform)
-    } with: {
-      core
-      presentation
-      units(.gradientUnits)
-      coord(.cx)
-      coord(.cy)
-      len(.r)
-      coord(.fx)
-      coord(.fy)
-      transform(.gradientTransform)
-    } <<~ End()).run(el.attrs).get()
+    let attrs =
+      try (Parse { core, presentation, units, cx, cy, r, fx, fy, transform in
+        (core, presentation, units, cx, cy, r, fx, fy, transform)
+      } with: {
+        core
+        presentation
+        units(.gradientUnits)
+        coord(.cx)
+        coord(.cy)
+        len(.r)
+        coord(.fx)
+        coord(.fy)
+        transform(.gradientTransform)
+      } <<~ End()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
       switch $0 {
       case let .el(el):
@@ -548,19 +554,32 @@ public enum SVGParser {
   }
 
   public static func mask(from el: XML.Element) throws -> SVG.Mask {
-    let attrs = try (Parse { core, presentation, transform, x, y, width, height, maskUnits, maskContentUnits in
-      (core, presentation, transform, x, y, width, height, maskUnits, maskContentUnits)
-    } with: {
-      core
-      presentation
-      transform(.transform)
-      x
-      y
-      width
-      height
-      units(.maskUnits)
-      units(.maskContentUnits)
-    } <<~ ignore <<~ End()).run(el.attrs).get()
+    let attrs =
+      try (
+        Parse { core, presentation, transform, x, y, width, height, maskUnits, maskContentUnits in
+          (
+            core,
+            presentation,
+            transform,
+            x,
+            y,
+            width,
+            height,
+            maskUnits,
+            maskContentUnits
+          )
+        } with: {
+          core
+          presentation
+          transform(.transform)
+          x
+          y
+          width
+          height
+          units(.maskUnits)
+          units(.maskContentUnits)
+        } <<~ ignore <<~ End()
+      ).run(el.attrs).get()
     return try .init(
       core: attrs.0,
       presentation: attrs.1,
@@ -594,7 +613,10 @@ public enum SVGParser {
   }
 
   private nonisolated(unsafe) static
-  let filterAttributes: AttributeGroupParser<SVG.FilterAttributes> = Parse(SVG.FilterAttributes.init) {
+  let filterAttributes: AttributeGroupParser<SVG.FilterAttributes> = Parse(
+    SVG
+      .FilterAttributes.init
+  ) {
     core
     presentation
     x
@@ -670,12 +692,13 @@ public enum SVGParser {
   ) -> AttributeParser<SVG.FilterPrimitiveIn> {
     attributeParser(SVGAttributeParsers.filterPrimitiveIn, attribute)
   }
-  
+
   private static func blendMode(
     _ attribute: Attribute
   ) -> AttributeParser<SVG.BlendMode> {
     attributeParser(SVGAttributeParsers.blendMode, attribute)
   }
+
   private static func feColorMatrixType(
     _ attribute: Attribute
   ) -> AttributeParser<SVG.FilterPrimitiveFeColorMatrix.Kind> {

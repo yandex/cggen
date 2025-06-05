@@ -61,7 +61,8 @@ import Parsing
     p.test("15_", expected: ("_16_", "_"))
   }
 
-  // Note: testZip removed since zip function is deprecated and replaced with Parse builders
+  // Note: testZip removed since zip function is deprecated and replaced with
+  // Parse builders
 
   @Test func testZeroOrMore() {
     let p: some Parser<[Int]> = (int <<~ "_")*
