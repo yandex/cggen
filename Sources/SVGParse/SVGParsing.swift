@@ -873,7 +873,7 @@ public enum SVGParser {
 }
 
 private func attributeParser<T>(
-  _ parser: some SVGAttributeParsers.Parser<T>
+  _ parser: some Parser<Substring, T>
 ) -> @Sendable (Attribute) -> AnyParser<[String: String], T?> {
   nonisolated(unsafe) let parser = parser
   return { attribute in
@@ -885,7 +885,7 @@ private func attributeParser<T>(
 }
 
 private func attributeParser<T>(
-  _ parser: some SVGAttributeParsers.Parser<T>,
+  _ parser: some Parser<Substring, T>,
   _ attribute: Attribute
 ) -> AnyParser<[String: String], T?> {
   DicitionaryKey(attribute.rawValue).map { value in

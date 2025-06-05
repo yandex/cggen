@@ -2,14 +2,13 @@ import Base
 @preconcurrency import Parsing
 
 public enum SVGAttributeParsers {
-  public typealias Parser<T> = Parsing.Parser<Substring, T>
-
   static let comma: String = ","
-  static let wsp = From(.utf8) { OneOf {
-    for s in [0x20, 0x9, 0xD, 0xA] as [UInt8] {
-      String.UTF8View([s])
-    }
-  }}
+  static let wsp = OneOf {
+    " "
+    "\t"
+    "\r"
+    "\n"
+  }
 
   // (wsp+ comma? wsp*) | (comma wsp*)
   static let commaWsp =
@@ -45,27 +44,19 @@ public enum SVGAttributeParsers {
     number
   }
 
-  // Has no equivalent in specification, for code deduplication only.
   // "$name" wsp* "(" wsp* parser wsp* ")"
-  static func namedTransform(
-    _ name: String,
-    _ value: some Parser<SVG.Transform>
-  ) -> some Parser<SVG.Transform> {
-    (name ~ wsp* ~ "(" ~ wsp*) ~>> value <<~ (wsp* ~ ")")
-  }
-
-  typealias NParser = Parsing.Parser
-  struct NamedTransform: NParser, Sendable {
+  struct NamedTransform<P: Parser & Sendable>: Parser, Sendable
+    where P.Input == Substring {
     var name: String
-    var parser: AnyParser<Substring, SVG.Transform>
+    var parser: Parsers.Map<P, SVG.Transform>
 
-    init<P: NParser>(
+    init(
       _ name: String,
       _ transform: @escaping @Sendable (P.Output) -> SVG.Transform,
       @ParserBuilder<Input> _ parser: () -> P
     ) where P.Input == Substring {
       self.name = name
-      self.parser = parser().map(transform).eraseToAnyParser()
+      self.parser = parser().map(transform)
     }
 
     var body: some Parsing.Parser<Substring, SVG.Transform> {
@@ -186,13 +177,15 @@ public enum SVGAttributeParsers {
     }
   }
 
-  static let hexByte = (First<Substring>() ~ First<Substring>()).flatMap {
-    if let v1 = hexFromChar($0.0), let v2 = hexFromChar($0.1) {
-      Always<Substring, UInt8>(v1 << 4 | v2)
-    } else {
-      Fail<Substring, UInt8>()
+  static let hexByte = (First<Substring>() ~ First<Substring>())
+    .compactMap { (chars: (
+      Character,
+      Character
+    )) -> UInt8? in
+      guard let v1 = chars.0.hexDigitValue,
+            let v2 = chars.1.hexDigitValue else { return nil }
+      return UInt8(v1 << 4 | v2)
     }
-  }
 
   private static let shortRGB = Parse { values -> SVG.Color in
     SVG.Color(red: values.0, green: values.1, blue: values.2)
@@ -257,8 +250,7 @@ public enum SVGAttributeParsers {
     commaWsp~? ~>> coordinatePair
   }
 
-  nonisolated(unsafe) static let identifier: some Parser<String> =
-    Rest().map(String.init)
+  static let identifier = Rest<Substring>().map(String.init)
 
   static let stopOffset = Parse { num, percentSign in
     percentSign != nil ? SVG.Stop.Offset.percentage(num) : .number(num)
@@ -269,21 +261,7 @@ public enum SVGAttributeParsers {
 
   // MARK: Path
 
-  /*
-   private static func command<T>(
-     _ cmd: Character,
-     arg: some Parser<T>,
-     builder: @escaping ([T]) -> SVG.PathData.CommandKind
-   ) -> some Parser<SVG.PathData.Command> {
-     Parse {
-       SVG.PathData.Command(positioning: $0.0, kind: builder($0.1))
-     } with: {
-       positioning(of: cmd) <<~ wsp*
-       argumentSequence(arg)
-     }
-   }
-   */
-  struct Command<P: NParser & Sendable>: NParser where P.Input == Substring {
+  struct Command<P: Parser & Sendable>: Parser where P.Input == Substring {
     var cmd: Character
     var arg: P
     var transform: ([P.Output]) -> SVG.PathData.CommandKind
@@ -303,7 +281,7 @@ public enum SVGAttributeParsers {
         SVG.PathData.Command(positioning: $0.0, kind: transform($0.1))
       } with: {
         Positioning(of: cmd) <<~ wsp*
-        argumentSequence(arg)
+        ArgumentSequence(arg)
       }
     }
   }
@@ -346,25 +324,29 @@ public enum SVGAttributeParsers {
     coordinatePair
   }
 
-  struct Positioning: NParser, Sendable {
+  struct Positioning: Parser, Sendable {
     var cmd: Character
 
     init(of cmd: Character) {
       self.cmd = cmd
     }
 
-    var body: some Parsing.Parser<Substring, SVG.PathData.Positioning> {
+    var body: some Parser<Substring, SVG.PathData.Positioning> {
       cmd.lowercased().map(always(SVG.PathData.Positioning.relative))
         | cmd.uppercased().map(always(.absolute))
     }
   }
 
-  private static func argumentSequence<T>(_ p: some Parser<T>)
-    -> some Parser<[T]> {
-    Many(1...) {
-      p
-    } separator: {
-      commaWsp~?
+  private struct ArgumentSequence<P: Parser & Sendable>: Parser, Sendable
+    where P.Input == Substring {
+    var parser: P
+
+    init(_ parser: P) {
+      self.parser = parser
+    }
+
+    var body: some Parser<Substring, [P.Output]> {
+      Many(1...) { parser } separator: { commaWsp~? }
     }
   }
 
