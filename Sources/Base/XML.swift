@@ -1,5 +1,5 @@
-import Foundation
 import CasePaths
+import Foundation
 
 @CasePathable
 public enum XML: Equatable, Sendable {
