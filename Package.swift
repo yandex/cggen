@@ -57,7 +57,7 @@ let package = Package(
       name: "UnitTests",
       dependencies: ["Base", "libcggen"],
       resources: [
-        .copy("UnitTests.xctestplan")
+        .copy("UnitTests.xctestplan"),
       ]
     ),
     .testTarget(
@@ -65,10 +65,10 @@ let package = Package(
       dependencies: ["libcggen", "BCRunner"],
       resources: [
         .copy("pdf_samples"),
-        .copy("svg_samples"), 
+        .copy("svg_samples"),
         .copy("various_filenames"),
         .copy("tests.sketch"),
-        .copy("RegressionSuite.xctestplan")
+        .copy("RegressionSuite.xctestplan"),
       ]
     ),
   ]

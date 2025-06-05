@@ -36,102 +36,7 @@ postfix operator +
 // "Zero or one"
 postfix operator ~?
 
-public typealias NewParser = Parsing.Parser
-
-public struct __AdhocParser<Input, Output>: NewParser, @unchecked Sendable {
-  public var parseImpl: @Sendable (inout Input) -> Result<Output, Error>
-
-  public init(_ parse: @escaping @Sendable (inout Input) -> Result<
-    Output,
-    Error
-  >) {
-    parseImpl = parse
-  }
-
-  public func parse(_ input: inout Input) throws -> Output {
-    try parseImpl(&input).get()
-  }
-}
-
-extension NewParser {
-  public var oldParser: OldParser<Input, Output> {
-    .init(self)
-  }
-}
-
-public struct OldParser<D, T>: Parsing.Parser, @unchecked Sendable {
-  public typealias Input = D
-  public typealias Output = T
-
-  public struct GenericError: Error, @unchecked Sendable {
-    public var text: D
-
-    var localizedDescription: String {
-      "Couldn't parse \(T.self) from <\(text)>"
-    }
-
-    @inlinable
-    public init(_ text: D) {
-      self.text = text
-    }
-  }
-
-  public typealias Error = Swift.Error
-
-  public var newParser: any NewParser<D, T>
-
-  public func parse(_ input: inout D) throws -> T {
-    try newParser.parse(&input)
-  }
-
-  @inlinable
-  public func run(_ data: inout D) -> T? {
-    try? newParser.parse(&data)
-  }
-
-  @inlinable
-  public func run(_ data: D) -> Result<T, Error> {
-    Result {
-      var copy = data
-      return try newParser.parse(&copy)
-    }
-  }
-
-  @inlinable
-  public func tempRun(_ data: inout D) -> Result<T, Error> {
-    Result {
-      try newParser.parse(&data)
-    }
-  }
-
-  @inlinable
-  public init(_ parse: @escaping @Sendable (inout D) -> Result<T, Error>) {
-    newParser = __AdhocParser(parse)
-  }
-
-  @inlinable
-  public init(_ p: any NewParser<D, T>) {
-    newParser = p
-  }
-}
-
-extension OldParser where D == T, D: RangeReplaceableCollection {
-  @inlinable
-  public static func identity() -> OldParser<D, D> {
-    .init { data in
-      defer { data.removeAll(keepingCapacity: false) }
-      return .success(data)
-    }
-  }
-}
-
-extension OldParser where D == T? {
-  static func unwrap() -> OldParser<D, T> {
-    fatalError()
-  }
-}
-
-struct DicitionaryKey<Key: Hashable & Sendable, Value>: NewParser, Sendable {
+struct DicitionaryKey<Key: Hashable & Sendable, Value>: Parser, Sendable {
   var key: Key
 
   init(_ key: Key) {
@@ -158,7 +63,7 @@ public enum ParseError: Error {
 }
 
 @inlinable
-public func ~>> <P1: NewParser, P2: NewParser>(
+public func ~>> <P1: Parser, P2: Parser>(
   lhs: P1, rhs: P2
 ) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipFirst<
   Skip<P1.Input, P1>,
@@ -171,7 +76,7 @@ public func ~>> <P1: NewParser, P2: NewParser>(
 }
 
 @inlinable
-public func <<~< P1: NewParser, P2: NewParser > (
+public func <<~< P1: Parser, P2: Parser > (
   lhs: P1, rhs: P2
 ) -> Parse<P1.Input, ParserBuilder<P1.Input>.SkipSecond<
   P1,
@@ -184,7 +89,7 @@ public func <<~< P1: NewParser, P2: NewParser > (
 }
 
 @inlinable
-public func | <P1: NewParser, P2: NewParser>(
+public func | <P1: Parser, P2: Parser>(
   lhs: P1, rhs: P2
 ) -> OneOf<P1.Input, P1.Output, OneOfBuilder<P1.Input, P1.Output>.OneOf2<
   P1,
@@ -198,7 +103,7 @@ public func | <P1: NewParser, P2: NewParser>(
 }
 
 @inlinable
-public func ~ <P1: NewParser, P2: NewParser>(
+public func ~ <P1: Parser, P2: Parser>(
   lhs: P1, rhs: P2
 ) -> Parse<P1.Input, ParserBuilder<P1.Input>.Take2<P1, P2>.Map<(
   P1.Output,
@@ -212,14 +117,14 @@ public func ~ <P1: NewParser, P2: NewParser>(
 }
 
 @inlinable
-public postfix func ~? <P: NewParser>(
+public postfix func ~? <P: Parser>(
   p: P
 ) -> Optionally<P.Input, P> {
   Optionally { p }
 }
 
 @inlinable
-public postfix func * <P: NewParser>(
+public postfix func * <P: Parser>(
   p: P
 )
   -> Many<
@@ -234,7 +139,7 @@ public postfix func * <P: NewParser>(
 }
 
 @inlinable
-public postfix func + <P: NewParser>(
+public postfix func + <P: Parser>(
   p: P
 )
   -> Many<
@@ -262,7 +167,7 @@ extension Array {
   }
 }
 
-extension NewParser {
+extension Parser {
   func run(_ data: Input) -> Result<Output, Error> {
     Result { try parse(data) }
   }

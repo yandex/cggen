@@ -57,19 +57,10 @@ The project uses swift-parsing library with custom operators:
 - Modify code generation: Update relevant files in `libcggen/`
 
 ### Migration Notes
-Currently migrating to swift-parsing library. Key changes:
-- Replace `Parser<D, T>` with concrete parser types
-- Update operators to return concrete types instead of existentials
-- Use `Parse`, `OneOf`, `Many` builders instead of custom implementations
-
-#### Removing .oldParser Usage
-When eliminating `.oldParser` usage, follow these patterns:
-- **Validation logic**: Convert `.oldParser.flatMapResult` to `.compactMap` with nil return for failures
-- **Dictionary parsing**: Use `DicitionaryKey` struct directly instead of `key()` wrapper + `.oldParser`
-- **Error handling**: Replace `Result { try parser.parse() }` with `try? parser.parse()` for optional results
-- **Parser wrapping**: Use `OldParser(newParser)` when function must return `OldParser` type
-- **One change at a time**: Make incremental changes and test each modification individually
-- **Avoid complex conversions**: Skip enum case handling and pullback operations until simpler patterns are complete
+Migration to swift-parsing library completed. Key changes made:
+- Replaced custom `zip` functions with `Parse` builder syntax
+- Removed legacy `OldParser` bridge infrastructure
+- Use `Parse`, `OneOf`, `Many` builders for parser composition
 
 ## Test Framework Migration (Swift Testing)
 
@@ -110,19 +101,16 @@ extension NewParser where Input == Substring, Output: Equatable {
 - Swift Testing requires `import Foundation` for `sqrt` and similar math functions
 - Use `Issue.record()` instead of `XCTFail()` for recording test failures
 
-## Legacy Code Removal
+## Parser Migration Completed
 
-### .oldParser Extension Elimination
-The codebase is gradually removing usage of the `.oldParser` extension that bridges NewParser to OldParser types. Progress tracking:
+The migration from legacy parser infrastructure to swift-parsing is now complete:
 
-**Completed removals**:
-- `version` parser in SVGParsing.swift (validation logic)
-- Both `attributeParser` functions in SVGParsing.swift (dictionary parsing)
+**Completed work**:
+- Replaced all `zip` function calls with `Parse` builder syntax
+- Removed `OldParser` struct and bridge infrastructure
+- Eliminated `.oldParser` extension usage throughout codebase
+- Updated test files to use direct Parser types
 
-**Remaining areas** (as of latest update):
-- Complex enum case handling in `element` functions
-- Pullback operations with XML parsing
-- Child parser compositions in `elementWithChildren`
-
-**Infrastructure added**:
-- `DicitionaryKey<Key, Value>: NewParser` - Direct dictionary key extraction without legacy wrappers
+**Key infrastructure**:
+- `DicitionaryKey<Key, Value>: Parser` - Direct dictionary key extraction
+- Custom parser operators (`~>>`, `<<~`, `~`, `*`, `+`, `~?`) for parsing DSL
