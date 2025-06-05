@@ -1,5 +1,5 @@
 @testable import Base
-import Parsing
+@preconcurrency import Parsing
 @testable import SVGParse
 import Testing
 
