@@ -4,9 +4,15 @@ import Foundation
 @CasePathable
 public enum XML: Equatable, Sendable {
   public struct Element: Equatable, Sendable {
-    var tag: String
-    var attrs: [String: String]
-    var children: [XML]
+    public var tag: String
+    public var attrs: [String: String]
+    public var children: [XML]
+
+    public init(tag: String, attrs: [String: String], children: [XML]) {
+      self.tag = tag
+      self.attrs = attrs
+      self.children = children
+    }
   }
 
   indirect case el(Element)

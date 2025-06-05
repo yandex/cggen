@@ -1,3 +1,5 @@
+import Base
+
 public indirect enum SVGFilterNode: Equatable, Sendable {
   public typealias ColorMatrix = Matrix.D4x5<SVG.Float>
   public enum ColorMatrixType: Equatable, Sendable {

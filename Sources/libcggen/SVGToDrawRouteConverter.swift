@@ -1,6 +1,7 @@
 import CoreGraphics
 
 import Base
+import SVGParse
 
 enum SVGToDrawRouteConverter {
   static func convert(document: SVG.Document) throws -> Routines {
