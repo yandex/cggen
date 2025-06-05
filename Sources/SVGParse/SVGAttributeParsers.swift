@@ -3,12 +3,11 @@ import Base
 
 public enum SVGAttributeParsers {
   static let comma: String = ","
-  static let wsp = OneOf {
-    " "
-    "\t"
-    "\r"
-    "\n"
-  }
+  static let wsp = From(.utf8) { OneOf {
+    for s in [0x20, 0x9, 0xD, 0xA] as [UInt8] {
+      String.UTF8View([s])
+    }
+  }}
 
   // (wsp+ comma? wsp*) | (comma wsp*)
   static let commaWsp =
