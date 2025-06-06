@@ -3,7 +3,6 @@ import Foundation
 
 import BCCommon
 
-@available(macOS 10.15, *)
 struct MBCCGGenerator: CoreGraphicsGenerator {
   typealias ImagePossition = (Int, Int)
 
@@ -55,7 +54,6 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
   }
 }
 
-@available(macOS 10.15, *)
 extension MBCCGGenerator {
   func generateImageFunctionForMergedBytecode(
     image: Image,
@@ -109,7 +107,6 @@ extension MBCCGGenerator {
   }
 }
 
-@available(macOS 10.15, *)
 func compressBytecode(_ bytecode: [UInt8]) throws -> [UInt8] {
   let pageSize = 128
   let sourceData = Data(bytecode)

@@ -51,7 +51,7 @@ import libcggen
         verbose: false,
         files: files
           .map { variousFilenamesDir.appendingPathComponent($0).path },
-        shouldMergeBytecode: true
+        swiftOutput: nil
       )
     )
 

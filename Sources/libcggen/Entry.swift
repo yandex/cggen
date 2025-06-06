@@ -19,7 +19,7 @@ public struct Args {
   let module: String?
   let verbose: Bool
   let files: [String]
-  let shouldMergeBytecode: Bool
+  let swiftOutput: String?
 
   public init(
     objcHeader: String?,
@@ -35,7 +35,7 @@ public struct Args {
     module: String?,
     verbose: Bool,
     files: [String],
-    shouldMergeBytecode: Bool
+    swiftOutput: String?
   ) {
     self.objcHeader = objcHeader
     self.objcPrefix = objcPrefix
@@ -50,7 +50,7 @@ public struct Args {
     self.module = module
     self.verbose = verbose
     self.files = files
-    self.shouldMergeBytecode = shouldMergeBytecode
+    self.swiftOutput = swiftOutput
   }
 }
 
@@ -81,19 +81,10 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcImplPath = args.objcImpl {
-    var implGenerator: CoreGraphicsGenerator {
-      if #available(macOS 10.15, *), args.shouldMergeBytecode {
-        return MBCCGGenerator(
-          params: params,
-          headerImportPath: args.objcHeaderImportPath
-        )
-      } else {
-        return BCCGGenerator(
-          params: params,
-          headerImportPath: args.objcHeaderImportPath
-        )
-      }
-    }
+    let implGenerator = MBCCGGenerator(
+      params: params,
+      headerImportPath: args.objcHeaderImportPath
+    )
 
     let fileStr = try implGenerator.generateFile(outputs: outputs)
     try fileStr.write(
@@ -110,6 +101,17 @@ public func runCggen(with args: Args) throws {
     try params.cggenSupportHeaderBody.renderText()
       .write(toFile: path, atomically: true, encoding: .utf8)
     log("cggen_support was generated in: \(stopwatch.reset())")
+  }
+
+  if let swiftOutputPath = args.swiftOutput {
+    let swiftGenerator = SwiftCGGenerator(params: params)
+    let fileStr = try swiftGenerator.generateFile(outputs: outputs)
+    try fileStr.write(
+      toFile: swiftOutputPath,
+      atomically: true,
+      encoding: .utf8
+    )
+    log("Swift code generated in: \(stopwatch.reset())")
   }
 
   if let objcCallerPath = args.objcCallerPath,
@@ -226,7 +228,6 @@ public func getPathBytecode(from file: URL) throws -> [UInt8] {
   return generatePathBytecode(route: img.pathRoutines[0])
 }
 
-@available(macOS 10.15, *)
 public func getImagesMergedBytecodeAndPositions(
   from files: [URL]
 ) throws -> ([UInt8], [(Int, Int)], Int) {

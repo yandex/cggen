@@ -112,7 +112,7 @@ func cggen(
         module: nil,
         verbose: false,
         files: files.map { $0.path },
-        shouldMergeBytecode: false
+        swiftOutput: nil
       )
     )
   }
