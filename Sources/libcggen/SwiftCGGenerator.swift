@@ -108,13 +108,13 @@ extension SwiftCGGenerator {
       result += """
 
 
-      public struct \(descriptorName) {
-        public static let size = CGSize(width: \(size.width), height: \(
-          size
-            .height
-      ))
-        public static let draw = \(functionName)
-      }
+        public struct \(descriptorName) {
+          public static let size = CGSize(width: \(size.width), height: \(
+            size
+              .height
+        ))
+          public static let draw = \(functionName)
+        }
         """
     }
 

@@ -12,6 +12,7 @@ let package = Package(
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
     .library(name: "cggen-bc-runner", targets: ["BCRunner"]),
+    .plugin(name: "plugin", targets: ["plugin"]),
   ],
   dependencies: [
     .package(
@@ -77,6 +78,16 @@ let package = Package(
         .copy("tests.sketch"),
         .copy("RegressionSuite.xctestplan"),
       ]
+    ),
+    .executableTarget(
+      name: "plugindemo",
+      dependencies: ["BCRunner"],
+      plugins: ["plugin"]
+    ),
+    .plugin(
+      name: "plugin",
+      capability: .buildTool(),
+      dependencies: ["cggen"]
     ),
   ]
 )
