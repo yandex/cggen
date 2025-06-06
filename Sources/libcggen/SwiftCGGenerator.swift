@@ -20,16 +20,19 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
     let (bytecodeMergeArray, positions, decompressedSize, compressedSize) =
       try generateMergedBytecodeArray(images: images)
 
-    let imageFunctions = zip(images, positions).map { image, position in
+    let results = zip(images, positions).map { image, position in
       generateImageFunctionForMergedBytecode(
         image: image,
         imagePosition: position,
         decompressedSize: decompressedSize,
         compressedSize: compressedSize
       )
-    }.joined(separator: "\n\n")
+    }
 
-    return [imageFunctions, bytecodeMergeArray].joined(separator: "\n\n")
+    let descriptors = results.compactMap { $0.descriptor }.joined(separator: "\n\n")
+    let functions = results.map { $0.function }.joined(separator: "\n\n")
+
+    return [descriptors, functions, bytecodeMergeArray].joined(separator: "\n\n")
   }
 
   func generatePathFuncton(path: PathRoutine) -> String {
@@ -81,12 +84,12 @@ extension SwiftCGGenerator {
     imagePosition: ImagePosition,
     decompressedSize: Int,
     compressedSize: Int
-  ) -> String {
+  ) -> (function: String, descriptor: String?) {
     let functionName =
       "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
 
-    var result = """
-    public func \(functionName)(in context: CGContext) {
+    let function = """
+    fileprivate func \(functionName)(in context: CGContext) {
       mergedBytecodes.withUnsafeBufferPointer { buffer in
         runMergedBytecode(
           context,
@@ -101,24 +104,19 @@ extension SwiftCGGenerator {
     """
 
     // Add descriptor if using swift-friendly style
-    if case .swiftFriendly = params.style {
-      let descriptorName =
-        "\(params.prefix.lowercased())\(image.name.upperCamelCase)Descriptor"
+    let descriptor: String? = {
+      guard case .swiftFriendly = params.style else { return nil }
+      let descriptorName = "\(params.prefix.lowercased())\(image.name.lowerCamelCase)"
       let size = image.route.boundingRect.size
-      result += """
-
-
-      public struct \(descriptorName) {
-        public static let size = CGSize(width: \(size.width), height: \(
-          size
-            .height
-      ))
-        public static let draw = \(functionName)
-      }
+      return """
+      public let \(descriptorName) = (
+        size: CGSize(width: \(size.width), height: \(size.height)),
+        draw: \(functionName)
+      )
       """
-    }
+    }()
 
-    return result
+    return (function: function, descriptor: descriptor)
   }
 
   func generateMergedBytecodeArray(images: [Image]) throws

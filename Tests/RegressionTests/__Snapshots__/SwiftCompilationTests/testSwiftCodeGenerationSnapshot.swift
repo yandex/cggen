@@ -2,7 +2,22 @@
 
 import CoreGraphics
 
-public func plugindemoDrawCircleImage(in context: CGContext) {
+public let plugindemocircle = (
+  size: CGSize(width: 50.0, height: 50.0),
+  draw: plugindemoDrawCircleImage
+)
+
+public let plugindemosquare = (
+  size: CGSize(width: 40.0, height: 40.0),
+  draw: plugindemoDrawSquareImage
+)
+
+public let plugindemostar = (
+  size: CGSize(width: 60.0, height: 60.0),
+  draw: plugindemoDrawStarImage
+)
+
+fileprivate func plugindemoDrawCircleImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
@@ -15,12 +30,7 @@ public func plugindemoDrawCircleImage(in context: CGContext) {
   }
 }
 
-public struct plugindemoCircleDescriptor {
-  public static let size = CGSize(width: 50.0, height: 50.0)
-  public static let draw = plugindemoDrawCircleImage
-}
-
-public func plugindemoDrawSquareImage(in context: CGContext) {
+fileprivate func plugindemoDrawSquareImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
@@ -33,12 +43,7 @@ public func plugindemoDrawSquareImage(in context: CGContext) {
   }
 }
 
-public struct plugindemoSquareDescriptor {
-  public static let size = CGSize(width: 40.0, height: 40.0)
-  public static let draw = plugindemoDrawSquareImage
-}
-
-public func plugindemoDrawStarImage(in context: CGContext) {
+fileprivate func plugindemoDrawStarImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
@@ -49,11 +54,6 @@ public func plugindemoDrawStarImage(in context: CGContext) {
       274
     )
   }
-}
-
-public struct plugindemoStarDescriptor {
-  public static let size = CGSize(width: 60.0, height: 60.0)
-  public static let draw = plugindemoDrawStarImage
 }
 
 private let mergedBytecodes: [UInt8] = [

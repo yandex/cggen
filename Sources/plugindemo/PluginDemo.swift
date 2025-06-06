@@ -28,18 +28,18 @@ public enum PluginDemo {
 
     // Use the auto-generated drawing functions from our SVG files!
     print("\n=== Drawing Circle ===")
-    print("Size: \(plugindemoCircleDescriptor.size)")
-    plugindemoDrawCircleImage(in: context)
+    print("Size: \(plugindemocircle.size)")
+    plugindemocircle.draw(context)
     print("Circle drawn successfully!")
 
     print("\n=== Drawing Square ===")
-    print("Size: \(plugindemoSquareDescriptor.size)")
-    plugindemoDrawSquareImage(in: context)
+    print("Size: \(plugindemosquare.size)")
+    plugindemosquare.draw(context)
     print("Square drawn successfully!")
 
     print("\n=== Drawing Star ===")
-    print("Size: \(plugindemoStarDescriptor.size)")
-    plugindemoDrawStarImage(in: context)
+    print("Size: \(plugindemostar.size)")
+    plugindemostar.draw(context)
     print("Star drawn successfully!")
 
     print(
