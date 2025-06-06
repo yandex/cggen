@@ -29,10 +29,12 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
       )
     }
 
-    let descriptors = results.compactMap { $0.descriptor }.joined(separator: "\n\n")
+    let descriptors = results.compactMap { $0.descriptor }
+      .joined(separator: "\n\n")
     let functions = results.map { $0.function }.joined(separator: "\n\n")
 
-    return [descriptors, functions, bytecodeMergeArray].joined(separator: "\n\n")
+    return [descriptors, functions, bytecodeMergeArray]
+      .joined(separator: "\n\n")
   }
 
   func generatePathFuncton(path: PathRoutine) -> String {
@@ -106,7 +108,8 @@ extension SwiftCGGenerator {
     // Add descriptor if using swift-friendly style
     let descriptor: String? = {
       guard case .swiftFriendly = params.style else { return nil }
-      let descriptorName = "\(params.prefix.lowercased())\(image.name.lowerCamelCase)"
+      let descriptorName =
+        "\(params.prefix.lowercased())\(image.name.lowerCamelCase)"
       let size = image.route.boundingRect.size
       return """
       public let \(descriptorName) = (
@@ -157,7 +160,8 @@ extension SwiftCGGenerator {
 
     for i in stride(from: 0, to: bytes.count, by: bytesPerLine) {
       let end = min(i + bytesPerLine, bytes.count)
-      let lineBytes = bytes[i..<end].map { String(format: "0x%02X", $0) }.joined(separator: ", ")
+      let lineBytes = bytes[i..<end].map { String(format: "0x%02X", $0) }
+        .joined(separator: ", ")
       let indent = "  " // Consistent 2 space indentation
       lines.append(indent + lineBytes)
     }

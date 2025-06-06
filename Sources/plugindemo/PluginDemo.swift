@@ -1,3 +1,4 @@
+import CGGenRuntimeSupport
 import CoreGraphics
 import Foundation
 
@@ -48,5 +49,25 @@ public enum PluginDemo {
     print(
       "The plugin successfully converted 3 SVG files to optimized Swift drawing functions."
     )
+
+    // Demonstrate the new image utilities
+    print("\n=== Image Creation Utilities ===")
+
+    if let cgImage = CGImage.draw(from: plugindemocircle) {
+      print(
+        "✅ Created CGImage from circle descriptor (size: \(cgImage.width)x\(cgImage.height))"
+      )
+    }
+
+    if let cgImageScaled = CGImage.draw(from: plugindemostar, scale: 2.0) {
+      print(
+        "✅ Created 2x scaled CGImage from star descriptor (size: \(cgImageScaled.width)x\(cgImageScaled.height))"
+      )
+    }
+
+    #if canImport(UIKit)
+    let uiImage = UIImage(plugindemosquare)
+    print("✅ Created UIImage from square descriptor (size: \(uiImage.size))")
+    #endif
   }
 }

@@ -9,7 +9,8 @@ Instead of bundling vector assets as resources, cggen compiles them into bytecod
 - **Swift Package Manager Plugin**: Automatic code generation during build
 - **SVG and PDF Support**: Convert vector graphics from both formats  
 - **Bytecode Compilation**: Generates compressed bytecode for efficient rendering
-- **Swift-Friendly API**: Optional descriptor structs for better Swift integration
+- **Swift-Friendly API**: Tuple descriptors for clean Swift integration  
+- **Image Creation Utilities**: Built-in support for CGImage, UIImage, and SwiftUI.Image
 - **Build-Time Generation**: No runtime dependencies beyond cggen-runtime-support library
 
 ## Installation
@@ -36,7 +37,7 @@ Add the plugin to your target and include runtime dependency:
 )
 ```
 
-**Important:** Your target must depend on `cggen-runtime-support` library to provide the bytecode execution runtime.
+**Important:** Your target must depend on `cggen-runtime-support` library to provide the bytecode execution runtime and image creation utilities.
 
 ## Usage
 
@@ -52,13 +53,13 @@ For an SVG file named `icon.svg`, cggen generates:
 
 ```swift
 // Drawing function 
-public func yourtargetDrawIconImage(in context: CGContext)
+fileprivate func yourtargetDrawIconImage(in context: CGContext)
 
-// Descriptor struct (swift-friendly mode)
-public struct yourtargetIconDescriptor {
-  public static let size: CGSize
-  public static let draw: (CGContext) -> Void
-}
+// Tuple descriptor (swift-friendly mode)
+public let yourtargeticon = (
+  size: CGSize(width: 24.0, height: 24.0),
+  draw: yourtargetDrawIconImage
+)
 ```
 
 **Note:** Function names use lowercase target prefix + camelCase filename. Target names with hyphens create invalid Swift identifiers.
@@ -67,6 +68,7 @@ public struct yourtargetIconDescriptor {
 
 ```swift
 import CoreGraphics
+import cggen_runtime_support
 
 // Create a graphics context
 let context = CGContext(
@@ -77,47 +79,34 @@ let context = CGContext(
   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
 )!
 
-// Draw using generated function
-yourtargetDrawIconImage(in: context)
+// Draw using generated function directly
+yourtargeticon.draw(context)
 
-// Or use descriptor (swift-friendly mode)
-print("Icon size: \(yourtargetIconDescriptor.size)")
-yourtargetIconDescriptor.draw(context)
+// Or access descriptor properties
+print("Icon size: \(yourtargeticon.size)")
 ```
 
-### UIImage Helper
+### Image Creation
 
-Add this extension to easily create UIImage instances:
+The runtime support library provides convenient image creation utilities:
 
 ```swift
-extension UIImage {
-  static func makeImage(size: CGSize, function: (CGContext) -> Void) -> UIImage {
-    let scale = UIScreen.main.scale
-    let scaledSize = CGSize(width: size.width * scale, height: size.height * scale)
-    
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let context = CGContext(
-      data: nil,
-      width: Int(scaledSize.width),
-      height: Int(scaledSize.height), 
-      bitsPerComponent: 8,
-      bytesPerRow: 0,
-      space: colorSpace,
-      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    )!
-    
-    context.scaleBy(x: scale, y: scale)
-    function(context)
-    
-    let cgImage = context.makeImage()!
-    return UIImage(cgImage: cgImage, scale: scale, orientation: .up)
-  }
+import cggen_runtime_support
+
+// Create a CGImage
+if let cgImage = CGImage.draw(from: yourtargeticon) {
+  // Use cgImage...
 }
 
-// Usage
-let image = UIImage.makeImage(size: yourtargetIconDescriptor.size) { context in
-  yourtargetDrawIconImage(in: context)
-}
+// Create a UIImage (iOS/tvOS/watchOS)
+#if canImport(UIKit)
+let uiImage = UIImage(yourtargeticon)
+#endif
+
+// Create a SwiftUI Image
+#if canImport(SwiftUI)
+let swiftUIImage = Image(yourtargeticon)
+#endif
 ```
 
 ## CLI Usage
@@ -147,12 +136,12 @@ public func targetDrawImageNameImage(in context: CGContext)
 ```
 
 ### Swift-Friendly Mode  
-Generates functions plus descriptor structs:
+Generates functions plus tuple descriptors:
 ```swift
-public struct targetImageNameDescriptor {
-  public static let size: CGSize
-  public static let draw: (CGContext) -> Void
-}
+public let targetimagename = (
+  size: CGSize(width: 24.0, height: 24.0),
+  draw: targetDrawImageNameImage
+)
 ```
 
 ## Architecture
@@ -162,6 +151,6 @@ The project uses a sophisticated bytecode compilation approach:
 - **Input Parsing**: SVG and PDF parsers using swift-parsing library
 - **Intermediate Representation**: DrawRoute and PathRoutine for graphics operations
 - **Bytecode Generation**: Compiles drawing operations into compressed bytecode arrays
-- **Runtime Execution**: CGGenRuntimeSupport library provides `runMergedBytecode_swift()` and `runPathBytecode_swift()` functions
+- **Runtime Execution**: cggen-runtime-support library provides `runMergedBytecode_swift()` and `runPathBytecode_swift()` functions
 - **Plugin System**: Swift Package Manager build tool plugin for automation
 

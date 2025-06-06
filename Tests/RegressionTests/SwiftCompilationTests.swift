@@ -72,8 +72,8 @@ import libcggen
         testDrawShapesImage(in: context)
 
         // Test descriptors exist and have correct properties
-        let _ = testShapesDescriptor.size
-        let _ = testShapesDescriptor.draw
+        let _ = testshapes.size
+        let _ = testshapes.draw
       }
     }
     """
@@ -108,7 +108,8 @@ import libcggen
     }
     """
 
-    let mockCGGenRuntimeSupportFile = tmpdir.appendingPathComponent("CGGenRuntimeSupport.swift")
+    let mockCGGenRuntimeSupportFile = tmpdir
+      .appendingPathComponent("CGGenRuntimeSupport.swift")
     try mockCGGenRuntimeSupport.write(
       to: mockCGGenRuntimeSupportFile,
       atomically: true,
@@ -156,11 +157,11 @@ import libcggen
       .deletingLastPathComponent()
       .appendingPathComponent("Sources")
       .appendingPathComponent("plugindemo")
-    
+
     let files = [
       "circle.svg",
-      "square.svg", 
-      "star.svg"
+      "square.svg",
+      "star.svg",
     ].map { plugindemoPath.appendingPathComponent($0) }
 
     let fm = FileManager.default
@@ -200,38 +201,49 @@ import libcggen
     )
 
     let generatedCode = try String(contentsOf: swiftFile, encoding: .utf8)
-    
+
     // Follow swift-snapshot-testing conventions: __Snapshots__/
     let snapshotPath = getCurentFilePath()
       .appendingPathComponent("__Snapshots__")
       .appendingPathComponent("SwiftCompilationTests")
       .appendingPathComponent("testSwiftCodeGenerationSnapshot.swift")
-    
+
     // Create directory if it doesn't exist
-    try fm.createDirectory(at: snapshotPath.deletingLastPathComponent(), withIntermediateDirectories: true)
-    
+    try fm.createDirectory(
+      at: snapshotPath.deletingLastPathComponent(),
+      withIntermediateDirectories: true
+    )
+
     if fm.fileExists(atPath: snapshotPath.path) {
       // Compare with existing snapshot
       let expectedCode = try String(contentsOf: snapshotPath, encoding: .utf8)
-      
+
       if generatedCode != expectedCode {
         // Write actual output for debugging
         let actualPath = snapshotPath.appendingPathExtension("actual")
-        try generatedCode.write(to: actualPath, atomically: true, encoding: .utf8)
-        
+        try generatedCode.write(
+          to: actualPath,
+          atomically: true,
+          encoding: .utf8
+        )
+
         Issue.record("""
         Generated Swift code doesn't match snapshot!
-        
+
         Expected: \(snapshotPath.path)
         Actual: \(actualPath.path)
-        
+
         Run `diff \(snapshotPath.path) \(actualPath.path)` to see differences.
         To update snapshot: `mv \(actualPath.path) \(snapshotPath.path)`
         """)
       }
     } else {
       // Create initial snapshot
-      try generatedCode.write(to: snapshotPath, atomically: true, encoding: .utf8)
+      try generatedCode.write(
+        to: snapshotPath,
+        atomically: true,
+        encoding: .utf8
+      )
       print("Created initial snapshot at: \(snapshotPath.path)")
     }
   }
