@@ -18,9 +18,9 @@ struct Main: ParsableCommand {
   var generationStyle: GenerationStyle = .plain
   @Option var cggenSupportHeaderPath: String?
   @Option var moduleName = ""
+  @Option var swiftOutput: String?
   @Flag var verbose = false
   @Argument var files: [String]
-  @Flag var shouldMergeBytecode = false
 
   static let configuration = CommandConfiguration(
     commandName: "cggen",
@@ -42,7 +42,7 @@ struct Main: ParsableCommand {
       module: moduleName,
       verbose: verbose,
       files: files,
-      shouldMergeBytecode: shouldMergeBytecode
+      swiftOutput: swiftOutput
     ))
   }
 }

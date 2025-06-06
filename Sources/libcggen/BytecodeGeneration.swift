@@ -1,7 +1,8 @@
-import Base
 import BCCommon
 import CoreGraphics
 import Foundation
+
+// Move the bytecode generation functions and related code here
 
 typealias Bytecode = [UInt8]
 
@@ -494,6 +495,8 @@ private class Context {
   var subroutesIds: [String: UInt32] = [:]
 }
 
+// MARK: - Public API
+
 func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
   var bytecode = Bytecode()
   generateRoute(route: route, context: Context(), bytecode: &bytecode)
@@ -510,56 +513,7 @@ func generatePathBytecode(route: PathRoutine) -> [UInt8] {
   return bytecode
 }
 
-struct BCCGGenerator: CoreGraphicsGenerator {
-  var params: GenerationParams
-  var headerImportPath: String?
-
-  func filePreamble() -> String {
-    let importLine = headerImportPath.map { "#import \"\($0)\"\n" } ?? ""
-    return """
-    \(importLine)
-    void runBytecode(CGContextRef context, const uint8_t* arr, int len);
-    void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
-    """
-  }
-
-  func generateImageFunctions(images: [Image]) throws -> String {
-    images.map { generateImageFunction(image: $0) }.joined(separator: "\n\n")
-  }
-
-  private func generateImageFunction(image: Image) -> String {
-    let bytecodeName = "\(image.name.lowerCamelCase)Bytecode"
-    let bytecode = generateRouteBytecode(route: image.route)
-    return """
-    static const uint8_t \(bytecodeName)[] = {
-      \(bytecode.map(\.description).joined(separator: ", "))
-    };
-    \(params.style.drawingHandlerPrefix)void \(params.prefix)Draw\(
-      image.name.upperCamelCase
-    )ImageInContext(CGContextRef context) {
-      runBytecode(context, \(bytecodeName), \(bytecode.count));
-    }
-    """ + params.descriptorLines(for: image).joined(separator: "\n")
-  }
-
-  func generatePathFuncton(path: PathRoutine) -> String {
-    let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
-    let bytecode = generatePathBytecode(route: path)
-    let camel = path.id.upperCamelCase
-    return """
-    static const uint8_t \(bytecodeName)[] = {
-      \(bytecode.map(\.description).joined(separator: ", "))
-    };
-    void \(params.prefix)\(camel)Path(CGMutablePathRef path) {
-      runPathBytecode(path, \(bytecodeName), \(bytecode.count));
-    }
-    """
-  }
-
-  func fileEnding() -> String {
-    ""
-  }
-}
+// MARK: - Path Segment Encoding
 
 enum PathSegmentEncoding {
   enum PathSegmentCommandKind {
