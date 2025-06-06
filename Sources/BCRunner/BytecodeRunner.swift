@@ -91,6 +91,35 @@ public func runPathBytecode(
   }
 }
 
+// Swift calling convention wrappers for generated Swift code
+@_silgen_name("runMergedBytecode_swift")
+public func runMergedBytecode_swift(
+  _ context: CGContext,
+  _ data: UnsafePointer<UInt8>,
+  _ decompressedLen: Int32,
+  _ compressedLen: Int32,
+  _ startIndex: Int32,
+  _ endIndex: Int32
+) {
+  runMergedBytecode(
+    context,
+    data,
+    Int(decompressedLen),
+    Int(compressedLen),
+    Int(startIndex),
+    Int(endIndex)
+  )
+}
+
+@_silgen_name("runPathBytecode_swift")
+public func runPathBytecode_swift(
+  _ path: CGMutablePath,
+  _ data: UnsafePointer<UInt8>,
+  _ len: Int32
+) {
+  runPathBytecode(path, data, Int(len))
+}
+
 public enum Error: Swift.Error {
   case outOfBounds(left: Int, required: Int)
   case failedToCreateGradient

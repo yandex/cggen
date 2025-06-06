@@ -103,6 +103,17 @@ public func runCggen(with args: Args) throws {
     log("cggen_support was generated in: \(stopwatch.reset())")
   }
 
+  if let swiftOutputPath = args.swiftOutput {
+    let swiftGenerator = SwiftCGGenerator(params: params)
+    let fileStr = try swiftGenerator.generateFile(outputs: outputs)
+    try fileStr.write(
+      toFile: swiftOutputPath,
+      atomically: true,
+      encoding: .utf8
+    )
+    log("Swift code generated in: \(stopwatch.reset())")
+  }
+
   if let objcCallerPath = args.objcCallerPath,
      let pngOutputPath = args.callerPngOutputPath,
      let headerImportPath = args.objcHeaderImportPath {
