@@ -1,11 +1,37 @@
 import CoreGraphics
 import Foundation
 
-public typealias CGGenDescriptor = (size: CGSize, draw: (CGContext) -> Void)
+public struct Drawing: Sendable {
+  public let size: CGSize
+  public let draw: @Sendable (CGContext) -> Void
+  
+  public init(size: CGSize, draw: @escaping @Sendable (CGContext) -> Void) {
+    self.size = size
+    self.draw = draw
+  }
+}
+
+// MARK: - SwiftUI Support
+
+#if canImport(SwiftUI)
+import SwiftUI
+
+extension Drawing: View {
+  public var body: some View {
+    Canvas { context, size in
+      context.withCGContext { cgContext in
+        draw(cgContext)
+      }
+    }
+    .frame(width: size.width, height: size.height)
+  }
+}
+#endif
+
 
 extension CGImage {
   public static func draw(
-    from descriptor: CGGenDescriptor,
+    from descriptor: Drawing,
     scale: CGFloat = 1.0,
     colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
   ) -> CGImage? {
@@ -42,7 +68,7 @@ extension CGImage {
 
 extension CGContext {
   public func draw(
-    _ descriptor: CGGenDescriptor,
+    _ descriptor: Drawing,
     at origin: CGPoint = .zero
   ) {
     saveGState()

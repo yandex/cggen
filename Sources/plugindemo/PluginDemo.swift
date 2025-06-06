@@ -1,7 +1,10 @@
-import CGGenRuntimeSupport
 import CoreGraphics
 import Foundation
+#if canImport(AppKit)
+import AppKit
+#endif
 
+@main
 public enum PluginDemo {
   public static func createTestContext() -> CGContext? {
     CGContext(
@@ -16,58 +19,80 @@ public enum PluginDemo {
   }
 
   public static func demonstrateGeneratedCode() {
-    print("PluginDemo: Testing auto-generated Swift code from SVG files")
+    print("""
+    ╔═══════════════════════════════════════════════════════════════╗
+    ║                  cggen Plugin Demo                            ║
+    ║         SVG → Optimized Swift Code Generation                 ║
+    ╚═══════════════════════════════════════════════════════════════╝
+    """)
 
     guard let context = createTestContext() else {
-      print("Failed to create graphics context")
+      print("❌ Failed to create graphics context")
       return
     }
 
     print(
-      "Created graphics context with size: \(context.width)x\(context.height)"
+      "✅ Created test context: \(context.width)×\(context.height)px"
     )
 
-    // Use the auto-generated drawing functions from our SVG files!
-    print("\n=== Drawing Circle ===")
-    print("Size: \(plugindemocircle.size)")
-    plugindemocircle.draw(context)
-    print("Circle drawn successfully!")
+    // Direct drawing with generated functions
+    print("\n📐 Direct Context Drawing:")
+    
+    print("  ⭕ Drawing.circle → \(Drawing.circle.size)")
+    Drawing.circle.draw(context)
+    
+    print("  ⬜ Drawing.square → \(Drawing.square.size)")
+    Drawing.square.draw(context)
+    
+    print("  ⭐ Drawing.star → \(Drawing.star.size)")
+    Drawing.star.draw(context)
 
-    print("\n=== Drawing Square ===")
-    print("Size: \(plugindemosquare.size)")
-    plugindemosquare.draw(context)
-    print("Square drawn successfully!")
+    print("\n✨ All shapes rendered using optimized bytecode!")
 
-    print("\n=== Drawing Star ===")
-    print("Size: \(plugindemostar.size)")
-    plugindemostar.draw(context)
-    print("Star drawn successfully!")
-
-    print(
-      "\n🎉 All shapes drawn using auto-generated Swift code from SVG files!"
-    )
-    print(
-      "The plugin successfully converted 3 SVG files to optimized Swift drawing functions."
-    )
-
-    // Demonstrate the new image utilities
-    print("\n=== Image Creation Utilities ===")
-
-    if let cgImage = CGImage.draw(from: plugindemocircle) {
-      print(
-        "✅ Created CGImage from circle descriptor (size: \(cgImage.width)x\(cgImage.height))"
-      )
-    }
-
-    if let cgImageScaled = CGImage.draw(from: plugindemostar, scale: 2.0) {
-      print(
-        "✅ Created 2x scaled CGImage from star descriptor (size: \(cgImageScaled.width)x\(cgImageScaled.height))"
-      )
-    }
-
+    // Demonstrate the preferred KeyPath-based API
+    print("\n=== 🎨 Modern Swift API with KeyPaths ===")
+    
+    // Platform-specific image creation
     #if canImport(UIKit)
-    let uiImage = UIImage(plugindemosquare)
-    print("✅ Created UIImage from square descriptor (size: \(uiImage.size))")
+    print("\n📱 iOS UIImage Creation (KeyPath API):")
+    let circleImage = UIImage.draw(\.circle)
+    print("  • UIImage.draw(\\.circle) → size: \(circleImage.size)")
+    
+    let squareImage = UIImage.draw(\.square)
+    print("  • UIImage.draw(\\.square) → size: \(squareImage.size)")
+    
+    let starImage = UIImage.draw(\.star, scale: 2.0)
+    print("  • UIImage.draw(\\.star, scale: 2.0) → size: \(starImage.size)")
+    #elseif canImport(AppKit)
+    print("\n🖥️  macOS NSImage Creation (KeyPath API):")
+    let circleImage = NSImage.draw(\.circle)
+    print("  • NSImage.draw(\\.circle) → size: \(circleImage.size)")
+    
+    let squareImage = NSImage.draw(\.square)
+    print("  • NSImage.draw(\\.square) → size: \(squareImage.size)")
+    
+    let starImage = NSImage.draw(\.star, scale: 2.0)
+    print("  • NSImage.draw(\\.star, scale: 2.0) → size: \(starImage.size)")
     #endif
+    
+    // Core Graphics direct drawing
+    print("\n🎯 Core Graphics Direct Drawing:")
+    if let cgImage = CGImage.draw(from: Drawing.circle) {
+      print("  • CGImage from Drawing.circle: \(cgImage.width)×\(cgImage.height)px")
+    }
+    
+    // Show alternative direct initializer syntax
+    print("\n📝 Alternative Direct Initializer (also available):")
+    #if canImport(UIKit)
+    let altImage = UIImage(drawing: .star)
+    print("  • UIImage(drawing: .star) → size: \(altImage.size)")
+    #elseif canImport(AppKit)
+    let altImage = NSImage(drawing: .star)
+    print("  • NSImage(drawing: .star) → size: \(altImage.size)")
+    #endif
+  }
+  
+  public static func main() {
+    demonstrateGeneratedCode()
   }
 }

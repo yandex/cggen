@@ -20,6 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Format fix: `swiftformat .`
 - **Run formatter before commit**
 
+### Run
+- Use `swift run` to run executables
+
 ## Architecture
 
 ### Core Components

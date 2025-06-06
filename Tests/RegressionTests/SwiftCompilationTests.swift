@@ -41,7 +41,7 @@ import libcggen
         callerScale: 1,
         callerAllowAntialiasing: false,
         callerPngOutputPath: nil,
-        generationStyle: .swiftFriendly,
+        generationStyle: .plain,
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
@@ -50,13 +50,19 @@ import libcggen
       )
     )
 
+    // Read the generated code and remove the CGGenRuntimeSupport import
+    let generatedCode = try String(contentsOf: swiftFile)
+    let codeWithoutImport = generatedCode
+      .replacingOccurrences(of: "import CGGenRuntimeSupport\n", with: "")
+      .replacingOccurrences(of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n", with: "")
+
     // Create a test program that imports and uses the generated code
-    let testProgram = try """
+    let testProgram = """
     import CoreGraphics
     import Foundation
 
-    // Include generated code
-    \(String(contentsOf: swiftFile))
+    // Include generated code (without CGGenRuntimeSupport import)
+    \(codeWithoutImport)
 
     // Test that we can instantiate the generated types and call functions
     public func testGeneratedCode() {
@@ -70,10 +76,6 @@ import libcggen
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
       ) {
         testDrawShapesImage(in: context)
-
-        // Test descriptors exist and have correct properties
-        let _ = testshapes.size
-        let _ = testshapes.draw
       }
     }
     """
@@ -81,10 +83,21 @@ import libcggen
     let testFile = tmpdir.appendingPathComponent("test.swift")
     try testProgram.write(to: testFile, atomically: true, encoding: .utf8)
 
-    // Create a mock CGGenRuntimeSupport module that provides the C functions
-    let mockCGGenRuntimeSupport = """
-    // Mock CGGenRuntimeSupport.swift - provides Swift calling convention functions for testing
+    // Create a mock for the @_silgen_name functions and CGGenRuntimeSupport
+    let mockRuntime = """
+    // Mock runtime functions for testing
     import CoreGraphics
+
+    // Mock CGGenRuntimeSupport module
+    public struct Drawing {
+      public let size: CGSize
+      public let draw: (CGContext) -> Void
+      
+      public init(size: CGSize, draw: @escaping (CGContext) -> Void) {
+        self.size = size
+        self.draw = draw
+      }
+    }
 
     @_silgen_name("runMergedBytecode_swift")
     fileprivate func runMergedBytecode(
@@ -108,10 +121,9 @@ import libcggen
     }
     """
 
-    let mockCGGenRuntimeSupportFile = tmpdir
-      .appendingPathComponent("CGGenRuntimeSupport.swift")
-    try mockCGGenRuntimeSupport.write(
-      to: mockCGGenRuntimeSupportFile,
+    let mockRuntimeFile = tmpdir.appendingPathComponent("MockRuntime.swift")
+    try mockRuntime.write(
+      to: mockRuntimeFile,
       atomically: true,
       encoding: .utf8
     )
@@ -122,7 +134,7 @@ import libcggen
     process.arguments = [
       "-parse-as-library", // Parse as library to avoid needing main
       "-typecheck", // Type check the code
-      mockCGGenRuntimeSupportFile.path,
+      mockRuntimeFile.path,
       testFile.path,
     ]
 

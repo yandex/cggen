@@ -11,8 +11,11 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
   }
 
   func filePreamble() -> String {
-    """
+    return """
     import CoreGraphics
+    import CGGenRuntimeSupport
+    
+    typealias Drawing = CGGenRuntimeSupport.Drawing
     """
   }
 
@@ -20,20 +23,19 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
     let (bytecodeMergeArray, positions, decompressedSize, compressedSize) =
       try generateMergedBytecodeArray(images: images)
 
-    let results = zip(images, positions).map { image, position in
+    let functions = zip(images, positions).map { image, position in
       generateImageFunctionForMergedBytecode(
         image: image,
         imagePosition: position,
         decompressedSize: decompressedSize,
         compressedSize: compressedSize
       )
-    }
+    }.joined(separator: "\n\n")
+    
+    // Generate Drawing namespace extension for swift-friendly style
+    let drawingExtension = generateDrawingExtension(images: images)
 
-    let descriptors = results.compactMap { $0.descriptor }
-      .joined(separator: "\n\n")
-    let functions = results.map { $0.function }.joined(separator: "\n\n")
-
-    return [descriptors, functions, bytecodeMergeArray]
+    return [drawingExtension, functions, bytecodeMergeArray]
       .joined(separator: "\n\n")
   }
 
@@ -80,17 +82,19 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
   }
 }
 
+// MARK: - Image and Bytecode Generation
+
 extension SwiftCGGenerator {
   func generateImageFunctionForMergedBytecode(
     image: Image,
     imagePosition: ImagePosition,
     decompressedSize: Int,
     compressedSize: Int
-  ) -> (function: String, descriptor: String?) {
+  ) -> String {
     let functionName =
       "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
 
-    let function = """
+    return """
     fileprivate func \(functionName)(in context: CGContext) {
       mergedBytecodes.withUnsafeBufferPointer { buffer in
         runMergedBytecode(
@@ -104,22 +108,6 @@ extension SwiftCGGenerator {
       }
     }
     """
-
-    // Add descriptor if using swift-friendly style
-    let descriptor: String? = {
-      guard case .swiftFriendly = params.style else { return nil }
-      let descriptorName =
-        "\(params.prefix.lowercased())\(image.name.lowerCamelCase)"
-      let size = image.route.boundingRect.size
-      return """
-      public let \(descriptorName) = (
-        size: CGSize(width: \(size.width), height: \(size.height)),
-        draw: \(functionName)
-      )
-      """
-    }()
-
-    return (function: function, descriptor: descriptor)
   }
 
   func generateMergedBytecodeArray(images: [Image]) throws
@@ -167,5 +155,25 @@ extension SwiftCGGenerator {
     }
 
     return lines.joined(separator: ",\n")
+  }
+  
+  private func generateDrawingExtension(images: [Image]) -> String {
+    let staticProperties = images.map { image in
+      let propertyName = image.name.lowerCamelCase
+      let functionName = "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
+      let size = image.route.boundingRect.size
+      return """
+        static let \(propertyName) = Drawing(
+          size: CGSize(width: \(size.width), height: \(size.height)),
+          draw: \(functionName)
+        )
+      """
+    }.joined(separator: "\n")
+    
+    return """
+    extension Drawing {
+    \(staticProperties)
+    }
+    """
   }
 }
