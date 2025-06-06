@@ -13,9 +13,48 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
   func filePreamble() -> String {
     """
     import CoreGraphics
-    import Foundation
+    """
+  }
 
-    // External functions from CGGenRuntimeSupport - these use Swift calling convention
+  func generateImageFunctions(images: [Image]) throws -> String {
+    let (bytecodeMergeArray, positions, decompressedSize, compressedSize) =
+      try generateMergedBytecodeArray(images: images)
+
+    let imageFunctions = zip(images, positions).map { image, position in
+      generateImageFunctionForMergedBytecode(
+        image: image,
+        imagePosition: position,
+        decompressedSize: decompressedSize,
+        compressedSize: compressedSize
+      )
+    }.joined(separator: "\n\n")
+
+    return [imageFunctions, bytecodeMergeArray].joined(separator: "\n\n")
+  }
+
+  func generatePathFuncton(path: PathRoutine) -> String {
+    let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
+    let bytecode = generatePathBytecode(route: path)
+    let camel = path.id.upperCamelCase
+    let functionName = "\(params.prefix.lowercased())\(camel)Path"
+
+    return """
+    private let \(bytecodeName): [UInt8] = [
+      \(bytecode.map { String(format: "0x%02X", $0) }.joined(separator: ", "))
+    ]
+
+    public func \(functionName)(in path: CGMutablePath) {
+      \(bytecodeName).withUnsafeBufferPointer { buffer in
+        runPathBytecode(path, buffer.baseAddress!, Int32(\(bytecode.count)))
+      }
+    }
+    """
+  }
+
+  func fileEnding() -> String {
+    """
+
+    // External functions from CGGenRuntimeSupport
     @_silgen_name("runMergedBytecode_swift")
     fileprivate func runMergedBytecode(
       _ context: CGContext,
@@ -33,45 +72,6 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
       _ len: Int32
     )
     """
-  }
-
-  func generateImageFunctions(images: [Image]) throws -> String {
-    let (bytecodeMergeArray, positions, decompressedSize, compressedSize) =
-      try generateMergedBytecodeArray(images: images)
-
-    let imageFunctions = zip(images, positions).map { image, position in
-      generateImageFunctionForMergedBytecode(
-        image: image,
-        imagePosition: position,
-        decompressedSize: decompressedSize,
-        compressedSize: compressedSize
-      )
-    }.joined(separator: "\n\n")
-
-    return [bytecodeMergeArray, imageFunctions].joined(separator: "\n\n")
-  }
-
-  func generatePathFuncton(path: PathRoutine) -> String {
-    let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
-    let bytecode = generatePathBytecode(route: path)
-    let camel = path.id.upperCamelCase
-    let functionName = "\(params.prefix.lowercased())\(camel)Path"
-
-    return """
-    private let \(bytecodeName): [UInt8] = [
-      \(bytecode.map(\.description).joined(separator: ", "))
-    ]
-
-    public func \(functionName)(in path: CGMutablePath) {
-      \(bytecodeName).withUnsafeBufferPointer { buffer in
-        runPathBytecode(path, buffer.baseAddress!, Int32(\(bytecode.count)))
-      }
-    }
-    """
-  }
-
-  func fileEnding() -> String {
-    ""
   }
 }
 
@@ -140,7 +140,7 @@ extension SwiftCGGenerator {
     let compressedBytecode = try compressBytecode(mergedBytecodes)
     let bytecodeString = """
     private let \(bytecodeName): [UInt8] = [
-      \(formatBytecodeArray(compressedBytecode))
+    \(formatBytecodeArray(compressedBytecode))
     ]
     """
 
@@ -159,8 +159,9 @@ extension SwiftCGGenerator {
 
     for i in stride(from: 0, to: bytes.count, by: bytesPerLine) {
       let end = min(i + bytesPerLine, bytes.count)
-      let lineBytes = bytes[i..<end].map(\.description).joined(separator: ", ")
-      lines.append("  " + lineBytes)
+      let lineBytes = bytes[i..<end].map { String(format: "0x%02X", $0) }.joined(separator: ", ")
+      let indent = "  " // Consistent 2 space indentation
+      lines.append(indent + lineBytes)
     }
 
     return lines.joined(separator: ",\n")
