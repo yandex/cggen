@@ -81,9 +81,9 @@ import libcggen
     let testFile = tmpdir.appendingPathComponent("test.swift")
     try testProgram.write(to: testFile, atomically: true, encoding: .utf8)
 
-    // Create a mock BCRunner module that provides the C functions
-    let mockBCRunner = """
-    // Mock BCRunner.swift - provides Swift calling convention functions for testing
+    // Create a mock CGGenRuntimeSupport module that provides the C functions
+    let mockCGGenRuntimeSupport = """
+    // Mock CGGenRuntimeSupport.swift - provides Swift calling convention functions for testing
     import CoreGraphics
 
     @_silgen_name("runMergedBytecode_swift")
@@ -108,9 +108,9 @@ import libcggen
     }
     """
 
-    let mockBCRunnerFile = tmpdir.appendingPathComponent("BCRunner.swift")
-    try mockBCRunner.write(
-      to: mockBCRunnerFile,
+    let mockCGGenRuntimeSupportFile = tmpdir.appendingPathComponent("CGGenRuntimeSupport.swift")
+    try mockCGGenRuntimeSupport.write(
+      to: mockCGGenRuntimeSupportFile,
       atomically: true,
       encoding: .utf8
     )
@@ -121,7 +121,7 @@ import libcggen
     process.arguments = [
       "-parse-as-library", // Parse as library to avoid needing main
       "-typecheck", // Type check the code
-      mockBCRunnerFile.path,
+      mockCGGenRuntimeSupportFile.path,
       testFile.path,
     ]
 

@@ -15,7 +15,7 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
     import CoreGraphics
     import Foundation
 
-    // External functions from BCRunner - these use Swift calling convention
+    // External functions from CGGenRuntimeSupport - these use Swift calling convention
     @_silgen_name("runMergedBytecode_swift")
     fileprivate func runMergedBytecode(
       _ context: CGContext,
