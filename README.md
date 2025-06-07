@@ -1,179 +1,156 @@
 # cggen
 
-Tool for generating Core Graphics code from vector PDF files
+Swift Package Manager plugin for generating optimized Swift drawing code from SVG and PDF files.
 
-Install:
-1. Compile via `swift build --product cggen --configuration release`
-2. Add compiled binary to PATH
+Instead of bundling vector assets as resources, cggen compiles them into bytecode and generates Swift functions that execute drawing operations using Core Graphics, resulting in smaller app bundles and better performance.
 
-Usage:
-```
-cggen [--objc-header OBJC_HEADER] [--objc-impl OBJC_IMPL]
-      [--objc-header-import-path OBJC_HEADER_IMPORT_PATH]
-      [--objc-prefix OBJC_PREFIX]
-      [-h] [--verbose]
-      pdfs
+## Features
 
-positional arguments:
-  pdfs                  pdf files to process
+- **Swift Package Manager Plugin**: Automatic code generation during build
+- **SVG and PDF Support**: Convert vector graphics from both formats  
+- **Bytecode Compilation**: Generates compressed bytecode for efficient rendering
+- **Swift-Friendly API**: Tuple descriptors for clean Swift integration  
+- **Image Creation Utilities**: Built-in support for CGImage, UIImage, and SwiftUI.Image
+- **Build-Time Generation**: No runtime dependencies beyond cggen-runtime-support library
 
+## Installation
 
-optional arguments:
-  -h, --help            show help message and exit
-  --verbose             print some debug info to stdout
-  --objc-header OBJC_HEADER
-                        Path to file where objc header will be generated,
-                        intermediate dirs should exist
-  --objc-impl OBJC_IMPL
-                        Path to file where objc implementanion will be generated,
-                        intermediate dirs should exist
-  --objc-header-import-path OBJC_HEADER_IMPORT_PATH
-                        Objc implementation file should import header file, so
-                        this argument will be used in #import "..."
-  --objc-prefix OBJC_PREFIX
-                        It is usally good to prefix names of function in objc
-                        code, because of global namespace. This prefix
-                        will be added to every function and constant name.
+Add cggen as a dependency to your `Package.swift`:
+
+```swift
+dependencies: [
+  .package(url: "https://github.com/yandex/cggen", from: "1.0.0")
+]
 ```
 
-After generation is done, generated implementation file should be compiled 
-and linked into your project. 
+Add the plugin to your target and include runtime dependency:
 
-You access to drawing functions by importing header file.
-Names for functions are: `($PRFX)Draw($PDFNAME)ImageInContext`, 
-sizes in logical points: `k($PRFX)($PDFNAME)ImageSize`
-
-For easy to use, add this helper to your UIImage category (I bet you have one :) )
-
-Objc:
+```swift
+.target(
+  name: "YourTarget", 
+  dependencies: [
+    .product(name: "cggen-runtime-support", package: "cggen")
+  ],
+  plugins: [
+    .plugin(name: "plugin", package: "cggen")
+  ]
+)
 ```
-@interface UIImage (Additions)
 
-+ (UIImage*)imageWithSize:(CGSize)size
-          drawingFunction:(void(*)(CGContextRef))drawingFunction;
+**Important:** Your target must depend on `cggen-runtime-support` library to provide the bytecode execution runtime and image creation utilities.
 
-@end
+## Usage
 
-@implementation UIImage (YBAdditions)
+### Basic Setup
 
-+ (UIImage*)imageWithSize:(CGSize)size
-          drawingFunction:(void(*)(CGContextRef))drawingFunction {
-  static const size_t kBitsPerComponent = 8;
-  static const size_t kBytesPerRow = 0;  // Auto
-  const CGFloat scale = UIScreen.mainScreen.scale;
-  const CGFloat w = size.width * scale;
-  const CGFloat h = size.height * scale;
-  CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-  CGContextRef context = CGBitmapContextCreate(NULL,
-                                               w,
-                                               h,
-                                               kBitsPerComponent,
-                                               kBytesPerRow,
-                                               colorSpace,
-                                               kCGImageAlphaPremultipliedLast);
-  CGAffineTransform transform = CGAffineTransformMakeScale(scale, scale);
-  CGContextConcatCTM(context, transform);
-  CGColorSpaceRelease(colorSpace);
+1. Place your `.svg` or `.pdf` files in your target's source directory
+2. The plugin automatically finds and processes these files during build  
+3. Generated Swift code provides drawing functions and descriptors
 
-  drawingFunction(context);
+### Generated API
 
-  CGImageRef imgRef = CGBitmapContextCreateImage(context);
-  UIImage* img = [UIImage imageWithCGImage:imgRef
-                                     scale:scale
-                               orientation:UIImageOrientationUp];
-  CGImageRelease(imgRef);
-  CGContextRelease(context);
-  return img;
+For an SVG file named `icon.svg`, cggen generates:
+
+```swift
+// Drawing function 
+fileprivate func yourtargetDrawIconImage(in context: CGContext)
+
+// Tuple descriptor (swift-friendly mode)
+public let yourtargeticon = (
+  size: CGSize(width: 24.0, height: 24.0),
+  draw: yourtargetDrawIconImage
+)
+```
+
+**Note:** Function names use lowercase target prefix + camelCase filename. Target names with hyphens create invalid Swift identifiers.
+
+### Example Usage
+
+```swift
+import CoreGraphics
+import cggen_runtime_support
+
+// Create a graphics context
+let context = CGContext(
+  data: nil,
+  width: 100, height: 100,
+  bitsPerComponent: 8, bytesPerRow: 0,
+  space: CGColorSpaceCreateDeviceRGB(),
+  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+)!
+
+// Draw using generated function directly
+yourtargeticon.draw(context)
+
+// Or access descriptor properties
+print("Icon size: \(yourtargeticon.size)")
+```
+
+### Image Creation
+
+The runtime support library provides convenient image creation utilities:
+
+```swift
+import cggen_runtime_support
+
+// Create a CGImage
+if let cgImage = CGImage.draw(from: yourtargeticon) {
+  // Use cgImage...
 }
 
-@end
+// Create a UIImage (iOS/tvOS/watchOS)
+#if canImport(UIKit)
+let uiImage = UIImage(yourtargeticon)
+#endif
+
+// Create a SwiftUI Image
+#if canImport(SwiftUI)
+let swiftUIImage = Image(yourtargeticon)
+#endif
 ```
 
-swift:
+## CLI Usage
 
-```
-extension UIImage {
-  static func makeImage(size: CGSize, function: (CGContext) -> Void) -> UIImage {
-    let bitsPerComponent = 8
-    let bytesPerRow = 0
-    let scale = UIScreen.main.scale
-    let w = size.width * scale
-    let h = size.height * scale
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let context = CGContext.init(data: nil,
-                                 width: Int(w),
-                                 height: Int(h),
-                                 bitsPerComponent: bitsPerComponent,
-                                 bytesPerRow: bytesPerRow,
-                                 space: colorSpace,
-                                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-    function(context)
-    let cgImage = context.makeImage()!
-    return UIImage(cgImage: cgImage, scale: scale, orientation: .up)
-  }
-}
+The underlying CLI tool can be used directly for custom workflows:
+
+```bash
+swift run cggen --swift-output Generated.swift --generation-style swift-friendly input.svg input.pdf
 ```
 
-So you can use it like this:
+### CLI Options
 
-Objc:
-```
-UIImage* img = [UIImage yb_imageWithSize:kYYIconImageSize
-                         drawingFunction:YYDrawIconImageInContext];
-```
+- `--swift-output <path>`: Generate Swift code to specified file
+- `--generation-style <style>`: Either "plain" or "swift-friendly" (default: "plain")
+- `--objc-prefix <prefix>`: Add prefix to generated function names
+- `--module-name <name>`: Module name for generated code
+- `--objc-header <path>`: Generate Objective-C header file
+- `--objc-impl <path>`: Generate Objective-C implementation file  
+- `--verbose`: Enable debug output
 
-swift:
-```
-let img = UIImage.makeImage(size: kYYIconImageSize,
-                            function: YYDrawIconImageInContext)
-```
+## Generation Styles
 
-## Swift-friendly protocol-oriented way
-
-* Add generation arguments:
-
-```
---generation-style=swift-friendly
---cggen-support-header-path=/path/to/generated/sources/cggen_support.h
---module-name=YourResourcesModule
+### Plain Mode (default)
+Generates only drawing functions:
+```swift
+public func targetDrawImageNameImage(in context: CGContext)
 ```
 
-* Make a protocol in your code:
-
-```
-public protocol ImageDescriptor {
-  var drawingHandler: @convention(c) (CGContext) -> Void { get }
-  var size: CGSize { get }
-}
-```
-
-* Add an implementation:
-
-```
-extension ImageDescriptor {
-  public var image: Image {
-    return UIImage.makeImage(size: size, function: function)
-  }
-}
+### Swift-Friendly Mode  
+Generates functions plus tuple descriptors:
+```swift
+public let targetimagename = (
+  size: CGSize(width: 24.0, height: 24.0),
+  draw: targetDrawImageNameImage
+)
 ```
 
-* For each generated module, add drawing support with just one line of code: 
+## Architecture
 
-```
-extension YourResourcesModule.ImageDescriptor: ImageDescriptor {}
-```
+The project uses a sophisticated bytecode compilation approach:
 
-* Now you can use generated resources in a bit more convenient way: `let icon: UIImage = YourResourcesModule.ImageDescriptor.yourIconName.image`.
+- **Input Parsing**: SVG and PDF parsers using swift-parsing library
+- **Intermediate Representation**: DrawRoute and PathRoutine for graphics operations
+- **Bytecode Generation**: Compiles drawing operations into compressed bytecode arrays
+- **Runtime Execution**: cggen-runtime-support library provides `runMergedBytecode_swift()` and `runPathBytecode_swift()` functions
+- **Plugin System**: Swift Package Manager build tool plugin for automation
 
-Feel free to add some typealiases and/or extensions for the code which uses resources! Example for `UIImageView`:
-
-```
-extension UIImageView {
-  func setIcon(_ icon: YourResourcesModule.ImageDescriptor)  {
-    image = icon.image
-  }
-}
-
-let view = UIImageView()
-view.setIcon(.yourIconName)
-```

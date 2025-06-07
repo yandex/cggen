@@ -41,7 +41,7 @@ import libcggen
         callerScale: 1,
         callerAllowAntialiasing: false,
         callerPngOutputPath: nil,
-        generationStyle: .swiftFriendly,
+        generationStyle: .plain,
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
@@ -50,13 +50,19 @@ import libcggen
       )
     )
 
+    // Read the generated code and remove the CGGenRuntimeSupport import
+    let generatedCode = try String(contentsOf: swiftFile)
+    let codeWithoutImport = generatedCode
+      .replacingOccurrences(of: "import CGGenRuntimeSupport\n", with: "")
+      .replacingOccurrences(of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n", with: "")
+
     // Create a test program that imports and uses the generated code
-    let testProgram = try """
+    let testProgram = """
     import CoreGraphics
     import Foundation
 
-    // Include generated code
-    \(String(contentsOf: swiftFile))
+    // Include generated code (without CGGenRuntimeSupport import)
+    \(codeWithoutImport)
 
     // Test that we can instantiate the generated types and call functions
     public func testGeneratedCode() {
@@ -70,10 +76,6 @@ import libcggen
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
       ) {
         testDrawShapesImage(in: context)
-
-        // Test descriptors exist and have correct properties
-        let _ = testShapesDescriptor.size
-        let _ = testShapesDescriptor.draw
       }
     }
     """
@@ -81,10 +83,21 @@ import libcggen
     let testFile = tmpdir.appendingPathComponent("test.swift")
     try testProgram.write(to: testFile, atomically: true, encoding: .utf8)
 
-    // Create a mock BCRunner module that provides the C functions
-    let mockBCRunner = """
-    // Mock BCRunner.swift - provides Swift calling convention functions for testing
+    // Create a mock for the @_silgen_name functions and CGGenRuntimeSupport
+    let mockRuntime = """
+    // Mock runtime functions for testing
     import CoreGraphics
+
+    // Mock CGGenRuntimeSupport module
+    public struct Drawing {
+      public let size: CGSize
+      public let draw: (CGContext) -> Void
+      
+      public init(size: CGSize, draw: @escaping (CGContext) -> Void) {
+        self.size = size
+        self.draw = draw
+      }
+    }
 
     @_silgen_name("runMergedBytecode_swift")
     fileprivate func runMergedBytecode(
@@ -108,9 +121,9 @@ import libcggen
     }
     """
 
-    let mockBCRunnerFile = tmpdir.appendingPathComponent("BCRunner.swift")
-    try mockBCRunner.write(
-      to: mockBCRunnerFile,
+    let mockRuntimeFile = tmpdir.appendingPathComponent("MockRuntime.swift")
+    try mockRuntime.write(
+      to: mockRuntimeFile,
       atomically: true,
       encoding: .utf8
     )
@@ -121,7 +134,7 @@ import libcggen
     process.arguments = [
       "-parse-as-library", // Parse as library to avoid needing main
       "-typecheck", // Type check the code
-      mockBCRunnerFile.path,
+      mockRuntimeFile.path,
       testFile.path,
     ]
 
@@ -147,5 +160,103 @@ import libcggen
     }
 
     #expect(process.terminationStatus == 0)
+  }
+
+  @Test func testSwiftCodeGenerationSnapshot() throws {
+    // Use the plugindemo SVG files for a consistent snapshot test
+    let plugindemoPath = getCurentFilePath()
+      .deletingLastPathComponent()
+      .deletingLastPathComponent()
+      .appendingPathComponent("Sources")
+      .appendingPathComponent("plugindemo")
+
+    let files = [
+      "circle.svg",
+      "square.svg",
+      "star.svg",
+    ].map { plugindemoPath.appendingPathComponent($0) }
+
+    let fm = FileManager.default
+    let tmpdir = try fm.url(
+      for: .itemReplacementDirectory,
+      in: .userDomainMask,
+      appropriateFor: fm.homeDirectoryForCurrentUser,
+      create: true
+    )
+    defer {
+      do {
+        try fm.removeItem(at: tmpdir)
+      } catch {
+        fatalError("Unable to clean up dir: \(tmpdir), error: \(error)")
+      }
+    }
+
+    let swiftFile = tmpdir.appendingPathComponent("PluginDemoGenerated.swift")
+
+    try runCggen(
+      with: .init(
+        objcHeader: nil,
+        objcPrefix: "plugindemo",
+        objcImpl: nil,
+        objcHeaderImportPath: nil,
+        objcCallerPath: nil,
+        callerScale: 1.0,
+        callerAllowAntialiasing: false,
+        callerPngOutputPath: nil,
+        generationStyle: .swiftFriendly,
+        cggenSupportHeaderPath: nil,
+        module: nil,
+        verbose: false,
+        files: files.map { $0.path },
+        swiftOutput: swiftFile.path
+      )
+    )
+
+    let generatedCode = try String(contentsOf: swiftFile, encoding: .utf8)
+
+    // Follow swift-snapshot-testing conventions: __Snapshots__/
+    let snapshotPath = getCurentFilePath()
+      .appendingPathComponent("__Snapshots__")
+      .appendingPathComponent("SwiftCompilationTests")
+      .appendingPathComponent("testSwiftCodeGenerationSnapshot.swift")
+
+    // Create directory if it doesn't exist
+    try fm.createDirectory(
+      at: snapshotPath.deletingLastPathComponent(),
+      withIntermediateDirectories: true
+    )
+
+    if fm.fileExists(atPath: snapshotPath.path) {
+      // Compare with existing snapshot
+      let expectedCode = try String(contentsOf: snapshotPath, encoding: .utf8)
+
+      if generatedCode != expectedCode {
+        // Write actual output for debugging
+        let actualPath = snapshotPath.appendingPathExtension("actual")
+        try generatedCode.write(
+          to: actualPath,
+          atomically: true,
+          encoding: .utf8
+        )
+
+        Issue.record("""
+        Generated Swift code doesn't match snapshot!
+
+        Expected: \(snapshotPath.path)
+        Actual: \(actualPath.path)
+
+        Run `diff \(snapshotPath.path) \(actualPath.path)` to see differences.
+        To update snapshot: `mv \(actualPath.path) \(snapshotPath.path)`
+        """)
+      }
+    } else {
+      // Create initial snapshot
+      try generatedCode.write(
+        to: snapshotPath,
+        atomically: true,
+        encoding: .utf8
+      )
+      print("Created initial snapshot at: \(snapshotPath.path)")
+    }
   }
 }

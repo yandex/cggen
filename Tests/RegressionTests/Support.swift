@@ -5,7 +5,7 @@ import WebKit
 import XCTest
 
 import Base
-import BCRunner
+import CGGenRuntimeSupport
 import libcggen
 
 private enum Error: Swift.Error {
@@ -126,7 +126,7 @@ func cggen(
 
     let support = [
       "BCCommon.o",
-      "BCRunner.o",
+      "CGGenRuntimeSupport.o",
     ].map {
       currentBundlePath.deletingLastPathComponent().appendingPathComponent($0)
     }

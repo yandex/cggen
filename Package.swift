@@ -11,7 +11,7 @@ let package = Package(
   ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
-    .library(name: "cggen-bc-runner", targets: ["BCRunner"]),
+    .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
     .plugin(name: "plugin", targets: ["plugin"]),
   ],
   dependencies: [
@@ -29,7 +29,7 @@ let package = Package(
       name: "BCCommon"
     ),
     .target(
-      name: "BCRunner",
+      name: "CGGenRuntimeSupport",
       dependencies: ["BCCommon"]
     ),
     .executableTarget(
@@ -70,7 +70,7 @@ let package = Package(
     ),
     .testTarget(
       name: "RegressionTests",
-      dependencies: ["libcggen", "BCRunner"],
+      dependencies: ["libcggen", "CGGenRuntimeSupport"],
       resources: [
         .copy("pdf_samples"),
         .copy("svg_samples"),
@@ -81,7 +81,7 @@ let package = Package(
     ),
     .executableTarget(
       name: "plugindemo",
-      dependencies: ["BCRunner"],
+      dependencies: ["CGGenRuntimeSupport"],
       plugins: ["plugin"]
     ),
     .plugin(

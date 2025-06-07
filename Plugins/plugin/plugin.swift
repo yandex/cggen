@@ -46,7 +46,8 @@ struct Plugin: BuildToolPlugin {
 
     // Add prefix for generated functions
     // FIXME: Target names with hyphens (e.g. "plugin-demo") create invalid Swift identifiers
-    // in generated code like "plugin-demoDrawCircleImage". Use underscores or camelCase instead.
+    // in generated code like "plugin-demoDrawCircleImage". Use underscores or
+    // camelCase instead.
     arguments.append("--objc-prefix")
     arguments.append(target.name.capitalized)
 
@@ -69,7 +70,7 @@ struct Plugin: BuildToolPlugin {
 #if canImport(XcodeProjectPlugin)
 import XcodeProjectPlugin
 
-extension CggenPlugin: XcodeBuildToolPlugin {
+extension Plugin: XcodeBuildToolPlugin {
   func createBuildCommands(
     context: XcodePluginContext,
     target: XcodeTarget

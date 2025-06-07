@@ -20,6 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Format fix: `swiftformat .`
 - **Run formatter before commit**
 
+### Run
+- Use `swift run` to run executables
+
 ## Architecture
 
 ### Core Components
@@ -28,6 +31,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input to DrawRoute
   - `BCCGGenerator` / `ObjCGen`: Generate bytecode or Objective-C code
   - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
+- **CGGenRuntimeSupport**: Runtime library providing bytecode execution functions
+  - Provides `runMergedBytecode_swift()` and `runPathBytecode_swift()` functions
+  - Required dependency for generated Swift code
 
 ### Parser Architecture
 The project uses swift-parsing library with custom operators:

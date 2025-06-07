@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 
-import BCRunner
+import CGGenRuntimeSupport
 import libcggen
 
 @Suite struct BCCompilationTests {
@@ -76,7 +76,7 @@ import libcggen
       // Undefined symbols for architecture arm64:
       //   "___llvm_profile_runtime", referenced from:
       //       ___llvm_profile_runtime_user in BCCommon.o
-      //       ___llvm_profile_runtime_user in BCRunner.o
+      //       ___llvm_profile_runtime_user in CGGenRuntimeSupport.o
       let files = [
         "caps_joins.svg",
         "clip_path.svg",
