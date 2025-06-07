@@ -52,6 +52,7 @@ public enum PluginDemo {
     // Demonstrate the preferred KeyPath-based API
     print("\n=== 🎨 Modern Swift API with KeyPaths ===")
     
+    #if swift(>=6.1)
     // Platform-specific image creation
     #if canImport(UIKit)
     print("\n📱 iOS UIImage Creation (KeyPath API):")
@@ -73,6 +74,12 @@ public enum PluginDemo {
     
     let starImage = NSImage.draw(\.star, scale: 2.0)
     print("  • NSImage.draw(\\.star, scale: 2.0) → size: \(starImage.size)")
+    #endif
+    #else
+    print("\n⚠️  KeyPath API requires Swift 6.1+")
+    print("  Please use direct initializers instead:")
+    print("  • UIImage(drawing: .circle)")
+    print("  • NSImage(drawing: .square)")
     #endif
     
     // Core Graphics direct drawing
