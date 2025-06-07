@@ -97,6 +97,30 @@ public enum PluginDemo {
     let altImage = NSImage(drawing: .star)
     print("  • NSImage(drawing: .star) → size: \(altImage.size)")
     #endif
+    
+    // Demonstrate content mode API
+    print("\n🎨 Content Mode API Examples:")
+    let targetSize = CGSize(width: 100, height: 100)
+    
+    #if canImport(UIKit)
+    let aspectFitImage = UIImage(drawing: .circle, size: targetSize, contentMode: .aspectFit)
+    print("  • Aspect Fit (100×100): \(aspectFitImage.size)")
+    
+    let aspectFillImage = UIImage(drawing: .star, size: targetSize, contentMode: .aspectFill)
+    print("  • Aspect Fill (100×100): \(aspectFillImage.size)")
+    
+    let scaleToFillImage = UIImage(drawing: .square, size: CGSize(width: 150, height: 75), contentMode: .scaleToFill)
+    print("  • Scale to Fill (150×75): \(scaleToFillImage.size)")
+    #elseif canImport(AppKit)
+    let aspectFitImage = NSImage(drawing: .circle, size: targetSize, contentMode: .aspectFit)
+    print("  • Aspect Fit (100×100): \(aspectFitImage.size)")
+    
+    let aspectFillImage = NSImage(drawing: .star, size: targetSize, contentMode: .aspectFill)
+    print("  • Aspect Fill (100×100): \(aspectFillImage.size)")
+    
+    let scaleToFillImage = NSImage(drawing: .square, size: CGSize(width: 150, height: 75), contentMode: .scaleToFill)
+    print("  • Scale to Fill (150×75): \(scaleToFillImage.size)")
+    #endif
   }
   
   public static func main() {

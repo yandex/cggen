@@ -18,11 +18,43 @@ extension UIImage {
     }
   }
   
+  public convenience init(
+    drawing: Drawing,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat = UIScreen.main.scale
+  ) {
+    if let cgImage = CGImage.draw(
+      from: drawing,
+      targetSize: size,
+      contentMode: contentMode,
+      scale: scale
+    ) {
+      self.init(cgImage: cgImage, scale: scale, orientation: .up)
+    } else {
+      self.init()
+    }
+  }
+  
   public static func draw(
     _ keyPath: KeyPath<Drawing.Type, Drawing>,
     scale: CGFloat = UIScreen.main.scale
   ) -> UIImage {
     UIImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  }
+  
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat = UIScreen.main.scale
+  ) -> UIImage {
+    UIImage(
+      drawing: Drawing.self[keyPath: keyPath],
+      size: size,
+      contentMode: contentMode,
+      scale: scale
+    )
   }
 }
 
@@ -62,11 +94,43 @@ extension NSImage {
     }
   }
   
+  public convenience init(
+    drawing: Drawing,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 1.0
+  ) {
+    if let cgImage = CGImage.draw(
+      from: drawing,
+      targetSize: size,
+      contentMode: contentMode,
+      scale: scale
+    ) {
+      self.init(cgImage: cgImage, size: size)
+    } else {
+      self.init()
+    }
+  }
+  
   public static func draw(
     _ keyPath: KeyPath<Drawing.Type, Drawing>,
     scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 1.0
   ) -> NSImage {
     NSImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  }
+  
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 1.0
+  ) -> NSImage {
+    NSImage(
+      drawing: Drawing.self[keyPath: keyPath],
+      size: size,
+      contentMode: contentMode,
+      scale: scale
+    )
   }
 }
 
