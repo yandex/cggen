@@ -11,10 +11,10 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
   }
 
   func filePreamble() -> String {
-    return """
+    """
     import CoreGraphics
     import CGGenRuntimeSupport
-    
+
     typealias Drawing = CGGenRuntimeSupport.Drawing
     """
   }
@@ -31,7 +31,7 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
         compressedSize: compressedSize
       )
     }.joined(separator: "\n\n")
-    
+
     // Generate Drawing namespace extension for swift-friendly style
     let drawingExtension = generateDrawingExtension(images: images)
 
@@ -156,11 +156,12 @@ extension SwiftCGGenerator {
 
     return lines.joined(separator: ",\n")
   }
-  
+
   private func generateDrawingExtension(images: [Image]) -> String {
     let staticProperties = images.map { image in
       let propertyName = image.name.lowerCamelCase
-      let functionName = "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
+      let functionName =
+        "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
       let size = image.route.boundingRect.size
       return """
         static let \(propertyName) = Drawing(
@@ -169,7 +170,7 @@ extension SwiftCGGenerator {
         )
       """
     }.joined(separator: "\n")
-    
+
     return """
     extension Drawing {
     \(staticProperties)

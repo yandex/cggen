@@ -30,10 +30,10 @@ extension CGImage {
       width: targetSize.width * scale,
       height: targetSize.height * scale
     )
-    
+
     let bytesPerRow = Int(scaledTargetSize.width) * 4
     let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-    
+
     guard let context = CGContext(
       data: nil,
       width: Int(scaledTargetSize.width),
@@ -45,27 +45,27 @@ extension CGImage {
     ) else {
       return nil
     }
-    
+
     // Apply scale factor
     context.scaleBy(x: scale, y: scale)
-    
+
     // Calculate transform based on content mode
     let transform = calculateTransform(
       sourceSize: sourceSize,
       targetSize: targetSize,
       contentMode: contentMode
     )
-    
+
     // Apply transform and draw
     context.saveGState()
     context.translateBy(x: transform.translation.x, y: transform.translation.y)
     context.scaleBy(x: transform.scale.width, y: transform.scale.height)
     descriptor.draw(context)
     context.restoreGState()
-    
+
     return context.makeImage()
   }
-  
+
   private static func calculateTransform(
     sourceSize: CGSize,
     targetSize: CGSize,
@@ -80,7 +80,7 @@ extension CGImage {
           height: targetSize.height / sourceSize.height
         )
       )
-      
+
     case .aspectFit:
       let scale = min(
         targetSize.width / sourceSize.width,
@@ -97,7 +97,7 @@ extension CGImage {
         ),
         scale: CGSize(width: scale, height: scale)
       )
-      
+
     case .aspectFill:
       let scale = max(
         targetSize.width / sourceSize.width,
@@ -114,7 +114,7 @@ extension CGImage {
         ),
         scale: CGSize(width: scale, height: scale)
       )
-      
+
     case .center:
       return (
         translation: CGPoint(
@@ -123,7 +123,7 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .top:
       return (
         translation: CGPoint(
@@ -132,7 +132,7 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .bottom:
       return (
         translation: CGPoint(
@@ -141,7 +141,7 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .left:
       return (
         translation: CGPoint(
@@ -150,7 +150,7 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .right:
       return (
         translation: CGPoint(
@@ -159,13 +159,13 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .topLeft:
       return (
         translation: CGPoint(x: 0, y: targetSize.height - sourceSize.height),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .topRight:
       return (
         translation: CGPoint(
@@ -174,13 +174,13 @@ extension CGImage {
         ),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .bottomLeft:
       return (
         translation: CGPoint(x: 0, y: 0),
         scale: CGSize(width: 1, height: 1)
       )
-      
+
     case .bottomRight:
       return (
         translation: CGPoint(
