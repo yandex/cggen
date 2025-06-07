@@ -1,15 +1,116 @@
 import CoreGraphics
+import SwiftUI
 
-// MARK: - UIKit
+/// A type alias that resolves to the platform's native image type.
+/// - On iOS, tvOS, and watchOS: `UIImage`
+/// - On macOS: `NSImage`
+public typealias CGGenPlatformImage = __CGGenPlatformImage
+
+extension CGGenPlatformImage {
+  // MARK: @MainActor methods using default scale
+  
+  @MainActor
+  public convenience init(drawing: Drawing) {
+    self.init(drawing: drawing, scale: defaultScale)
+  }
+  
+  @MainActor
+  public convenience init(
+    drawing: Drawing,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit
+  ) {
+    self.init(drawing: drawing, size: size, contentMode: contentMode, scale: defaultScale)
+  }
+  
+  @MainActor
+  @inlinable
+  public static func draw(_ keyPath: KeyPath<Drawing.Type, Drawing>) -> CGGenPlatformImage {
+    return CGGenPlatformImage(drawing: Drawing.self[keyPath: keyPath], scale: defaultScale)
+  }
+  
+  @MainActor
+  @inlinable
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit
+  ) -> CGGenPlatformImage {
+    return CGGenPlatformImage(
+      drawing: Drawing.self[keyPath: keyPath],
+      size: size,
+      contentMode: contentMode,
+      scale: defaultScale
+    )
+  }
+  
+  // MARK: Methods with explicit scale
+  
+  @inlinable
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    scale: CGFloat
+  ) -> CGGenPlatformImage {
+    CGGenPlatformImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  }
+  
+  @inlinable
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat
+  ) -> CGGenPlatformImage {
+    CGGenPlatformImage(
+      drawing: Drawing.self[keyPath: keyPath],
+      size: size,
+      contentMode: contentMode,
+      scale: scale
+    )
+  }
+}
+
+extension Image {
+  @MainActor
+  public init(drawing: Drawing) {
+    self.init(drawing: drawing, scale: defaultScale)
+  }
+  
+  @MainActor
+  @inlinable
+  public static func draw(_ keyPath: KeyPath<Drawing.Type, Drawing>) -> Self {
+    Self(drawing: Drawing.self[keyPath: keyPath], scale: defaultScale)
+  }
+  
+  public init(drawing: Drawing, scale: CGFloat) {
+    let image = CGGenPlatformImage(drawing: drawing, scale: scale)
+    self.init(platformImage: image)
+  }
+  
+  @inlinable
+  public static func draw(
+    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    scale: CGFloat
+  ) -> Image {
+    Image(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  }
+}
 
 #if canImport(UIKit)
-import SwiftUI
 import UIKit
+
+public typealias __CGGenPlatformImage = UIImage
+
+@MainActor
+@usableFromInline
+internal var defaultScale: CGFloat {
+  UIScreen.main.scale
+}
 
 extension UIImage {
   public convenience init(
     drawing: Drawing,
-    scale: CGFloat = UIScreen.main.scale
+    scale: CGFloat
   ) {
     if let cgImage = CGImage.draw(from: drawing, scale: scale) {
       self.init(cgImage: cgImage, scale: scale, orientation: .up)
@@ -18,42 +119,46 @@ extension UIImage {
     }
   }
   
-  public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
-    scale: CGFloat = UIScreen.main.scale
-  ) -> UIImage {
-    UIImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  public convenience init(
+    drawing: Drawing,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat
+  ) {
+    if let cgImage = CGImage.draw(
+      from: drawing,
+      targetSize: size,
+      contentMode: contentMode,
+      scale: scale
+    ) {
+      self.init(cgImage: cgImage, scale: scale, orientation: .up)
+    } else {
+      self.init()
+    }
   }
 }
 
 extension Image {
-  public init(drawing: Drawing, scale: CGFloat = 1.0) {
-    let uiImage = UIImage(drawing: drawing, scale: scale)
-    self.init(uiImage: uiImage)
-  }
-  
-  public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
-    scale: CGFloat = 1.0
-  ) -> Image {
-    Image(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  public init(platformImage: UIImage) {
+    self.init(uiImage: platformImage)
   }
 }
 
-public typealias __CGGenPlatformImage = UIImage
-
-#endif // canImport(UIKit)
-
-// MARK: - AppKit
-
-#if canImport(AppKit) && !canImport(UIKit)
+#elseif canImport(AppKit)
 import AppKit
-import SwiftUI
+
+public typealias __CGGenPlatformImage = NSImage
+
+@MainActor
+@usableFromInline
+internal var defaultScale: CGFloat {
+  NSScreen.main?.backingScaleFactor ?? 1.0
+}
 
 extension NSImage {
   public convenience init(
     drawing: Drawing,
-    scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 1.0
+    scale: CGFloat
   ) {
     if let cgImage = CGImage.draw(from: drawing, scale: scale) {
       self.init(cgImage: cgImage, size: drawing.size)
@@ -62,31 +167,29 @@ extension NSImage {
     }
   }
   
-  public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
-    scale: CGFloat = NSScreen.main?.backingScaleFactor ?? 1.0
-  ) -> NSImage {
-    NSImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  public convenience init(
+    drawing: Drawing,
+    size: CGSize,
+    contentMode: DrawingContentMode = .aspectFit,
+    scale: CGFloat
+  ) {
+    if let cgImage = CGImage.draw(
+      from: drawing,
+      targetSize: size,
+      contentMode: contentMode,
+      scale: scale
+    ) {
+      self.init(cgImage: cgImage, size: size)
+    } else {
+      self.init()
+    }
   }
 }
 
 extension Image {
-  public init(drawing: Drawing, scale: CGFloat = 1.0) {
-    if let cgImage = CGImage.draw(from: drawing, scale: scale) {
-      self.init(cgImage, scale: scale, label: Text("Generated Image"))
-    } else {
-      self.init(systemName: "photo")
-    }
-  }
-  
-  public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
-    scale: CGFloat = 1.0
-  ) -> Image {
-    Image(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  public init(platformImage: NSImage) {
+    self.init(nsImage: platformImage)
   }
 }
 
-public typealias __CGGenPlatformImage = NSImage
-
-#endif // canImport(AppKit) && !canImport(UIKit)
+#endif

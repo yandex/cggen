@@ -4,7 +4,7 @@ import Foundation
 public struct Drawing: Sendable {
   public let size: CGSize
   public let draw: @Sendable (CGContext) -> Void
-  
+
   public init(size: CGSize, draw: @escaping @Sendable (CGContext) -> Void) {
     self.size = size
     self.draw = draw
@@ -18,21 +18,25 @@ import SwiftUI
 
 extension Drawing: View {
   public var body: some View {
-    Canvas { context, size in
-      context.withCGContext { cgContext in
-        draw(cgContext)
+    if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
+      Canvas { context, _ in
+        context.withCGContext { cgContext in
+          draw(cgContext)
+        }
       }
+      .frame(width: size.width, height: size.height)
+    } else {
+      Image(drawing: self)
+        .renderingMode(.original)
     }
-    .frame(width: size.width, height: size.height)
   }
 }
 #endif
 
-
 extension CGImage {
   public static func draw(
     from descriptor: Drawing,
-    scale: CGFloat = 1.0,
+    scale: CGFloat,
     colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
   ) -> CGImage? {
     let size = descriptor.size

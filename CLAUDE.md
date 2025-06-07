@@ -124,3 +124,4 @@ The migration from legacy parser infrastructure to swift-parsing is now complete
 
 ## Project Memories
 - Consider updating your project memory before finishing the task
+- Launch xcodebuild with -quiet option if not strongly necessary otherwise

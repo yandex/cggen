@@ -54,7 +54,10 @@ import libcggen
     let generatedCode = try String(contentsOf: swiftFile)
     let codeWithoutImport = generatedCode
       .replacingOccurrences(of: "import CGGenRuntimeSupport\n", with: "")
-      .replacingOccurrences(of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n", with: "")
+      .replacingOccurrences(
+        of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n",
+        with: ""
+      )
 
     // Create a test program that imports and uses the generated code
     let testProgram = """
@@ -92,7 +95,7 @@ import libcggen
     public struct Drawing {
       public let size: CGSize
       public let draw: (CGContext) -> Void
-      
+
       public init(size: CGSize, draw: @escaping (CGContext) -> Void) {
         self.size = size
         self.draw = draw

@@ -20,7 +20,7 @@ extension Drawing {
   )
 }
 
-fileprivate func plugindemoDrawCircleImage(in context: CGContext) {
+private func plugindemoDrawCircleImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
@@ -33,7 +33,7 @@ fileprivate func plugindemoDrawCircleImage(in context: CGContext) {
   }
 }
 
-fileprivate func plugindemoDrawSquareImage(in context: CGContext) {
+private func plugindemoDrawSquareImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
@@ -46,7 +46,7 @@ fileprivate func plugindemoDrawSquareImage(in context: CGContext) {
   }
 }
 
-fileprivate func plugindemoDrawStarImage(in context: CGContext) {
+private func plugindemoDrawStarImage(in context: CGContext) {
   mergedBytecodes.withUnsafeBufferPointer { buffer in
     runMergedBytecode(
       context,
