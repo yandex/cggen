@@ -95,7 +95,7 @@ extension SwiftCGGenerator {
       "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
 
     return """
-    fileprivate func \(functionName)(in context: CGContext) {
+    private func \(functionName)(in context: CGContext) {
       mergedBytecodes.withUnsafeBufferPointer { buffer in
         runMergedBytecode(
           context,
