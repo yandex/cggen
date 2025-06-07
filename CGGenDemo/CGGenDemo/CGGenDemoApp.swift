@@ -10,30 +10,41 @@ struct CGGenDemoApp: App {
 }
 
 struct ContentView: View {
-  enum Tab { case swiftUI, platform }
-  @State private var selectedTab = Tab.swiftUI
-
   var body: some View {
-    TabView(selection: $selectedTab) {
+    TabView {
       NavigationStack {
-        SwiftUIGalleryView()
+        SwiftUIDemo()
       }
       .tabItem {
         Label("SwiftUI", systemImage: "swift")
       }
-      .tag(Tab.swiftUI)
+      .tag(0)
 
+      #if canImport(UIKit)
       NavigationStack {
-        PlatformGalleryView()
+        UIKitDemo()
       }
       .tabItem {
-        #if os(iOS)
         Label("UIKit", systemImage: "uiwindow.split.2x1")
-        #else
-        Label("AppKit", systemImage: "macwindow")
-        #endif
       }
-      .tag(Tab.platform)
+      .tag(1)
+      #elseif canImport(AppKit)
+      NavigationStack {
+        AppKitDemo()
+      }
+      .tabItem {
+        Label("AppKit", systemImage: "macwindow")
+      }
+      .tag(1)
+      #endif
+
+      NavigationStack {
+        PlaygroundView()
+      }
+      .tabItem {
+        Label("Playground", systemImage: "paintbrush.pointed")
+      }
+      .tag(2)
     }
   }
 }
