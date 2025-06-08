@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="50px" height="50px" viewBox="0 0 50 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <defs>
+        <path id="p" d="m2 15 l2 -10 l3 10 l4 -10 l5 10 l6 -10"/>
+    </defs>
+    <g stroke="indianred" stroke-linejoin="miter" stroke-width="3" fill="none">
+        <use xlink:href="#p" stroke-miterlimit="2.3"/>
+        <use xlink:href="#p" x="25" stroke-miterlimit="3"/>
+        <use xlink:href="#p" y="25" stroke-miterlimit="4"/>
+        <use xlink:href="#p" x="25" y="25" stroke-miterlimit="5"/>
+    </g>
+</svg>

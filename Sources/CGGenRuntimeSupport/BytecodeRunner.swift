@@ -383,6 +383,8 @@ public struct BytecodeRunner {
         try exec.fillNone(read())
       case .setGlobalAlphaToFillAlpha:
         try exec.setGlobalAlphaToFillAlpha(read())
+      case .miterLimit:
+        try exec.miterLimit(read())
       }
     }
   }
@@ -772,6 +774,10 @@ private struct CommandExecution {
   func endTransparencyLayer(_ args: DrawCommand.EndTransparencyLayerArgs) {
     _ = args
     cg.endTransparencyLayer()
+  }
+
+  mutating func miterLimit(_ args: DrawCommand.MiterLimitArgs) {
+    cg.setMiterLimit(args)
   }
 }
 

@@ -154,6 +154,7 @@ public enum SVG: Equatable, Sendable {
     public var strokeDashArray: [Length]?
     public var strokeDashOffset: Length?
     public var strokeOpacity: Float?
+    public var strokeMiterlimit: Float?
     public var opacity: SVG.Float?
     public var stopColor: SVG.Color?
     public var stopOpacity: SVG.Float?
@@ -174,6 +175,7 @@ public enum SVG: Equatable, Sendable {
       strokeDashArray: [Length]?,
       strokeDashOffset: Length?,
       strokeOpacity: Float?,
+      strokeMiterlimit: Float?,
       opacity: Float?,
       stopColor: SVG.Color?,
       stopOpacity: SVG.Float?,
@@ -193,6 +195,7 @@ public enum SVG: Equatable, Sendable {
       self.strokeDashArray = strokeDashArray
       self.strokeDashOffset = strokeDashOffset
       self.strokeOpacity = strokeOpacity
+      self.strokeMiterlimit = strokeMiterlimit
       self.opacity = opacity
       self.stopColor = stopColor
       self.stopOpacity = stopOpacity

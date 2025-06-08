@@ -73,6 +73,7 @@ enum DrawStep: Sendable {
   case lineWidth(CGFloat)
   case lineJoinStyle(CGLineJoin)
   case lineCapStyle(CGLineCap)
+  case miterLimit(CGFloat)
 
   case colorRenderingIntent(CGColorRenderingIntent)
   case globalAlpha(CGFloat)

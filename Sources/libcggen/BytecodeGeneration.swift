@@ -341,8 +341,8 @@ private func generateDrawSteps(
       encode(.flatness, DrawCommand.FlatnessArgs.self, f, >>)
     case let .lineWidth(width):
       encode(.lineWidth, DrawCommand.LineWidthArgs.self, width, >>)
-    case let .lineJoinStyle(lineJoin):
-      encode(.lineJoinStyle, DrawCommand.LineJoinStyleArgs.self, lineJoin, >>)
+    case let .lineJoinStyle(style):
+      encode(.lineJoinStyle, DrawCommand.LineJoinStyleArgs.self, style, >>)
     case let .lineCapStyle(cap):
       encode(.lineCapStyle, DrawCommand.LineCapStyleArgs.self, cap, >>)
     case let .colorRenderingIntent(intent):
@@ -431,6 +431,8 @@ private func generateDrawSteps(
       generateDrawSteps(steps: steps, context: context, bytecode: &bytecode)
     case .fillColorSpace, .strokeColorSpace:
       fatalError("Not implemented")
+    case let .miterLimit(limit):
+      encode(.miterLimit, DrawCommand.MiterLimitArgs.self, limit, >>)
     }
   }
 }

@@ -281,6 +281,7 @@ public enum SVGParser {
     dashArray(.strokeDasharray)
     len(.strokeDashoffset)
     num(.strokeOpacity)
+    num(.strokeMiterlimit)
     num(.opacity)
     color(.stopColor)
     num(.stopOpacity)
@@ -980,6 +981,7 @@ extension SVG.PresentationAttributes {
     strokeDashArray: nil,
     strokeDashOffset: nil,
     strokeOpacity: nil,
+    strokeMiterlimit: nil,
     opacity: nil,
     stopColor: nil,
     stopOpacity: nil,

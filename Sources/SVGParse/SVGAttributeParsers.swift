@@ -217,6 +217,9 @@ public enum SVGAttributeParsers {
     rgbcolor.map(SVG.Paint.rgb) |
     funciri.map(SVG.Paint.funciri(id:))
 
+  // Add miter limit parser
+  static let miterLimit = number
+
   // coordinate comma-wsp coordinate
   // | coordinate negative-coordinate
   static let coordinatePair = Parse {
