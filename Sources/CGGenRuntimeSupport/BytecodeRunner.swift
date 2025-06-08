@@ -777,7 +777,6 @@ private struct CommandExecution {
   }
 
   mutating func miterLimit(_ args: DrawCommand.MiterLimitArgs) {
-    _ = args
     cg.setMiterLimit(args)
   }
 }
