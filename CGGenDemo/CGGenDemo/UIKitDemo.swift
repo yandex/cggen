@@ -3,235 +3,302 @@ import CGGenRuntimeSupport
 import SwiftUI
 import UIKit
 
+// Example model for table view
+struct UIKitExample {
+  var code: String
+  var createView: () -> UIView
+}
+
 // UIKit View Controller demonstrating cggen API usage
 class UIKitDemoViewController: UIViewController {
-  private let scrollView = UIScrollView()
-  private var contentHeight: CGFloat = 0
+  private let tableView = UITableView(frame: .zero, style: .grouped)
+  private var examples: [(category: String, items: [UIKitExample])] = []
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    setupExamples()
     setupViews()
-    addDemoSections()
   }
 
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-    scrollView.frame = view.bounds
-    scrollView.contentSize = CGSize(
-      width: view.bounds.width,
-      height: contentHeight + 20
-    )
+  private func setupExamples() {
+    examples = [
+      (
+        category: "UIImage Creation",
+        items: [
+          UIKitExample(
+            code: "UIImage.draw(\\.star)",
+            createView: {
+              let imageView = UIImageView(image: UIImage.draw(\.star))
+              imageView.contentMode = .scaleAspectFit
+              imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+              return imageView
+            }
+          ),
+          UIKitExample(
+            code: "UIImage(drawing: .heart)",
+            createView: {
+              let imageView = UIImageView(image: UIImage(drawing: .heart))
+              imageView.contentMode = .scaleAspectFit
+              imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+              return imageView
+            }
+          ),
+          UIKitExample(
+            code: "UIImage.draw(\\.rocket, scale: 3.0)",
+            createView: {
+              let imageView = UIImageView(image: UIImage.draw(
+                \.rocket,
+                scale: 3.0
+              ))
+              imageView.contentMode = .scaleAspectFit
+              imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
+              return imageView
+            }
+          ),
+        ]
+      ),
+      (
+        category: "Sizing",
+        items: [
+          UIKitExample(
+            code: "UIImage.draw(\\.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFit)",
+            createView: {
+              let imageView = UIImageView(
+                image: UIImage.draw(
+                  \.mountain,
+                  size: CGSize(width: 60, height: 40),
+                  contentMode: .aspectFit
+                )
+              )
+              imageView.contentMode = .scaleAspectFit
+              imageView.backgroundColor = .systemGray6
+              imageView.layer.borderColor = UIColor.systemGray4.cgColor
+              imageView.layer.borderWidth = 1
+              imageView.frame = CGRect(x: 0, y: 0, width: 60, height: 40)
+              return imageView
+            }
+          ),
+          UIKitExample(
+            code: "UIImage.draw(\\.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFill)",
+            createView: {
+              let imageView = UIImageView(
+                image: UIImage.draw(
+                  \.mountain,
+                  size: CGSize(width: 60, height: 40),
+                  contentMode: .aspectFill
+                )
+              )
+              imageView.contentMode = .scaleAspectFit
+              imageView.backgroundColor = .systemGray6
+              imageView.layer.borderColor = UIColor.systemGray4.cgColor
+              imageView.layer.borderWidth = 1
+              imageView.frame = CGRect(x: 0, y: 0, width: 60, height: 40)
+              return imageView
+            }
+          ),
+        ]
+      ),
+      (
+        category: "UIButton Integration",
+        items: [
+          UIKitExample(
+            code: "button.setImage(UIImage.draw(\\.gear), for: .normal)",
+            createView: {
+              let button = UIButton(type: .system)
+              button.setImage(UIImage.draw(\.gear), for: .normal)
+              button.setTitle(" Settings", for: .normal)
+              button.frame = CGRect(x: 0, y: 0, width: 100, height: 44)
+              return button
+            }
+          ),
+          UIKitExample(
+            code: "// Tinted button\nbutton.setImage(UIImage.draw(\\.heart), for: .normal)\nbutton.tintColor = .systemRed",
+            createView: {
+              let button = UIButton(type: .system)
+              button.setImage(UIImage.draw(\.heart), for: .normal)
+              button.tintColor = .systemRed
+              button.frame = CGRect(x: 0, y: 0, width: 44, height: 44)
+              return button
+            }
+          ),
+        ]
+      ),
+      (
+        category: "UIImageView Content Modes",
+        items: [
+          UIKitExample(
+            code: "imageView.image = UIImage(drawing: .rocket)\nimageView.contentMode = .scaleAspectFit",
+            createView: {
+              let imageView = UIImageView(image: UIImage(drawing: .rocket))
+              imageView.contentMode = .scaleAspectFit
+              imageView.backgroundColor = .systemGray6
+              imageView.layer.borderColor = UIColor.systemGray4.cgColor
+              imageView.layer.borderWidth = 1
+              imageView.frame = CGRect(x: 0, y: 0, width: 60, height: 60)
+              return imageView
+            }
+          ),
+          UIKitExample(
+            code: "imageView.image = UIImage(drawing: .star)\nimageView.contentMode = .center",
+            createView: {
+              let imageView = UIImageView(image: UIImage(drawing: .star))
+              imageView.contentMode = .center
+              imageView.backgroundColor = .systemGray6
+              imageView.layer.borderColor = UIColor.systemGray4.cgColor
+              imageView.layer.borderWidth = 1
+              imageView.frame = CGRect(x: 0, y: 0, width: 60, height: 60)
+              return imageView
+            }
+          ),
+        ]
+      ),
+    ]
   }
 
   private func setupViews() {
     view.backgroundColor = .systemBackground
-    view.addSubview(scrollView)
+
+    tableView.delegate = self
+    tableView.dataSource = self
+    tableView.register(
+      UIKitExampleCell.self,
+      forCellReuseIdentifier: "ExampleCell"
+    )
+    tableView.rowHeight = UITableView.automaticDimension
+    tableView.estimatedRowHeight = 100
+
+    view.addSubview(tableView)
   }
 
-  private func addDemoSections() {
-    var yOffset: CGFloat = 20
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    tableView.frame = view.bounds
+  }
+}
 
-    // Section 1: Basic UIImage creation with KeyPath syntax
-    yOffset = addSection(
-      title: "UIImage Creation - KeyPath Syntax",
-      description: "Most concise syntax using KeyPath",
-      yOffset: yOffset
-    ) { containerView in
-      let imageView1 = UIImageView(image: UIImage.draw(\.star))
-      imageView1.frame = CGRect(x: 16, y: 40, width: 16, height: 16)
-      imageView1.contentMode = .scaleAspectFit
-      containerView.addSubview(imageView1)
+// MARK: - UITableView DataSource & Delegate
 
-      let imageView2 = UIImageView(image: UIImage.draw(\.star, scale: 3.0))
-      imageView2.frame = CGRect(x: 40, y: 40, width: 16, height: 16)
-      imageView2.contentMode = .scaleAspectFit
-      containerView.addSubview(imageView2)
-
-      return 70
-    }
-
-    // Section 2: Direct initialization
-    yOffset = addSection(
-      title: "Direct UIImage Initialization",
-      description: "Create images with Drawing instances",
-      yOffset: yOffset
-    ) { containerView in
-      let imageView1 = UIImageView(image: UIImage(drawing: .heart))
-      imageView1.frame = CGRect(x: 16, y: 40, width: 16, height: 16)
-      imageView1.contentMode = .scaleAspectFit
-      containerView.addSubview(imageView1)
-
-      let imageView2 = UIImageView(image: UIImage(drawing: .rocket, scale: 2.0))
-      imageView2.frame = CGRect(x: 40, y: 40, width: 24, height: 24)
-      imageView2.contentMode = .scaleAspectFit
-      containerView.addSubview(imageView2)
-
-      return 80
-    }
-
-    // Section 3: Content modes
-    yOffset = addSection(
-      title: "Content Modes with Target Size",
-      description: "Generate images with specific size and content mode",
-      yOffset: yOffset
-    ) { containerView in
-      let fitImage = UIImage.draw(
-        \.mountain,
-        size: CGSize(width: 40, height: 30),
-        contentMode: .aspectFit
-      )
-
-      let fillImage = UIImage.draw(
-        \.mountain,
-        size: CGSize(width: 40, height: 30),
-        contentMode: .aspectFill
-      )
-
-      let fitView = UIImageView(image: fitImage)
-      fitView.frame = CGRect(x: 16, y: 40, width: 40, height: 30)
-      fitView.backgroundColor = .systemGray6
-      fitView.layer.borderColor = UIColor.systemGray4.cgColor
-      fitView.layer.borderWidth = 1
-      containerView.addSubview(fitView)
-
-      let fitLabel = UILabel()
-      fitLabel.text = "Aspect Fit"
-      fitLabel.font = .preferredFont(forTextStyle: .caption2)
-      fitLabel.textColor = .secondaryLabel
-      fitLabel.frame = CGRect(x: 16, y: 74, width: 40, height: 16)
-      fitLabel.textAlignment = .center
-      containerView.addSubview(fitLabel)
-
-      let fillView = UIImageView(image: fillImage)
-      fillView.frame = CGRect(x: 66, y: 40, width: 40, height: 30)
-      fillView.backgroundColor = .systemGray6
-      fillView.layer.borderColor = UIColor.systemGray4.cgColor
-      fillView.layer.borderWidth = 1
-      containerView.addSubview(fillView)
-
-      let fillLabel = UILabel()
-      fillLabel.text = "Aspect Fill"
-      fillLabel.font = .preferredFont(forTextStyle: .caption2)
-      fillLabel.textColor = .secondaryLabel
-      fillLabel.frame = CGRect(x: 66, y: 74, width: 40, height: 16)
-      fillLabel.textAlignment = .center
-      containerView.addSubview(fillLabel)
-
-      return 90
-    }
-
-    // Section 4: In UIButton
-    yOffset = addSection(
-      title: "Using in UIButton",
-      description: "Set button images easily",
-      yOffset: yOffset
-    ) { containerView in
-      let button1 = UIButton(type: .system)
-      button1.setImage(UIImage.draw(\.gear), for: .normal)
-      button1.setTitle(" Settings", for: .normal)
-      button1.frame = CGRect(x: 16, y: 40, width: 80, height: 30)
-      containerView.addSubview(button1)
-
-      let button2 = UIButton(type: .system)
-      button2.setImage(UIImage.draw(\.heart), for: .normal)
-      button2.tintColor = .systemRed
-      button2.frame = CGRect(x: 106, y: 40, width: 30, height: 30)
-      containerView.addSubview(button2)
-
-      return 80
-    }
-
-    // Section 5: UIImageView with different content modes
-    yOffset = addSection(
-      title: "UIImageView Content Modes",
-      description: "Standard UIKit content mode support",
-      yOffset: yOffset
-    ) { containerView in
-      let imageView1 = UIImageView(image: UIImage(drawing: .rocket))
-      imageView1.contentMode = .scaleAspectFit
-      imageView1.backgroundColor = .systemGray6
-      imageView1.layer.borderColor = UIColor.systemGray4.cgColor
-      imageView1.layer.borderWidth = 1
-      imageView1.frame = CGRect(x: 16, y: 40, width: 40, height: 40)
-      containerView.addSubview(imageView1)
-
-      let label1 = UILabel()
-      label1.text = ".scaleAspectFit"
-      label1.font = .preferredFont(forTextStyle: .caption2)
-      label1.textColor = .secondaryLabel
-      label1.frame = CGRect(x: 16, y: 84, width: 40, height: 32)
-      label1.textAlignment = .center
-      label1.numberOfLines = 2
-      containerView.addSubview(label1)
-
-      let imageView2 = UIImageView(image: UIImage(drawing: .rocket))
-      imageView2.contentMode = .center
-      imageView2.backgroundColor = .systemGray6
-      imageView2.layer.borderColor = UIColor.systemGray4.cgColor
-      imageView2.layer.borderWidth = 1
-      imageView2.frame = CGRect(x: 66, y: 40, width: 40, height: 40)
-      containerView.addSubview(imageView2)
-
-      let label2 = UILabel()
-      label2.text = ".center"
-      label2.font = .preferredFont(forTextStyle: .caption2)
-      label2.textColor = .secondaryLabel
-      label2.frame = CGRect(x: 66, y: 84, width: 40, height: 16)
-      label2.textAlignment = .center
-      containerView.addSubview(label2)
-
-      return 120
-    }
-
-    contentHeight = yOffset
+extension UIKitDemoViewController: UITableViewDataSource, UITableViewDelegate {
+  func numberOfSections(in _: UITableView) -> Int {
+    examples.count
   }
 
-  // Helper method for creating sections
-  private func addSection(
-    title: String,
-    description: String,
-    yOffset: CGFloat,
-    content: (UIView) -> CGFloat
-  ) -> CGFloat {
-    let containerView = UIView()
-    containerView.backgroundColor = .systemGray6
-    containerView.layer.cornerRadius = 8
+  func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
+    examples[section].items.count
+  }
 
-    let titleLabel = UILabel()
-    titleLabel.text = title
-    titleLabel.font = .preferredFont(forTextStyle: .headline)
-    titleLabel.frame = CGRect(
-      x: 16,
+  func tableView(
+    _: UITableView,
+    titleForHeaderInSection section: Int
+  ) -> String? {
+    examples[section].category
+  }
+
+  func tableView(
+    _ tableView: UITableView,
+    cellForRowAt indexPath: IndexPath
+  ) -> UITableViewCell {
+    let cell = tableView.dequeueReusableCell(
+      withIdentifier: "ExampleCell",
+      for: indexPath
+    ) as! UIKitExampleCell
+    let example = examples[indexPath.section].items[indexPath.row]
+    cell.configure(with: example)
+    return cell
+  }
+}
+
+// Custom cell for displaying examples
+class UIKitExampleCell: UITableViewCell {
+  private let codeLabel = UILabel()
+  private let containerView = UIView()
+  private var exampleView: UIView?
+
+  override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+    super.init(style: style, reuseIdentifier: reuseIdentifier)
+    setupCell()
+  }
+
+  @available(*, unavailable)
+  required init?(coder _: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  private func setupCell() {
+    selectionStyle = .none
+
+    codeLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
+    codeLabel.textColor = .label
+    codeLabel.numberOfLines = 0
+
+    contentView.addSubview(codeLabel)
+    contentView.addSubview(containerView)
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+
+    let padding: CGFloat = 16
+    let spacing: CGFloat = 8
+
+    // Layout code label
+    let labelSize = codeLabel.sizeThatFits(CGSize(
+      width: contentView.bounds.width - padding * 2,
+      height: .greatestFiniteMagnitude
+    ))
+    codeLabel.frame = CGRect(
+      x: padding,
       y: 12,
-      width: view.bounds.width - 64,
-      height: 22
-    )
-    containerView.addSubview(titleLabel)
-
-    let descLabel = UILabel()
-    descLabel.text = description
-    descLabel.font = .preferredFont(forTextStyle: .caption1)
-    descLabel.textColor = .secondaryLabel
-    descLabel.frame = CGRect(
-      x: 16,
-      y: 32,
-      width: view.bounds.width - 64,
-      height: 16
-    )
-    containerView.addSubview(descLabel)
-
-    let contentHeight = content(containerView)
-
-    containerView.frame = CGRect(
-      x: 20,
-      y: yOffset,
-      width: view.bounds.width - 40,
-      height: contentHeight
+      width: contentView.bounds.width - padding * 2,
+      height: labelSize.height
     )
 
-    scrollView.addSubview(containerView)
+    // Layout container view
+    let containerY = codeLabel.frame.maxY + spacing
+    if let exampleView = exampleView {
+      containerView.frame = CGRect(
+        x: padding,
+        y: containerY,
+        width: exampleView.frame.width,
+        height: exampleView.frame.height
+      )
+      exampleView.frame = containerView.bounds
+    } else {
+      containerView.frame = CGRect(
+        x: padding,
+        y: containerY,
+        width: 100,
+        height: 44
+      )
+    }
+  }
 
-    return yOffset + contentHeight + 15
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    let padding: CGFloat = 16
+    let spacing: CGFloat = 8
+
+    let labelSize = codeLabel.sizeThatFits(CGSize(
+      width: size.width - padding * 2,
+      height: .greatestFiniteMagnitude
+    ))
+    let exampleHeight = exampleView?.frame.height ?? 44
+
+    let totalHeight = 12 + labelSize.height + spacing + exampleHeight + 12
+    return CGSize(width: size.width, height: totalHeight)
+  }
+
+  func configure(with example: UIKitExample) {
+    codeLabel.text = example.code
+
+    // Remove old views
+    exampleView?.removeFromSuperview()
+
+    // Add new view
+    let view = example.createView()
+    containerView.addSubview(view)
+    exampleView = view
+
+    setNeedsLayout()
   }
 }
 

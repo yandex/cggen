@@ -7,8 +7,6 @@ struct PlaygroundView: View {
   @State private var targetHeight: CGFloat = 100
   @State private var contentMode: DrawingContentMode = .aspectFit
   @State private var scale: CGFloat = 2.0
-  @State private var showBounds = true
-  @State private var backgroundColor = Color.white
 
   enum DrawingType: String, CaseIterable {
     case star = "Star"
@@ -30,26 +28,17 @@ struct PlaygroundView: View {
 
   var body: some View {
     ScrollView {
-      VStack(spacing: 30) {
-        Text("Interactive Playground")
-          .font(.largeTitle)
-          .padding(.top)
-
+      VStack(spacing: 20) {
         // Preview area
-        VStack {
-          Text("Preview")
-            .font(.headline)
-
+        VStack(spacing: 8) {
           ZStack {
             Rectangle()
-              .fill(backgroundColor)
+              .fill(Color.white)
               .frame(width: targetWidth, height: targetHeight)
-
-            if showBounds {
-              Rectangle()
-                .stroke(Color.gray, style: StrokeStyle(lineWidth: 1, dash: [5]))
-                .frame(width: targetWidth, height: targetHeight)
-            }
+              .overlay(
+                Rectangle()
+                  .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+              )
 
             // Show the drawing with current settings
             generateImage()
@@ -57,138 +46,133 @@ struct PlaygroundView: View {
               .renderingMode(.original)
               .frame(width: targetWidth, height: targetHeight)
           }
-          .frame(maxWidth: 300, maxHeight: 300)
+          .frame(maxWidth: 200, maxHeight: 200)
 
-          HStack {
-            Text(
-              "Original: \(Int(selectedDrawing.drawing.size.width))×\(Int(selectedDrawing.drawing.size.height))"
-            )
-            Text("•")
-            Text("Target: \(Int(targetWidth))×\(Int(targetHeight))")
-          }
-          .font(.caption)
+          Text(
+            "Original: \(Int(selectedDrawing.drawing.size.width))×\(Int(selectedDrawing.drawing.size.height))"
+          )
+          .font(.caption2)
           .foregroundColor(.secondary)
         }
         .padding()
         .background(Color.gray.opacity(0.05))
         .cornerRadius(10)
 
-        // Controls
-        VStack(spacing: 20) {
-          // Drawing picker
-          VStack(alignment: .leading) {
-            Text("Drawing")
-              .font(.headline)
-            Picker("Drawing", selection: $selectedDrawing) {
+        // Compact controls
+        VStack(spacing: 16) {
+          // Drawing picker inline with label
+          HStack {
+            Text("Image:")
+              .font(.subheadline)
+              .frame(width: 60, alignment: .leading)
+
+            Picker("", selection: $selectedDrawing) {
               ForEach(DrawingType.allCases, id: \.self) { type in
                 Text(type.rawValue).tag(type)
               }
             }
             .pickerStyle(.segmented)
+            .labelsHidden()
           }
 
-          // Size controls
-          VStack(alignment: .leading) {
-            Text("Target Size")
-              .font(.headline)
+          // Size controls - both sliders on one line
+          HStack(spacing: 12) {
+            Text("W:")
+              .font(.caption)
+            Slider(value: $targetWidth, in: 20...300, step: 10)
+              .frame(maxWidth: 100)
+            Text("\(Int(targetWidth))")
+              .font(.caption)
+              .monospacedDigit()
+              .frame(width: 30)
 
-            HStack {
-              Text("Width:")
-              Slider(value: $targetWidth, in: 20...300, step: 10)
-              Text("\(Int(targetWidth))pt")
-                .monospacedDigit()
-                .frame(width: 50)
-            }
+            Text("H:")
+              .font(.caption)
+            Slider(value: $targetHeight, in: 20...300, step: 10)
+              .frame(maxWidth: 100)
+            Text("\(Int(targetHeight))")
+              .font(.caption)
+              .monospacedDigit()
+              .frame(width: 30)
 
-            HStack {
-              Text("Height:")
-              Slider(value: $targetHeight, in: 20...300, step: 10)
-              Text("\(Int(targetHeight))pt")
-                .monospacedDigit()
-                .frame(width: 50)
-            }
-
-            Button("Reset to Square") {
+            Button("◻") {
               let size = max(targetWidth, targetHeight)
               targetWidth = size
               targetHeight = size
             }
-            .font(.caption)
+            .font(.system(size: 18))
+            .help("Make square")
           }
 
-          // Content mode
-          VStack(alignment: .leading) {
+          // Content mode - two rows
+          VStack(alignment: .leading, spacing: 6) {
             Text("Content Mode")
-              .font(.headline)
+              .font(.subheadline)
 
-            VStack(spacing: 10) {
-              HStack {
-                contentModeButton(.scaleToFill, "Scale to Fill")
-                contentModeButton(.aspectFit, "Aspect Fit")
+            // Main content modes
+            HStack(spacing: 4) {
+              ForEach([
+                ("Scale to Fill", DrawingContentMode.scaleToFill),
+                ("Aspect Fit", .aspectFit),
+                ("Aspect Fill", .aspectFill),
+                ("Center", .center),
+              ], id: \.0) { label, mode in
+                Button(action: { contentMode = mode }) {
+                  Text(label)
+                    .font(.caption2)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(
+                      contentMode == mode ? Color.accentColor : Color.gray
+                        .opacity(0.2)
+                    )
+                    .foregroundColor(contentMode == mode ? .white : .primary)
+                    .cornerRadius(4)
+                }
               }
-              HStack {
-                contentModeButton(.aspectFill, "Aspect Fill")
-                contentModeButton(.center, "Center")
-              }
-              HStack {
-                contentModeButton(.top, "Top")
-                contentModeButton(.bottom, "Bottom")
-              }
-              HStack {
-                contentModeButton(.left, "Left")
-                contentModeButton(.right, "Right")
-              }
-              HStack {
-                contentModeButton(.topLeft, "Top Left")
-                contentModeButton(.topRight, "Top Right")
-              }
-              HStack {
-                contentModeButton(.bottomLeft, "Bottom Left")
-                contentModeButton(.bottomRight, "Bottom Right")
+            }
+
+            // Directional modes with arrows
+            HStack(spacing: 4) {
+              ForEach([
+                ("↑", DrawingContentMode.top),
+                ("↓", .bottom),
+                ("←", .left),
+                ("→", .right),
+                ("↖", .topLeft),
+                ("↗", .topRight),
+                ("↙", .bottomLeft),
+                ("↘", .bottomRight),
+              ], id: \.0) { label, mode in
+                Button(action: { contentMode = mode }) {
+                  Text(label)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 6)
+                    .background(
+                      contentMode == mode ? Color.accentColor : Color.gray
+                        .opacity(0.2)
+                    )
+                    .foregroundColor(contentMode == mode ? .white : .primary)
+                    .cornerRadius(4)
+                }
               }
             }
           }
 
-          // Scale factor
-          VStack(alignment: .leading) {
-            Text("Scale Factor")
-              .font(.headline)
-            HStack {
-              Slider(value: $scale, in: 0.5...4.0, step: 0.5)
-              Text("\(scale, specifier: "%.1f")x")
-                .monospacedDigit()
-                .frame(width: 50)
-            }
+          // Scale factor inline
+          HStack {
+            Text("Scale:")
+              .font(.subheadline)
+              .frame(width: 60, alignment: .leading)
+
+            Slider(value: $scale, in: 0.5...4.0, step: 0.5)
+
+            Text("\(scale, specifier: "%.1f")x")
+              .font(.caption)
+              .monospacedDigit()
+              .frame(width: 35)
           }
-
-          // Visual options
-          VStack(alignment: .leading) {
-            Text("Visual Options")
-              .font(.headline)
-
-            Toggle("Show Bounds", isOn: $showBounds)
-
-            HStack {
-              Text("Background:")
-              Spacer()
-              ColorPicker("", selection: $backgroundColor)
-                .labelsHidden()
-            }
-          }
-        }
-        .padding()
-
-        // Code example
-        VStack(alignment: .leading) {
-          Text("Generated Code")
-            .font(.headline)
-
-          Text(generateCodeExample())
-            .font(.system(.caption, design: .monospaced))
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
-            .textSelection(.enabled)
         }
         .padding(.horizontal)
       }
@@ -198,24 +182,6 @@ struct PlaygroundView: View {
     #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
     #endif
-  }
-
-  private func contentModeButton(
-    _ mode: DrawingContentMode,
-    _ title: String
-  ) -> some View {
-    Button(action: { contentMode = mode }) {
-      Text(title)
-        .font(.caption)
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(
-          contentMode == mode ? Color.accentColor : Color.gray
-            .opacity(0.2)
-        )
-        .foregroundColor(contentMode == mode ? .white : .primary)
-        .cornerRadius(6)
-    }
   }
 
   private func generateImage() -> Image {
@@ -236,68 +202,6 @@ struct PlaygroundView: View {
     )
     return Image(nsImage: platformImage)
     #endif
-  }
-
-  private func generateCodeExample() -> String {
-    let sizeStr = targetWidth == targetHeight
-      ? "\(Int(targetWidth))"
-      : "width: \(Int(targetWidth)), height: \(Int(targetHeight))"
-
-    #if canImport(UIKit)
-    return """
-    // UIKit
-    let image = UIImage(
-      drawing: .\(selectedDrawing.rawValue.lowercased()),
-      size: CGSize(\(sizeStr)),
-      contentMode: .\(contentModeString),
-      scale: \(scale)
-    )
-
-    // Or using KeyPath syntax
-    let image = UIImage.draw(
-      \\.\(selectedDrawing.rawValue.lowercased()),
-      size: CGSize(\(sizeStr)),
-      contentMode: .\(contentModeString),
-      scale: \(scale)
-    )
-    """
-    #else
-    return """
-    // AppKit
-    let image = NSImage(
-      drawing: .\(selectedDrawing.rawValue.lowercased()),
-      size: CGSize(\(sizeStr)),
-      contentMode: .\(contentModeString),
-      scale: \(scale)
-    )
-
-    // Or using KeyPath syntax
-    let image = NSImage.draw(
-      \\.\(selectedDrawing.rawValue.lowercased()),
-      size: CGSize(\(sizeStr)),
-      contentMode: .\(contentModeString),
-      scale: \(scale)
-    )
-    """
-    #endif
-  }
-
-  private var contentModeString: String {
-    switch contentMode {
-    case .scaleToFill: return "scaleToFill"
-    case .aspectFit: return "aspectFit"
-    case .aspectFill: return "aspectFill"
-    case .center: return "center"
-    case .top: return "top"
-    case .bottom: return "bottom"
-    case .left: return "left"
-    case .right: return "right"
-    case .topLeft: return "topLeft"
-    case .topRight: return "topRight"
-    case .bottomLeft: return "bottomLeft"
-    case .bottomRight: return "bottomRight"
-    @unknown default: return "aspectFit"
-    }
   }
 }
 

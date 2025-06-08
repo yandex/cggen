@@ -9,6 +9,9 @@ enum DemoTab: String, CaseIterable, ExpressibleByArgument {
 
 struct CLIArgs: ParsableArguments {
   @Option var tab: DemoTab = .swiftui
+
+  // Capture all unrecognized arguments to prevent errors
+  @Argument(parsing: .allUnrecognized) var unrecognized: [String] = []
 }
 
 @main

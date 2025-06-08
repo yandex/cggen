@@ -1,28 +1,28 @@
-<svg width="100" height="80" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+<svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
   <!-- Sky background -->
-  <rect width="100" height="80" fill="#87CEEB"/>
+  <rect width="40" height="40" fill="#87CEEB"/>
   
   <!-- Sun -->
-  <circle cx="75" cy="20" r="8" fill="#FFD700"/>
+  <circle cx="30" cy="8" r="3" fill="#FFD700"/>
   
   <!-- Back mountain -->
-  <path d="M0 50 L30 20 L60 50 L60 80 L0 80 Z" fill="#6B7280"/>
+  <path d="M0 25 L12 10 L24 25 L24 40 L0 40 Z" fill="#6B7280"/>
   
   <!-- Front mountain -->
-  <path d="M30 45 L50 25 L70 45 L85 30 L100 45 L100 80 L30 80 Z" fill="#374151"/>
+  <path d="M12 22 L20 12 L28 22 L34 15 L40 22 L40 40 L12 40 Z" fill="#374151"/>
   
   <!-- Snow caps -->
-  <path d="M30 20 L20 30 L40 30 Z" fill="white"/>
-  <path d="M50 25 L42 33 L58 33 Z" fill="white"/>
-  <path d="M85 30 L78 37 L92 37 Z" fill="white"/>
+  <path d="M12 10 L8 14 L16 14 Z" fill="white"/>
+  <path d="M20 12 L17 15 L23 15 Z" fill="white"/>
+  <path d="M34 15 L31 18 L37 18 Z" fill="white"/>
   
   <!-- Trees -->
-  <path d="M10 65 L15 55 L20 65 Z" fill="#065F46"/>
-  <path d="M12 70 L15 65 L18 70 Z" fill="#047857"/>
+  <path d="M4 32 L6 28 L8 32 Z" fill="#065F46"/>
+  <path d="M5 35 L6 32 L7 35 Z" fill="#047857"/>
   
-  <path d="M25 68 L28 60 L31 68 Z" fill="#065F46"/>
-  <path d="M26 72 L28 68 L30 72 Z" fill="#047857"/>
+  <path d="M10 34 L11 30 L12 34 Z" fill="#065F46"/>
+  <path d="M10.5 36 L11 34 L11.5 36 Z" fill="#047857"/>
   
-  <path d="M70 63 L74 54 L78 63 Z" fill="#065F46"/>
-  <path d="M71 68 L74 63 L77 68 Z" fill="#047857"/>
+  <path d="M28 31 L29.5 27 L31 31 Z" fill="#065F46"/>
+  <path d="M28.5 34 L29.5 31 L30.5 34 Z" fill="#047857"/>
 </svg>
