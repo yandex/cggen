@@ -5,7 +5,7 @@ import WebKit
 import XCTest
 
 import Base
-import CGGenRuntimeSupport
+@_spi(Testing) import CGGenRuntimeSupport
 import libcggen
 
 private enum Error: Swift.Error {

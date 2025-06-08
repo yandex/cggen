@@ -13,29 +13,24 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
   func filePreamble() -> String {
     """
     import CoreGraphics
-    import CGGenRuntimeSupport
+    @_spi(Generator) import CGGenRuntimeSupport
 
     typealias Drawing = CGGenRuntimeSupport.Drawing
     """
   }
 
   func generateImageFunctions(images: [Image]) throws -> String {
-    let (bytecodeMergeArray, positions, decompressedSize, compressedSize) =
+    let (bytecodeMergeArray, positions, decompressedSize) =
       try generateMergedBytecodeArray(images: images)
 
-    let functions = zip(images, positions).map { image, position in
-      generateImageFunctionForMergedBytecode(
-        image: image,
-        imagePosition: position,
-        decompressedSize: decompressedSize,
-        compressedSize: compressedSize
-      )
-    }.joined(separator: "\n\n")
-
     // Generate Drawing namespace extension for swift-friendly style
-    let drawingExtension = generateDrawingExtension(images: images)
+    let drawingExtension = generateDrawingExtension(
+      images: images,
+      positions: positions,
+      decompressedSize: decompressedSize
+    )
 
-    return [drawingExtension, functions, bytecodeMergeArray]
+    return [drawingExtension, bytecodeMergeArray]
       .joined(separator: "\n\n")
   }
 
@@ -51,67 +46,21 @@ struct SwiftCGGenerator: CoreGraphicsGenerator {
     ]
 
     public func \(functionName)(in path: CGMutablePath) {
-      \(bytecodeName).withUnsafeBufferPointer { buffer in
-        runPathBytecode(path, buffer.baseAddress!, Int32(\(bytecode.count)))
-      }
+      runPathBytecode(path: path, bytecodeArray: \(bytecodeName))
     }
     """
   }
 
   func fileEnding() -> String {
-    """
-
-    // External functions from CGGenRuntimeSupport
-    @_silgen_name("runMergedBytecode_swift")
-    fileprivate func runMergedBytecode(
-      _ context: CGContext,
-      _ data: UnsafePointer<UInt8>,
-      _ decompressedLen: Int32,
-      _ compressedLen: Int32,
-      _ startIndex: Int32,
-      _ endIndex: Int32
-    )
-
-    @_silgen_name("runPathBytecode_swift")
-    fileprivate func runPathBytecode(
-      _ path: CGMutablePath,
-      _ data: UnsafePointer<UInt8>,
-      _ len: Int32
-    )
-    """
+    ""
   }
 }
 
 // MARK: - Image and Bytecode Generation
 
 extension SwiftCGGenerator {
-  func generateImageFunctionForMergedBytecode(
-    image: Image,
-    imagePosition: ImagePosition,
-    decompressedSize: Int,
-    compressedSize: Int
-  ) -> String {
-    let functionName =
-      "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
-
-    return """
-    private func \(functionName)(in context: CGContext) {
-      mergedBytecodes.withUnsafeBufferPointer { buffer in
-        runMergedBytecode(
-          context,
-          buffer.baseAddress!,
-          \(decompressedSize),
-          \(compressedSize),
-          \(imagePosition.0),
-          \(imagePosition.1)
-        )
-      }
-    }
-    """
-  }
-
   func generateMergedBytecodeArray(images: [Image]) throws
-    -> (String, [ImagePosition], Int, Int) {
+    -> (String, [ImagePosition], Int) {
     var imagePositions: [ImagePosition] = []
     var mergedBytecodes: [UInt8] = []
     let bytecodeName = "mergedBytecodes"
@@ -136,8 +85,7 @@ extension SwiftCGGenerator {
     return (
       bytecodeString,
       imagePositions,
-      mergedBytecodes.count,
-      compressedBytecode.count
+      mergedBytecodes.count
     )
   }
 
@@ -157,16 +105,22 @@ extension SwiftCGGenerator {
     return lines.joined(separator: ",\n")
   }
 
-  private func generateDrawingExtension(images: [Image]) -> String {
-    let staticProperties = images.map { image in
+  private func generateDrawingExtension(
+    images: [Image],
+    positions: [ImagePosition],
+    decompressedSize: Int
+  ) -> String {
+    let staticProperties = zip(images, positions).map { image, position in
       let propertyName = image.name.lowerCamelCase
-      let functionName =
-        "\(params.prefix.lowercased())Draw\(image.name.upperCamelCase)Image"
       let size = image.route.boundingRect.size
       return """
         static let \(propertyName) = Drawing(
-          size: CGSize(width: \(size.width), height: \(size.height)),
-          draw: \(functionName)
+          width: \(size.width),
+          height: \(size.height),
+          bytecodeArray: mergedBytecodes,
+          decompressedSize: \(decompressedSize),
+          startIndex: \(position.0),
+          endIndex: \(position.1)
         )
       """
     }.joined(separator: "\n")

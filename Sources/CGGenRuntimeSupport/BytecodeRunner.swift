@@ -4,7 +4,10 @@ import Foundation
 
 import BCCommon
 
-public func runBytecode(_ context: CGContext, fromData data: Data) throws {
+@_spi(Testing) public func runBytecode(
+  _ context: CGContext,
+  fromData data: Data
+) throws {
   let sz = data.count
   try data.withUnsafeBytes {
     let ptr = $0.baseAddress!
@@ -12,7 +15,10 @@ public func runBytecode(_ context: CGContext, fromData data: Data) throws {
   }
 }
 
-public func runPathBytecode(_ path: CGMutablePath, fromData data: Data) throws {
+@_spi(Testing) public func runPathBytecode(
+  _ path: CGMutablePath,
+  fromData data: Data
+) throws {
   let sz = data.count
   try data.withUnsafeBytes {
     let ptr = $0.baseAddress!
@@ -20,7 +26,7 @@ public func runPathBytecode(_ path: CGMutablePath, fromData data: Data) throws {
   }
 }
 
-public func runMergedBytecode(
+@_spi(Testing) public func runMergedBytecode(
   fromData data: Data,
   _ context: CGContext,
   _ decompressedLen: Int,
@@ -43,7 +49,7 @@ public func runMergedBytecode(
 }
 
 @_cdecl("runMergedBytecode")
-public func runMergedBytecode(
+func runMergedBytecode(
   _ context: CGContext,
   _ start: UnsafePointer<UInt8>,
   _ decompressedLen: Int,
@@ -66,7 +72,7 @@ public func runMergedBytecode(
 }
 
 @_cdecl("runBytecode")
-public func runBytecode(
+func runBytecode(
   _ context: CGContext,
   _ start: UnsafePointer<UInt8>,
   _ len: Int
@@ -79,7 +85,7 @@ public func runBytecode(
 }
 
 @_cdecl("runPathBytecode")
-public func runPathBytecode(
+func runPathBytecode(
   _ path: CGMutablePath,
   _ start: UnsafePointer<UInt8>,
   _ len: Int
@@ -91,33 +97,33 @@ public func runPathBytecode(
   }
 }
 
-// Swift calling convention wrappers for generated Swift code
-@_silgen_name("runMergedBytecode_swift")
-public func runMergedBytecode_swift(
-  _ context: CGContext,
-  _ data: UnsafePointer<UInt8>,
-  _ decompressedLen: Int32,
-  _ compressedLen: Int32,
-  _ startIndex: Int32,
-  _ endIndex: Int32
+// Array-based bytecode execution function
+func runCompressedBytecode(
+  context: CGContext,
+  bytecodeArray: [UInt8],
+  decompressedSize: Int,
+  startIndex: Int,
+  endIndex: Int
 ) {
-  runMergedBytecode(
-    context,
-    data,
-    Int(decompressedLen),
-    Int(compressedLen),
-    Int(startIndex),
-    Int(endIndex)
-  )
+  bytecodeArray.withUnsafeBufferPointer { buffer in
+    runMergedBytecode(
+      context,
+      buffer.baseAddress!,
+      decompressedSize,
+      bytecodeArray.count,
+      startIndex,
+      endIndex
+    )
+  }
 }
 
-@_silgen_name("runPathBytecode_swift")
-public func runPathBytecode_swift(
-  _ path: CGMutablePath,
-  _ data: UnsafePointer<UInt8>,
-  _ len: Int32
+func runPathBytecode(
+  path: CGMutablePath,
+  bytecodeArray: [UInt8]
 ) {
-  runPathBytecode(path, data, Int(len))
+  bytecodeArray.withUnsafeBufferPointer { buffer in
+    runPathBytecode(path, buffer.baseAddress!, bytecodeArray.count)
+  }
 }
 
 public enum Error: Swift.Error {
@@ -148,7 +154,7 @@ extension BCRGBColor {
   }
 }
 
-public struct PathBytecodeRunner {
+struct PathBytecodeRunner {
   private var programCounter: Bytecode
   private var exec: PathCommandExecution
 
@@ -240,7 +246,7 @@ public struct PathBytecodeRunner {
   }
 }
 
-public struct BytecodeRunner {
+struct BytecodeRunner {
   private var programCounter: Bytecode
 
   private var exec: CommandExecution

@@ -60,7 +60,7 @@ extension CGImage {
     context.saveGState()
     context.translateBy(x: transform.translation.x, y: transform.translation.y)
     context.scaleBy(x: transform.scale.width, y: transform.scale.height)
-    descriptor.draw(context)
+    descriptor.draw(in: context)
     context.restoreGState()
 
     return context.makeImage()

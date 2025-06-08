@@ -1,16 +1,6 @@
 import CoreGraphics
 import Foundation
 
-public struct Drawing: Sendable {
-  public let size: CGSize
-  public let draw: @Sendable (CGContext) -> Void
-
-  public init(size: CGSize, draw: @escaping @Sendable (CGContext) -> Void) {
-    self.size = size
-    self.draw = draw
-  }
-}
-
 // MARK: - SwiftUI Support
 
 #if canImport(SwiftUI)
@@ -40,7 +30,7 @@ extension Drawing: View {
           cgContext.translateBy(x: offsetX, y: offsetY)
           cgContext.scaleBy(x: scale, y: scale)
 
-          draw(cgContext)
+          draw(in: cgContext)
         }
       }
       .aspectRatio(size, contentMode: .fit)
@@ -85,7 +75,7 @@ extension CGImage {
       context.scaleBy(x: scale, y: scale)
     }
 
-    descriptor.draw(context)
+    descriptor.draw(in: context)
 
     return context.makeImage()
   }
@@ -100,6 +90,6 @@ extension CGContext {
     defer { restoreGState() }
 
     translateBy(x: origin.x, y: origin.y)
-    descriptor.draw(self)
+    descriptor.draw(in: self)
   }
 }
