@@ -164,6 +164,9 @@ private struct Context {
     let strokeLineJoin = presentation.strokeLineJoin.map {
       DrawStep.lineJoinStyle(.init(svgJoin: $0))
     }
+    let strokeMiterlimit = presentation.strokeMiterlimit.map {
+      DrawStep.miterLimit(CGFloat($0))
+    }
     let mask = try presentation.mask.map { maskName -> DrawStep in
       guard case let .mask(svgmask)? = defenitions[maskName]?.firstAndOnly
       else {
@@ -187,6 +190,7 @@ private struct Context {
       strokeWidth,
       strokeLineCap,
       strokeLineJoin,
+      strokeMiterlimit,
       presentation.dashPatternUpdate,
       fillAlpha,
       fill,
@@ -1193,7 +1197,7 @@ extension SVGFilterNode {
         shadow = input
       case let .gaussianBlur(in: input, stddevX: stddevX, stddevY: stddevY):
         guard !alphaBurned, blur == nil, stddevX == stddevY else { return nil }
-        // See `15.17 Filter primitive ‘feGaussianBlur’` in specs.
+        // See `15.17 Filter primitive 'feGaussianBlur'` in specs.
         // Here we don't know the resulting ctm yet, so we can't add 0.5 and
         // floor it. That is done on codegen level for now.
         blur = CGFloat(stddevX) * 3 * sqrt(2 * .pi) / 4

@@ -193,6 +193,9 @@ public enum DrawCommand: UInt8 {
 
   case endTransparencyLayer
   public typealias EndTransparencyLayerArgs = NoArgs
+
+  case miterLimit
+  public typealias MiterLimitArgs = CGFloat
 }
 
 public enum PathCommand: UInt8 {

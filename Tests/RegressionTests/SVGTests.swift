@@ -84,6 +84,10 @@ class SVGTest: XCTestCase {
     test(svg: "caps_joins")
   }
 
+  func testMiterLimit() {
+    test(svg: "miter_limit")
+  }
+
   func testDashes() {
     test(svg: "dashes")
   }
