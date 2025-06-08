@@ -19,15 +19,36 @@ import SwiftUI
 extension Drawing: View {
   public var body: some View {
     if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
-      Canvas { context, _ in
+      Canvas { context, canvasSize in
         context.withCGContext { cgContext in
+          // Calculate scale to fit the canvas
+          let scaleX = canvasSize.width / size.width
+          let scaleY = canvasSize.height / size.height
+          let scale = min(scaleX, scaleY)
+
+          // Center the drawing
+          let scaledWidth = size.width * scale
+          let scaledHeight = size.height * scale
+          let offsetX = (canvasSize.width - scaledWidth) / 2
+          let offsetY = (canvasSize.height - scaledHeight) / 2
+
+          // Flip the coordinate system to match UIKit/AppKit
+          cgContext.translateBy(x: 0, y: canvasSize.height)
+          cgContext.scaleBy(x: 1, y: -1)
+
+          // Apply centering and scaling
+          cgContext.translateBy(x: offsetX, y: offsetY)
+          cgContext.scaleBy(x: scale, y: scale)
+
           draw(cgContext)
         }
       }
-      .frame(width: size.width, height: size.height)
+      .aspectRatio(size, contentMode: .fit)
     } else {
       Image(drawing: self)
         .renderingMode(.original)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
     }
   }
 }

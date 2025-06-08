@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		BBADE7832DF43CE200179730 /* cggen-runtime-support in Frameworks */ = {isa = PBXBuildFile; productRef = BBADE7822DF43CE200179730 /* cggen-runtime-support */; };
+		BBB8104E2DF5B8F000B81FF8 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +28,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BBB8104E2DF5B8F000B81FF8 /* ArgumentParser in Frameworks */,
 				BBADE7832DF43CE200179730 /* cggen-runtime-support in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -72,6 +74,7 @@
 			name = CGGenDemo;
 			packageProductDependencies = (
 				BBADE7822DF43CE200179730 /* cggen-runtime-support */,
+				BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */,
 			);
 			productName = CGGenDemo;
 			productReference = BBADE7722DF43C9D00179730 /* CGGenDemo.app */;
@@ -103,6 +106,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				BBC3773A2DF4520900FE3543 /* XCLocalSwiftPackageReference "../../cggen" */,
+				BBB8104C2DF5B8F000B81FF8 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BBADE7732DF43C9D00179730 /* Products */;
@@ -360,10 +364,26 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		BBB8104C2DF5B8F000B81FF8 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		BBADE7822DF43CE200179730 /* cggen-runtime-support */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = "cggen-runtime-support";
+		};
+		BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BBB8104C2DF5B8F000B81FF8 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			productName = ArgumentParser;
 		};
 		BBC3773B2DF4522100FE3543 /* plugin */ = {
 			isa = XCSwiftPackageProductDependency;

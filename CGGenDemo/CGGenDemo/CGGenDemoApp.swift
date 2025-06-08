@@ -1,43 +1,74 @@
+import ArgumentParser
 import SwiftUI
+
+enum DemoTab: String, CaseIterable, ExpressibleByArgument {
+  case swiftui
+  case appkit
+  case playground
+}
+
+struct CLIArgs: ParsableArguments {
+  @Option var tab: DemoTab = .swiftui
+}
 
 @main
 struct CGGenDemoApp: App {
+  @State private var selectedTab: DemoTab
+
+  init() {
+    let args = CLIArgs.parseOrExit()
+    _selectedTab = State(initialValue: args.tab)
+  }
+
   var body: some Scene {
     WindowGroup {
-      ContentView()
+      ContentView(selectedTab: $selectedTab)
     }
   }
 }
 
 struct ContentView: View {
-  enum Tab { case swiftUI, platform }
-  @State private var selectedTab = Tab.swiftUI
+  @Binding var selectedTab: DemoTab
 
   var body: some View {
     TabView(selection: $selectedTab) {
       NavigationStack {
-        SwiftUIGalleryView()
+        SwiftUIDemo()
       }
       .tabItem {
         Label("SwiftUI", systemImage: "swift")
       }
-      .tag(Tab.swiftUI)
+      .tag(DemoTab.swiftui)
 
+      #if canImport(UIKit)
       NavigationStack {
-        PlatformGalleryView()
+        UIKitDemo()
       }
       .tabItem {
-        #if os(iOS)
         Label("UIKit", systemImage: "uiwindow.split.2x1")
-        #else
-        Label("AppKit", systemImage: "macwindow")
-        #endif
       }
-      .tag(Tab.platform)
+      .tag(DemoTab.appkit)
+      #elseif canImport(AppKit)
+      NavigationStack {
+        AppKitDemo()
+      }
+      .tabItem {
+        Label("AppKit", systemImage: "macwindow")
+      }
+      .tag(DemoTab.appkit)
+      #endif
+
+      NavigationStack {
+        PlaygroundView()
+      }
+      .tabItem {
+        Label("Playground", systemImage: "paintbrush.pointed")
+      }
+      .tag(DemoTab.playground)
     }
   }
 }
 
 #Preview {
-  ContentView()
+  ContentView(selectedTab: .constant(.swiftui))
 }
