@@ -40,13 +40,13 @@ public enum PluginDemo {
     print("\n📐 Direct Context Drawing:")
 
     print("  ⭕ Drawing.circle → \(Drawing.circle.size)")
-    Drawing.circle.draw(context)
+    Drawing.circle.draw(in: context)
 
     print("  ⬜ Drawing.square → \(Drawing.square.size)")
-    Drawing.square.draw(context)
+    Drawing.square.draw(in: context)
 
     print("  ⭐ Drawing.star → \(Drawing.star.size)")
-    Drawing.star.draw(context)
+    Drawing.star.draw(in: context)
 
     print("\n✨ All shapes rendered using optimized bytecode!")
 

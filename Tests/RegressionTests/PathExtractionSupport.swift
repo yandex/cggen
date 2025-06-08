@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 import Base
-import CGGenRuntimeSupport
+@_spi(Testing) import CGGenRuntimeSupport
 import libcggen
 
 func testPathExtraction(

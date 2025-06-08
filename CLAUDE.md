@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## IMPORTANT: Testing Requirements
+- **ALWAYS run `swift test` after making code changes**
+- **NEVER consider a task complete without running tests**
+- **Before marking any coding task as complete:**
+  1. Run `swift test`
+  2. Run `swiftformat --lint .` 
+  3. Verify the build works
+- **If tests fail, fix them before proceeding**
+
 ## Commands
 
 ### Build

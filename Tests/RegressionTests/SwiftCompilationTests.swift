@@ -53,7 +53,10 @@ import libcggen
     // Read the generated code and remove the CGGenRuntimeSupport import
     let generatedCode = try String(contentsOf: swiftFile)
     let codeWithoutImport = generatedCode
-      .replacingOccurrences(of: "import CGGenRuntimeSupport\n", with: "")
+      .replacingOccurrences(
+        of: "@_spi(Generator) import CGGenRuntimeSupport\n",
+        with: ""
+      )
       .replacingOccurrences(
         of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n",
         with: ""
@@ -69,17 +72,18 @@ import libcggen
 
     // Test that we can instantiate the generated types and call functions
     public func testGeneratedCode() {
-      if let context = CGContext(
-        data: nil,
-        width: 100,
-        height: 100,
-        bitsPerComponent: 8,
-        bytesPerRow: 0,
-        space: CGColorSpaceCreateDeviceRGB(),
-        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-      ) {
-        testDrawShapesImage(in: context)
+      // Test that Drawing instances are created correctly
+      let _ = Drawing.shapes
+      let _ = Drawing.lines
+
+      // Test that Drawing is Equatable and Hashable
+      if Drawing.shapes == Drawing.shapes {
+        print("Equatable works")
       }
+
+      var drawingSet = Set<Drawing>()
+      drawingSet.insert(Drawing.shapes)
+      drawingSet.insert(Drawing.lines)
     }
     """
 
@@ -92,35 +96,39 @@ import libcggen
     import CoreGraphics
 
     // Mock CGGenRuntimeSupport module
-    public struct Drawing {
-      public let size: CGSize
-      public let draw: (CGContext) -> Void
+    public struct Drawing: Equatable, Hashable {
+      internal var width: Float
+      internal var height: Float
+      internal var bytecode: BytecodeProcedure
 
-      public init(size: CGSize, draw: @escaping (CGContext) -> Void) {
-        self.size = size
-        self.draw = draw
+      public var size: CGSize {
+        CGSize(width: CGFloat(width), height: CGFloat(height))
       }
-    }
 
-    @_silgen_name("runMergedBytecode_swift")
-    fileprivate func runMergedBytecode(
-      _ context: CGContext,
-      _ data: UnsafePointer<UInt8>,
-      _ decompressedLen: Int32,
-      _ compressedLen: Int32,
-      _ startIndex: Int32,
-      _ endIndex: Int32
-    ) {
-      // Mock implementation for testing
-    }
+      internal struct BytecodeProcedure: Equatable, Hashable {
+        internal var bytecodeArray: [UInt8]
+        internal var decompressedSize: Int32
+        internal var startIndex: Int32
+        internal var endIndex: Int32
+      }
 
-    @_silgen_name("runPathBytecode_swift")
-    fileprivate func runPathBytecode(
-      _ path: CGMutablePath,
-      _ data: UnsafePointer<UInt8>,
-      _ len: Int32
-    ) {
-      // Mock implementation for testing
+      public init(
+        width: Float,
+        height: Float,
+        bytecodeArray: [UInt8],
+        decompressedSize: Int32,
+        startIndex: Int32,
+        endIndex: Int32
+      ) {
+        self.width = width
+        self.height = height
+        self.bytecode = BytecodeProcedure(
+          bytecodeArray: bytecodeArray,
+          decompressedSize: decompressedSize,
+          startIndex: startIndex,
+          endIndex: endIndex
+        )
+      }
     }
     """
 
