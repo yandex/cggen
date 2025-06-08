@@ -1,50 +1,54 @@
-# CLAUDE.md - CGGenDemo Workflow
+# CGGenDemo Workflow
 
-This file documents the workflow for working with the CGGenDemo app.
+This document helps Claude Code work with the CGGenDemo app effectively.
+
+## Overview
+
+CGGenDemo is a demonstration app showcasing cggen's drawing APIs across SwiftUI, AppKit, and a playground environment. The app accepts command-line arguments to launch directly into specific tabs.
+
+## Tabs
+
+- **SwiftUI/AppKit/UIKit tabs**: Show code examples of cggen API usage with live previews, organized by categories like image creation, sizing, and UI integration.
+- **Playground tab**: Interactive environment for testing different drawings with adjustable size, content mode, and scale settings.
 
 ## Command Line Arguments
 
-The app supports launching with specific tabs using ArgumentParser:
-
-```bash
-# Launch with SwiftUI tab
---tab swiftui
-
-# Launch with AppKit tab  
---tab appkit
-
-# Launch with Playground tab
---tab playground
-```
+- `--tab [swiftui|appkit|playground]` - Launch with specific tab (default: swiftui)
 
 ## Building and Running
 
-### Build the app
-```bash
-xcodebuild -project CGGenDemo/CGGenDemo.xcodeproj -scheme CGGenDemo build
-```
+To build and run CGGenDemo, use these MCP tools in sequence:
 
-### Launch with specific tab
-```bash
-# Using Xcode MCP tool
-mcp__XcodeBuildMCP__launch_mac_app --appPath <path_to_app> --args ["--tab", "swiftui"]
-```
+1. **Build the app**
+   - Tool: `mcp__XcodeBuildMCP__build_mac_proj`
+   - projectPath: `/Users/alfred/dev/cggen/CGGenDemo/CGGenDemo.xcodeproj`
+   - scheme: `CGGenDemo`
+
+2. **Get the built app path**
+   - Tool: `mcp__XcodeBuildMCP__get_mac_app_path_proj`
+   - projectPath: `/Users/alfred/dev/cggen/CGGenDemo/CGGenDemo.xcodeproj`
+   - scheme: `CGGenDemo`
+
+3. **Launch the app**
+   - Tool: `mcp__XcodeBuildMCP__launch_mac_app`
+   - appPath: (path from step 2)
+   - args: (optional, e.g. `["--tab", "appkit"]`)
 
 ## Taking Screenshots
 
 ### Screenshot workflow
 1. Launch app with desired tab
-2. Use the macOS Shortcuts app to capture screenshots:
+2. Remove any existing screenshot file if present
+3. Capture screenshot immediately without sleep/delay:
 
 ```bash
-# Save screenshot to .claude_temp folder
 shortcuts run "cggendemo" --output-path .claude_temp/screenshot_name.png
 ```
 
 ### Screenshot storage
 - Screenshots are saved in `.claude_temp/` folder
 - This folder is gitignored to keep the repository clean
-- No need to clutter Desktop with temporary files
+- Always remove old screenshots before capturing new ones
 
 ### Shortcuts Setup
 - The `cggendemo.shortcut` file is included in this folder
