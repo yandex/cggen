@@ -95,8 +95,22 @@ extension Image {
 
 // Generated
 extension Drawing {
-  static let heart = Drawing(size: CGSize(width: 24, height: 24), draw: drawHeart)
-  static let star = Drawing(size: CGSize(width: 32, height: 32), draw: drawStar)
+  static let heart = Drawing(
+    width: 24.0,
+    height: 24.0,
+    bytecodeArray: mergedBytecodes,
+    decompressedSize: 1234,
+    startIndex: 0,
+    endIndex: 567
+  )
+  static let star = Drawing(
+    width: 32.0,
+    height: 32.0,
+    bytecodeArray: mergedBytecodes,
+    decompressedSize: 1234,
+    startIndex: 568,
+    endIndex: 1100
+  )
 }
 
 // User
@@ -124,12 +138,27 @@ import CGGenRuntimeSupport
 typealias Drawing = CGGenRuntimeSupport.Drawing
 
 extension Drawing {
-  static let circle = Drawing(size: CGSize(width: 50, height: 50), draw: pluginDemoDrawCircleImage)
-  static let square = Drawing(size: CGSize(width: 40, height: 40), draw: pluginDemoDrawSquareImage)
+  static let circle = Drawing(
+    width: 50.0,
+    height: 50.0,
+    bytecodeArray: mergedBytecodes,
+    decompressedSize: 275,
+    startIndex: 0,
+    endIndex: 65
+  )
+  static let square = Drawing(
+    width: 40.0,
+    height: 40.0,
+    bytecodeArray: mergedBytecodes,
+    decompressedSize: 275,
+    startIndex: 66,
+    endIndex: 139
+  )
 }
 
-fileprivate func pluginDemoDrawCircleImage(in context: CGContext) { /* drawing code */ }
-fileprivate func pluginDemoDrawSquareImage(in context: CGContext) { /* drawing code */ }
+private let mergedBytecodes: [UInt8] = [
+  // Compressed bytecode array
+]
 
 // User
 struct ContentView: View {
