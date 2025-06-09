@@ -12,7 +12,7 @@ let package = Package(
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
     .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
-    .plugin(name: "plugin", targets: ["plugin"]),
+    .plugin(name: "cggen-spm-plugin", targets: ["plugin"]),
   ],
   dependencies: [
     .package(
