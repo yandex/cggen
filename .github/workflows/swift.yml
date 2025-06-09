@@ -24,4 +24,4 @@ jobs:
     - name: Build Demo for macOS
       run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'platform=macOS' -skipMacroValidation build
     - name: Build Demo for iOS Simulator
-      run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'platform=iOS Simulator,name=iPhone 15' -skipMacroValidation build
+      run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'generic/platform=iOS Simulator' -skipMacroValidation build
