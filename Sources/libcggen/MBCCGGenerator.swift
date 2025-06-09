@@ -125,14 +125,15 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
   }
 
   func fileEnding() throws -> String {
-    """
+    let bytecodeString = unifiedBytecodeData.compressedBytecode
+      .map(\.description)
+      .joined(separator: ", ")
+
+    return """
     static const uint8_t mergedBytecodes[] = {
-      \(
-        unifiedBytecodeData.compressedBytecode.map(\.description)
-          .joined(separator: ", ")
-    )
+      \(bytecodeString)
     };
-      """
+    """
   }
 }
 
