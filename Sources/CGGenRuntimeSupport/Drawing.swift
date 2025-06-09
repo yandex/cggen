@@ -76,3 +76,39 @@ public struct Drawing: Sendable, Equatable, Hashable {
     )
   }
 }
+
+// MARK: - Drawing.Path
+
+extension Drawing {
+  /// A path representation backed by compressed bytecode.
+  public struct Path: Sendable, Equatable, Hashable {
+    @usableFromInline var bytecode: BytecodeProcedure
+
+    @inlinable
+    @_spi(Generator) public init(
+      bytecodeArray: [UInt8],
+      decompressedSize: Int32,
+      startIndex: Int32,
+      endIndex: Int32
+    ) {
+      bytecode = BytecodeProcedure(
+        bytecodeArray: bytecodeArray,
+        decompressedSize: decompressedSize,
+        startIndex: startIndex,
+        endIndex: endIndex
+      )
+    }
+
+    /// Applies the path to a mutable path object.
+    /// - Parameter path: The mutable path to apply this path to.
+    public func apply(to path: CGMutablePath) {
+      runCompressedPathBytecode(
+        path: path,
+        bytecodeArray: bytecode.bytecodeArray,
+        decompressedSize: Int(bytecode.decompressedSize),
+        startIndex: Int(bytecode.startIndex),
+        endIndex: Int(bytecode.endIndex)
+      )
+    }
+  }
+}

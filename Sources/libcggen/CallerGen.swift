@@ -6,6 +6,24 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
   let allowAntialiasing: Bool
   let prefix: String
   let outputPath: String
+  let outputs: [Output]
+
+  init(
+    headerImportPath: String,
+    scale: CGFloat,
+    allowAntialiasing: Bool,
+    prefix: String,
+    outputPath: String,
+    outputs: [Output]
+  ) {
+    self.headerImportPath = headerImportPath
+    self.scale = scale
+    self.allowAntialiasing = allowAntialiasing
+    self.prefix = prefix
+    self.outputPath = outputPath
+    self.outputs = outputs
+  }
+
   func filePreambleNew() -> ObjcTerm {
     ObjcTerm(
       .hasFeatureSupport,
@@ -64,8 +82,9 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       .joined(separator: "\n") + filePreambleLegacy()
   }
 
-  func generateImageFunctions(images: [Image]) throws -> String {
-    images.map { generateImageFunction(image: $0) }.joined(separator: "\n\n")
+  func generateImageFunctions() throws -> String {
+    outputs.map(\.image).map { generateImageFunction(image: $0) }
+      .joined(separator: "\n\n")
   }
 
   private func generateImageFunction(image: Image) -> String {
@@ -79,12 +98,12 @@ struct ObjcCallerGen: CoreGraphicsGenerator {
       """
   }
 
-  func generatePathFuncton(path _: PathRoutine) -> String {
+  func generatePathFunctions() throws -> String {
     // TODO: should be implemented, but not needed yet
     ""
   }
 
-  func fileEnding() -> String {
+  func fileEnding() throws -> String {
     "  return retCode;\n}"
   }
 }

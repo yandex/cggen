@@ -2,20 +2,28 @@ import CoreGraphics
 
 struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
   let params: GenerationParams
+  let outputs: [Output]
+
+  init(params: GenerationParams, outputs: [Output]) {
+    self.params = params
+    self.outputs = outputs
+  }
 
   func filePreamble() -> String {
     params.imports.renderText() + "\n"
   }
 
-  func generateImageFunctions(images: [Image]) throws -> String {
-    images.map { params.description(for: $0) }.joined(separator: "\n\n")
+  func generateImageFunctions() throws -> String {
+    outputs.map(\.image).map { params.description(for: $0) }
+      .joined(separator: "\n\n")
   }
 
-  func generatePathFuncton(path: PathRoutine) -> String {
-    params.description(for: path)
+  func generatePathFunctions() throws -> String {
+    outputs.flatMap(\.pathRoutines).map { params.description(for: $0) }
+      .joined(separator: "\n\n")
   }
 
-  func fileEnding() -> String {
+  func fileEnding() throws -> String {
     ""
   }
 }

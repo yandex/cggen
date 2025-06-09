@@ -142,3 +142,7 @@ See [CGGenDemo/CLAUDE.md](CGGenDemo/CLAUDE.md) for detailed workflow documentati
 ## Project Memories
 - Consider updating your project memory before finishing the task
 - Launch xcodebuild with -quiet option if not strongly necessary otherwise
+- ALWAYS use .claude_temp folder for temporary files, NEVER use /tmp or temp directories
+
+## Project Guidelines
+- AVOID marketing tone of new changes in documentation

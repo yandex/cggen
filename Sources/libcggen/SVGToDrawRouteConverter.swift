@@ -15,14 +15,16 @@ enum SVGToDrawRouteConverter {
     )
     let defenitions = try defs(from: .svg(document))
 
-    let pathRoutines: [PathRoutine] = defenitions.compactMap { id, svgs in
-      guard id.hasPathPrefix,
-            let svg = svgs.firstAndOnly,
-            let content = pathSegmentsFromSVG(svg) else {
-        return nil
+    let pathRoutines: [PathRoutine] = defenitions
+      .sorted { $0.key < $1.key } // Sort by ID for stable output
+      .compactMap { id, svgs in
+        guard id.hasPathPrefix,
+              let svg = svgs.firstAndOnly,
+              let content = pathSegmentsFromSVG(svg) else {
+          return nil
+        }
+        return PathRoutine(id: id.withoutPathPrefix, content: content)
       }
-      return PathRoutine(id: id.withoutPathPrefix, content: content)
-    }
 
     var context = Context(
       objectBoundingBox: boundingRect,
