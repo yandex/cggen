@@ -84,7 +84,7 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcImplPath = args.objcImpl {
-    let implGenerator = MBCCGGenerator(
+    let implGenerator = try MBCCGGenerator(
       params: params,
       headerImportPath: args.objcHeaderImportPath,
       outputs: outputs
