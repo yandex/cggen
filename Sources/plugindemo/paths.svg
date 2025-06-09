@@ -1,0 +1,15 @@
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Simple star path -->
+    <path id="cggen.simpleStar" d="M50,10 L60,40 L90,40 L65,60 L75,90 L50,70 L25,90 L35,60 L10,40 L40,40 Z"/>
+    
+    <!-- Simple heart path -->
+    <path id="cggen.simpleHeart" d="M50,25 C50,15 40,5 30,5 C20,5 10,15 10,25 C10,35 50,75 50,75 C50,75 90,35 90,25 C90,15 80,5 70,5 C60,5 50,15 50,25 Z"/>
+    
+    <!-- Simple arrow path -->
+    <path id="cggen.simpleArrow" d="M20,50 L70,50 M70,50 L60,40 M70,50 L60,60"/>
+  </defs>
+  
+  <!-- Add a simple rect so the SVG has content -->
+  <rect width="100" height="100" fill="white" opacity="0.01"/>
+</svg>

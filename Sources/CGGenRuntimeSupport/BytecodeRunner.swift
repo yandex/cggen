@@ -97,6 +97,38 @@ func runPathBytecode(
   }
 }
 
+@_cdecl("runMergedPathBytecode")
+func runMergedPathBytecode(
+  _ path: CGMutablePath,
+  _ compressedStart: UnsafePointer<UInt8>,
+  _ decompressedSize: Int,
+  _ compressedSize: Int,
+  _ startIndex: Int,
+  _ endIndex: Int
+) {
+  do {
+    let decompressedArray = try decompressBytecode(
+      compressedStart,
+      compressedSize,
+      decompressedSize
+    )
+
+    // Extract the relevant portion
+    let partArray = Array(decompressedArray[startIndex...endIndex])
+
+    // Run the path bytecode
+    partArray.withUnsafeBufferPointer { buffer in
+      do {
+        try PathBytecodeRunner.run(path, buffer.baseAddress!, partArray.count)
+      } catch let t {
+        assertionFailure("Failed to run path bytecode with error: \(t)")
+      }
+    }
+  } catch let t {
+    assertionFailure("Failed to decompress path bytecode with error: \(t)")
+  }
+}
+
 // Array-based bytecode execution function
 func runCompressedBytecode(
   context: CGContext,
@@ -123,6 +155,29 @@ func runPathBytecode(
 ) {
   bytecodeArray.withUnsafeBufferPointer { buffer in
     runPathBytecode(path, buffer.baseAddress!, bytecodeArray.count)
+  }
+}
+
+// Compressed path bytecode execution function
+func runCompressedPathBytecode(
+  path: CGMutablePath,
+  bytecodeArray: [UInt8],
+  decompressedSize: Int,
+  startIndex: Int,
+  endIndex: Int
+) {
+  let length = bytecodeArray.count
+
+  bytecodeArray.withUnsafeBufferPointer { buffer in
+    let ptr = buffer.baseAddress!
+    runMergedPathBytecode(
+      path,
+      ptr,
+      decompressedSize,
+      length,
+      startIndex,
+      endIndex
+    )
   }
 }
 

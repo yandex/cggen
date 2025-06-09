@@ -8,6 +8,13 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
 
   let params: GenerationParams
   let headerImportPath: String?
+  let outputs: [Output]
+
+  init(params: GenerationParams, headerImportPath: String?, outputs: [Output]) {
+    self.params = params
+    self.headerImportPath = headerImportPath
+    self.outputs = outputs
+  }
 
   func filePreamble() -> String {
     let importLine = headerImportPath.map { "#import \"\($0)\"\n" } ?? ""
@@ -19,7 +26,8 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
     """
   }
 
-  func generateImageFunctions(images: [Image]) throws -> String {
+  func generateImageFunctions() throws -> String {
+    let images = outputs.map(\.image)
     let (bytecodeMergeArray, possitions, decompressedSize, compressedSize) =
       try generateMergedBytecodeArray(images: images)
 
@@ -35,21 +43,23 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
     return [bytecodeMergeArray, imageFunctions].joined(separator: "\n\n")
   }
 
-  func generatePathFuncton(path: PathRoutine) -> String {
-    let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
-    let bytecode = generatePathBytecode(route: path)
-    let camel = path.id.upperCamelCase
-    return """
-    static const uint8_t \(bytecodeName)[] = {
-      \(bytecode.map(\.description).joined(separator: ", "))
-    };
-    void \(params.prefix)\(camel)Path(CGMutablePathRef path) {
-      runPathBytecode(path, \(bytecodeName), \(bytecode.count));
-    }
-    """
+  func generatePathFunctions() throws -> String {
+    outputs.flatMap(\.pathRoutines).map { path in
+      let bytecodeName = "\(path.id.lowerCamelCase)Bytecode"
+      let bytecode = generatePathBytecode(route: path)
+      let camel = path.id.upperCamelCase
+      return """
+      static const uint8_t \(bytecodeName)[] = {
+        \(bytecode.map(\.description).joined(separator: ", "))
+      };
+      void \(params.prefix)\(camel)Path(CGMutablePathRef path) {
+        runPathBytecode(path, \(bytecodeName), \(bytecode.count));
+      }
+      """
+    }.joined(separator: "\n\n")
   }
 
-  func fileEnding() -> String {
+  func fileEnding() throws -> String {
     ""
   }
 }

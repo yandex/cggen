@@ -150,9 +150,32 @@ public enum PluginDemo {
     #endif
   }
 
+  public static func demonstratePathExtraction() {
+    print("\n📍 Path Extraction:")
+
+    let starPath = CGMutablePath()
+    Drawing.Path.simpleStar.apply(to: starPath)
+    print("  • Drawing.Path.simpleStar → \(starPath.boundingBox)")
+
+    let heartPath = CGMutablePath()
+    Drawing.Path.simpleHeart.apply(to: heartPath)
+    print("  • Drawing.Path.simpleHeart → \(heartPath.boundingBox)")
+
+    let arrowPath = CGMutablePath()
+    Drawing.Path.simpleArrow.apply(to: arrowPath)
+    print("  • Drawing.Path.simpleArrow → \(arrowPath.boundingBox)")
+  }
+
   public static func main() {
     Task { @MainActor in
       demonstrateGeneratedCode()
+      demonstratePathExtraction()
+
+      // Keep the process alive to see output
+      print("\n✅ Demo completed!")
     }
+
+    // Wait for async task to complete
+    RunLoop.main.run(until: Date(timeIntervalSinceNow: 0.1))
   }
 }

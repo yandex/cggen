@@ -70,8 +70,11 @@ public func runCggen(with args: Args) throws {
   )
 
   if let objcHeaderPath = args.objcHeader {
-    let headerGenerator = ObjcHeaderCGGenerator(params: params)
-    let fileStr = try headerGenerator.generateFile(outputs: outputs)
+    let headerGenerator = ObjcHeaderCGGenerator(
+      params: params,
+      outputs: outputs
+    )
+    let fileStr = try headerGenerator.generateFile()
     try fileStr.write(
       toFile: objcHeaderPath,
       atomically: true,
@@ -83,10 +86,11 @@ public func runCggen(with args: Args) throws {
   if let objcImplPath = args.objcImpl {
     let implGenerator = MBCCGGenerator(
       params: params,
-      headerImportPath: args.objcHeaderImportPath
+      headerImportPath: args.objcHeaderImportPath,
+      outputs: outputs
     )
 
-    let fileStr = try implGenerator.generateFile(outputs: outputs)
+    let fileStr = try implGenerator.generateFile()
     try fileStr.write(
       toFile: objcImplPath,
       atomically: true,
@@ -104,8 +108,8 @@ public func runCggen(with args: Args) throws {
   }
 
   if let swiftOutputPath = args.swiftOutput {
-    let swiftGenerator = SwiftCGGenerator(params: params)
-    let fileStr = try swiftGenerator.generateFile(outputs: outputs)
+    let swiftGenerator = try SwiftCGGenerator(params: params, outputs: outputs)
+    let fileStr = try swiftGenerator.generateFile()
     try fileStr.write(
       toFile: swiftOutputPath,
       atomically: true,
@@ -122,9 +126,10 @@ public func runCggen(with args: Args) throws {
       scale: args.callerScale.cgfloat,
       allowAntialiasing: args.callerAllowAntialiasing,
       prefix: objcPrefix,
-      outputPath: pngOutputPath
+      outputPath: pngOutputPath,
+      outputs: outputs
     )
-    let fileStr = try callerGenerator.generateFile(outputs: outputs)
+    let fileStr = try callerGenerator.generateFile()
     try fileStr.write(
       toFile: objcCallerPath,
       atomically: true,

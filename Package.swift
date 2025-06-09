@@ -71,6 +71,7 @@ let package = Package(
     .testTarget(
       name: "RegressionTests",
       dependencies: ["libcggen", "CGGenRuntimeSupport"],
+      exclude: ["__Snapshots__"],
       resources: [
         .copy("pdf_samples"),
         .copy("svg_samples"),
