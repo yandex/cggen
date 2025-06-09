@@ -16,9 +16,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "BBADE7712DF43C9D00179730"
-               BuildableName = "CGGenDemo.app"
-               BlueprintName = "CGGenDemo"
-               ReferencedContainer = "container:CGGenDemo.xcodeproj">
+               BuildableName = "Demo.app"
+               BlueprintName = "Demo"
+               ReferencedContainer = "container:Demo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "BBADE7712DF43C9D00179730"
-            BuildableName = "CGGenDemo.app"
-            BlueprintName = "CGGenDemo"
-            ReferencedContainer = "container:CGGenDemo.xcodeproj">
+            BuildableName = "Demo.app"
+            BlueprintName = "Demo"
+            ReferencedContainer = "container:Demo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "BBADE7712DF43C9D00179730"
-            BuildableName = "CGGenDemo.app"
-            BlueprintName = "CGGenDemo"
-            ReferencedContainer = "container:CGGenDemo.xcodeproj">
+            BuildableName = "Demo.app"
+            BlueprintName = "Demo"
+            ReferencedContainer = "container:Demo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -1,10 +1,10 @@
-# CGGenDemo Workflow
+# Demo Workflow
 
-This document helps Claude Code work with the CGGenDemo app effectively.
+This document helps Claude Code work with the Demo app effectively.
 
 ## Overview
 
-CGGenDemo is a demonstration app showcasing cggen's drawing APIs across SwiftUI, AppKit, and a playground environment. The app accepts command-line arguments to launch directly into specific tabs.
+Demo is a demonstration app showcasing cggen's drawing APIs across SwiftUI, AppKit, and a playground environment. The app accepts command-line arguments to launch directly into specific tabs.
 
 ## Tabs
 
@@ -17,17 +17,17 @@ CGGenDemo is a demonstration app showcasing cggen's drawing APIs across SwiftUI,
 
 ## Building and Running
 
-To build and run CGGenDemo, use these MCP tools in sequence:
+To build and run Demo, use these MCP tools in sequence:
 
 1. **Build the app**
    - Tool: `mcp__XcodeBuildMCP__build_mac_proj`
-   - projectPath: `/Users/alfred/dev/cggen/CGGenDemo/CGGenDemo.xcodeproj`
-   - scheme: `CGGenDemo`
+   - projectPath: `/Users/alfred/dev/cggen/Demo/Demo.xcodeproj`
+   - scheme: `Demo`
 
 2. **Get the built app path**
    - Tool: `mcp__XcodeBuildMCP__get_mac_app_path_proj`
-   - projectPath: `/Users/alfred/dev/cggen/CGGenDemo/CGGenDemo.xcodeproj`
-   - scheme: `CGGenDemo`
+   - projectPath: `/Users/alfred/dev/cggen/Demo/Demo.xcodeproj`
+   - scheme: `Demo`
 
 3. **Launch the app**
    - Tool: `mcp__XcodeBuildMCP__launch_mac_app`
@@ -53,7 +53,7 @@ shortcuts run "cggendemo" --output-path .claude_temp/screenshot_name.png
 ### Shortcuts Setup
 - The `cggendemo.shortcut` file is included in this folder
 - Import it to macOS Shortcuts app if needed
-- This shortcut captures the CGGenDemo window and outputs PNG data
+- This shortcut captures the Demo window and outputs PNG data
 
 ## Demo App Architecture
 

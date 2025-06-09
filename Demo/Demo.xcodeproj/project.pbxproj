@@ -12,13 +12,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BBADE7722DF43C9D00179730 /* CGGenDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CGGenDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BBADE7722DF43C9D00179730 /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		BBADE7742DF43C9D00179730 /* CGGenDemo */ = {
+		BBADE7742DF43C9D00179730 /* Demo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = CGGenDemo;
+			path = Demo;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,7 +39,7 @@
 		BBADE7692DF43C9D00179730 = {
 			isa = PBXGroup;
 			children = (
-				BBADE7742DF43C9D00179730 /* CGGenDemo */,
+				BBADE7742DF43C9D00179730 /* Demo */,
 				BBADE7732DF43C9D00179730 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -47,7 +47,7 @@
 		BBADE7732DF43C9D00179730 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BBADE7722DF43C9D00179730 /* CGGenDemo.app */,
+				BBADE7722DF43C9D00179730 /* Demo.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,9 +55,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		BBADE7712DF43C9D00179730 /* CGGenDemo */ = {
+		BBADE7712DF43C9D00179730 /* Demo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = BBADE77E2DF43C9E00179730 /* Build configuration list for PBXNativeTarget "CGGenDemo" */;
+			buildConfigurationList = BBADE77E2DF43C9E00179730 /* Build configuration list for PBXNativeTarget "Demo" */;
 			buildPhases = (
 				BBADE76E2DF43C9D00179730 /* Sources */,
 				BBADE76F2DF43C9D00179730 /* Frameworks */,
@@ -69,15 +69,15 @@
 				BBC3773C2DF4522100FE3543 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				BBADE7742DF43C9D00179730 /* CGGenDemo */,
+				BBADE7742DF43C9D00179730 /* Demo */,
 			);
-			name = CGGenDemo;
+			name = Demo;
 			packageProductDependencies = (
 				BBADE7822DF43CE200179730 /* cggen-runtime-support */,
 				BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */,
 			);
-			productName = CGGenDemo;
-			productReference = BBADE7722DF43C9D00179730 /* CGGenDemo.app */;
+			productName = Demo;
+			productReference = BBADE7722DF43C9D00179730 /* Demo.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +95,7 @@
 					};
 				};
 			};
-			buildConfigurationList = BBADE76D2DF43C9D00179730 /* Build configuration list for PBXProject "CGGenDemo" */;
+			buildConfigurationList = BBADE76D2DF43C9D00179730 /* Build configuration list for PBXProject "Demo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -113,7 +113,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				BBADE7712DF43C9D00179730 /* CGGenDemo */,
+				BBADE7712DF43C9D00179730 /* Demo */,
 			);
 		};
 /* End PBXProject section */
@@ -265,7 +265,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CGGenDemo/CGGenDemo.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Demo/Demo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -285,7 +285,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cggen.CGGenDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = cggen.Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -302,7 +302,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = CGGenDemo/CGGenDemo.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Demo/Demo.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -322,7 +322,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 15.4;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cggen.CGGenDemo;
+				PRODUCT_BUNDLE_IDENTIFIER = cggen.Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
@@ -337,7 +337,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		BBADE76D2DF43C9D00179730 /* Build configuration list for PBXProject "CGGenDemo" */ = {
+		BBADE76D2DF43C9D00179730 /* Build configuration list for PBXProject "Demo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				BBADE77C2DF43C9E00179730 /* Debug */,
@@ -346,7 +346,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		BBADE77E2DF43C9E00179730 /* Build configuration list for PBXNativeTarget "CGGenDemo" */ = {
+		BBADE77E2DF43C9E00179730 /* Build configuration list for PBXNativeTarget "Demo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				BBADE77F2DF43C9E00179730 /* Debug */,

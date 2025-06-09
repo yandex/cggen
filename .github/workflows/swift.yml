@@ -21,3 +21,7 @@ jobs:
       run: swift build -v
     - name: Run tests
       run: swift test -v --parallel
+    - name: Build Demo for macOS
+      run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'platform=macOS' build
+    - name: Build Demo for iOS Simulator
+      run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'platform=iOS Simulator,name=iPhone 15' build
