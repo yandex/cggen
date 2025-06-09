@@ -125,19 +125,31 @@ struct MBCCGGenerator: CoreGraphicsGenerator {
   }
 
   func fileEnding() throws -> String {
-    let bytecodeString = unifiedBytecodeData.compressedBytecode
-      .map(\.description)
-      .joined(separator: ", ")
-
-    return """
+    """
     static const uint8_t mergedBytecodes[] = {
-      \(bytecodeString)
+    \(formatBytecodeArray(unifiedBytecodeData.compressedBytecode))
     };
     """
   }
 }
 
 extension MBCCGGenerator {
+  private func formatBytecodeArray(_ bytes: [UInt8]) -> String {
+    // Format bytecode array with line breaks every 12 bytes for readability
+    let bytesPerLine = 12
+    var lines: [String] = []
+
+    for i in stride(from: 0, to: bytes.count, by: bytesPerLine) {
+      let end = min(i + bytesPerLine, bytes.count)
+      let lineBytes = bytes[i..<end].map { String(format: "0x%02X", $0) }
+        .joined(separator: ", ")
+      let indent = "  " // Consistent 2 space indentation
+      lines.append(indent + lineBytes)
+    }
+
+    return lines.joined(separator: ",\n")
+  }
+
   func generateImageFunctionForMergedBytecode(
     image: Image,
     imagePossition: ImagePossition,
