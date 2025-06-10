@@ -42,7 +42,7 @@ enum GenerationType {
     let test = SnapshotTest(
       name: "testSwiftCodeGenerationSnapshot",
       files: pluginDemoFiles(["circle.svg", "square.svg", "star.svg"]),
-      prefix: "plugindemo"
+      prefix: "plugin_demo"
     )
     try runSnapshotTest(test)
   }
@@ -289,7 +289,7 @@ enum GenerationType {
       .deletingLastPathComponent()
       .deletingLastPathComponent()
       .appendingPathComponent("Sources")
-      .appendingPathComponent("plugindemo")
+      .appendingPathComponent("plugin-demo")
 
     return names.map { plugindemoPath.appendingPathComponent($0) }
   }

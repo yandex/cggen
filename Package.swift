@@ -81,7 +81,7 @@ let package = Package(
       ]
     ),
     .executableTarget(
-      name: "plugindemo",
+      name: "plugin-demo",
       dependencies: ["CGGenRuntimeSupport"],
       plugins: ["plugin"]
     ),
