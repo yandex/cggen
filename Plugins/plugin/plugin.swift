@@ -3,6 +3,30 @@ import PackagePlugin
 
 @main
 struct Plugin: BuildToolPlugin {
+  /// Sanitizes a string to be a valid Swift identifier prefix
+  /// - Replaces hyphens with underscores
+  /// - Ensures the result starts with a letter or underscore
+  /// - Removes any invalid characters
+  static func sanitizeForSwiftIdentifier(_ name: String) -> String {
+    // Replace hyphens with underscores
+    var sanitized = name.replacingOccurrences(of: "-", with: "_")
+
+    // Remove any characters that aren't alphanumeric or underscore
+    sanitized = sanitized.filter { $0.isLetter || $0.isNumber || $0 == "_" }
+
+    // Ensure it doesn't start with a number
+    if let first = sanitized.first, first.isNumber {
+      sanitized = "_" + sanitized
+    }
+
+    // If empty after sanitization, provide a default
+    if sanitized.isEmpty {
+      sanitized = "Generated"
+    }
+
+    return sanitized
+  }
+
   func createBuildCommands(
     context: PluginContext,
     target: Target
@@ -45,11 +69,8 @@ struct Plugin: BuildToolPlugin {
     arguments.append(outputFile.path)
 
     // Add prefix for generated functions
-    // FIXME: Target names with hyphens (e.g. "plugin-demo") create invalid Swift identifiers
-    // in generated code like "plugin-demoDrawCircleImage". Use underscores or
-    // camelCase instead.
     arguments.append("--objc-prefix")
-    arguments.append(target.name.capitalized)
+    arguments.append(Self.sanitizeForSwiftIdentifier(target.name).capitalized)
 
     // Use swift-friendly style for better Swift integration
     arguments.append("--generation-style")
@@ -106,9 +127,9 @@ extension Plugin: XcodeBuildToolPlugin {
 
     arguments.append("--swift-output")
     arguments.append(outputFile.path)
-    // FIXME: Target names with hyphens create invalid Swift identifiers (see SPM plugin above)
     arguments.append("--objc-prefix")
-    arguments.append(target.displayName.capitalized)
+    arguments
+      .append(Self.sanitizeForSwiftIdentifier(target.displayName).capitalized)
     arguments.append("--generation-style")
     arguments.append("swift-friendly")
 

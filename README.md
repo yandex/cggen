@@ -167,9 +167,9 @@ A comprehensive demo app showcasing all cggen features:
 
 ### Plugin Demo
 Command-line demonstration of the plugin functionality:
-- **Location**: `Sources/plugindemo/`
+- **Location**: `Sources/plugin-demo/`
 - **Features**: Shows all API patterns and platform-specific usage
-- **Run**: `swift run plugindemo`
+- **Run**: `swift run plugin-demo`
 
 ## CLI Usage
 
