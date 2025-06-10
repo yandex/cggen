@@ -15,6 +15,7 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     let createView: () -> NSView
   }
 
+  #if swift(>=6.1)
   private let examples: [Example] = [
     // NSImage Creation
     Example(
@@ -124,6 +125,9 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
       }
     ),
   ]
+  #else
+  private let examples: [Example] = []
+  #endif
 
   override func loadView() {
     view = NSView()

@@ -158,12 +158,12 @@ if let context = UIGraphicsGetCurrentContext() {
 
 ## Demo Applications
 
-### CGGenDemo
+### Demo
 A comprehensive demo app showcasing all cggen features:
-- **Location**: `CGGenDemo/`
+- **Location**: `Demo/`
 - **Platforms**: macOS and iOS
 - **Features**: SwiftUI, AppKit, and UIKit examples with interactive playground
-- **Build**: Open `CGGenDemo/CGGenDemo.xcodeproj` in Xcode
+- **Build**: Open `Demo/Demo.xcodeproj` in Xcode
 
 ### Plugin Demo
 Command-line demonstration of the plugin functionality:

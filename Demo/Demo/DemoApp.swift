@@ -15,7 +15,7 @@ struct CLIArgs: ParsableArguments {
 }
 
 @main
-struct CGGenDemoApp: App {
+struct DemoApp: App {
   @State private var selectedTab: DemoTab
 
   init() {

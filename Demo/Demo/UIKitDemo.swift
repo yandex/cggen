@@ -21,6 +21,7 @@ class UIKitDemoViewController: UIViewController {
   }
 
   private func setupExamples() {
+    #if swift(>=6.1)
     examples = [
       (
         category: "UIImage Creation",
@@ -153,6 +154,9 @@ class UIKitDemoViewController: UIViewController {
         ]
       ),
     ]
+    #else
+    examples = []
+    #endif
   }
 
   private func setupViews() {

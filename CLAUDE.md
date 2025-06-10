@@ -131,9 +131,9 @@ The migration from legacy parser infrastructure to swift-parsing is now complete
 - `DicitionaryKey<Key, Value>: Parser` - Direct dictionary key extraction
 - Custom parser operators (`~>>`, `<<~`, `~`, `*`, `+`, `~?`) for parsing DSL
 
-## CGGenDemo App
+## Demo App
 
-See [CGGenDemo/CLAUDE.md](CGGenDemo/CLAUDE.md) for detailed workflow documentation including:
+See [Demo/CLAUDE.md](Demo/CLAUDE.md) for detailed workflow documentation including:
 - Command line arguments for tab selection
 - Screenshot capture workflow using `.claude_temp` folder
 - Building and running instructions
