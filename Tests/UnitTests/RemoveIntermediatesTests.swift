@@ -38,22 +38,22 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
 }
 
 @Suite struct RemoveIntermediatesTests {
-  @Test func test_empty() {
+  @Test func empty() {
     let points = [Point]()
     #expect(points.removeIntermediates(tolerance: 0) == points)
   }
 
-  @Test func test_onePoint() {
+  @Test func onePoint() {
     let points = [Point(x: 0, y: 0)]
     #expect(points.removeIntermediates(tolerance: 0) == points)
   }
 
-  @Test func test_twoPoints() {
+  @Test func twoPoints() {
     let points = [Point(x: 0, y: 0), Point(x: 1, y: 3)]
     #expect(points.removeIntermediates(tolerance: 0) == points)
   }
 
-  @Test func test_oneDirectlyProportionalLine() {
+  @Test func oneDirectlyProportionalLine() {
     let l = line(k: 1, b: 0)
     let points = stride(from: 0.0, to: 2.0, by: 0.01).map(l)
     #expect(
@@ -62,7 +62,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     )
   }
 
-  @Test func test_oneLine() {
+  @Test func oneLine() {
     let l = line(k: -2, b: 10)
     let points = stride(from: -10.0, through: 2.0, by: 0.01).map(l)
     #expect(
@@ -71,7 +71,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     )
   }
 
-  @Test func test_twoLines() {
+  @Test func twoLines() {
     let line1 = line(k: -1, b: 4)
     let line2 = line(k: 0.5, b: 4)
     let points1 = stride(from: -2, to: 0, by: 0.01).map(line1)
@@ -84,7 +84,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     )
   }
 
-  @Test func test_twoLinesWithBigTolerance() {
+  @Test func twoLinesWithBigTolerance() {
     let line1 = line(k: -1, b: 0)
     let line2 = line(k: 1, b: 0)
     let points1 = stride(from: -1, to: 0, by: 0.01).map(line1)

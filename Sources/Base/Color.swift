@@ -3,7 +3,7 @@ import Foundation
 public struct Ø: Numeric, Comparable, Sendable {
   @inlinable public var magnitude: Ø { Ø() }
 
-  @inlinable public init<T>(exactly _: T) where T: BinaryInteger {}
+  @inlinable public init(exactly _: some BinaryInteger) {}
   @inlinable public init() {}
   @inlinable public init(integerLiteral _: Int) {}
 

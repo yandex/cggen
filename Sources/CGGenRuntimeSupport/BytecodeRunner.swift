@@ -198,7 +198,7 @@ extension BCRGBAColor {
   }
 
   var components: [CGFloat] {
-    let norm = self.norm
+    let norm = norm
     return [norm.r, norm.g, norm.b, alpha]
   }
 }
@@ -1022,7 +1022,7 @@ private struct ExtendedContext {
     path: CGPath? = nil
   ) {
     cg.savingGState {
-      if let path = path {
+      if let path {
         cg.beginPath()
         cg.addPath(path)
       }
@@ -1037,7 +1037,7 @@ private struct ExtendedContext {
     path: CGPath? = nil
   ) {
     cg.savingGState {
-      if let path = path {
+      if let path {
         cg.beginPath()
         cg.addPath(path)
       }

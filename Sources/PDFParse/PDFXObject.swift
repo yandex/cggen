@@ -53,17 +53,17 @@ public struct PDFXObject {
 
     let operators = try PDFContentStreamParser.parse(stream: contentStream)
 
-    let group: Group?
-    if case let .dictionary(groupDict)? = stream.dict["Group"] {
-      group = Group(dict: groupDict)!
+    let group: Group? = if case let .dictionary(groupDict)? = stream
+      .dict["Group"] {
+      Group(dict: groupDict)!
     } else {
-      group = nil
+      nil
     }
-    let matrix: CGAffineTransform?
-    if case let .array(matrixArray)? = stream.dict["Matrix"] {
-      matrix = CGAffineTransform(pdfArray: matrixArray)
+    let matrix: CGAffineTransform? = if case let .array(matrixArray)? = stream
+      .dict["Matrix"] {
+      CGAffineTransform(pdfArray: matrixArray)
     } else {
-      matrix = nil
+      nil
     }
 
     let illegalKeys =

@@ -24,7 +24,7 @@ enum PDFContentStreamParser {
     }
 
     func append(_ op: PDFOperator?, file: String = #file, line: Int = #line) {
-      guard let op = op else {
+      guard let op else {
         operators.append(.failure(.parsingError(file: file, line: line)))
         return
       }

@@ -3,7 +3,7 @@ import Testing
 import Base
 
 @Suite struct XMLRenderTests {
-  @Test func testSimpleXML() {
+  @Test func simpleXML() {
     #expect(
       XML.el("note", children: [
         .el("to", children: [.text("Tove")]),
@@ -14,7 +14,7 @@ import Base
     )
   }
 
-  @Test func testXMLWithAttributes() {
+  @Test func xMLWithAttributes() {
     #expect(
       XML.el("rect", attrs: ["size": "10,20"], children: [
         .el("square", attrs: ["size": "5"]),

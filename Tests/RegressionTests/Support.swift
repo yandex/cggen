@@ -51,11 +51,11 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
   let buffer2 = RGBABuffer(image: img2)
 
   let rw1 = buffer1.pixels
-    .flatMap { $0 }
+    .flatMap(\.self)
     .flatMap { $0.norm(Double.self).components }
 
   let rw2 = buffer2.pixels
-    .flatMap { $0 }
+    .flatMap(\.self)
     .flatMap { $0.norm(Double.self).components }
 
   let ziped = zip(rw1, rw2).lazy.map(-)
@@ -111,7 +111,7 @@ func cggen(
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path },
+        files: files.map(\.path),
         swiftOutput: nil
       )
     )
@@ -217,7 +217,7 @@ func clang(
     outArgs,
     frameworkArgs,
     syntaxOnlyArg,
-    files.map { $0.path },
+    files.map(\.path),
     libSearchPathsArgs,
   ].flatMap(identity)
   let clangCode = try subprocess(
@@ -342,9 +342,9 @@ extension WKWebView {
   fileprivate var pageZoomFactor: CGFloat {
     get {
       if #available(macOS 11, *) {
-        return pageZoom
+        pageZoom
       } else {
-        return CGFloat(_pageZoomFactor())
+        CGFloat(_pageZoomFactor())
       }
     }
     set {

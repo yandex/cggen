@@ -32,9 +32,9 @@ extension GenerationParams {
   fileprivate var imports: ObjcTerm {
     switch style {
     case .plain:
-      return .import(.coreGraphics)
+      .import(.coreGraphics)
     case .swiftFriendly:
-      return .preprocessorDirective(
+      .preprocessorDirective(
         .import(.doubleQuotes(path: "cggen_support.h"))
       )
     }

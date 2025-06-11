@@ -5,7 +5,7 @@
 --indent 2
 --operatorfunc nospace
 --ranges nospace
---swiftversion 5.1
+--swiftversion 6.0
 --symlinks ignore
 --wraparguments before-first
 --wrapcollections before-first

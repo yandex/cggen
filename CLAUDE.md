@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+@~/.claude/cggen.md
+
 ## IMPORTANT: Testing Requirements
 - **ALWAYS run `swift test` after making code changes**
 - **NEVER consider a task complete without running tests**

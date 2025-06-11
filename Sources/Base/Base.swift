@@ -20,7 +20,7 @@ prefix operator ^
 
 extension String {
   private var camelCaseComponents: [String] {
-    let components = self.components(separatedBy: .uppercaseLetters)
+    let components = components(separatedBy: .uppercaseLetters)
     var currentPos = index(startIndex, offsetBy: components.first?.count ?? 0)
     var result: [String] = components.first.map { [$0] } ?? []
     for comp in components.dropFirst() {
@@ -32,7 +32,7 @@ extension String {
 
   private var nameComponents: [String] {
     components(separatedBy: CharacterSet(charactersIn: "_-: "))
-      .flatMap { $0.camelCaseComponents }
+      .flatMap(\.camelCaseComponents)
   }
 
   public func capitalizedFirst() -> String {
@@ -48,15 +48,15 @@ extension String {
   public var lowerCamelCase: String {
     let comps = nameComponents
     return (comps.first ?? "").lowercased() + comps.dropFirst()
-      .map { $0.capitalized }.joined()
+      .map(\.capitalized).joined()
   }
 
   public var upperCamelCase: String {
-    nameComponents.map { $0.capitalized }.joined()
+    nameComponents.map(\.capitalized).joined()
   }
 
   @inlinable
-  public static func HEX<T: BinaryInteger>(_ num: T) -> String {
+  public static func HEX(_ num: some BinaryInteger) -> String {
     .init(num, radix: 0x10, uppercase: true)
   }
 }
@@ -86,7 +86,7 @@ extension Optional: OptionalType {
 }
 
 public func ?= <T>(v: inout T, val: T?) {
-  if let val = val {
+  if let val {
     v = val
   }
 }
@@ -224,7 +224,7 @@ extension Array {
   }
 }
 
-extension Array where Element == String {
+extension [String] {
   public func appendFirstToLast(
     _ strings: [String],
     separator: String
@@ -285,7 +285,7 @@ extension Collection {
 
   @inlinable
   public var firstAndOnly: Element? {
-    guard let first = first, count == 1 else {
+    guard let first, count == 1 else {
       return nil
     }
     return first
@@ -381,7 +381,7 @@ public func always<T, U>(_ value: T) -> @Sendable (inout U) -> T {
 public func absurd<T>(_: Never) -> T {}
 
 @inlinable
-public func absurd<T, A>(_: A, _: Never) -> T {}
+public func absurd<T>(_: some Any, _: Never) -> T {}
 
 @inlinable
 public func >>> <A, B, C>(
@@ -487,12 +487,12 @@ public func apply<T>(_ f: () -> T) -> T {
 
 extension CaseIterable where Self: RawRepresentable, RawValue: Hashable {
   public static var rawValues: Set<AllCases.Element.RawValue> {
-    Set(allCases.map { $0.rawValue })
+    Set(allCases.map(\.rawValue))
   }
 }
 
 @inlinable
-public func hex<T>(_ bytes: T) -> String {
+public func hex(_ bytes: some Any) -> String {
   withUnsafeBytes(of: bytes) {
     $0.map(String.HEX).joined()
   }

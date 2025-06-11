@@ -27,7 +27,7 @@ import Testing
 }
 
 @Suite struct SVGAttributesParserTest {
-  @Test func testUtils() {
+  @Test func utils() {
     let wsp = SVGAttributeParsers.wsp
     let commaWsp = SVGAttributeParsers.commaWsp
     let hexFromSingle = SVGAttributeParsers.hexByteFromSingle

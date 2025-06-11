@@ -97,7 +97,7 @@ enum PDFObject {
 
   func integerArray() -> [Int]? {
     guard case let .array(a) = self else { return nil }
-    return a.map { $0.intValue }.unwrap()
+    return a.map(\.intValue).unwrap()
   }
 
   func dictionaryVal() -> [String: PDFObject]? {
@@ -131,11 +131,11 @@ enum PDFObject {
   var dictFromDictOrStream: [String: PDFObject]? {
     switch self {
     case let .dictionary(d):
-      return d
+      d
     case let .stream(s):
-      return s.dict
+      s.dict
     default:
-      return nil
+      nil
     }
   }
 }

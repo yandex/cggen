@@ -259,7 +259,7 @@ class UIKitExampleCell: UITableViewCell {
 
     // Layout container view
     let containerY = codeLabel.frame.maxY + spacing
-    if let exampleView = exampleView {
+    if let exampleView {
       containerView.frame = CGRect(
         x: padding,
         y: containerY,

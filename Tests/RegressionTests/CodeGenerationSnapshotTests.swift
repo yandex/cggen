@@ -38,7 +38,7 @@ enum GenerationType {
 @Suite struct CodeGenerationSnapshotTests {
   // MARK: - Swift Generation Tests
 
-  @Test func testPluginDemoGeneration() throws {
+  @Test func pluginDemoGeneration() throws {
     let test = SnapshotTest(
       name: "testSwiftCodeGenerationSnapshot",
       files: pluginDemoFiles(["circle.svg", "square.svg", "star.svg"]),
@@ -47,7 +47,7 @@ enum GenerationType {
     try runSnapshotTest(test)
   }
 
-  @Test func testPathGeneration() throws {
+  @Test func pathGeneration() throws {
     let test = SnapshotTest(
       name: "testSwiftPathGenerationSnapshot_paths",
       files: pluginDemoFiles(["paths.svg"])
@@ -55,7 +55,7 @@ enum GenerationType {
     try runSnapshotTest(test)
   }
 
-  @Test func testMixedGeneration() throws {
+  @Test func mixedGeneration() throws {
     let test = SnapshotTest(
       name: "testSwiftMixedGenerationSnapshot_mixed",
       files: svgSampleFiles(["paths_and_images.svg"]),
@@ -66,7 +66,7 @@ enum GenerationType {
 
   // MARK: - C/Objective-C Generation Tests
 
-  @Test func testObjCHeaderGeneration() throws {
+  @Test func objCHeaderGeneration() throws {
     let files = pluginDemoFiles(["circle.svg", "square.svg", "star.svg"])
     let generatedCode = try generateObjCHeader(files: files, prefix: "test")
     try assertSnapshot(
@@ -76,7 +76,7 @@ enum GenerationType {
     )
   }
 
-  @Test func testObjCImplementationGeneration() throws {
+  @Test func objCImplementationGeneration() throws {
     let files = pluginDemoFiles(["circle.svg", "square.svg", "star.svg"])
     let generatedCode = try generateObjCImplementation(
       files: files,
@@ -89,7 +89,7 @@ enum GenerationType {
     )
   }
 
-  @Test func testObjCPathGeneration() throws {
+  @Test func objCPathGeneration() throws {
     let files = pluginDemoFiles(["paths.svg"])
     let generatedCode = try generateObjCImplementation(
       files: files,
@@ -142,7 +142,7 @@ enum GenerationType {
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path },
+        files: files.map(\.path),
         swiftOutput: swiftFile.path
       )
     )
@@ -173,7 +173,7 @@ enum GenerationType {
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path },
+        files: files.map(\.path),
         swiftOutput: nil
       )
     )
@@ -204,7 +204,7 @@ enum GenerationType {
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path },
+        files: files.map(\.path),
         swiftOutput: nil
       )
     )

@@ -17,7 +17,7 @@ import Base
     }
   }
 
-  @Test func testThrowingConcurrentmap() throws {
+  @Test func throwingConcurrentmap() throws {
     struct TestError: Error, Equatable {}
     do {
       _ = try Array(0..<100).concurrentMap {

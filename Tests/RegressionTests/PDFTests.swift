@@ -6,67 +6,67 @@ import Base
 import libcggen
 
 @Suite struct PDFTests {
-  @Test func testAlpha() {
+  @Test func alpha() {
     test(pdf: "alpha")
   }
 
-  @Test func testCapsJoins() {
+  @Test func capsJoins() {
     test(pdf: "caps_joins")
   }
 
-  @Test func testDashes() {
+  @Test func dashes() {
     test(pdf: "dashes")
   }
 
-  @Test func testFill() {
+  @Test func fill() {
     test(pdf: "fill")
   }
 
-  @Test func testGradient() {
+  @Test func gradient() {
     test(pdf: "gradient")
   }
 
-  @Test func testGradientRadial() {
+  @Test func gradientRadial() {
     test(pdf: "gradient_radial")
   }
 
-  @Test func testGradientShape() {
+  @Test func gradientShape() {
     test(pdf: "gradient_shape")
   }
 
-  @Test func testGradientThreeDots() {
+  @Test func gradientThreeDots() {
     test(pdf: "gradient_three_dots")
   }
 
-  @Test func testGradientWithAlpha() {
+  @Test func gradientWithAlpha() {
     test(pdf: "gradient_with_alpha")
   }
 
-  @Test func testGradientWithMask() {
+  @Test func gradientWithMask() {
     test(pdf: "gradient_with_mask")
   }
 
-  @Test func testGroupOpacity() {
+  @Test func groupOpacity() {
     test(pdf: "group_opacity")
   }
 
-  @Test func testLines() {
+  @Test func lines() {
     test(pdf: "lines")
   }
 
-  @Test func testNestedTransparentGroup() {
+  @Test func nestedTransparentGroup() {
     test(pdf: "nested_transparent_group", tolerance: 0.005)
   }
 
-  @Test func testShapes() {
+  @Test func shapes() {
     test(pdf: "shapes", tolerance: 0.005)
   }
 
-  @Test func testUnderlyingObjectWithTinyAlpha() {
+  @Test func underlyingObjectWithTinyAlpha() {
     test(pdf: "underlying_object_with_tiny_alpha")
   }
 
-  @Test func testWhiteCrossScnOperator() {
+  @Test func whiteCrossScnOperator() {
     test(pdf: "white_cross_scn_operator")
   }
 }

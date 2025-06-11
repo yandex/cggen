@@ -28,21 +28,21 @@ extension ObjcTerm: Renderable {
   func render() -> [String] {
     switch self {
     case let .composite(sequence):
-      return sequence.flatMap { $0.render() }
+      sequence.flatMap { $0.render() }
     case .newLine:
-      return [""]
+      [""]
     case let .comment(comment):
-      return ["// \(comment)"]
+      ["// \(comment)"]
     case let .preprocessorDirective(preprocessor):
-      return [preprocessor.render()]
+      [preprocessor.render()]
     case let .moduleImport(module):
-      return ["@import \(module);"]
+      ["@import \(module);"]
     case let .compilerDirective(directive):
-      return [directive]
+      [directive]
     case let .cdecl(decl):
-      return decl.render()
+      decl.render()
     case let .stmnt(s):
-      return s.render()
+      s.render()
     }
   }
 }
@@ -51,23 +51,23 @@ extension ObjcTerm.PreprocessorDirective: Renderable {
   func render() -> String {
     switch self {
     case let .define(new, to: old):
-      return "#define \(new) \(old)"
+      "#define \(new) \(old)"
     case let .if(cond: cond):
-      return "#if \(cond)"
+      "#if \(cond)"
     case let .ifdef(identifier):
-      return "#ifdef \(identifier)"
+      "#ifdef \(identifier)"
     case let .ifndef(identifier):
-      return "#ifndef \(identifier)"
+      "#ifndef \(identifier)"
     case let .else(cond):
-      return "#else  // \(cond)"
+      "#else  // \(cond)"
     case let .endif(cond):
-      return "#endif  // \(cond)"
+      "#endif  // \(cond)"
     case let .import(type):
       switch type {
       case let .angleBrackets(path: path):
-        return "#import <\(path)>"
+        "#import <\(path)>"
       case let .doubleQuotes(path: path):
-        return "#import \"\(path)\""
+        "#import \"\(path)\""
       }
     }
   }
@@ -77,7 +77,7 @@ extension ObjcTerm.TypeName.DirectAbstractDeclarator: Renderable {
   func render() -> String {
     switch self {
     case let .array(of: type):
-      return "[" + (type.map { $0.render() } ?? "") + "]"
+      "[" + (type.map { $0.render() } ?? "") + "]"
     }
   }
 }
@@ -86,11 +86,11 @@ extension ObjcTerm.TypeName.AbstractDeclarator: Renderable {
   func render() -> String {
     switch self {
     case let .direct(direct):
-      return direct.render()
+      direct.render()
     case let .pointer(pointer):
-      return pointer.render()
+      pointer.render()
     case let .pointerTo(pointer, direct):
-      return pointer.render() + direct.render()
+      pointer.render() + direct.render()
     }
   }
 }
@@ -112,18 +112,18 @@ extension ObjcTerm.Statement: Renderable {
   func render() -> [String] {
     switch self {
     case let .expr(e):
-      return [e.render() + ";"]
+      [e.render() + ";"]
     case let .block(list):
-      return ["{"] + list.flatMap { $0.render(indent: 2) } + ["}"]
+      ["{"] + list.flatMap { $0.render(indent: 2) } + ["}"]
     case let .for(init: initDecl, cond: cond, incr: incr, body: body):
-      return ["for ("].appendFirstToLast(initDecl.render(), separator: "")
+      ["for ("].appendFirstToLast(initDecl.render(), separator: "")
         .appendFirstToLast(
           ["\(cond.render()); \(incr.render()))"],
           separator: " "
         )
         .appendFirstToLast(body.render(), separator: " ")
     case let .multiple(stmnts):
-      return stmnts.flatMap { $0.render() }
+      stmnts.flatMap { $0.render() }
     }
   }
 }
@@ -132,9 +132,9 @@ extension ObjcTerm.Statement.BlockItem: Renderable {
   func render() -> [String] {
     switch self {
     case let .decl(d):
-      return d.render()
+      d.render()
     case let .stmnt(s):
-      return s.render()
+      s.render()
     }
   }
 }
@@ -155,13 +155,13 @@ extension ObjcTerm.CDecl.Specifier: Renderable {
   func render() -> [String] {
     switch self {
     case let .storage(storageClass):
-      return [storageClass.rawValue]
+      [storageClass.rawValue]
     case .functionSpecifier:
-      return []
+      []
     case let .attribute(attr):
-      return [attr]
+      [attr]
     case let .type(specifier):
-      return specifier.render()
+      specifier.render()
     }
   }
 }
@@ -189,9 +189,9 @@ extension ObjcTerm.CDecl.InitDeclarator: Renderable {
   func render() -> [String] {
     switch self {
     case let .decl(decl):
-      return [decl.render()]
+      [decl.render()]
     case let .declinit(decl, initializer):
-      return [decl.render()]
+      [decl.render()]
         .appendFirstToLast(initializer.render(), separator: " = ")
     }
   }
@@ -218,9 +218,9 @@ extension ObjcTerm.Pointer: Renderable {
   func render() -> String {
     switch self {
     case .last:
-      return "*"
+      "*"
     case let .more(typeQual: _, pointer: next):
-      return "*" + next.render()
+      "*" + next.render()
     }
   }
 }
@@ -247,7 +247,7 @@ extension ObjcTerm.TypeSpecifier: Renderable {
 extension ObjcTerm.TypeSpecifier.StructDeclaration: Renderable {
   func render() -> String {
     (spec.render() + [decl.render()])
-      .flatMap { $0 }
+      .flatMap(\.self)
       .joined(separator: " ")
   }
 }
