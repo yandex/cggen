@@ -10,7 +10,7 @@ import Base
     )
   }
 
-  @Test func testSplitSubscript() {
+  @Test func splitSubscript() {
     let xs = [0, 1, 2, 3, 4, 5].splitBy(subSize: 3)
     #expect(xs[0].startIndex == 0)
     #expect(xs[0].endIndex == 3)

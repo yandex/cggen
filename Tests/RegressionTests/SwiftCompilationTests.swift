@@ -5,7 +5,7 @@ import Testing
 import libcggen
 
 @Suite struct SwiftCompilationTests {
-  @Test func testSwiftCodeCompilation() throws {
+  @Test func swiftCodeCompilation() throws {
     let svgSamplesPath = getCurentFilePath()
       .appendingPathComponent("svg_samples")
     let files = [
@@ -45,7 +45,7 @@ import libcggen
         cggenSupportHeaderPath: nil,
         module: nil,
         verbose: false,
-        files: files.map { $0.path },
+        files: files.map(\.path),
         swiftOutput: swiftFile.path
       )
     )

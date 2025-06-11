@@ -58,7 +58,7 @@ public enum ParseError: Error {
   case gotNilExpected(String)
 
   @inlinable
-  public static func gotNilExpected<T>(type: T.Type) -> ParseError {
+  public static func gotNilExpected(type: (some Any).Type) -> ParseError {
     .gotNilExpected(String(describing: type))
   }
 }

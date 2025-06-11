@@ -9,7 +9,7 @@ public struct Logger {
   }
 
   func log(_ s: String) {
-    guard let level = level else { fatalError("log level must be set") }
+    guard let level else { fatalError("log level must be set") }
     if level {
       print(s)
     }

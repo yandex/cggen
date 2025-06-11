@@ -17,11 +17,11 @@ struct PlaygroundView: View {
 
     var drawing: Drawing {
       switch self {
-      case .star: return .star
-      case .heart: return .heart
-      case .gear: return .gear
-      case .rocket: return .rocket
-      case .mountain: return .mountain
+      case .star: .star
+      case .heart: .heart
+      case .gear: .gear
+      case .rocket: .rocket
+      case .mountain: .mountain
       }
     }
   }

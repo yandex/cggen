@@ -46,7 +46,7 @@ struct Plugin: BuildToolPlugin {
     }
 
     print(
-      "CggenPlugin: Found \(inputFiles.count) files in \(target.name): \(inputFiles.map { $0.url.lastPathComponent })"
+      "CggenPlugin: Found \(inputFiles.count) files in \(target.name): \(inputFiles.map(\.url.lastPathComponent))"
     )
 
     // Create output directory for generated Swift files
@@ -81,7 +81,7 @@ struct Plugin: BuildToolPlugin {
         displayName: "Generating Swift code from SVG/PDF files for \(target.name)",
         executable: cggenTool.url,
         arguments: arguments,
-        inputFiles: inputFiles.map { $0.url },
+        inputFiles: inputFiles.map(\.url),
         outputFiles: [outputFile]
       ),
     ]
@@ -138,7 +138,7 @@ extension Plugin: XcodeBuildToolPlugin {
         displayName: "Generating Swift code from SVG/PDF files for \(target.displayName)",
         executable: cggenTool.url,
         arguments: arguments,
-        inputFiles: inputFiles.map { $0.url },
+        inputFiles: inputFiles.map(\.url),
         outputFiles: [outputFile]
       ),
     ]

@@ -14,9 +14,9 @@ extension GenerationStyle {
   var drawingHandlerPrefix: String {
     switch self {
     case .plain:
-      return ""
+      ""
     case .swiftFriendly:
-      return "static "
+      "static "
     }
   }
 }

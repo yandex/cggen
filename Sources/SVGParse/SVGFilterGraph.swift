@@ -135,11 +135,11 @@ private func node(
 ) -> (SVG.FilterPrimitiveIn?) throws -> SVGFilterNode { {
   switch $0 {
   case let .predefined(predefined):
-    return node(from: predefined)
+    node(from: predefined)
   case let .previous(name):
-    return try acc.preceding[name] !! FilterGraphCreationError.inputNotDefined
+    try acc.preceding[name] !! FilterGraphCreationError.inputNotDefined
   case .none:
-    return acc.prev
+    acc.prev
   }
 } }
 
@@ -148,17 +148,17 @@ private func node(
 ) -> SVGFilterNode {
   switch predefinedInput {
   case .backgroundalpha:
-    return .backgroundAlpha
+    .backgroundAlpha
   case .sourcegraphic:
-    return .sourceGraphic
+    .sourceGraphic
   case .sourcealpha:
-    return .sourceAlpha
+    .sourceAlpha
   case .backgroundimage:
-    return .backgroundImage
+    .backgroundImage
   case .fillpaint:
-    return .fillPaint
+    .fillPaint
   case .strokepaint:
-    return .strokePaint
+    .strokePaint
   }
 }
 
@@ -175,15 +175,15 @@ extension SVG.FilterPrimitiveContent {
   public var common: SVG.FilterPrimitiveCommonAttributes {
     switch self {
     case let .feBlend(d):
-      return d.common
+      d.common
     case let .feColorMatrix(d):
-      return d.common
+      d.common
     case let .feFlood(d):
-      return d.common
+      d.common
     case let .feGaussianBlur(d):
-      return d.common
+      d.common
     case let .feOffset(d):
-      return d.common
+      d.common
     }
   }
 }

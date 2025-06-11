@@ -182,7 +182,7 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
 
   func numberOfRows(in _: NSTableView) -> Int {
     // Count categories + examples
-    let categories = Set(examples.map { $0.category })
+    let categories = Set(examples.map(\.category))
     return categories.count + examples.count
   }
 

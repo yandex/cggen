@@ -3,7 +3,7 @@ import Testing
 
 @Suite struct ObjcLexTests {
   typealias Declarator = ObjcTerm.Declarator
-  @Test func testComments() {
+  @Test func comments() {
     #expect(
       ObjcTerm.composite([.comment("Hello"), .comment("World")]).renderText() ==
         """
@@ -13,7 +13,7 @@ import Testing
     )
   }
 
-  @Test func testImports() {
+  @Test func imports() {
     #expect(
       ObjcTerm.composite([
         .import(.coreFoundation, .foundation),
@@ -34,7 +34,7 @@ import Testing
     )
   }
 
-  @Test func testCDecl() {
+  @Test func cDecl() {
     #expect(
       ObjcTerm.CDecl(specifiers: [
         .storage(.typedef),
@@ -53,7 +53,7 @@ import Testing
     )
   }
 
-  @Test func testCStruct() {
+  @Test func cStruct() {
     #expect(
       ObjcTerm.CDecl(specifiers: [
         .storage(.typedef),

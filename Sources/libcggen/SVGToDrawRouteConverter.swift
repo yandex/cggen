@@ -272,7 +272,7 @@ private func drawShape(
   // FIXME: Merge with same code in group
   var pre: [DrawStep] = [.saveGState, strokeAndFill]
   var post: [DrawStep] = []
-  if let transform = transform {
+  if let transform {
     pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
   }
   if let opacity = presentation.opacity {
@@ -299,7 +299,7 @@ private func group(
   let presentationSteps = try ctx.apply(presentation, area: nil)
   var pre: [DrawStep] = [.saveGState, presentationSteps]
   var post: [DrawStep] = []
-  if let transform = transform {
+  if let transform {
     pre += transform.map(CGAffineTransform.init).map(DrawStep.concatCTM)
   }
   if let opacity = presentation.opacity {
@@ -397,19 +397,18 @@ private func pathConstruction(
   from rect: SVG.RectData
 ) -> (PathSegment, boundingBox: CGRect)? {
   let cgrect = CGRect(rect)
-  let pathConstruction: PathSegment
-  switch (
+  let pathConstruction: PathSegment = switch (
     rect.rx.map { CGFloat($0.number) },
     rect.ry.map { CGFloat($0.number) }
   ) {
   case (nil, nil):
-    pathConstruction = .appendRectangle(cgrect)
+    .appendRectangle(cgrect)
   case let (rx?, nil):
-    pathConstruction = .appendRoundedRect(cgrect, rx: rx, ry: rx)
+    .appendRoundedRect(cgrect, rx: rx, ry: rx)
   case let (nil, ry?):
-    pathConstruction = .appendRoundedRect(cgrect, rx: ry, ry: ry)
+    .appendRoundedRect(cgrect, rx: ry, ry: ry)
   case let (rx?, ry?):
-    pathConstruction = .appendRoundedRect(cgrect, rx: rx, ry: ry)
+    .appendRoundedRect(cgrect, rx: rx, ry: ry)
   }
   return (pathConstruction, cgrect)
 }
@@ -515,7 +514,7 @@ private func processCommandKind(
     case .absolute:
       return cgPoint
     case .relative:
-      guard let currentPoint = currentPoint else { throw Err.noPreviousPoint }
+      guard let currentPoint else { throw Err.noPreviousPoint }
       return cgPoint + currentPoint
     }
   }
@@ -528,11 +527,11 @@ private func processCommandKind(
   case let .moveto(pairs):
     // Nonemptiness guaranteed by parser
     let first = CGPoint(svgPair: pairs.first!)
-    let moveToPoint: CGPoint
-    if command.positioning == .relative, let currentPoint = currentPoint {
-      moveToPoint = currentPoint + first
+    let moveToPoint: CGPoint = if command.positioning == .relative,
+                                  let currentPoint {
+      currentPoint + first
     } else {
-      moveToPoint = first
+      first
     }
     let moveToStep = PathSegment.moveTo(moveToPoint)
     currentPoint = moveToPoint
@@ -590,12 +589,11 @@ private func processCommandKind(
   case let .horizontalLineto(xs):
     return try xs.map { x in
       guard let current = currentPoint else { throw Err.noPreviousPoint }
-      let modificator: (inout CGPoint) -> Void
-      switch command.positioning {
+      let modificator: (inout CGPoint) -> Void = switch command.positioning {
       case .absolute:
-        modificator = { $0.x = x.cgfloat }
+        { $0.x = x.cgfloat }
       case .relative:
-        modificator = { $0.x += x.cgfloat }
+        { $0.x += x.cgfloat }
       }
       let point = modified(current, modificator)
       cgpath.addLine(to: point)
@@ -605,12 +603,11 @@ private func processCommandKind(
   case let .verticalLineto(ys):
     return try ys.map { y in
       guard let current = currentPoint else { throw Err.noPreviousPoint }
-      let modificator: (inout CGPoint) -> Void
-      switch command.positioning {
+      let modificator: (inout CGPoint) -> Void = switch command.positioning {
       case .absolute:
-        modificator = { $0.y = y.cgfloat }
+        { $0.y = y.cgfloat }
       case .relative:
-        modificator = { $0.y += y.cgfloat }
+        { $0.y += y.cgfloat }
       }
       let point = modified(current, modificator)
       cgpath.addLine(to: point)
@@ -691,12 +688,11 @@ private func gradients(
     let locandcolors: [(CGFloat, RGBACGColor)] = stops.map {
       let color = $0.presentation.stopColor ?? SVG.Color(gray: 0, alpha: .zero)
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
-      let offset: CGFloat
-      switch $0.offset ?? .number(0) {
+      let offset = switch $0.offset ?? .number(0) {
       case let .number(num):
-        offset = CGFloat(num)
+        CGFloat(num)
       case let .percentage(percentage):
-        offset = CGFloat(percentage) / 100
+        CGFloat(percentage) / 100
       }
       return (offset, color.norm().withAlpha(opacity))
     }
@@ -740,12 +736,11 @@ private func gradients(
     let locandcolors: [(CGFloat, RGBACGColor)] = try stops.map {
       let color = try $0.presentation.stopColor !! Err.noStopColor
       let opacity = CGFloat($0.presentation.stopOpacity ?? 1)
-      let offset: CGFloat
-      switch $0.offset ?? .number(0) {
+      let offset = switch $0.offset ?? .number(0) {
       case let .number(num):
-        offset = CGFloat(num)
+        CGFloat(num)
       case let .percentage(percentage):
-        offset = CGFloat(percentage) / 100
+        CGFloat(percentage) / 100
       }
       return (offset, color.norm().withAlpha(opacity))
     }
@@ -842,55 +837,55 @@ extension SVG {
   var core: SVG.CoreAttributes? {
     switch self {
     case let .svg(svg):
-      return svg.core
+      svg.core
     case let .group(group):
-      return group.core
+      group.core
     case let .use(e):
-      return e.core
+      e.core
     case let .rect(e):
-      return e.core
+      e.core
     case let .polygon(e):
-      return e.core
+      e.core
     case let .circle(e):
-      return e.core
+      e.core
     case let .ellipse(e):
-      return e.core
+      e.core
     case let .path(e):
-      return e.core
+      e.core
     case let .mask(e):
-      return e.core
+      e.core
     case let .defs(e):
-      return e.core
+      e.core
     case .title:
-      return nil
+      nil
     case .desc:
-      return nil
+      nil
     case let .linearGradient(e):
-      return e.core
+      e.core
     case let .radialGradient(e):
-      return e.core
+      e.core
     case let .clipPath(e):
-      return e.core
+      e.core
     case let .filter(e):
-      return e.core
+      e.core
     }
   }
 
   var children: [SVG]? {
     switch self {
     case let .svg(e):
-      return e.children
+      e.children
     case let .group(e):
-      return e.children
+      e.children
     case let .mask(e):
-      return e.children
+      e.children
     case let .clipPath(e):
-      return e.children
+      e.children
     case let .defs(e):
-      return e.children
+      e.children
     case .use, .rect, .polygon, .circle, .ellipse, .path, .title, .desc,
          .linearGradient, .radialGradient, .filter:
-      return nil
+      nil
     }
   }
 }
@@ -909,30 +904,30 @@ extension SVG.Shape {
   ) throws -> (PathSegment, CGRect)? {
     switch self {
     case let .circle(e):
-      return pathConstruction(from: e.data)
+      pathConstruction(from: e.data)
     case let .path(e):
-      return try pathConstruction(from: e.data)
+      try pathConstruction(from: e.data)
     case let .rect(e):
-      return pathConstruction(from: e.data)
+      pathConstruction(from: e.data)
     case let .ellipse(e):
-      return pathConstruction(from: e.data)
+      pathConstruction(from: e.data)
     case let .polygon(e):
-      return pathConstruction(from: e.data)
+      pathConstruction(from: e.data)
     }
   }
 
   var transform: [SVG.Transform]? {
     switch self {
     case let .circle(e):
-      return e.transform
+      e.transform
     case let .path(e):
-      return e.transform
+      e.transform
     case let .rect(e):
-      return e.transform
+      e.transform
     case let .ellipse(e):
-      return e.transform
+      e.transform
     case let .polygon(e):
-      return e.transform
+      e.transform
     }
   }
 }
@@ -1127,9 +1122,9 @@ extension SVG.Coordinate {
   func abs(in value: CGFloat) -> CGFloat {
     switch unit {
     case nil, .pt?, .px?:
-      return CGFloat(number)
+      CGFloat(number)
     case .percent?:
-      return CGFloat(number / 100) * value
+      CGFloat(number / 100) * value
     }
   }
 }
@@ -1142,9 +1137,9 @@ extension SVG.Paint {
   var color: SVG.Color? {
     switch self {
     case let .rgb(color):
-      return color
+      color
     case .funciri, .none:
-      return nil
+      nil
     }
   }
 }

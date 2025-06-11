@@ -6,7 +6,7 @@ import CGGenRuntimeSupport
 import libcggen
 
 @Suite struct BCCompilationTests {
-  @Test func testCompilation() throws {
+  @Test func compilation() throws {
     let variousFilenamesDir =
       getCurentFilePath().appendingPathComponent("various_filenames")
     let files = [
@@ -64,7 +64,7 @@ import libcggen
   }
 
   @MainActor
-  @Test func testCompilationAndDrawing() throws {
+  @Test func compilationAndDrawing() throws {
     // FIXME: WebKitSnapshoter is not available in swift-testing
     guard Int.random(in: 0...10) > 100 else { return }
     // FIXME: Figure out how to link bcrunner code to binaries in tests

@@ -8,9 +8,9 @@ import UniformTypeIdentifiers
 public typealias RGBAPixel = RGBAColor<UInt8>
 
 extension RGBAPixel {
-  public init<T: Sequence>(
-    bufferPiece: T
-  ) where T.Element == UInt8 {
+  public init(
+    bufferPiece: some Sequence<UInt8>
+  ) {
     var it = bufferPiece.makeIterator()
     red = it.next()!
     green = it.next()!

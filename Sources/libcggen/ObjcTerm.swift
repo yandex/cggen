@@ -287,7 +287,7 @@ extension ObjcTerm {
       .preprocessorDirective(condition),
       trueTerms,
     ]
-    if let elseTerms = elseTerms {
+    if let elseTerms {
       terms += [
         .preprocessorDirective(.else(cond: desc)),
         elseTerms,
@@ -350,9 +350,9 @@ extension ObjcTerm {
 
   // MARK: Composite
 
-  init<T: Sequence>(
-    _ lexems: T
-  ) where T.Element == ObjcTerm {
+  init(
+    _ lexems: some Sequence<ObjcTerm>
+  ) {
     self = .composite(.init(lexems))
   }
 

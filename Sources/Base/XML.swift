@@ -232,13 +232,13 @@ private class XMLComposer: NSObject, XMLParserDelegate {
 private func filterOutWhitespaceLines(in xml: XML) -> XML? {
   switch xml {
   case let .el(el):
-    return .el(
+    .el(
       el.tag,
       attrs: el.attrs,
       children: el.children.compactMap(filterOutWhitespaceLines)
     )
   case let .text(t):
-    return CharacterSet(charactersIn: t).isSubset(of: .whitespacesAndNewlines) ?
+    CharacterSet(charactersIn: t).isSubset(of: .whitespacesAndNewlines) ?
       nil : .text(t)
   }
 }

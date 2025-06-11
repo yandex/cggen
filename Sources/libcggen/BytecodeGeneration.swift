@@ -12,39 +12,56 @@ private protocol BytecodeEncodable {
 
 private func >>(_: (), _: inout Bytecode) {}
 
-private func >> <T: BytecodeEncodable>(value: T, bytecode: inout Bytecode) {
+private func >>(value: some BytecodeEncodable, bytecode: inout Bytecode) {
   value.encode(to: &bytecode)
 }
 
-private func >> <
-  T0: BytecodeEncodable, T1: BytecodeEncodable
->(value: (T0, T1), bytecode: inout Bytecode) {
+private func >>(
+  value: (some BytecodeEncodable, some BytecodeEncodable),
+  bytecode: inout Bytecode
+) {
   value.0 >> bytecode
   value.1 >> bytecode
 }
 
-private func >> <
-  T0: BytecodeEncodable, T1: BytecodeEncodable, T2: BytecodeEncodable
->(value: (T0, T1, T2), bytecode: inout Bytecode) {
+private func >>(
+  value: (
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable
+  ),
+  bytecode: inout Bytecode
+) {
   value.0 >> bytecode
   value.1 >> bytecode
   value.2 >> bytecode
 }
 
-private func >> <
-  T0: BytecodeEncodable, T1: BytecodeEncodable,
-  T2: BytecodeEncodable, T3: BytecodeEncodable
->(value: (T0, T1, T2, T3), bytecode: inout Bytecode) {
+private func >>(
+  value: (
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable
+  ),
+  bytecode: inout Bytecode
+) {
   value.0 >> bytecode
   value.1 >> bytecode
   value.2 >> bytecode
   value.3 >> bytecode
 }
 
-private func >> <
-  T0: BytecodeEncodable, T1: BytecodeEncodable, T2: BytecodeEncodable,
-  T3: BytecodeEncodable, T4: BytecodeEncodable
->(value: (T0, T1, T2, T3, T4), bytecode: inout Bytecode) {
+private func >>(
+  value: (
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable,
+    some BytecodeEncodable
+  ),
+  bytecode: inout Bytecode
+) {
   value.0 >> bytecode
   value.1 >> bytecode
   value.2 >> bytecode

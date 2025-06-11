@@ -219,9 +219,9 @@ public enum SVGParser {
   private static var version: AttributeGroupParser<Void> {
     identifier(.version).compactMap { value in
       if let version = value {
-        return version == "1.1" ? () : nil
+        version == "1.1" ? () : nil
       } else {
-        return ()
+        ()
       }
     }.eraseToAnyParser()
   }
@@ -879,7 +879,7 @@ private func attributeParser<T>(
   nonisolated(unsafe) let parser = parser
   return { attribute in
     DicitionaryKey<String, String>(attribute.rawValue).map { value -> T? in
-      guard let value = value else { return nil }
+      guard let value else { return nil }
       return try? parser.parse(value)
     }.eraseToAnyParser()
   }
@@ -890,7 +890,7 @@ private func attributeParser<T>(
   _ attribute: Attribute
 ) -> AnyParser<[String: String], T?> {
   DicitionaryKey(attribute.rawValue).map { value in
-    guard let value = value else { return nil }
+    guard let value else { return nil }
     return try? parser.parse(value)
   }.eraseToAnyParser()
 }
@@ -908,9 +908,9 @@ public func renderXML(from document: SVG.Document) -> XML {
 public func renderXML(from svg: SVG) -> XML {
   switch svg {
   case let .svg(doc):
-    return renderXML(from: doc)
+    renderXML(from: doc)
   case let .rect(r):
-    return .el("rect", attrs: [
+    .el("rect", attrs: [
       "x": r.data.x?.encode(),
       "y": r.data.y?.encode(),
       "width": r.data.width?.encode(),
@@ -940,13 +940,13 @@ extension SVG.Paint {
   public func encode() -> String {
     switch self {
     case let .rgb(color):
-      return color.hexString
+      color.hexString
     case .none:
-      return "none"
+      "none"
     case .currentColor:
-      return "currentColor"
+      "currentColor"
     case let .funciri(id):
-      return "url(#\(id)"
+      "url(#\(id)"
     }
   }
 }

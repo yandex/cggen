@@ -629,21 +629,21 @@ extension SVG {
   public var shape: Shape? {
     switch self {
     case let .path(e):
-      return .path(e)
+      .path(e)
     case let .rect(e):
-      return .rect(e)
+      .rect(e)
     case let .circle(e):
-      return .circle(e)
+      .circle(e)
     case let .ellipse(e):
-      return .ellipse(e)
+      .ellipse(e)
     case let .line(e):
-      return .line(e)
+      .line(e)
     case let .polyline(e):
-      return .polyline(e)
+      .polyline(e)
     case let .polygon(e):
-      return .polygon(e)
+      .polygon(e)
     default:
-      return nil
+      nil
     }
   }
 }

@@ -256,7 +256,7 @@ class SVGCustomCheckTests: XCTestCase {
 }
 
 @Suite struct PathExtractionTests {
-  @Test func testLinesAndCurves() {
+  @Test func linesAndCurves() {
     test(args: linesAndCurvesArgs)
   }
 }

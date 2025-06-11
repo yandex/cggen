@@ -338,43 +338,43 @@ extension PDFShading {
   private var function: PDFFunction {
     switch kind {
     case let .axial(axial):
-      return axial.function
+      axial.function
     case let .radial(radial):
-      return radial.function
+      radial.function
     }
   }
 
   private var extend: PDFShading.Extend {
     switch kind {
     case let .axial(axial):
-      return axial.extend
+      axial.extend
     case let .radial(radial):
-      return radial.extend
+      radial.extend
     }
   }
 
   private var startPoint: CGPoint {
     switch kind {
     case let .axial(axial):
-      return axial.coords.p0
+      axial.coords.p0
     case let .radial(radial):
-      return radial.coords.p0
+      radial.coords.p0
     }
   }
 
   private var endPoint: CGPoint {
     switch kind {
     case let .axial(axial):
-      return axial.coords.p1
+      axial.coords.p1
     case let .radial(radial):
-      return radial.coords.p1
+      radial.coords.p1
     }
   }
 
   private var drawingOptions: PDFGradientDrawingOptions {
     switch kind {
     case let .axial(axial):
-      return .linear(
+      .linear(
         .init(
           startPoint: axial.coords.p0,
           endPoint: axial.coords.p1,
@@ -383,7 +383,7 @@ extension PDFShading {
         )
       )
     case let .radial(radial):
-      return .radial(.init(
+      .radial(.init(
         startCenter: radial.coords.p0,
         startRadius: radial.startRadius,
         endCenter: radial.coords.p1,
