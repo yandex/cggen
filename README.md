@@ -1,5 +1,7 @@
 # cggen
 
+[![CI](https://github.com/yandex/cggen/actions/workflows/swift.yml/badge.svg)](https://github.com/yandex/cggen/actions/workflows/swift.yml)
+
 Swift Package Manager plugin for generating optimized Swift drawing code from SVG and PDF files.
 
 Instead of bundling vector assets as resources, cggen compiles them into compressed bytecode and generates Swift code that executes drawing operations using Core Graphics, resulting in smaller app bundles and better performance.
@@ -39,6 +41,20 @@ Add the plugin to your target and include runtime dependency:
 ```
 
 **Important:** Your target must depend on `cggen-runtime-support` library to provide the bytecode execution runtime.
+
+### Xcode Project Integration (Beta)
+
+cggen also supports Xcode projects through Build Tool Plug-ins:
+
+1. Add the cggen Swift package to your Xcode project
+2. In your target's Build Phases, add cggen-spm-plugin to "Build Tool Plug-ins"
+3. Add cggen-runtime-support to your target's frameworks
+
+**⚠️ Known Issue:** When using cggen with Xcode projects, SVG/PDF source files are currently included in the app bundle alongside the generated code. This is a known limitation with Xcode's build system. To avoid increased app size:
+- Manually remove SVG/PDF files from "Copy Bundle Resources" build phase
+- Keep them only as inputs to the build tool plugin
+
+This issue does not affect Swift Package Manager targets.
 
 ## Usage
 
@@ -155,6 +171,17 @@ if let context = UIGraphicsGetCurrentContext() {
   context.restoreGState()
 }
 ```
+
+### Path Extraction API (Work in Progress)
+
+cggen can extract vector paths for use in animations, clipping, or custom rendering:
+
+```swift
+// Extract path from generated code
+let starPath = Drawing.Path.star
+```
+
+For more details, see [Path Generation Guide](docs/path-generation.md).
 
 ## Demo Applications
 
