@@ -113,3 +113,37 @@ extension Parser where Input == Substring, Output == Void {
     #expect(String(data) == expected.rest)
   }
 }
+
+// Helpers for tests
+
+extension SVG.PresentationAttributes {
+  static let empty = SVG.PresentationAttributes(
+    clipPath: nil,
+    clipRule: nil,
+    mask: nil,
+    filter: nil,
+    fill: nil,
+    fillRule: nil,
+    fillOpacity: nil,
+    stroke: nil,
+    strokeWidth: nil,
+    strokeLineCap: nil,
+    strokeLineJoin: nil,
+    strokeDashArray: nil,
+    strokeDashOffset: nil,
+    strokeOpacity: nil,
+    strokeMiterlimit: nil,
+    opacity: nil,
+    stopColor: nil,
+    stopOpacity: nil,
+    colorInterpolationFilters: nil
+  )
+
+  static func construct(
+    _ constructor: (inout SVG.PresentationAttributes) -> Void
+  ) -> SVG.PresentationAttributes {
+    var temp = empty
+    constructor(&temp)
+    return temp
+  }
+}
