@@ -33,62 +33,6 @@ private enum Tag: String {
   case feTurbulence
 }
 
-private enum Attribute: String {
-  // XML
-  case xmlns, xmlnsxlink = "xmlns:xlink"
-  // Core
-  case id
-
-  case x, y, width, height, rx, ry
-
-  // Filters
-  case result, `in`, in2, mode
-
-  // - Presentation
-  case clipRule = "clip-rule", clipPath = "clip-path", mask, opacity
-  case filter
-  case stopColor = "stop-color", stopOpacity = "stop-opacity"
-  case gradientTransform, gradientUnits
-  // Color and Painting
-  case colorInterpolation = "color-interpolation"
-  case colorInterpolationFilters = "color-interpolation-filters"
-  case colorProfile = "color-profile"
-  case colorRendering = "color-rendering"
-  case fill
-  case fillOpacity = "fill-opacity", fillRule = "fill-rule"
-  case imageRendering = "image-rendering"
-  case marker
-  case markerEnd = "marker-end", markerMid = "marker-mid"
-  case markerStart = "marker-start"
-  case shapeRendering = "shape-rendering"
-  case stroke
-  case strokeDasharray = "stroke-dasharray"
-  case strokeDashoffset = "stroke-dashoffset"
-  case strokeLinecap = "stroke-linecap", strokeLinejoin = "stroke-linejoin"
-  case strokeMiterlimit = "stroke-miterlimit", strokeOpacity = "stroke-opacity"
-  case strokeWidth = "stroke-width"
-  case textRendering = "text-rendering"
-
-  case viewBox, version
-  case points
-  case transform
-  case offset
-  case x1, y1, x2, y2
-  case d, pathLength
-  case cx, cy, r, fx, fy
-
-  case xlinkHref = "xlink:href"
-  case filterUnits
-  case type, values, floodColor = "flood-color", floodOpacity = "flood-opacity"
-  case stdDeviation
-  case dx, dy
-
-  case maskUnits, maskContentUnits, clipPathUnits
-
-  // Ignore
-  case maskType = "mask-type"
-}
-
 extension SVG.Length {
   public init(_ number: SVG.Float, _ unit: Unit? = nil) {
     self.number = number
@@ -103,11 +47,14 @@ extension SVG.Length: ExpressibleByIntegerLiteral {
 }
 
 public enum SVGParser {
+  typealias Attribute = SVGAttributeParser
+  typealias AttributeGroup = SVGAttributeGroupParser
+
   private enum Error: Swift.Error {
     case expectedSVGTag(got: String)
     case unexpectedXMLText(String)
     case unknown(attribute: String, tag: Tag)
-    case nonbelongig(attributes: Set<Attribute>, tag: Tag)
+    case nonbelongig(attributes: Set<SVGParse.Attribute>, tag: Tag)
     case invalidAttributeFormat(
       tag: String,
       attribute: String,
@@ -120,313 +67,6 @@ public enum SVGParser {
     case invalidVersion(String)
     case notImplemented
   }
-
-  private typealias AttributeGroupParser<T> = AnyParser<[String: String], T>
-  fileprivate typealias AttributeParserProtocol<T> =
-    Parser<[String: String], T?>
-
-  fileprivate struct len: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Length> {
-      AttributeValueParser(SVGAttributeParsers.length, attribute)
-    }
-  }
-
-  fileprivate struct coord: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Coordinate> {
-      AttributeValueParser(SVGAttributeParsers.length, attribute)
-    }
-  }
-
-  fileprivate struct color: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Color> {
-      AttributeValueParser(SVGAttributeParsers.rgbcolor, attribute)
-    }
-  }
-
-  fileprivate struct paint: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Paint> {
-      AttributeValueParser(SVGAttributeParsers.paint, attribute)
-    }
-  }
-
-  fileprivate struct viewBox: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.ViewBox> {
-      AttributeValueParser(SVGAttributeParsers.viewBox, attribute)
-    }
-  }
-
-  fileprivate struct num: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Float> {
-      AttributeValueParser(SVGAttributeParsers.number, attribute)
-    }
-  }
-
-  fileprivate struct numList: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Float]> {
-      AttributeValueParser(SVGAttributeParsers.listOfNumbers, attribute)
-    }
-  }
-
-  fileprivate struct numberOptionalNumber: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.NumberOptionalNumber> {
-      AttributeValueParser(SVGAttributeParsers.numberOptionalNumber, attribute)
-    }
-  }
-
-  fileprivate struct identifier: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      AttributeValueParser(SVGAttributeParsers.identifier, attribute)
-    }
-  }
-
-  fileprivate struct transform: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Transform]> {
-      AttributeValueParser(
-        SVGAttributeParsers.transformsList
-          .map { _, transforms, _ in transforms },
-        attribute
-      )
-    }
-  }
-
-  fileprivate struct listOfPoints: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.CoordinatePairs> {
-      AttributeValueParser(
-        SVGAttributeParsers.listOfPoints.map { _, points, _ in points },
-        attribute
-      )
-    }
-  }
-
-  fileprivate struct pathData: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.PathData.Command]> {
-      AttributeValueParser(SVGAttributeParsers.pathData, attribute)
-    }
-  }
-
-  fileprivate struct stopOffset: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Stop.Offset> {
-      AttributeValueParser(SVGAttributeParsers.stopOffset, attribute)
-    }
-  }
-
-  fileprivate struct fillRule: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FillRule> {
-      AttributeValueParser(SVG.FillRule.parser(), attribute)
-    }
-  }
-
-  private static var version: AttributeGroupParser<Void> {
-    identifier(.version).compactMap { value in
-      if let version = value {
-        version == "1.1" ? () : nil
-      } else {
-        ()
-      }
-    }.eraseToAnyParser()
-  }
-
-  fileprivate struct lineCap: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.LineCap> {
-      AttributeValueParser(SVG.LineCap.parser(), attribute)
-    }
-  }
-
-  fileprivate struct lineJoin: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.LineJoin> {
-      AttributeValueParser(SVG.LineJoin.parser(), attribute)
-    }
-  }
-
-  fileprivate struct funciri: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      AttributeValueParser(SVGAttributeParsers.funciri, attribute)
-    }
-  }
-
-  private static let x = coord(.x)
-  private static let y = coord(.y)
-  private static let width = len(.width)
-  private static let height = len(.height)
-  fileprivate struct colorInterpolation: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.ColorInterpolation> {
-      AttributeValueParser(SVG.ColorInterpolation.parser(), attribute)
-    }
-  }
-
-  private static var xml: AttributeGroupParser<Void> {
-    Parse { _, _ in () } with: {
-      identifier(.xmlns)
-      identifier(.xmlnsxlink)
-    }.eraseToAnyParser()
-  }
-
-  fileprivate struct ignoreAttribute: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<Substring> {
-      AttributeValueParser(Rest(), attribute)
-    }
-  }
-
-  private nonisolated(unsafe)
-  static let ignore: AttributeGroupParser<Void> =
-    Optionally { DicitionaryKey<String, String>(Attribute.maskType.rawValue) }
-      .map { _ in () }
-      .eraseToAnyParser()
-
-  fileprivate struct dashArray: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Length]> {
-      AttributeValueParser(SVGAttributeParsers.dashArray, attribute)
-    }
-  }
-
-  private static let presentation: AttributeGroupParser<
-    SVG
-      .PresentationAttributes
-  > = Parse(SVG.PresentationAttributes.init) {
-    funciri(.clipPath)
-    fillRule(.clipRule)
-    funciri(.mask)
-    funciri(.filter)
-    paint(.fill)
-    fillRule(.fillRule)
-    num(.fillOpacity)
-    paint(.stroke)
-    len(.strokeWidth)
-    lineCap(.strokeLinecap)
-    lineJoin(.strokeLinejoin)
-    dashArray(.strokeDasharray)
-    len(.strokeDashoffset)
-    num(.strokeOpacity)
-    num(.strokeMiterlimit)
-    num(.opacity)
-    color(.stopColor)
-    num(.stopOpacity)
-    colorInterpolation(.colorInterpolationFilters)
-  }.eraseToAnyParser()
-
-  private nonisolated(unsafe)
-  static let core: AttributeGroupParser<SVG.CoreAttributes> =
-    identifier(.id).map(SVG.CoreAttributes.init).eraseToAnyParser()
 
   public static func root(from data: Data) throws -> SVG.Document {
     try root(from: XML.parse(from: data).get())
@@ -448,12 +88,13 @@ public enum SVGParser {
     let attrs = try (Parse { core, presentation, width, height, viewBox in
       (core, presentation, width, height, viewBox)
     } with: {
-      core
-      presentation
-      width
-      height
-      viewBox(.viewBox)
-    } <<~ version <<~ xml <<~ End()).run(el.attrs).get()
+      AttributeGroup.core
+      AttributeGroup.presentation
+      AttributeGroup.width
+      AttributeGroup.height
+      Attribute.ViewBox(.viewBox)
+    } <<~ AttributeGroup.version <<~ AttributeGroup.xml <<~ End()).run(el.attrs)
+      .get()
     return try .init(
       core: attrs.0,
       presentation: attrs.1,
@@ -480,13 +121,13 @@ public enum SVGParser {
   }
 
   private static func shape<T: Equatable & Sendable>(
-    _ parser: AttributeGroupParser<T>
+    _ parser: some Parser<[String: String], T>
   ) -> ShapeParser<T> {
     ShapeParser(
       Parse(SVG.ShapeElement<T>.init) {
-        core
-        presentation
-        transform(.transform)
+        AttributeGroup.core
+        AttributeGroup.presentation
+        Attribute.Transform(.transform)
         parser
       }
     )
@@ -494,37 +135,37 @@ public enum SVGParser {
 
   private static let rect: ShapeParser<SVG.RectData> = shape(
     Parse(SVG.RectData.init) {
-      x
-      y
-      len(.rx)
-      len(.ry)
-      width
-      height
-    }.eraseToAnyParser()
+      AttributeGroup.x
+      AttributeGroup.y
+      Attribute.Len(.rx)
+      Attribute.Len(.ry)
+      AttributeGroup.width
+      AttributeGroup.height
+    }
   )
   private static let polygon: ShapeParser<SVG.PolygonData> = shape(
-    listOfPoints(.points).map(SVG.PolygonData.init).eraseToAnyParser()
+    Attribute.ListOfPoints(.points).map(SVG.PolygonData.init)
   )
   private static let circle: ShapeParser<SVG.CircleData> = shape(
     Parse(SVG.CircleData.init) {
-      coord(.cx)
-      coord(.cy)
-      coord(.r)
-    }.eraseToAnyParser()
+      Attribute.Coord(.cx)
+      Attribute.Coord(.cy)
+      Attribute.Coord(.r)
+    }
   )
   private static let ellipse: ShapeParser<SVG.EllipseData> = shape(
     Parse(SVG.EllipseData.init) {
-      coord(.cx)
-      coord(.cy)
-      len(.rx)
-      len(.ry)
-    }.eraseToAnyParser()
+      Attribute.Coord(.cx)
+      Attribute.Coord(.cy)
+      Attribute.Len(.rx)
+      Attribute.Len(.ry)
+    }
   )
   private static let path: ShapeParser<SVG.PathData> = shape(
     Parse(SVG.PathData.init) {
-      pathData(.d)
-      num(.pathLength)
-    }.eraseToAnyParser()
+      Attribute.PathData(.d)
+      Attribute.Num(.pathLength)
+    }
   )
 
   public static func rect(from el: XML.Element) throws -> SVG.Rect {
@@ -536,9 +177,9 @@ public enum SVGParser {
     let attrs = try (Parse { core, presentation, transform in
       (core, presentation, transform)
     } with: {
-      core
-      presentation
-      transform(.transform)
+      AttributeGroup.core
+      AttributeGroup.presentation
+      Attribute.Transform(.transform)
     } <<~ End()).run(el.attrs).get()
     return try .init(
       core: attrs.0,
@@ -554,9 +195,9 @@ public enum SVGParser {
         Parse { core, presentation, transform in
           (core, presentation, transform)
         } with: {
-          core
-          presentation
-          transform(.transform)
+          AttributeGroup.core
+          AttributeGroup.presentation
+          Attribute.Transform(.transform)
         } <<~ End()
       )
       .run(el.attrs).get()
@@ -583,29 +224,9 @@ public enum SVGParser {
     return try (ellipse <<~ End()).parse(&attrs)
   }
 
-  private static var stop: AttributeGroupParser<SVG.Stop> {
-    Parse(SVG.Stop.init) {
-      core
-      presentation
-      stopOffset(.offset)
-    }.eraseToAnyParser()
-  }
-
   public static func stops(from el: XML.Element) throws -> SVG.Stop {
     var attrs = el.attrs
-    return try (stop <<~ End()).parse(&attrs)
-  }
-
-  fileprivate struct units: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Units> {
-      AttributeValueParser(SVG.Units.parser(), attribute)
-    }
+    return try (AttributeGroup.stop <<~ End()).parse(&attrs)
   }
 
   public static func linearGradient(
@@ -615,14 +236,14 @@ public enum SVGParser {
       try (Parse { core, presentation, units, x1, y1, x2, y2, transform in
         (core, presentation, units, x1, y1, x2, y2, transform)
       } with: {
-        core
-        presentation
-        units(.gradientUnits)
-        coord(.x1)
-        coord(.y1)
-        coord(.x2)
-        coord(.y2)
-        transform(.gradientTransform)
+        AttributeGroup.core
+        AttributeGroup.presentation
+        Attribute.Units(.gradientUnits)
+        Attribute.Coord(.x1)
+        Attribute.Coord(.y1)
+        Attribute.Coord(.x2)
+        Attribute.Coord(.y2)
+        Attribute.Transform(.gradientTransform)
       } <<~ End()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
       switch $0 {
@@ -652,15 +273,15 @@ public enum SVGParser {
       try (Parse { core, presentation, units, cx, cy, r, fx, fy, transform in
         (core, presentation, units, cx, cy, r, fx, fy, transform)
       } with: {
-        core
-        presentation
-        units(.gradientUnits)
-        coord(.cx)
-        coord(.cy)
-        len(.r)
-        coord(.fx)
-        coord(.fy)
-        transform(.gradientTransform)
+        AttributeGroup.core
+        AttributeGroup.presentation
+        Attribute.Units(.gradientUnits)
+        Attribute.Coord(.cx)
+        Attribute.Coord(.cy)
+        Attribute.Len(.r)
+        Attribute.Coord(.fx)
+        Attribute.Coord(.fy)
+        Attribute.Transform(.gradientTransform)
       } <<~ End()).run(el.attrs).get()
     let subelements: [XML.Element] = try el.children.map {
       switch $0 {
@@ -689,28 +310,16 @@ public enum SVGParser {
     return try (path <<~ End()).parse(&attrs)
   }
 
-  fileprivate struct iri: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      AttributeValueParser(SVGAttributeParsers.iri, attribute)
-    }
-  }
-
   // wip: Remove eraseToAnyParser
   fileprivate static let useParser = Parse(SVG.Use.init) {
-    core.eraseToAnyParser()
-    presentation.eraseToAnyParser()
-    transform(.transform).eraseToAnyParser()
-    x.eraseToAnyParser()
-    y.eraseToAnyParser()
-    width.eraseToAnyParser()
-    height.eraseToAnyParser()
-    iri(.xlinkHref).eraseToAnyParser()
+    AttributeGroup.core
+    AttributeGroup.presentation
+    Attribute.Transform(.transform)
+    AttributeGroup.x
+    AttributeGroup.y
+    AttributeGroup.width
+    AttributeGroup.height
+    Attribute.Iri(.xlinkHref)
   }
 
   public static func use(from el: XML.Element) throws -> SVG.Use {
@@ -733,16 +342,16 @@ public enum SVGParser {
             maskContentUnits
           )
         } with: {
-          core
-          presentation
-          transform(.transform)
-          x
-          y
-          width
-          height
-          units(.maskUnits)
-          units(.maskContentUnits)
-        } <<~ ignore <<~ End()
+          AttributeGroup.core
+          AttributeGroup.presentation
+          Attribute.Transform(.transform)
+          AttributeGroup.x
+          AttributeGroup.y
+          AttributeGroup.width
+          AttributeGroup.height
+          Attribute.Units(.maskUnits)
+          Attribute.Units(.maskContentUnits)
+        } <<~ AttributeGroup.ignore <<~ End()
       ).run(el.attrs).get()
     return try .init(
       core: attrs.0,
@@ -762,10 +371,10 @@ public enum SVGParser {
     let attrs = try (Parse { core, presentation, transform, units in
       (core, presentation, transform, units)
     } with: {
-      core
-      presentation
-      transform(.transform)
-      units(.clipPathUnits)
+      AttributeGroup.core
+      AttributeGroup.presentation
+      Attribute.Transform(.transform)
+      Attribute.Units(.clipPathUnits)
     } <<~ End()).run(el.attrs).get()
     return try .init(
       core: attrs.0,
@@ -776,24 +385,10 @@ public enum SVGParser {
     )
   }
 
-  private nonisolated(unsafe) static
-  let filterAttributes: AttributeGroupParser<SVG.FilterAttributes> = Parse(
-    SVG
-      .FilterAttributes.init
-  ) {
-    core
-    presentation
-    x
-    y
-    width
-    height
-    units(.filterUnits)
-  }.eraseToAnyParser()
-
   private static func elementWithChildren<
     Attributes: Equatable, Child: Equatable
   >(
-    attributes: AttributeGroupParser<Attributes>,
+    attributes: some Parser<[String: String], Attributes>,
     child: some Parser<XML, Child>
   ) -> some Parser<XML, SVG.ElementWithChildren<Attributes, Child>> {
     let childParser = First<ArraySlice<XML>>().compactMap { element in
@@ -811,7 +406,7 @@ public enum SVGParser {
 
   private static func element<Attributes>(
     tag: Tag,
-    attributes: AttributeGroupParser<Attributes>
+    attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     let tag: some Parser<XML.Element, Void> =
       tag.rawValue
@@ -822,74 +417,6 @@ public enum SVGParser {
       tag ~>> (attributes <<~ End())
         .pullback(\.attrs)
     ).pullback(\XML.el)
-  }
-
-  private nonisolated(
-    unsafe
-  ) static let filterPrimitiveAttributes: AttributeGroupParser<
-    SVG
-      .FilterPrimitiveCommonAttributes
-  > = Parse(
-    SVG
-      .FilterPrimitiveCommonAttributes.init
-  ) {
-    identifier(.result)
-    height
-    width
-    x
-    y
-  }.eraseToAnyParser()
-
-  private static func filterPrimitive<T: Equatable>(
-    _ data: AttributeGroupParser<T>
-  ) -> AttributeGroupParser<SVG.FilterPrimitiveElement<T>> {
-    Parse(SVG.FilterPrimitiveElement<T>.init) {
-      core
-      presentation
-      filterPrimitiveAttributes
-      data
-    }.eraseToAnyParser()
-  }
-
-  fileprivate struct filterPrimitiveIn: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FilterPrimitiveIn> {
-      AttributeValueParser(SVGAttributeParsers.filterPrimitiveIn, attribute)
-    }
-  }
-
-  fileprivate struct blendMode: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.BlendMode> {
-      AttributeValueParser(SVGAttributeParsers.blendMode, attribute)
-    }
-  }
-
-  fileprivate struct feColorMatrixType: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FilterPrimitiveFeColorMatrix
-      .Kind
-    > {
-      AttributeValueParser(
-        SVG.FilterPrimitiveFeColorMatrix.Kind.parser(),
-        attribute
-      )
-    }
   }
 
   struct FilterPrimitiveParser<T: Equatable>: Parser {
@@ -908,7 +435,7 @@ public enum SVGParser {
   }
 
   private static func elementTagFeBlend<Attributes>(
-    _ attributes: AttributeGroupParser<Attributes>
+    _ attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     element(tag: .feBlend, attributes: attributes)
   }
@@ -917,14 +444,14 @@ public enum SVGParser {
     SVG.FilterPrimitiveFeBlend
   > = FilterPrimitiveParser(
     Parse(SVG.FilterPrimitiveFeBlend.init) {
-      filterPrimitiveIn(.in)
-      filterPrimitiveIn(.in2)
-      blendMode(.mode)
-    }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeBlend
+      Attribute.FilterPrimitiveIn(.in)
+      Attribute.FilterPrimitiveIn(.in2)
+      Attribute.BlendMode(.mode)
+    } |> AttributeGroup.filterPrimitive >>> elementTagFeBlend
   )
 
   private static func elementTagFeColorMatrix<Attributes>(
-    _ attributes: AttributeGroupParser<Attributes>
+    _ attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     element(tag: .feColorMatrix, attributes: attributes)
   }
@@ -933,14 +460,15 @@ public enum SVGParser {
     SVG.FilterPrimitiveFeColorMatrix
   > = FilterPrimitiveParser(
     Parse(SVG.FilterPrimitiveFeColorMatrix.init) {
-      filterPrimitiveIn(.in)
-      feColorMatrixType(.type)
-      numList(.values)
-    }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeColorMatrix
+      Attribute.FilterPrimitiveIn(.in)
+      Attribute.FeColorMatrixType(.type)
+      Attribute.NumList(.values)
+    } |> AttributeGroup
+      .filterPrimitive >>> elementTagFeColorMatrix
   )
 
   private static func elementTagFeFlood<Attributes>(
-    _ attributes: AttributeGroupParser<Attributes>
+    _ attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     element(tag: .feFlood, attributes: attributes)
   }
@@ -949,13 +477,13 @@ public enum SVGParser {
     SVG.FilterPrimitiveFeFlood
   > = FilterPrimitiveParser(
     Parse(SVG.FilterPrimitiveFeFlood.init) {
-      color(.floodColor)
-      num(.floodOpacity)
-    }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeFlood
+      Attribute.Color(.floodColor)
+      Attribute.Num(.floodOpacity)
+    } |> AttributeGroup.filterPrimitive >>> elementTagFeFlood
   )
 
   private static func elementTagFeGaussianBlur<Attributes>(
-    _ attributes: AttributeGroupParser<Attributes>
+    _ attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     element(tag: .feGaussianBlur, attributes: attributes)
   }
@@ -964,13 +492,14 @@ public enum SVGParser {
     SVG.FilterPrimitiveFeGaussianBlur
   > = FilterPrimitiveParser(
     Parse(SVG.FilterPrimitiveFeGaussianBlur.init) {
-      filterPrimitiveIn(.in)
-      numberOptionalNumber(.stdDeviation)
-    }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeGaussianBlur
+      Attribute.FilterPrimitiveIn(.in)
+      Attribute.NumberOptionalNumber(.stdDeviation)
+    } |> AttributeGroup
+      .filterPrimitive >>> elementTagFeGaussianBlur
   )
 
   private static func elementTagFeOffset<Attributes>(
-    _ attributes: AttributeGroupParser<Attributes>
+    _ attributes: some Parser<[String: String], Attributes>
   ) -> some Parser<XML, Attributes> {
     element(tag: .feOffset, attributes: attributes)
   }
@@ -979,10 +508,11 @@ public enum SVGParser {
     SVG.FilterPrimitiveFeOffset
   > = FilterPrimitiveParser(
     Parse(SVG.FilterPrimitiveFeOffset.init) {
-      filterPrimitiveIn(.in)
-      num(.dx)
-      num(.dy)
-    }.eraseToAnyParser() |> filterPrimitive >>> elementTagFeOffset
+      Attribute.FilterPrimitiveIn(.in)
+      Attribute.Num(.dx)
+      Attribute.Num(.dy)
+    } |> AttributeGroup
+      .filterPrimitive >>> elementTagFeOffset
   )
 
   private nonisolated(unsafe)
@@ -999,7 +529,7 @@ public enum SVGParser {
   private nonisolated(unsafe) static let filter: some Parser<
     XML, SVG.Filter
   > = elementWithChildren(
-    attributes: filterAttributes, child: filterPrimitiveContent
+    attributes: AttributeGroup.filterAttributes, child: filterPrimitiveContent
   )
 
   public static func element(from xml: XML) throws -> SVG {
@@ -1069,24 +599,6 @@ public enum SVGParser {
       }
     case let .text(t):
       throw Error.unexpectedXMLText(t)
-    }
-  }
-}
-
-private struct AttributeValueParser<P: Parser>: Parser
-  where P.Input == Substring {
-  var attribute: Attribute
-  var valueParser: P
-
-  init(_ parser: P, _ attribute: Attribute) {
-    self.attribute = attribute
-    valueParser = parser
-  }
-
-  var body: some Parser<[String: String], P.Output?> {
-    Optionally {
-      DicitionaryKey<String, String>(attribute.rawValue)
-        .map { $0[...] }.pipe { valueParser }
     }
   }
 }

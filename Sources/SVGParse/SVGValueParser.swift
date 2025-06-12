@@ -1,7 +1,7 @@
 import Base
 @preconcurrency import Parsing
 
-public enum SVGAttributeParsers {
+public enum SVGValueParser {
   static let comma: String = ","
   static let wsp = From(.utf8) { OneOf {
     for s in [0x20, 0x9, 0xD, 0xA] as [UInt8] {
@@ -150,13 +150,13 @@ public enum SVGAttributeParsers {
   }
 
   static let transformsList = Parse {
-    wsp*
+    Skip { wsp* }
     Many(1...) {
       transform
     } separator: {
       commaWsp+
     }
-    wsp*
+    Skip { wsp* }
   }
 
   static let transform = OneOf {
@@ -235,9 +235,9 @@ public enum SVGAttributeParsers {
   //   coordinate-pair
   //   | coordinate-pair comma-wsp coordinate-pairs
   static let listOfPoints = Parse {
-    wsp*
+    Skip { wsp* }
     Many { coordinatePair } separator: { commaWsp }
-    wsp*
+    Skip { wsp* }
   }
 
   // elliptical-arc-argument:

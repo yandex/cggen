@@ -52,7 +52,7 @@ The project uses swift-parsing library with custom operators:
 - `|`: Choice between parsers
 - `~`: Sequence parsers
 - `*` / `+`: Zero/one or more
-- Custom parsers in `SVGAttributeParsers` for SVG attributes
+- Custom parsers in `SVGValueParser` for SVG attributes
 
 **Swift-parsing reference**: Available combinators and parsers documented at https://pointfreeco.github.io/swift-parsing/main/documentation/parsing/parser
 
@@ -70,7 +70,7 @@ The project uses swift-parsing library with custom operators:
 3. Use `swift test --filter <test-name>` to run specific failing tests
 
 ### Common Tasks
-- Add new SVG attribute: Update `SVGAttributeParsers.swift` and `SVGParsing.swift`
+- Add new SVG attribute: Update `SVGValueParser.swift` and `SVGParsing.swift`
 - Add new PDF operator: Update `PDFOperator.swift` and `PDFContentStreamParser.swift`
 - Modify code generation: Update relevant files in `libcggen/`
 
