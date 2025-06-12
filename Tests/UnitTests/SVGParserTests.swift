@@ -28,12 +28,12 @@ import Testing
 
 @Suite struct SVGAttributesParserTest {
   @Test func utils() {
-    let wsp = SVGAttributeParsers.wsp
-    let commaWsp = SVGAttributeParsers.commaWsp
-    let hexFromSingle = SVGAttributeParsers.hexByteFromSingle
-    let rgbcolor = SVGAttributeParsers.rgbcolor
-    let paint = SVGAttributeParsers.paint
-    let filterIn = SVGAttributeParsers.filterPrimitiveIn
+    let wsp = SVGValueParser.wsp
+    let commaWsp = SVGValueParser.commaWsp
+    let hexFromSingle = SVGValueParser.hexByteFromSingle
+    let rgbcolor = SVGValueParser.rgbcolor
+    let paint = SVGValueParser.paint
+    let filterIn = SVGValueParser.filterPrimitiveIn
     commaWsp.test(",_", expected: ((), "_"))
     commaWsp.test("  ,_", expected: ((), "_"))
     commaWsp.test(",  _", expected: ((), "_"))
@@ -67,7 +67,7 @@ import Testing
   }
 
   @Test func testTransform() {
-    let p = SVGAttributeParsers.transform
+    let p = SVGValueParser.transform
     p.test(
       "translate(12, 13)",
       expected: (SVG.Transform.translate(tx: 12, ty: 13), "")

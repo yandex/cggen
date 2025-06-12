@@ -2,6 +2,7 @@ import CoreGraphics
 
 import Base
 
+// https://www.w3.org/TR/SVG11/types.html#ColorKeywords
 let svgColorsString = """
 aliceblue #F0F8FF
 antiquewhite #FAEBD7
@@ -159,7 +160,7 @@ struct NamedColor {
 
 let colorParser = zip(
   consume(while: { !$0.isWhitespace }).map(String.init) <<~ " ",
-  SVGAttributeParsers.rgbcolor, with: NamedColor.init(name:value:)
+  SVGValueParser.rgbcolor, with: NamedColor.init(name:value:)
 )
 
 let colorsParser = oneOrMore(colorParser, separator: "\n")
@@ -214,7 +215,7 @@ let svgrects = svgColors.enumerated().map {
 // print(svgrects)
 
 func color(_ hex: String) throws -> SVG.Color {
-  try SVGAttributeParsers.rgbcolor.whole(hex).get()
+  try SVGValueParser.rgbcolor.whole(hex).get()
 }
 
 extension SVG.Color {

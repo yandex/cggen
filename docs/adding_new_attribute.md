@@ -22,7 +22,7 @@ Add the attribute to the SVG parser:
 case strokeMiterlimit = "stroke-miterlimit"
 ```
 
-2. Add a parser for the attribute value in `SVGAttributeParsers.swift`:
+2. Add a parser for the attribute value in `SVGValueParser.swift`:
 ```swift
 static let miterLimit = number
 ```
