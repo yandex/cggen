@@ -262,29 +262,15 @@ class SVGCustomCheckTests: XCTestCase {
 }
 
 private func blackSquareHTML(size: Int) -> String {
-  let fsize = SVG.Float(size)
-  let svgSize = SVG.Length(fsize)
-  let blackRect = SVG.rect(.init(
-    core: .init(id: nil),
-    presentation: .construct {
-      $0.fill = .rgb(.black())
-      $0.fillOpacity = 1
-    },
-    transform: nil,
-    data: .init(x: 0, y: 0, rx: nil, ry: nil, width: svgSize, height: svgSize)
-  ))
-  let svg = SVG.Document(
-    core: .init(id: nil),
-    presentation: .empty,
-    width: svgSize, height: svgSize, viewBox: .init(0, 0, fsize, fsize),
-    children: [blackRect]
-  )
-
-  let svgHTML = renderXML(from: svg)
-  let style = XML.el("style", attrs: ["type": "text/css"], children: [
-    .text("html, body {width:100%;height: 100%;margin: 0px;padding: 0px;}"),
-  ])
-  return XML.el("html", children: [style, svgHTML]).render()
+  """
+  <html>
+  <style type="text/css">html, body {width:100%;height: 100%;margin: 0px;padding: 0px;}</style>
+  <svg width="\(size)" height="\(size)" viewBox="0 0 \(size) \(size)">
+  <rect x="0" y="0" width="\(size)" height="\(size)" \
+  fill="#000000" fill-opacity="1"/>
+  </svg>
+  </html>
+  """
 }
 
 private let defaultTolerance = 0.002

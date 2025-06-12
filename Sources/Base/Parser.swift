@@ -36,16 +36,20 @@ postfix operator +
 // "Zero or one"
 postfix operator ~?
 
-public struct DicitionaryKey<Key: Hashable & Sendable, Value>: Parser,
-  Sendable {
+public struct DicitionaryKey<
+  Key: Hashable & Sendable, Value
+>: Parser, Sendable {
   public var key: Key
 
   public init(_ key: Key) {
     self.key = key
   }
 
-  public func parse(_ input: inout [Key: Value]) throws -> Value? {
-    input.removeValue(forKey: key)
+  public func parse(_ input: inout [Key: Value]) throws -> Value {
+    guard let value = input.removeValue(forKey: key) else {
+      throw ParseError.gotNilExpected("Key '\(key)' not found in dictionary")
+    }
+    return value
   }
 }
 
