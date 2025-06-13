@@ -104,11 +104,4 @@ enum SVGAttributeGroupParser {
       }
     }
   }
-
-  static func filterPrimitive<Data: Parser>(
-    _ data: Data
-  ) -> FilterPrimitive<Data>
-    where Data.Input == [String: String], Data.Output: Equatable {
-    FilterPrimitive(data)
-  }
 }
