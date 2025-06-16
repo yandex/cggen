@@ -3,6 +3,7 @@ import Foundation
 import Testing
 
 import Base
+import CGGen
 @_spi(Testing) import CGGenRuntimeSupport
 import libcggen
 

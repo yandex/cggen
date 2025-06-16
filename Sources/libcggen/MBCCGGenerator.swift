@@ -2,6 +2,7 @@ import Compression
 import Foundation
 
 import BCCommon
+import CGGen
 
 struct MBCCGGenerator: CoreGraphicsGenerator {
   typealias ImagePossition = (Int, Int)

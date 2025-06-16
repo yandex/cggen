@@ -18,6 +18,7 @@ import Testing
 import XCTest
 
 import Base
+import CGGen
 import libcggen
 import Parsing
 import SVGParse

@@ -1,3 +1,4 @@
+import CGGen
 import CoreGraphics
 
 struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {

@@ -1,4 +1,5 @@
 import BCCommon
+import CGGen
 import Foundation
 
 struct SwiftCGGenerator: CoreGraphicsGenerator {

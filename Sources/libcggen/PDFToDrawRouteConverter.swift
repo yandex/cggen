@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 
 import Base
+import CGGen
 import PDFParse
 
 private enum PDFGradientDrawingOptions {

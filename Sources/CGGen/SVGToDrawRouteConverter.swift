@@ -3,8 +3,8 @@ import CoreGraphics
 import Base
 import SVGParse
 
-enum SVGToDrawRouteConverter {
-  static func convert(document: SVG.Document) throws -> Routines {
+public enum SVGToDrawRouteConverter {
+  public static func convert(document: SVG.Document) throws -> Routines {
     let boundingRect = document.boundingRect
     let height = boundingRect.size.height
     let gradients = try Dictionary(
@@ -49,7 +49,7 @@ enum SVGToDrawRouteConverter {
   }
 }
 
-func pathSegmentsFromSVG(_ svg: SVG) -> [PathSegment]? {
+public func pathSegmentsFromSVG(_ svg: SVG) -> [PathSegment]? {
   guard case let .path(path) = svg,
         case let .composite(segments) = try? pathConstruction(from: path.data)?
         .0 else {

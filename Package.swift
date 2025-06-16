@@ -11,6 +11,7 @@ let package = Package(
   ],
   products: [
     .executable(name: "cggen-tool", targets: ["cggen-tool"]),
+    .library(name: "CGGen", targets: ["CGGen"]),
     .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
     .plugin(name: "cggen-spm-plugin", targets: ["plugin"]),
   ],
@@ -29,6 +30,10 @@ let package = Package(
       name: "BCCommon"
     ),
     .target(
+      name: "CGGen",
+      dependencies: ["Base", "SVGParse", "CGGenRuntimeSupport"]
+    ),
+    .target(
       name: "CGGenRuntimeSupport",
       dependencies: ["BCCommon"]
     ),
@@ -42,7 +47,7 @@ let package = Package(
     ),
     .target(
       name: "libcggen",
-      dependencies: ["Base", "SVGParse", "PDFParse", "BCCommon"]
+      dependencies: ["Base", "SVGParse", "PDFParse", "BCCommon", "CGGen"]
     ),
     .target(
       name: "Base",
@@ -62,6 +67,10 @@ let package = Package(
       dependencies: ["Base"]
     ),
     .testTarget(
+      name: "CGGenTests",
+      dependencies: ["CGGen"]
+    ),
+    .testTarget(
       name: "UnitTests",
       dependencies: ["Base", "SVGParse", "libcggen"],
       resources: [
@@ -71,13 +80,15 @@ let package = Package(
     .testTarget(
       name: "RegressionTests",
       dependencies: ["libcggen", "CGGenRuntimeSupport"],
-      exclude: ["__Snapshots__"],
+      exclude: [
+        "__Snapshots__",
+        "RegressionSuite.xctestplan",
+        "tests.sketch",
+      ],
       resources: [
         .copy("pdf_samples"),
         .copy("svg_samples"),
         .copy("various_filenames"),
-        .copy("tests.sketch"),
-        .copy("RegressionSuite.xctestplan"),
       ]
     ),
     .executableTarget(

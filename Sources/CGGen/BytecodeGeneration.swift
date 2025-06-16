@@ -1,8 +1,6 @@
 import BCCommon
-import CoreGraphics
+@preconcurrency import CoreGraphics
 import Foundation
-
-// Move the bytecode generation functions and related code here
 
 typealias Bytecode = [UInt8]
 
@@ -516,13 +514,13 @@ private class Context {
 
 // MARK: - Public API
 
-func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
+public func generateRouteBytecode(route: DrawRoutine) -> [UInt8] {
   var bytecode = Bytecode()
   generateRoute(route: route, context: Context(), bytecode: &bytecode)
   return bytecode
 }
 
-func generatePathBytecode(route: PathRoutine) -> [UInt8] {
+public func generatePathBytecode(route: PathRoutine) -> [UInt8] {
   var bytecode = Bytecode()
   PathSegmentEncoding.generateSteps(
     as: .pathCommand,

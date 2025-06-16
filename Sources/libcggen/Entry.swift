@@ -2,6 +2,7 @@ import BCCommon
 import Foundation
 
 import Base
+import CGGen
 import PDFParse
 import SVGParse
 
