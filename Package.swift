@@ -10,7 +10,7 @@ let package = Package(
     .macOS(.v14), .iOS(.v13),
   ],
   products: [
-    .executable(name: "cggen", targets: ["cggen"]),
+    .executable(name: "cggen-tool", targets: ["cggen-tool"]),
     .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
     .plugin(name: "cggen-spm-plugin", targets: ["plugin"]),
   ],
@@ -33,7 +33,7 @@ let package = Package(
       dependencies: ["BCCommon"]
     ),
     .executableTarget(
-      name: "cggen",
+      name: "cggen-tool",
       dependencies: [
         "libcggen",
         "Base",
@@ -88,7 +88,7 @@ let package = Package(
     .plugin(
       name: "plugin",
       capability: .buildTool(),
-      dependencies: ["cggen"]
+      dependencies: ["cggen-tool"]
     ),
   ]
 )

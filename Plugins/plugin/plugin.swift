@@ -54,7 +54,7 @@ struct Plugin: BuildToolPlugin {
     let outputFile = outputDir.appending(path: "\(target.name)_Generated.swift")
 
     // Get the cggen tool
-    let cggenTool = try context.tool(named: "cggen")
+    let cggenTool = try context.tool(named: "cggen-tool")
 
     // Build command arguments
     var arguments: [String] = []
@@ -116,7 +116,7 @@ extension Plugin: XcodeBuildToolPlugin {
       .appending(path: "\(target.displayName)_Generated.swift")
 
     // Get cggen tool
-    let cggenTool = try context.tool(named: "cggen")
+    let cggenTool = try context.tool(named: "cggen-tool")
 
     // Build arguments
     var arguments: [String] = []
