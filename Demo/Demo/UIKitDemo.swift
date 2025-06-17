@@ -1,5 +1,5 @@
 #if canImport(UIKit)
-import CGGenRuntimeSupport
+import CGGenBytecode
 import SwiftUI
 import UIKit
 

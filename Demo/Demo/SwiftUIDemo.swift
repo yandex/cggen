@@ -1,4 +1,4 @@
-import CGGenRuntimeSupport
+import CGGenBytecode
 import SwiftUI
 
 struct SwiftUIDemo: View {

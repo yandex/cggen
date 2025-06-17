@@ -5,8 +5,8 @@ import WebKit
 import XCTest
 
 import Base
-@_spi(Testing) import CGGenRuntimeSupport
-import libcggen
+import CGGenCLI
+@_spi(Testing) import CGGenRTSupport
 
 private enum Error: Swift.Error {
   case compilationError

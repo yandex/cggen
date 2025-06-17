@@ -2,7 +2,7 @@ import Foundation
 import PackagePlugin
 
 @main
-struct Plugin: BuildToolPlugin {
+struct CGGenPlugin: BuildToolPlugin {
   /// Sanitizes a string to be a valid Swift identifier prefix
   /// - Replaces hyphens with underscores
   /// - Ensures the result starts with a letter or underscore
@@ -54,7 +54,7 @@ struct Plugin: BuildToolPlugin {
     let outputFile = outputDir.appending(path: "\(target.name)_Generated.swift")
 
     // Get the cggen tool
-    let cggenTool = try context.tool(named: "CGGenCLI")
+    let cggenTool = try context.tool(named: "cggen")
 
     // Build command arguments
     var arguments: [String] = []
@@ -91,7 +91,7 @@ struct Plugin: BuildToolPlugin {
 #if canImport(XcodeProjectPlugin)
 import XcodeProjectPlugin
 
-extension Plugin: XcodeBuildToolPlugin {
+extension CGGenPlugin: XcodeBuildToolPlugin {
   func createBuildCommands(
     context: XcodePluginContext,
     target: XcodeTarget
@@ -116,7 +116,7 @@ extension Plugin: XcodeBuildToolPlugin {
       .appending(path: "\(target.displayName)_Generated.swift")
 
     // Get cggen tool
-    let cggenTool = try context.tool(named: "CGGenCLI")
+    let cggenTool = try context.tool(named: "cggen")
 
     // Build arguments
     var arguments: [String] = []

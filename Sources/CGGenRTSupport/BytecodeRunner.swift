@@ -4,7 +4,7 @@ import Foundation
 
 import BCCommon
 
-@_spi(Testing) public func runBytecode(
+public func runBytecode(
   _ context: CGContext,
   fromData data: Data
 ) throws {
@@ -15,7 +15,7 @@ import BCCommon
   }
 }
 
-@_spi(Testing) public func runPathBytecode(
+public func runPathBytecode(
   _ path: CGMutablePath,
   fromData data: Data
 ) throws {
@@ -26,7 +26,7 @@ import BCCommon
   }
 }
 
-@_spi(Testing) public func runMergedBytecode(
+public func runMergedBytecode(
   fromData data: Data,
   _ context: CGContext,
   _ decompressedLen: Int,

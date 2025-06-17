@@ -2,7 +2,8 @@ import Compression
 import Foundation
 
 import BCCommon
-import CGGen
+import CGGenIR
+import CGGenRTSupport
 
 private struct UnifiedBytecodeData {
   let compressedBytecode: [UInt8]

@@ -38,13 +38,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Components
 - **cggen**: CLI entry point using Swift Argument Parser
-- **libcggen**: Main library for PDF/SVG → Core Graphics conversion
+- **CGGenCLILib**: Main library for PDF/SVG → Core Graphics conversion
   - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input to DrawRoute
   - `BCCGGenerator` / `ObjCGen`: Generate bytecode or Objective-C code
   - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
-- **CGGenRuntimeSupport**: Runtime library providing bytecode execution functions
-  - Provides `runMergedBytecode_swift()` and `runPathBytecode_swift()` functions
-  - Required dependency for generated Swift code
+- **CGGenRuntime**: Runtime library for parsing and rendering SVG/PDF directly
+  - `SVGToDrawRouteConverter`: Converts SVG to DrawRoute representation
+  - Can be used to render graphics at runtime without code generation
+- **CGGenRTSupport**: Bytecode execution library
+  - Provides `Drawing` type used by generated Swift code
+  - Executes compressed bytecode to draw on CGContext
+  - Required dependency for apps using cggen-generated code
 
 ### Parser Architecture
 The project uses swift-parsing library with custom operators:
@@ -72,7 +76,7 @@ The project uses swift-parsing library with custom operators:
 ### Common Tasks
 - Add new SVG attribute: Update `SVGValueParser.swift` and `SVGParsing.swift`
 - Add new PDF operator: Update `PDFOperator.swift` and `PDFContentStreamParser.swift`
-- Modify code generation: Update relevant files in `libcggen/`
+- Modify code generation: Update relevant files in `CGGenCLILib/`
 
 ### Migration Notes
 Migration to swift-parsing library completed. Key changes made:

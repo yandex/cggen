@@ -2,7 +2,8 @@ import BCCommon
 import Foundation
 
 import Base
-import CGGen
+import CGGenIR
+import CGGenRTSupport
 import PDFParse
 import SVGParse
 

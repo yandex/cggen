@@ -1,4 +1,4 @@
-import CGGen
+import CGGenRuntime
 import CoreGraphics
 import Foundation
 import Testing

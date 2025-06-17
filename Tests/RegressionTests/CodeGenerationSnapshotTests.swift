@@ -1,7 +1,7 @@
 import Foundation
 import Testing
 
-import libcggen
+import CGGenCLI
 
 // MARK: - Snapshot Testing Infrastructure
 

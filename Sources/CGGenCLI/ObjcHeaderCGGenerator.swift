@@ -1,4 +1,4 @@
-import CGGen
+import CGGenIR
 import CoreGraphics
 
 func generateObjCHeaderFile(

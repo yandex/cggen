@@ -1,5 +1,6 @@
 import BCCommon
-import CGGen
+import CGGenIR
+import CGGenRTSupport
 import Foundation
 
 private struct UnifiedBytecodeData {
@@ -23,9 +24,9 @@ func generateSwiftFile(
   // Imports
   sections.append("""
   import CoreGraphics
-  @_spi(Generator) import CGGenRuntimeSupport
+  @_spi(Generator) import CGGenRTSupport
 
-  typealias Drawing = CGGenRuntimeSupport.Drawing
+  typealias Drawing = CGGenRTSupport.Drawing
   """)
 
   // Image functions

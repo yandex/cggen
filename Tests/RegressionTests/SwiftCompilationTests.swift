@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 
-import libcggen
+import CGGenCLI
 
 @Suite struct SwiftCompilationTests {
   @Test func swiftCodeCompilation() throws {
@@ -54,11 +54,11 @@ import libcggen
     let generatedCode = try String(contentsOf: swiftFile)
     let codeWithoutImport = generatedCode
       .replacingOccurrences(
-        of: "@_spi(Generator) import CGGenRuntimeSupport\n",
+        of: "@_spi(Generator) import CGGenRTSupport\n",
         with: ""
       )
       .replacingOccurrences(
-        of: "typealias Drawing = CGGenRuntimeSupport.Drawing\n",
+        of: "typealias Drawing = CGGenRTSupport.Drawing\n",
         with: ""
       )
 

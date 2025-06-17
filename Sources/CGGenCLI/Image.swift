@@ -1,4 +1,4 @@
-import CGGen
+import CGGenIR
 import PDFParse
 
 struct Output {
