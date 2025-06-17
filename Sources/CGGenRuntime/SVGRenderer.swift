@@ -58,9 +58,6 @@ public enum SVGRenderer {
       throw Error.contextCreationFailed
     }
 
-    context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-    context.fill(CGRect(x: 0, y: 0, width: size.width, height: size.height))
-
     try runBytecode(context, fromData: Data(bytecode))
 
     guard let image = context.makeImage() else {

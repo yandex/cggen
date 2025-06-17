@@ -47,7 +47,8 @@ let package = Package(
     // Runtime support: bytecode executor and helpers for image creation
     .target(
       name: "CGGenRTSupport",
-      dependencies: ["BCCommon"]
+      dependencies: ["BCCommon"],
+      exclude: ["README.md"]
     ),
 
     // Build tool plugin: auto-generates code from SVG/PDF assets
@@ -116,7 +117,7 @@ let package = Package(
     ),
     .testTarget(
       name: "RegressionTests",
-      dependencies: ["CGGenCLI", "CGGenRTSupport", "CGGenIR"],
+      dependencies: ["CGGenCLI", "CGGenRTSupport", "CGGenIR", "CGGenRuntime"],
       exclude: [
         "__Snapshots__",
         "RegressionSuite.xctestplan",
