@@ -71,11 +71,10 @@ public func runCggen(with args: Args) throws {
   )
 
   if let objcHeaderPath = args.objcHeader {
-    let headerGenerator = ObjcHeaderCGGenerator(
+    let fileStr = generateObjCHeaderFile(
       params: params,
       outputs: outputs
     )
-    let fileStr = try headerGenerator.generateFile()
     try fileStr.write(
       toFile: objcHeaderPath,
       atomically: true,
@@ -85,13 +84,11 @@ public func runCggen(with args: Args) throws {
   }
 
   if let objcImplPath = args.objcImpl {
-    let implGenerator = try MBCCGGenerator(
+    let fileStr = try generateObjCImplementationFile(
       params: params,
       headerImportPath: args.objcHeaderImportPath,
       outputs: outputs
     )
-
-    let fileStr = try implGenerator.generateFile()
     try fileStr.write(
       toFile: objcImplPath,
       atomically: true,
@@ -103,14 +100,16 @@ public func runCggen(with args: Args) throws {
 
   if case .swiftFriendly = params.style,
      let path = args.cggenSupportHeaderPath {
-    try params.cggenSupportHeaderBody.renderText()
+    try params.cggenSupportHeaderBody
       .write(toFile: path, atomically: true, encoding: .utf8)
     log("cggen_support was generated in: \(stopwatch.reset())")
   }
 
   if let swiftOutputPath = args.swiftOutput {
-    let swiftGenerator = try SwiftCGGenerator(params: params, outputs: outputs)
-    let fileStr = try swiftGenerator.generateFile()
+    let fileStr = try generateSwiftFile(
+      params: params,
+      outputs: outputs
+    )
     try fileStr.write(
       toFile: swiftOutputPath,
       atomically: true,
@@ -122,7 +121,7 @@ public func runCggen(with args: Args) throws {
   if let objcCallerPath = args.objcCallerPath,
      let pngOutputPath = args.callerPngOutputPath,
      let headerImportPath = args.objcHeaderImportPath {
-    let callerGenerator = ObjcCallerGen(
+    let fileStr = generateObjCCallerFile(
       headerImportPath: headerImportPath,
       scale: args.callerScale.cgfloat,
       allowAntialiasing: args.callerAllowAntialiasing,
@@ -130,7 +129,6 @@ public func runCggen(with args: Args) throws {
       outputPath: pngOutputPath,
       outputs: outputs
     )
-    let fileStr = try callerGenerator.generateFile()
     try fileStr.write(
       toFile: objcCallerPath,
       atomically: true,

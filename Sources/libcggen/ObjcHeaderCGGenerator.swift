@@ -1,43 +1,50 @@
 import CGGen
 import CoreGraphics
 
-struct ObjcHeaderCGGenerator: CoreGraphicsGenerator {
-  let params: GenerationParams
-  let outputs: [Output]
+func generateObjCHeaderFile(
+  params: GenerationParams,
+  outputs: [Output]
+) -> String {
+  var result = ""
 
-  init(params: GenerationParams, outputs: [Output]) {
-    self.params = params
-    self.outputs = outputs
+  // Header comment
+  result += commonHeaderPrefix + "\n\n"
+
+  // Imports
+  result += params.imports + "\n\n"
+
+  // Image functions
+  let imageFunctions = outputs.map(\.image)
+    .map { params.description(for: $0) }
+    .joined(separator: "\n\n")
+  if !imageFunctions.isEmpty {
+    result += imageFunctions + "\n\n"
   }
 
-  func filePreamble() -> String {
-    params.imports.renderText() + "\n"
+  // Path functions
+  let pathFunctions = outputs.flatMap(\.pathRoutines)
+    .map { params.description(for: $0) }
+    .joined(separator: "\n\n")
+  if !pathFunctions.isEmpty {
+    result += pathFunctions + "\n\n"
   }
 
-  func generateImageFunctions() throws -> String {
-    outputs.map(\.image).map { params.description(for: $0) }
-      .joined(separator: "\n\n")
-  }
-
-  func generatePathFunctions() throws -> String {
-    outputs.flatMap(\.pathRoutines).map { params.description(for: $0) }
-      .joined(separator: "\n\n")
-  }
-
-  func fileEnding() throws -> String {
-    ""
-  }
+  return result
 }
 
 extension GenerationParams {
-  fileprivate var imports: ObjcTerm {
+  fileprivate var imports: String {
     switch style {
     case .plain:
-      .import(.coreGraphics)
+      """
+      #if __has_feature(modules)
+      @import CoreGraphics;
+      #else  // __has_feature(modules)
+      #import <CoreGraphics/CoreGraphics.h>
+      #endif  // __has_feature(modules)
+      """
     case .swiftFriendly:
-      .preprocessorDirective(
-        .import(.doubleQuotes(path: "cggen_support.h"))
-      )
+      "#import \"cggen_support.h\""
     }
   }
 }

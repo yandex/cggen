@@ -34,7 +34,7 @@ extension GenerationParams {
     "k" + prefix + module + image.name.upperCamelCase + "Descriptor"
   }
 
-  var cggenSupportHeaderBody: ObjcTerm {
+  var cggenSupportHeaderBody: String {
     supportHeader(
       prefix: prefix,
       module: module,
@@ -47,42 +47,30 @@ private func supportHeader(
   prefix: String,
   module: String,
   descriptorTypeName: String
-) -> ObjcTerm {
-  ObjcTerm(
-    commonHeaderPrefix,
-    .newLine,
-    .import(.coreGraphics, .coreFoundation),
-    .newLine,
-    .inCFNonnullRegion(
-      .swiftNamespace("\(module)Resources", cPref: prefix),
-      .cdecl(.init(
-        specifiers: [
-          .storage(.typedef),
-          .type(.structOrUnion(
-            .struct, attributes: [], identifier: nil, declList: [
-              .init(spec: [.simple(.CGSize)], decl: [.identifier("size")]),
-              .init(
-                spec: [.simple(.void)],
-                decl: [.functionPointer(
-                  name: "drawingHandler",
-                  .type(.simple(.CGContextRef))
-                )]
-              ),
-            ]
-          )),
-        ], declarators: [
-          .decl(.namedInSwift(
-            "\(module)Resources.Descriptor",
-            decl: .identifier(descriptorTypeName)
-          )),
-        ]
-      ))
-    ),
-    .newLine
-  )
-}
+) -> String {
+  """
+  \(commonHeaderPrefix)
 
-extension ObjcTerm.TypeIdentifier {
-  public static let CGSize: Self = "CGSize"
-  public static let CGContextRef: Self = "CGContextRef"
+  #if __has_feature(modules)
+  @import CoreGraphics;
+  @import CoreFoundation;
+  #else
+  #import <CoreGraphics/CoreGraphics.h>
+  #import <CoreFoundation/CoreFoundation.h>
+  #endif
+
+  CF_ASSUME_NONNULL_BEGIN
+
+  typedef struct CF_BRIDGED_TYPE(id) \(prefix)\(module)Resources *\(prefix)\(
+    module
+  )ResourcesRef CF_SWIFT_NAME(\(module)Resources);
+
+  typedef struct {
+    CGSize size;
+    void (*drawingHandler)(CGContextRef);
+  } \(descriptorTypeName) CF_SWIFT_NAME(\(module)Resources.Descriptor);
+
+  CF_ASSUME_NONNULL_END
+
+  """
 }
