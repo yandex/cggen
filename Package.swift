@@ -10,7 +10,10 @@ let package = Package(
     .macOS(.v14), .iOS(.v13),
   ],
   products: [
-    .executable(name: "cggen-tool", targets: ["cggen-tool"]),
+    .executable(name: "cggen", targets: ["CGGenCLI"]),
+    // Workaround for
+    // https://github.com/swiftlang/swift-package-manager/issues/8831
+    .executable(name: "CGGenCLI", targets: ["CGGenCLI"]),
     .library(name: "CGGen", targets: ["CGGen"]),
     .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
     .plugin(name: "cggen-spm-plugin", targets: ["plugin"]),
@@ -38,7 +41,7 @@ let package = Package(
       dependencies: ["BCCommon"]
     ),
     .executableTarget(
-      name: "cggen-tool",
+      name: "CGGenCLI",
       dependencies: [
         "libcggen",
         "Base",
@@ -99,7 +102,7 @@ let package = Package(
     .plugin(
       name: "plugin",
       capability: .buildTool(),
-      dependencies: ["cggen-tool"]
+      dependencies: ["CGGenCLI"]
     ),
   ]
 )
