@@ -2,8 +2,8 @@ import CoreGraphics
 import Foundation
 import Testing
 
-import CGGenRuntimeSupport
-import libcggen
+import CGGenCLI
+import CGGenRTSupport
 
 @Suite struct BCCompilationTests {
   @Test func compilation() throws {

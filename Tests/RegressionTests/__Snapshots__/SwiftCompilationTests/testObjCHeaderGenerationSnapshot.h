@@ -6,7 +6,6 @@
 #import <CoreGraphics/CoreGraphics.h>
 #endif  // __has_feature(modules)
 
-
 static const CGSize ktestCircleImageSize = (CGSize){.width = 50.0, .height = 50.0};
 void testDrawCircleImageInContext(CGContextRef context);
 
@@ -15,5 +14,4 @@ void testDrawSquareImageInContext(CGContextRef context);
 
 static const CGSize ktestStarImageSize = (CGSize){.width = 60.0, .height = 60.0};
 void testDrawStarImageInContext(CGContextRef context);
-
 

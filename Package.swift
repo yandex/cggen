@@ -11,8 +11,9 @@ let package = Package(
   ],
   products: [
     .executable(name: "cggen", targets: ["cggen"]),
-    .library(name: "cggen-runtime-support", targets: ["CGGenRuntimeSupport"]),
-    .plugin(name: "cggen-spm-plugin", targets: ["plugin"]),
+    .library(name: "CGGenRuntime", targets: ["CGGenRuntime"]),
+    .library(name: "CGGenRTSupport", targets: ["CGGenRTSupport"]),
+    .plugin(name: "CGGenPlugin", targets: ["CGGenPlugin"]),
   ],
   dependencies: [
     .package(
@@ -25,31 +26,63 @@ let package = Package(
     ),
   ],
   targets: [
-    .target(
-      name: "BCCommon"
-    ),
-    .target(
-      name: "CGGenRuntimeSupport",
-      dependencies: ["BCCommon"]
-    ),
+    // MARK: - Public targets (products)
+
+    // CLI tool: converts SVG/PDF to Swift/ObjC code with bytecode
     .executableTarget(
       name: "cggen",
       dependencies: [
-        "libcggen",
+        "CGGenCLI",
         "Base",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
+
+    // Runtime SVG rendering: parse and render without code generation
     .target(
-      name: "libcggen",
-      dependencies: ["Base", "SVGParse", "PDFParse", "BCCommon"]
+      name: "CGGenRuntime",
+      dependencies: ["Base", "CGGenRTSupport", "CGGenIR"]
     ),
+
+    // Runtime support: bytecode executor and helpers for image creation
+    .target(
+      name: "CGGenRTSupport",
+      dependencies: ["BCCommon"],
+      exclude: ["README.md"]
+    ),
+
+    // Build tool plugin: auto-generates code from SVG/PDF assets
+    .plugin(
+      name: "CGGenPlugin",
+      capability: .buildTool(),
+      dependencies: ["cggen"]
+    ),
+
+    // MARK: - Internal targets
+
+    // Code generation logic: SVG/PDF to Swift/ObjC converters
+    .target(
+      name: "CGGenCLI",
+      dependencies: [
+        "Base", "SVGParse", "PDFParse", "BCCommon", "CGGenIR", "CGGenRTSupport",
+      ]
+    ),
+
+    // Intermediate representation: DrawRoute and bytecode generation
+    .target(
+      name: "CGGenIR",
+      dependencies: ["Base", "BCCommon", "SVGParse"]
+    ),
+
+    // Common utilities: parsers, math, colors, XML
     .target(
       name: "Base",
       dependencies: [
         .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
+
+    // SVG parser: transforms SVG XML to typed structures
     .target(
       name: "SVGParse",
       dependencies: [
@@ -57,38 +90,52 @@ let package = Package(
         .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
+
+    // PDF parser: reads PDF content streams and resources
     .target(
       name: "PDFParse",
       dependencies: ["Base"]
     ),
+
+    // Bytecode definitions and compression
+    .target(
+      name: "BCCommon"
+    ),
+
+    // MARK: - Test targets
+
+    .testTarget(
+      name: "CGGenTests",
+      dependencies: ["CGGenRuntime"]
+    ),
     .testTarget(
       name: "UnitTests",
-      dependencies: ["Base", "SVGParse", "libcggen"],
+      dependencies: ["Base", "SVGParse", "CGGenCLI"],
       resources: [
         .copy("UnitTests.xctestplan"),
       ]
     ),
     .testTarget(
       name: "RegressionTests",
-      dependencies: ["libcggen", "CGGenRuntimeSupport"],
-      exclude: ["__Snapshots__"],
+      dependencies: ["CGGenCLI", "CGGenRTSupport", "CGGenIR", "CGGenRuntime"],
+      exclude: [
+        "__Snapshots__",
+        "RegressionSuite.xctestplan",
+        "tests.sketch",
+      ],
       resources: [
         .copy("pdf_samples"),
         .copy("svg_samples"),
         .copy("various_filenames"),
-        .copy("tests.sketch"),
-        .copy("RegressionSuite.xctestplan"),
       ]
     ),
+
+    // MARK: - Example/Demo targets
+
     .executableTarget(
       name: "plugin-demo",
-      dependencies: ["CGGenRuntimeSupport"],
-      plugins: ["plugin"]
-    ),
-    .plugin(
-      name: "plugin",
-      capability: .buildTool(),
-      dependencies: ["cggen"]
+      dependencies: ["CGGenRTSupport"],
+      plugins: ["CGGenPlugin"]
     ),
   ]
 )

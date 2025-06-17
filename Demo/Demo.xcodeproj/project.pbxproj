@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BBADE7832DF43CE200179730 /* cggen-runtime-support in Frameworks */ = {isa = PBXBuildFile; productRef = BBADE7822DF43CE200179730 /* cggen-runtime-support */; };
+		BBADE7832DF43CE200179730 /* CGGenRTSupport in Frameworks */ = {isa = PBXBuildFile; productRef = BBADE7822DF43CE200179730 /* CGGenRTSupport */; };
 		BBB8104E2DF5B8F000B81FF8 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */; };
 /* End PBXBuildFile section */
 
@@ -29,7 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BBB8104E2DF5B8F000B81FF8 /* ArgumentParser in Frameworks */,
-				BBADE7832DF43CE200179730 /* cggen-runtime-support in Frameworks */,
+				BBADE7832DF43CE200179730 /* CGGenRTSupport in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,14 +66,14 @@
 			buildRules = (
 			);
 			dependencies = (
-				BBFAB7322DF7927700AFB84A /* PBXTargetDependency */,
+				BB1946F12E020728008771D0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BBADE7742DF43C9D00179730 /* Demo */,
 			);
 			name = Demo;
 			packageProductDependencies = (
-				BBADE7822DF43CE200179730 /* cggen-runtime-support */,
+				BBADE7822DF43CE200179730 /* CGGenRTSupport */,
 				BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */,
 			);
 			productName = Demo;
@@ -139,9 +139,9 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		BBFAB7322DF7927700AFB84A /* PBXTargetDependency */ = {
+		BB1946F12E020728008771D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			productRef = BBFAB7312DF7927700AFB84A /* cggen-spm-plugin */;
+			productRef = BB1946F02E020728008771D0 /* CGGenPlugin */;
 		};
 /* End PBXTargetDependency section */
 
@@ -376,19 +376,19 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		BBADE7822DF43CE200179730 /* cggen-runtime-support */ = {
+		BB1946F02E020728008771D0 /* CGGenPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = "cggen-runtime-support";
+			package = BBC3773A2DF4520900FE3543 /* XCLocalSwiftPackageReference "../../cggen" */;
+			productName = "plugin:CGGenPlugin";
+		};
+		BBADE7822DF43CE200179730 /* CGGenRTSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CGGenRTSupport;
 		};
 		BBB8104D2DF5B8F000B81FF8 /* ArgumentParser */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = BBB8104C2DF5B8F000B81FF8 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
 			productName = ArgumentParser;
-		};
-		BBFAB7312DF7927700AFB84A /* cggen-spm-plugin */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = BBC3773A2DF4520900FE3543 /* XCLocalSwiftPackageReference "../../cggen" */;
-			productName = "plugin:cggen-spm-plugin";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

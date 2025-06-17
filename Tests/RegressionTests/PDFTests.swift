@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 import Base
-import libcggen
+import CGGenCLI
 
 @Suite struct PDFTests {
   @Test func alpha() {

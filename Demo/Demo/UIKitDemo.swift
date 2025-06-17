@@ -1,5 +1,5 @@
 #if canImport(UIKit)
-import CGGenRuntimeSupport
+import CGGenRTSupport
 import SwiftUI
 import UIKit
 

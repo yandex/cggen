@@ -18,7 +18,10 @@ import Testing
 import XCTest
 
 import Base
-import libcggen
+import CGGenIR
+import CGGenRuntime
+
+// import CGGenCLI
 import Parsing
 import SVGParse
 

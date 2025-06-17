@@ -1,6 +1,6 @@
 #if canImport(AppKit)
 import AppKit
-import CGGenRuntimeSupport
+import CGGenRTSupport
 import SwiftUI
 
 // AppKit demo showing cggen API examples
