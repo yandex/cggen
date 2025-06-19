@@ -3,6 +3,7 @@
 public enum PathSegment: Sendable {
   case moveTo(CGPoint)
   case curveTo(CGPoint, CGPoint, CGPoint)
+  case quadCurveTo(CGPoint, CGPoint) // control, to
   case lineTo(CGPoint)
   case appendRectangle(CGRect)
   case appendRoundedRect(CGRect, rx: CGFloat, ry: CGFloat)

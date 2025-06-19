@@ -25,6 +25,17 @@ public struct BCCubicCurve: Sendable {
   }
 }
 
+public struct BCQuadCurve: Sendable {
+  public var control: CGPoint
+  public var to: CGPoint
+
+  @inlinable
+  public init(control: CGPoint, to: CGPoint) {
+    self.control = control
+    self.to = to
+  }
+}
+
 @usableFromInline
 func unzipComponent(val: UInt8) -> CGFloat {
   CGFloat(val) / CGFloat(UInt8.max)

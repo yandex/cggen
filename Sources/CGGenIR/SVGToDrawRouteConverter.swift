@@ -484,15 +484,18 @@ private func pathConstruction(
   var currentPoint: CGPoint?
   var subPathStartPoint: CGPoint?
   var prevCurveControlPoint = Resetable<CGPoint>()
+  var prevQuadControlPoint = Resetable<CGPoint>()
   let steps: [PathSegment] = try commands.flatMap { command -> [PathSegment] in
     defer {
       prevCurveControlPoint.reset()
+      prevQuadControlPoint.reset()
     }
     return try processCommandKind(
       command,
       cgPathAccumulator: cgpath,
       currentPoint: &currentPoint, subPathStartPoint: &subPathStartPoint,
-      prevCurveControlPoint: &prevCurveControlPoint
+      prevCurveControlPoint: &prevCurveControlPoint,
+      prevQuadControlPoint: &prevQuadControlPoint
     )
   }
   return (.composite(steps), cgpath.boundingBox)
@@ -503,7 +506,8 @@ private func processCommandKind(
   cgPathAccumulator cgpath: CGMutablePath,
   currentPoint: inout CGPoint?,
   subPathStartPoint: inout CGPoint?,
-  prevCurveControlPoint: inout Resetable<CGPoint>
+  prevCurveControlPoint: inout Resetable<CGPoint>,
+  prevQuadControlPoint: inout Resetable<CGPoint>
 ) throws -> [PathSegment] {
   func point(
     for pair: SVG.CoordinatePair,
@@ -660,9 +664,45 @@ private func processCommandKind(
         clockwise: !sweepFlag
       )
     }
-  case .quadraticBezierCurveto,
-       .smoothQuadraticBezierCurveto:
-    fatalError("Not implemented")
+  /*
+     8.3.7 The quadratic Bézier curve commands
+     Draws a quadratic Bézier curve from the current point to (x,y)
+     using (x1,y1) as the control point.
+   */
+  case let .quadraticBezierCurveto(args):
+    return try args.map {
+      let (cp1, to) = try (
+        point(for: $0.cp1, currentPoint),
+        point(for: $0.to, currentPoint)
+      )
+      cgpath.addQuadCurve(to: to, control: cp1)
+      currentPoint = to
+      prevQuadControlPoint.value = cp1
+      prevCurveControlPoint.value = nil
+      return .quadCurveTo(cp1, to)
+    }
+  /*
+     8.3.7 The quadratic Bézier curve commands
+     T (smooth quadratic Bézier curveto)
+     Draws a quadratic Bézier curve from the current point to (x,y).
+     The control point is assumed to be the reflection of the control point
+     on the previous command relative to the current point.
+     (If there is no previous command or if the previous command was not
+     a Q, q, T or t, assume the control point is coincident with the current point.)
+   */
+  case let .smoothQuadraticBezierCurveto(args):
+    return try args.map {
+      guard let current = currentPoint else { throw Err.noPreviousPoint }
+      let cp1 = prevQuadControlPoint.value?
+        .reflected(across: current) ?? current
+      let to = try point(for: $0, currentPoint)
+
+      cgpath.addQuadCurve(to: to, control: cp1)
+      currentPoint = to
+      prevQuadControlPoint.value = cp1
+      prevCurveControlPoint.value = nil
+      return .quadCurveTo(cp1, to)
+    }
   }
 }
 

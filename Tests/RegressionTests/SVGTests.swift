@@ -63,6 +63,39 @@ class SVGTest: XCTestCase {
     )
   }
 
+  func testBytecodeDeterminism() throws {
+    // Load SVG with multiple gradients
+    let svgData =
+      try Data(contentsOf: sample(named: "gradient_determinism_test"))
+
+    // Generate bytecode multiple times
+    var bytecodes: [[UInt8]] = []
+
+    // Generate 10 times to catch any nondeterminism
+    for _ in 0..<10 {
+      // Parse SVG
+      let document = try SVGParser.root(from: svgData)
+
+      // Convert to draw route
+      let routines = try SVGToDrawRouteConverter.convert(document: document)
+      let drawRoute = routines.drawRoutine
+
+      // Generate bytecode
+      let bytecode = generateRouteBytecode(route: drawRoute)
+      bytecodes.append(bytecode)
+    }
+
+    // All bytecodes should be identical
+    let firstBytecode = bytecodes[0]
+    for (index, bytecode) in bytecodes.enumerated() {
+      XCTAssertEqual(
+        bytecode,
+        firstBytecode,
+        "Bytecode at index \(index) differs from first"
+      )
+    }
+  }
+
   func testSimpliestSVG() {
     test(svg: "fill")
   }
@@ -164,6 +197,10 @@ class SVGPathTests: XCTestCase {
 
   func testPathFillRuleGstate() {
     test(svg: "path_fill_rule_gstate")
+  }
+
+  func testQuadraticBezierCommands() {
+    test(svg: "path_quadratic_bezier")
   }
 }
 

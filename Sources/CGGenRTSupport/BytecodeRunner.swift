@@ -236,6 +236,8 @@ struct PathBytecodeRunner {
         try exec.moveTo(read())
       case .curveTo:
         try exec.curveTo(read())
+      case .quadCurveTo:
+        try exec.quadCurveTo(read())
       case .lineTo:
         try exec.lineTo(read())
       case .appendRectangle:
@@ -370,6 +372,8 @@ struct BytecodeRunner {
         try exec.concatCTM(read())
       case .curveTo:
         try exec.curveTo(read())
+      case .quadCurveTo:
+        try exec.quadCurveTo(read())
       case .dash:
         try exec.dash(read())
       case .dashPhase:
@@ -580,6 +584,13 @@ private struct CommandExecution {
       to: args.to,
       control1: args.control1,
       control2: args.control2
+    )
+  }
+
+  func quadCurveTo(_ args: DrawCommand.QuadCurveToArgs) {
+    cg.addQuadCurve(
+      to: args.to,
+      control: args.control
     )
   }
 
@@ -854,6 +865,13 @@ private struct PathCommandExecution {
       to: args.to,
       control1: args.control1,
       control2: args.control2
+    )
+  }
+
+  func quadCurveTo(_ args: PathCommand.QuadCurveToArgs) {
+    path.addQuadCurve(
+      to: args.to,
+      control: args.control
     )
   }
 
