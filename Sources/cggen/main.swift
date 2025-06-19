@@ -24,8 +24,8 @@ struct Main: ParsableCommand {
 
   static let configuration = CommandConfiguration(
     commandName: "cggen",
-    abstract: "Tool for generationg CoreGraphics code from vector images in pdf format",
-    version: "0.1"
+    abstract: "Tool for generating Core Graphics code from SVG and PDF files",
+    version: "1.0.0"
   )
 
   func run() throws {

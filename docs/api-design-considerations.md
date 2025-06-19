@@ -2,6 +2,11 @@
 
 This document outlines API approaches evaluated for making cggen-generated images seamlessly usable in SwiftUI and UIKit applications.
 
+## Related Documentation
+- [API Usage Guide](api-usage-guide.md) - Practical examples of the chosen API
+- [Architecture Overview](architecture.md) - How cggen implements these decisions
+- [Path Generation](path-generation.md) - Extended API for path extraction
+
 ## Goal
 
 Create a simple and ergonomic API that enables developers to integrate cggen-generated vector graphics similarly to system images, without manual support library imports.

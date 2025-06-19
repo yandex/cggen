@@ -2,6 +2,11 @@
 
 This guide provides comprehensive examples and usage patterns for the cggen Drawing API.
 
+## Related Documentation
+- [Architecture Overview](architecture.md) - Understanding cggen's structure
+- [API Design Considerations](api-design-considerations.md) - Why the API works this way
+- [Path Generation](path-generation.md) - Extracting paths for custom rendering
+
 ## Basic Usage
 
 ### SwiftUI Views

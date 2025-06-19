@@ -2,6 +2,11 @@
 
 This document outlines the steps to add support for a new SVG attribute in the cggen project, using the implementation of `stroke-miterlimit` as an example.
 
+## Related Documentation
+- [Architecture Overview](architecture.md) - Understanding cggen's module structure
+- [API Usage Guide](api-usage-guide.md) - How the generated code is used
+- [Path Generation](path-generation.md) - Related path extraction features
+
 ## Overview
 
 When adding a new SVG attribute, you need to implement support across several components of the codebase:
