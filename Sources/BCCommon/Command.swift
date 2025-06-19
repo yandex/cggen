@@ -41,6 +41,9 @@ public enum DrawCommand: UInt8 {
   case curveTo
   public typealias CurveToArgs = BCCubicCurve
 
+  case quadCurveTo
+  public typealias QuadCurveToArgs = BCQuadCurve
+
   case lineTo
   public typealias LineToArgs = CGPoint
 
@@ -207,6 +210,9 @@ public enum PathCommand: UInt8 {
   case curveTo
   public typealias CurveToArgs = BCCubicCurve
 
+  case quadCurveTo
+  public typealias QuadCurveToArgs = BCQuadCurve
+
   case lineTo
   public typealias LineToArgs = CGPoint
 
@@ -237,6 +243,7 @@ extension DrawCommand {
     switch pathCommand {
     case .moveTo: self = .moveTo
     case .curveTo: self = .curveTo
+    case .quadCurveTo: self = .quadCurveTo
     case .lineTo: self = .lineTo
     case .appendRectangle: self = .appendRectangle
     case .appendRoundedRect: self = .appendRoundedRect

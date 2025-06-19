@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
+  <!-- Quadratic Bezier Curve (Q command) -->
+  <path d="M 5 20 Q 15 5 25 20" 
+        stroke="blue" stroke-width="2" fill="none"/>
+  
+  <!-- Multiple Quadratic Beziers -->
+  <path d="M 30 20 Q 35 10 40 20 Q 45 30 50 20" 
+        stroke="green" stroke-width="2" fill="none"/>
+  
+  <!-- Smooth Quadratic Bezier (T command) -->
+  <path d="M 5 35 Q 10 25 15 35 T 25 35" 
+        stroke="red" stroke-width="2" fill="none"/>
+  
+  <!-- Relative quadratic bezier (q command) -->
+  <path d="M 30 35 q 5 -10 10 0 q 5 10 10 0" 
+        stroke="purple" stroke-width="2" fill="none"/>
+  
+  <!-- Filled quadratic shape -->
+  <path d="M 5 45 Q 15 40 25 45 Q 25 50 15 50 Q 5 50 5 45" 
+        fill="lightblue" stroke="darkblue" stroke-width="1"/>
+</svg>

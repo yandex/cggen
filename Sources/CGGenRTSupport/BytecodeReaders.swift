@@ -158,6 +158,15 @@ extension BCCubicCurve: BytecodeDecodable {
   }
 }
 
+extension BCQuadCurve: BytecodeDecodable {
+  init(bytecode: inout Bytecode) throws {
+    try self.init(
+      control: .init(bytecode: &bytecode),
+      to: .init(bytecode: &bytecode)
+    )
+  }
+}
+
 // MARK: Legacy Conforamnces
 
 // It's suspicious to conform types from SDK to custom protocols

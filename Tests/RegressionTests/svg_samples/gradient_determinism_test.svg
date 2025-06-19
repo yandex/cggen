@@ -1,0 +1,36 @@
+<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Multiple gradients with names that would have different ordering -->
+    <linearGradient id="zebra_gradient">
+      <stop offset="0%" stop-color="black"/>
+      <stop offset="100%" stop-color="white"/>
+    </linearGradient>
+    
+    <linearGradient id="alpha_gradient">
+      <stop offset="0%" stop-color="red"/>
+      <stop offset="100%" stop-color="blue"/>
+    </linearGradient>
+    
+    <linearGradient id="beta_gradient">
+      <stop offset="0%" stop-color="green"/>
+      <stop offset="100%" stop-color="yellow"/>
+    </linearGradient>
+    
+    <linearGradient id="gamma_gradient">
+      <stop offset="0%" stop-color="purple"/>
+      <stop offset="100%" stop-color="orange"/>
+    </linearGradient>
+    
+    <linearGradient id="delta_gradient">
+      <stop offset="0%" stop-color="cyan"/>
+      <stop offset="100%" stop-color="magenta"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Use all gradients to ensure they're included in bytecode -->
+  <rect x="0" y="0" width="40" height="200" fill="url(#zebra_gradient)"/>
+  <rect x="40" y="0" width="40" height="200" fill="url(#alpha_gradient)"/>
+  <rect x="80" y="0" width="40" height="200" fill="url(#beta_gradient)"/>
+  <rect x="120" y="0" width="40" height="200" fill="url(#gamma_gradient)"/>
+  <rect x="160" y="0" width="40" height="200" fill="url(#delta_gradient)"/>
+</svg>

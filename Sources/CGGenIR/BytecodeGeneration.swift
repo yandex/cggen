@@ -265,6 +265,12 @@ extension BCCubicCurve: BytecodeEncodable {
   }
 }
 
+extension BCQuadCurve: BytecodeEncodable {
+  func encode(to bytecode: inout Bytecode) {
+    (control, to) >> bytecode
+  }
+}
+
 extension BCRadialGradientDrawingOptions: BytecodeEncodable {
   init(_ opts: DrawStep.RadialGradientDrawingOptions) {
     self.init(
@@ -458,14 +464,16 @@ private func generateSubroutes(
   bytecode: inout Bytecode
 ) {
   UInt32(subroutes.count) >> bytecode
-  for subroute in subroutes {
+  // Sort keys to ensure deterministic ordering
+  let sortedSubroutes = subroutes.sorted { $0.key < $1.key }
+  for (key, value) in sortedSubroutes {
     let counter = UInt32(context.subroutesIds.count)
-    context.subroutesIds[subroute.key] = counter
+    context.subroutesIds[key] = counter
     counter >> bytecode
 
     var subrouteBytecode = Bytecode()
     generateRoute(
-      route: subroute.value,
+      route: value,
       context: context,
       bytecode: &subrouteBytecode
     )
@@ -481,11 +489,13 @@ private func generateGradients(
 ) {
   UInt32(gradients.count) >> bytecode
   var counter: UInt32 = 0
-  for gradient in gradients {
+  // Sort keys to ensure deterministic ordering
+  let sortedGradients = gradients.sorted { $0.key < $1.key }
+  for (key, value) in sortedGradients {
     counter += 1
-    context.gradientsIds[gradient.key] = counter
+    context.gradientsIds[key] = counter
     counter >> bytecode
-    gradient.value >> bytecode
+    value >> bytecode
   }
 }
 
@@ -603,6 +613,12 @@ enum PathSegmentEncoding {
         PathCommand.CurveToArgs.self,
         BCCubicCurve(control1: c1, control2: c2, to: end), >>
       )
+    case let .quadCurveTo(control, to):
+      encode(
+        .quadCurveTo,
+        PathCommand.QuadCurveToArgs.self,
+        BCQuadCurve(control: control, to: to), >>
+      )
     case let .lineTo(to):
       encode(.lineTo, PathCommand.LineToArgs.self, to, >>)
     case let .appendRectangle(rect):
@@ -653,6 +669,12 @@ enum PathSegmentEncoding {
         .curveTo,
         PathCommand.CurveToArgs.self,
         BCCubicCurve(control1: c1, control2: c2, to: end), >>
+      )
+    case let .quadCurveTo(control, to):
+      encode(
+        .quadCurveTo,
+        PathCommand.QuadCurveToArgs.self,
+        BCQuadCurve(control: control, to: to), >>
       )
     case let .lineTo(to):
       encode(.lineTo, PathCommand.LineToArgs.self, to, >>)

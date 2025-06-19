@@ -39,6 +39,8 @@ extension CGMutablePath {
       move(to: to)
     case let .curveTo(c1, c2, to):
       addCurve(to: to, control1: c1, control2: c2)
+    case let .quadCurveTo(control, to):
+      addQuadCurve(to: to, control: control)
     case let .lineTo(to):
       addLine(to: to)
     case let .appendRectangle(rect):
@@ -77,8 +79,9 @@ extension CGPathElement {
       let to = points.pointee
       return .lineTo(to)
     case .addQuadCurveToPoint:
-      assertionFailure("addQuadCurveToPoint is not supported")
-      return .empty
+      let control = points.pointee
+      let to = points.advanced(by: 1).pointee
+      return .quadCurveTo(control, to)
     case .addCurveToPoint:
       let control1 = points.pointee
       let control2 = points.advanced(by: 1).pointee
@@ -125,6 +128,9 @@ extension PathSegment {
       return a1.isAlmostEqual(to: b1, tolerance: tolerance) &&
         a2.isAlmostEqual(to: b2, tolerance: tolerance) &&
         a3.isAlmostEqual(to: b3, tolerance: tolerance)
+    case let (.quadCurveTo(a1, a2), .quadCurveTo(b1, b2)):
+      return a1.isAlmostEqual(to: b1, tolerance: tolerance) &&
+        a2.isAlmostEqual(to: b2, tolerance: tolerance)
     case let (.addArc(a1, a2, a3, a4, a5), .addArc(b1, b2, b3, b4, b5)):
       return a1.isAlmostEqual(to: b1, tolerance: tolerance) &&
         a2.isAlmostEqual(to: b2, tolerance: tolerance) &&
@@ -140,10 +146,13 @@ extension PathSegment {
         }
       }
       return true
-    case (.moveTo, _), (.curveTo, _), (.lineTo, _), (.appendRectangle, _),
-         (.appendRoundedRect, _), (.addEllipse, _), (.addArc, _),
-         (.closePath, _), (.endPath, _),
-         (.lines, _), (.composite, _):
+    case (.moveTo, _), (.curveTo, _), (.quadCurveTo, _), (.lineTo, _), (
+      .appendRectangle,
+      _
+    ),
+    (.appendRoundedRect, _), (.addEllipse, _), (.addArc, _),
+    (.closePath, _), (.endPath, _),
+    (.lines, _), (.composite, _):
       assertionFailure("unsupported pair of segments to compare")
       return false
     }
