@@ -31,6 +31,12 @@
 
 This document describes the architecture and module structure of cggen, a tool for converting SVG and PDF files into optimized Core Graphics code.
 
+## Related Documentation
+- [API Usage Guide](api-usage-guide.md) - Practical examples for using cggen
+- [API Design Considerations](api-design-considerations.md) - Design decisions and rationale
+- [Adding New Attributes](adding-new-attribute.md) - Contributing SVG attribute support
+- [Path Generation](path-generation.md) - Path extraction feature architecture
+
 ## Overview
 
 cggen converts vector graphics (SVG/PDF) into either:

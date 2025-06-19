@@ -4,6 +4,35 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @~/.claude/cggen.md
 
+## Quick Reference
+
+### Essential Commands
+```bash
+# Build
+swift build --product cggen
+
+# Test
+swift test
+swift test --parallel
+swift test --filter <test-name>
+
+# Format
+swiftformat --lint .
+swiftformat .
+
+# Run CLI
+swift run cggen --swift-output Generated.swift *.svg *.pdf
+
+# Run demos
+swift run plugin-demo
+open Demo/Demo.xcodeproj
+```
+
+### File Naming Conventions
+- Swift files: PascalCase (e.g., `SVGRenderer.swift`)
+- Documentation: dash-separated lowercase (e.g., `api-usage-guide.md`)
+- Test samples: underscore-separated lowercase (e.g., `gradient_with_alpha.svg`)
+
 ## IMPORTANT: Testing Requirements
 - **ALWAYS run `swift test` after making code changes**
 - **NEVER consider a task complete without running tests**
@@ -38,17 +67,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Core Components
 - **cggen**: CLI entry point using Swift Argument Parser
-- **CGGenCLILib**: Main library for PDF/SVG → Core Graphics conversion
+- **CGGenCLI**: Main library for PDF/SVG → Core Graphics conversion
   - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input to DrawRoute
-  - `BCCGGenerator` / `ObjCGen`: Generate bytecode or Objective-C code
+  - `MBCCGGenerator` / `ObjCGen` / `SwiftCGGenerator`: Generate bytecode, Objective-C, or Swift code
   - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
+- **CGGenIR**: Intermediate representation and bytecode generation
+  - `DrawStep` / `PathSegment`: Low-level drawing operations
+  - `BytecodeGeneration`: Compiles IR to compressed bytecode
 - **CGGenRuntime**: Runtime library for parsing and rendering SVG/PDF directly
-  - `SVGToDrawRouteConverter`: Converts SVG to DrawRoute representation
+  - `SVGRenderer`: Direct SVG rendering without code generation
+  - `SVGSupport`: Runtime SVG parsing and rendering utilities
   - Can be used to render graphics at runtime without code generation
 - **CGGenRTSupport**: Bytecode execution library
   - Provides `Drawing` type used by generated Swift code
-  - Executes compressed bytecode to draw on CGContext
+  - `BytecodeRunner`: Executes compressed bytecode to draw on CGContext
+  - Platform-specific image support (UIKit/AppKit)
   - Required dependency for apps using cggen-generated code
+- **SVGParse**: SVG parsing infrastructure
+  - Parser combinators for SVG attributes and elements
+  - Color, gradient, filter, and shape parsing
+- **PDFParse**: PDF parsing infrastructure
+  - PDF object model and content stream parsing
+  - Support for graphics operators, resources, and functions
 
 ### Parser Architecture
 The project uses swift-parsing library with custom operators:
@@ -76,7 +116,9 @@ The project uses swift-parsing library with custom operators:
 ### Common Tasks
 - Add new SVG attribute: Update `SVGValueParser.swift` and `SVGParsing.swift`
 - Add new PDF operator: Update `PDFOperator.swift` and `PDFContentStreamParser.swift`
-- Modify code generation: Update relevant files in `CGGenCLILib/`
+- Modify code generation: Update relevant files in `CGGenCLI/`
+- Add runtime rendering support: Update `SVGRenderer.swift` and `SVGSupport.swift`
+- Modify bytecode generation: Update `BytecodeGeneration.swift` in `CGGenIR/`
 
 ### Migration Notes
 Migration to swift-parsing library completed. Key changes made:
@@ -136,6 +178,24 @@ The migration from legacy parser infrastructure to swift-parsing is now complete
 **Key infrastructure**:
 - `DicitionaryKey<Key, Value>: Parser` - Direct dictionary key extraction
 - Custom parser operators (`~>>`, `<<~`, `~`, `*`, `+`, `~?`) for parsing DSL
+
+## Documentation
+
+### Available Documentation
+- [docs/architecture.md](docs/architecture.md) - Detailed architecture overview
+- [docs/api-usage-guide.md](docs/api-usage-guide.md) - API usage examples
+- [docs/api-design-considerations.md](docs/api-design-considerations.md) - Design rationale
+- [docs/adding-new-attribute.md](docs/adding-new-attribute.md) - Contributing guide for SVG attributes
+- [docs/path-generation.md](docs/path-generation.md) - Path extraction feature guide
+
+### Key File Locations
+- **CLI Entry**: `Sources/cggen/main.swift`
+- **Main Logic**: `Sources/CGGenCLI/`
+- **Runtime Support**: `Sources/CGGenRTSupport/`
+- **SVG Parsing**: `Sources/SVGParse/`
+- **PDF Parsing**: `Sources/PDFParse/`
+- **SPM Plugin**: `Plugins/CGGenPlugin/`
+- **Tests**: `Tests/` (Unit, Regression, CGGen tests)
 
 ## Demo App
 

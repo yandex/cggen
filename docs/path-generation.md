@@ -2,6 +2,12 @@
 
 This document explains cggen's path generation feature, which allows you to extract and reuse path definitions from SVG files as standalone Core Graphics path functions.
 
+## Related Documentation
+- [Architecture Overview](architecture.md) - How path generation fits in cggen
+- [API Usage Guide](api-usage-guide.md) - Using generated paths in your app
+- [API Design Considerations](api-design-considerations.md) - Design decisions for path APIs
+- [Adding New Attributes](adding-new-attribute.md) - Extending path support
+
 ## Overview
 
 The path generation feature enables you to:

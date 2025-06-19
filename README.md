@@ -229,7 +229,9 @@ cggen uses a sophisticated compilation approach:
 
 ## Documentation
 
+- [Architecture Overview](docs/architecture.md) - Detailed module structure and design
 - [API Usage Guide](docs/api-usage-guide.md) - Comprehensive examples and patterns
 - [API Design Considerations](docs/api-design-considerations.md) - Design decisions and alternatives
-- [Adding New Attributes](docs/adding_new_attribute.md) - Guide for contributing SVG attribute support
+- [Adding New Attributes](docs/adding-new-attribute.md) - Guide for contributing SVG attribute support
+- [Path Generation](docs/path-generation.md) - Path extraction for animations and custom rendering
 
