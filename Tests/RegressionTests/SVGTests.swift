@@ -384,7 +384,7 @@ private func sample(named name: String) -> URL {
 }
 
 let svgSamplesPath =
-  getCurentFilePath().appendingPathComponent("svg_samples")
+  getCurrentFilePath().appendingPathComponent("svg_samples")
 
 typealias PathTestArguments = (svgName: String, segments: [PathSegment])
 

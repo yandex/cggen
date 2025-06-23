@@ -6,15 +6,15 @@ void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decomp
 
 static const uint8_t mergedBytecodes[];
 
-void testDrawCircleImageInContext(CGContextRef context) {
+void plugin_demoDrawCircleImageInContext(CGContextRef context) {
   runMergedBytecode(context, mergedBytecodes, 275, 157, 0, 65);
 }
 
-void testDrawSquareImageInContext(CGContextRef context) {
+void plugin_demoDrawSquareImageInContext(CGContextRef context) {
   runMergedBytecode(context, mergedBytecodes, 275, 157, 66, 139);
 }
 
-void testDrawStarImageInContext(CGContextRef context) {
+void plugin_demoDrawStarImageInContext(CGContextRef context) {
   runMergedBytecode(context, mergedBytecodes, 275, 157, 140, 274);
 }
 

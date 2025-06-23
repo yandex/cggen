@@ -6,7 +6,7 @@ import CGGenCLI
 
 @Suite struct SwiftCompilationTests {
   @Test func swiftCodeCompilation() throws {
-    let svgSamplesPath = getCurentFilePath()
+    let svgSamplesPath = getCurrentFilePath()
       .appendingPathComponent("svg_samples")
     let files = [
       "shapes.svg",

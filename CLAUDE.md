@@ -55,10 +55,25 @@ open Demo/Demo.xcodeproj
 - Specific test: `swift test --filter <test-name>`
 - List tests: `swift test list`
 
+#### Snapshot Testing
+- Update snapshots: `SNAPSHOT_TESTING_RECORD=all swift test`
+- Update only failed snapshots: `SNAPSHOT_TESTING_RECORD=failed swift test`
+- Update only missing snapshots: `SNAPSHOT_TESTING_RECORD=missing swift test` (default)
+- Never record snapshots: `SNAPSHOT_TESTING_RECORD=never swift test`
+
 ### Lint and Type Checking
 - Format check: `swiftformat --lint .`
 - Format fix: `swiftformat .`
 - **Run formatter before commit**
+
+### CI/CD
+- **Main workflow**: Runs on every push/PR with deterministic hashing
+- **Nightly Extended Test Suite**: Runs at 2 AM UTC if there are new commits
+  - Tests bytecode determinism without `SWIFT_DETERMINISTIC_HASHING`
+  - Runs gradient determinism test 20 times
+  - Will include WebKit vs cggen snapshot comparisons
+  - Creates GitHub issue if tests fail
+  - Can be manually triggered from GitHub Actions UI
 
 ### Run
 - Use `swift run` to run executables

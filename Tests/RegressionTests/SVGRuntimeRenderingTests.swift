@@ -42,7 +42,7 @@ import CGGenRuntime
     "path_fill_rule.svg",
   ])
   func svgRuntimeRendering(svgFile: String) throws {
-    let svgURL = getCurentFilePath()
+    let svgURL = getCurrentFilePath()
       .appendingPathComponent("svg_samples")
       .appendingPathComponent(svgFile)
 
@@ -56,7 +56,7 @@ import CGGenRuntime
     )
 
     // Get expected snapshot
-    let snapshotPath = getCurentFilePath()
+    let snapshotPath = getCurrentFilePath()
       .appendingPathComponent("__Snapshots__")
       .appendingPathComponent("SVGRuntimeRenderingTests")
       .appendingPathComponent(svgFile.replacingOccurrences(

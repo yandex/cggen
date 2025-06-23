@@ -8,7 +8,7 @@ import CGGenRTSupport
 @Suite struct BCCompilationTests {
   @Test func compilation() throws {
     let variousFilenamesDir =
-      getCurentFilePath().appendingPathComponent("various_filenames")
+      getCurrentFilePath().appendingPathComponent("various_filenames")
     let files = [
       "Capital letter.svg",
       "dash-dash.svg",

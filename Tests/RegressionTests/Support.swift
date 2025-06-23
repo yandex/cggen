@@ -62,7 +62,7 @@ func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
   return ziped.rootMeanSquare()
 }
 
-func getCurentFilePath(_ file: StaticString = #filePath) -> URL {
+func getCurrentFilePath(_ file: StaticString = #filePath) -> URL {
   URL(fileURLWithPath: file.description, isDirectory: false)
     .deletingLastPathComponent()
 }
