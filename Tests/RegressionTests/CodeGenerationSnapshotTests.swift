@@ -112,7 +112,7 @@ import CGGenCLI
   }
 
   private func pluginDemoFiles(_ names: [String]) -> [URL] {
-    let plugindemoPath = getCurentFilePath()
+    let plugindemoPath = getCurrentFilePath()
       .deletingLastPathComponent()
       .deletingLastPathComponent()
       .appendingPathComponent("Sources")
@@ -126,7 +126,7 @@ import CGGenCLI
   }
 
   private func svgSampleFiles(_ names: [String]) -> [URL] {
-    let svgSamplesPath = getCurentFilePath()
+    let svgSamplesPath = getCurrentFilePath()
       .appendingPathComponent("svg_samples")
 
     return names.map { svgSamplesPath.appendingPathComponent($0) }
