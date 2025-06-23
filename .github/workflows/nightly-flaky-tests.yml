@@ -1,0 +1,104 @@
+name: Nightly Extended Test Suite
+
+on:
+  schedule:
+    # Runs at 2 AM UTC every day (adjust time as needed)
+    - cron: '0 2 * * *'
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  check-for-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      
+      - name: Check for recent commits
+        id: check
+        run: |
+          # Get commits from last 24 hours
+          LAST_COMMIT_TIME=$(git log -1 --format=%ct)
+          CURRENT_TIME=$(date +%s)
+          TIME_DIFF=$((CURRENT_TIME - LAST_COMMIT_TIME))
+          
+          # 86400 seconds = 24 hours
+          if [ $TIME_DIFF -lt 86400 ]; then
+            echo "New commits found in the last 24 hours"
+            echo "should-run=true" >> $GITHUB_OUTPUT
+          else
+            echo "No new commits in the last 24 hours"
+            echo "should-run=false" >> $GITHUB_OUTPUT
+          fi
+
+  flaky-tests:
+    needs: check-for-changes
+    if: needs.check-for-changes.outputs.should-run == 'true'
+    runs-on: macos-15
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Build
+      run: swift build
+    
+    - name: Run gradient determinism test many times
+      run: |
+        echo "Running gradient determinism test 20 times without deterministic hashing..."
+        for i in {1..20}; do
+          echo "Run $i of 20"
+          swift test --filter "gradientDeterminismGeneration" || {
+            echo "❌ Test failed on run $i"
+            exit 1
+          }
+        done
+        echo "✅ All 20 runs passed successfully!"
+    
+    - name: Run all tests without deterministic hashing
+      run: |
+        echo "Running all tests 3 times without deterministic hashing..."
+        for i in {1..3}; do
+          echo "Run $i of 3"
+          swift test --parallel || {
+            echo "❌ Tests failed on run $i"
+            exit 1
+          }
+        done
+        echo "✅ All test runs passed!"
+    
+    - name: Create issue on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const title = 'Nightly flaky test failure';
+          const body = `The nightly flaky test run failed. This likely indicates non-deterministic behavior in the code.
+          
+          [View failed workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+          
+          Please investigate the failure.`;
+          
+          // Check if issue already exists
+          const issues = await github.rest.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: ['flaky-test']
+          });
+          
+          if (issues.data.length === 0) {
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['flaky-test', 'bug']
+            });
+          }

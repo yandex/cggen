@@ -20,7 +20,7 @@ jobs:
     - name: Build
       run: swift build -v
     - name: Run tests
-      run: swift test -v --parallel
+      run: SWIFT_DETERMINISTIC_HASHING=1 swift test -v --parallel
     - name: Build Demo for macOS
       run: xcodebuild -project Demo/Demo.xcodeproj -scheme Demo -configuration Release -destination 'platform=macOS' -skipMacroValidation build
     - name: Build Demo for iOS Simulator

@@ -24,6 +24,10 @@ let package = Package(
       url: "https://github.com/pointfreeco/swift-parsing",
       .upToNextMajor(from: "0.14.1")
     ),
+    .package(
+      url: "https://github.com/pointfreeco/swift-snapshot-testing",
+      .upToNextMajor(from: "1.17.6")
+    ),
   ],
   targets: [
     // MARK: - Public targets (products)
@@ -117,7 +121,10 @@ let package = Package(
     ),
     .testTarget(
       name: "RegressionTests",
-      dependencies: ["CGGenCLI", "CGGenRTSupport", "CGGenIR", "CGGenRuntime"],
+      dependencies: [
+        "CGGenCLI", "CGGenRTSupport", "CGGenIR", "CGGenRuntime",
+        .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
+      ],
       exclude: [
         "__Snapshots__",
         "RegressionSuite.xctestplan",
