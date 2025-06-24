@@ -54,12 +54,18 @@ open Demo/Demo.xcodeproj
 - Parallel tests: `swift test --parallel`
 - Specific test: `swift test --filter <test-name>`
 - List tests: `swift test list`
+- Extended tests (WebKit reference generation): `CGGEN_EXTENDED_TESTS=1 swift test`
 
 #### Snapshot Testing
 - Update snapshots: `SNAPSHOT_TESTING_RECORD=all swift test`
 - Update only failed snapshots: `SNAPSHOT_TESTING_RECORD=failed swift test`
 - Update only missing snapshots: `SNAPSHOT_TESTING_RECORD=missing swift test` (default)
 - Never record snapshots: `SNAPSHOT_TESTING_RECORD=never swift test`
+
+#### Extended Tests
+- WebKit reference generation tests are disabled by default
+- Enable with: `CGGEN_EXTENDED_TESTS=1 swift test`
+- The `extendedTestsEnabled` constant in `SVGTests.swift` controls this behavior
 
 ### Lint and Type Checking
 - Format check: `swiftformat --lint .`
@@ -70,8 +76,8 @@ open Demo/Demo.xcodeproj
 - **Main workflow**: Runs on every push/PR with deterministic hashing
 - **Nightly Extended Test Suite**: Runs at 2 AM UTC if there are new commits
   - Tests bytecode determinism without `SWIFT_DETERMINISTIC_HASHING`
-  - Runs gradient determinism test 20 times
-  - Will include WebKit vs cggen snapshot comparisons
+  - Runs gradient determinism test 5 times
+  - Runs all tests once with `CGGEN_EXTENDED_TESTS=1` (includes WebKit reference generation)
   - Creates GitHub issue if tests fail
   - Can be manually triggered from GitHub Actions UI
 
@@ -224,6 +230,8 @@ See [Demo/CLAUDE.md](Demo/CLAUDE.md) for detailed workflow documentation includi
 - Consider updating your project memory before finishing the task
 - Launch xcodebuild with -quiet option if not strongly necessary otherwise
 - ALWAYS use .claude_temp folder for temporary files, NEVER use /tmp or temp directories
+- Extended tests (like WebKit reference generation) are controlled by `CGGEN_EXTENDED_TESTS=1` environment variable
+- The `extendedTestsEnabled` constant is defined at the bottom of SVGTests.swift and can be used to skip tests that should only run in extended mode
 
 ## Project Guidelines
 - AVOID marketing tone of new changes in documentation

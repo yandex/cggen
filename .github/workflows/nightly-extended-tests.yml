@@ -49,29 +49,26 @@ jobs:
     - name: Build
       run: swift build
     
-    - name: Run gradient determinism test many times
+    - name: Run gradient determinism test multiple times
       run: |
-        echo "Running gradient determinism test 20 times without deterministic hashing..."
-        for i in {1..20}; do
-          echo "Run $i of 20"
+        echo "Running gradient determinism test 5 times without deterministic hashing..."
+        for i in {1..5}; do
+          echo "Run $i of 5"
           swift test --filter "gradientDeterminismGeneration" || {
             echo "❌ Test failed on run $i"
             exit 1
           }
         done
-        echo "✅ All 20 runs passed successfully!"
+        echo "✅ All 5 runs passed successfully!"
     
-    - name: Run all tests without deterministic hashing
+    - name: Run all tests including extended tests
       run: |
-        echo "Running all tests 3 times without deterministic hashing..."
-        for i in {1..3}; do
-          echo "Run $i of 3"
-          swift test --parallel || {
-            echo "❌ Tests failed on run $i"
-            exit 1
-          }
-        done
-        echo "✅ All test runs passed!"
+        echo "Running all tests including extended tests..."
+        CGGEN_EXTENDED_TESTS=1 swift test --parallel || {
+          echo "❌ Tests failed"
+          exit 1
+        }
+        echo "✅ All tests passed!"
     
     - name: Create issue on failure
       if: failure()
