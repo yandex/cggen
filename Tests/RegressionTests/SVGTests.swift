@@ -302,6 +302,63 @@ extension SVGTestCase {
   check(.topmost_presentation_attributes)
 }
 
+// MARK: - Merged Bytecode Tests
+
+@Test private func mergedBytecodeAgainstSnapshots() throws {
+  let testCases = SVGTestCase.allCases
+
+  try SnapshotTesting.withSnapshotTesting(record: .never) {
+    let svgPaths = testCases.map { sample(named: $0.rawValue) }
+    let (
+      mergedBytecode,
+      positions,
+      decompressedSize
+    ) =
+      try getImagesMergedBytecodeAndPositions(from: svgPaths)
+
+    for (testCase, position) in zip(testCases, positions) {
+      let width = Int(testCase.size.width * 2.0)
+      let height = Int(testCase.size.height * 2.0)
+
+      guard let context = CGContext(
+        data: nil,
+        width: width,
+        height: height,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+      ) else {
+        throw Err("Failed to create CGContext")
+      }
+
+      context.concatenate(CGAffineTransform(scaleX: 2.0, y: 2.0))
+      context.setAllowsAntialiasing(true)
+
+      try runMergedBytecode(
+        fromData: Data(mergedBytecode),
+        context,
+        decompressedSize,
+        position.0,
+        position.1
+      )
+
+      guard let image = context.makeImage() else {
+        throw Err("Failed to make image from context")
+      }
+
+      // Use the same snapshot name as individual tests
+      assertSnapshot(
+        of: image.redraw(with: .white),
+        as: .cgImage(precision: 0.998),
+        named: testCase.rawValue,
+        file: #filePath,
+        testName: "webkit-references"
+      )
+    }
+  }
+}
+
 // MARK: - WebKit Reference Generation
 
 extension SVGTest {
