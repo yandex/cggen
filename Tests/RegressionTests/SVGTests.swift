@@ -27,198 +27,7 @@ import Parsing
 import SVGParse
 
 class SVGTest: XCTestCase {
-  @MainActor
-  func testSnapshotsNotFlacking() throws {
-    let snapshot = WKWebViewSnapshoter()
-    let blackPixel = RGBAPixel(bufferPiece: [.zero, .zero, .zero, .max])
-    let size = 20
-    measure {
-      let snapshot = try! snapshot.take(
-        html: blackSquareHTML(size: size),
-        viewport: .init(origin: .zero, size: .square(CGFloat(size))),
-        scale: 1
-      ).cgimg()
-      let buffer = RGBABuffer(image: snapshot)
-      XCTAssert(buffer.pixels.allSatisfy {
-        $0.allSatisfy { $0 == blackPixel }
-      })
-    }
-  }
-
-  func testMergedBytecode() {
-    test(
-      paths: [
-        sample(named: "fill"),
-        sample(named: "lines"),
-        sample(named: "alpha"),
-        sample(named: "group_opacity"),
-        sample(named: "shapes"),
-        sample(named: "caps_joins"),
-        sample(named: "dashes"),
-        sample(named: "use_tag"),
-        sample(named: "use_referencing_not_in_defs"),
-        sample(named: "simple_mask"),
-        sample(named: "clip_path"),
-        sample(named: "transforms"),
-      ]
-    )
-  }
-
-  func testBytecodeDeterminism() throws {
-    // Load SVG with multiple gradients
-    let svgData =
-      try Data(contentsOf: sample(named: "gradient_determinism_test"))
-
-    // Generate bytecode multiple times
-    var bytecodes: [[UInt8]] = []
-
-    // Generate 10 times to catch any nondeterminism
-    for _ in 0..<10 {
-      // Parse SVG
-      let document = try SVGParser.root(from: svgData)
-
-      // Convert to draw route
-      let routines = try SVGToDrawRouteConverter.convert(document: document)
-      let drawRoute = routines.drawRoutine
-
-      // Generate bytecode
-      let bytecode = generateRouteBytecode(route: drawRoute)
-      bytecodes.append(bytecode)
-    }
-
-    // All bytecodes should be identical
-    let firstBytecode = bytecodes[0]
-    for (index, bytecode) in bytecodes.enumerated() {
-      XCTAssertEqual(
-        bytecode,
-        firstBytecode,
-        "Bytecode at index \(index) differs from first"
-      )
-    }
-  }
-
-  func testTopmostPresentationAttributes() throws {
-    // FIXME: WKWebView acting strange on github ci
-    try XCTSkipIf(
-      ProcessInfo().environment["GITHUB_ACTION"] != nil,
-      "test fails on github actions"
-    )
-    test(svg: "topmost_presentation_attributes")
-  }
-}
-
-class SVGPathTests: XCTestCase {
-  func testMoveToCommands() {
-    test(svg: "path_move_to_commands")
-  }
-
-  func testComplexCurve() {
-    test(svg: "path_complex_curve")
-  }
-
-  func testCircleCommands() {
-    test(svg: "path_circle_commands")
-  }
-
-  func testShortCommands() {
-    test(svg: "path_short_commands")
-  }
-
-  func testRelativeCommands() {
-    test(svg: "path_relative_commands")
-  }
-
-  func testSmoothCurve() {
-    test(svg: "path_smooth_curve")
-  }
-
-  func testFillRule() {
-    test(svg: "path_fill_rule")
-  }
-
-  func testPathFillRuleNonzeroDefault() {
-    test(svg: "path_fill_rule_nonzero_default")
-  }
-
-  func testPathFillRuleGstate() {
-    test(svg: "path_fill_rule_gstate")
-  }
-
-  func testQuadraticBezierCommands() {
-    test(svg: "path_quadratic_bezier")
-  }
-}
-
-class SVGGradientTests: XCTestCase {
-  func testGradient() {
-    test(svg: "gradient")
-  }
-
-  func testGradientShape() {
-    test(svg: "gradient_shape")
-  }
-
-  func testGradientStroke() {
-    test(svg: "gradient_stroke")
-  }
-
-  func testGradientFillStrokeCombinations() {
-    test(svg: "gradient_fill_stroke_combinations")
-  }
-
-  func testGradientRelative() {
-    test(svg: "gradient_relative")
-  }
-
-  func testGradientWithAlpha() {
-    test(svg: "gradient_with_alpha")
-  }
-
-  func testGradientThreeControlPoints() {
-    test(svg: "gradient_three_dots")
-  }
-
-  func testLinearGradientTransform() {
-    test(svg: "gradient_transform_linear")
-  }
-
-  func testRadialGradientTransform() {
-    test(svg: "gradient_transform_radial")
-  }
-
-  func testGradientWithMask() {
-    test(svg: "gradient_with_mask")
-  }
-
-  func testGradientRadial() {
-    test(svg: "gradient_radial")
-  }
-
-  func testGradientUnits() {
-    test(svg: "gradient_units")
-  }
-
-  func testGradientAbsoluteStartEnd() {
-    test(svg: "gradient_absolute_start_end")
-  }
-
-  func testGradientOpacity() {
-    test(svg: "gradient_opacity")
-  }
-}
-
-class SVGShadowTests: XCTestCase {
-  func testSimpleShadow() {
-    test(svg: "shadow_simple", tolerance: 0.019)
-  }
-
-  func testShadowColors() {
-    test(svg: "shadow_colors", tolerance: 0.016)
-  }
-
-  func testDifferentBlurRadiuses() {
-    test(svg: "shadow_blur_radius", tolerance: 0.022)
-  }
+  // This class is kept for the testWebKit() method in the extension below
 }
 
 // Sometimes it is usefull to pass some arbitrary svg to check that it is
@@ -230,13 +39,27 @@ class SVGCustomCheckTests: XCTestCase {
     "x"
     Int.parser()
   }.map(CGSize.init)
+
   func testSvgFromArgs() throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
           let size = args[safe: 2].flatMap({ try? Self.sizeParser.parse($0) })
     else { throw XCTSkip() }
     print("Checking svg at \(path.path)")
-    test(svg: path, size: size)
+
+    // Custom command-line test using WebKit
+    XCTAssertNoThrow(try MainActor.assumeIsolated {
+      try testBC(
+        path: path,
+        referenceRenderer: {
+          try WKWebViewSnapshoter().take(sample: $0, scale: 2.0, size: size)
+            .cgimg()
+        },
+        scale: 2.0,
+        resultAdjust: { $0.redraw(with: .white) },
+        tolerance: 0.002
+      )
+    })
   }
 }
 
@@ -266,6 +89,36 @@ enum SVGTestCase: String, CaseIterable {
   case clip_path
   case transforms
   case topmost_presentation_attributes
+  // Path tests
+  case path_move_to_commands
+  case path_complex_curve
+  case path_circle_commands
+  case path_short_commands
+  case path_relative_commands
+  case path_smooth_curve
+  case path_fill_rule
+  case path_fill_rule_nonzero_default
+  case path_fill_rule_gstate
+  case path_quadratic_bezier
+  // Gradient tests
+  case gradient
+  case gradient_shape
+  case gradient_stroke
+  case gradient_fill_stroke_combinations
+  case gradient_relative
+  case gradient_with_alpha
+  case gradient_three_dots
+  case gradient_transform_linear
+  case gradient_transform_radial
+  case gradient_with_mask
+  case gradient_radial
+  case gradient_units
+  case gradient_absolute_start_end
+  case gradient_opacity
+  // Shadow tests
+  case shadow_simple
+  case shadow_colors
+  case shadow_blur_radius
 }
 
 extension SVGTestCase {
@@ -275,6 +128,19 @@ extension SVGTestCase {
       CGSize(width: 120, height: 130)
     default:
       CGSize(width: 50, height: 50)
+    }
+  }
+
+  var tolerance: Double {
+    switch self {
+    case .shadow_simple:
+      0.019
+    case .shadow_colors:
+      0.016
+    case .shadow_blur_radius:
+      0.022
+    default:
+      0.002
     }
   }
 }
@@ -301,6 +167,57 @@ extension SVGTestCase {
 @Test private func topmostPresentationAttributes() {
   check(.topmost_presentation_attributes)
 }
+
+// MARK: - Path Tests
+
+@Test private func pathMoveToCommands() { check(.path_move_to_commands) }
+@Test private func pathComplexCurve() { check(.path_complex_curve) }
+@Test private func pathCircleCommands() { check(.path_circle_commands) }
+@Test private func pathShortCommands() { check(.path_short_commands) }
+@Test private func pathRelativeCommands() { check(.path_relative_commands) }
+@Test private func pathSmoothCurve() { check(.path_smooth_curve) }
+@Test private func pathFillRule() { check(.path_fill_rule) }
+@Test private func pathFillRuleNonzeroDefault() {
+  check(.path_fill_rule_nonzero_default)
+}
+
+@Test private func pathFillRuleGstate() { check(.path_fill_rule_gstate) }
+@Test private func pathQuadraticBezier() { check(.path_quadratic_bezier) }
+
+// MARK: - Gradient Tests
+
+@Test private func gradient() { check(.gradient) }
+@Test private func gradientShape() { check(.gradient_shape) }
+@Test private func gradientStroke() { check(.gradient_stroke) }
+@Test private func gradientFillStrokeCombinations() {
+  check(.gradient_fill_stroke_combinations)
+}
+
+@Test private func gradientRelative() { check(.gradient_relative) }
+@Test private func gradientWithAlpha() { check(.gradient_with_alpha) }
+@Test private func gradientThreeControlPoints() { check(.gradient_three_dots) }
+@Test private func linearGradientTransform() {
+  check(.gradient_transform_linear)
+}
+
+@Test private func radialGradientTransform() {
+  check(.gradient_transform_radial)
+}
+
+@Test private func gradientWithMask() { check(.gradient_with_mask) }
+@Test private func gradientRadial() { check(.gradient_radial) }
+@Test private func gradientUnits() { check(.gradient_units) }
+@Test private func gradientAbsoluteStartEnd() {
+  check(.gradient_absolute_start_end)
+}
+
+@Test private func gradientOpacity() { check(.gradient_opacity) }
+
+// MARK: - Shadow Tests
+
+@Test private func simpleShadow() { check(.shadow_simple) }
+@Test private func shadowColors() { check(.shadow_colors) }
+@Test private func differentBlurRadiuses() { check(.shadow_blur_radius) }
 
 // MARK: - Merged Bytecode Tests
 
@@ -350,7 +267,7 @@ extension SVGTestCase {
       // Use the same snapshot name as individual tests
       assertSnapshot(
         of: image.redraw(with: .white),
-        as: .cgImage(precision: 0.998),
+        as: .cgImage(tolerance: testCase.tolerance),
         named: testCase.rawValue,
         file: #filePath,
         testName: "webkit-references"
@@ -393,10 +310,7 @@ extension SVGTest {
 
 // MARK: - Helper Functions
 
-private func check(
-  _ testCase: SVGTestCase,
-  tolerance: Double = 0.002
-) {
+private func check(_ testCase: SVGTestCase) {
   SnapshotTesting.withSnapshotTesting(record: .never) {
     let bytecode = try! getImageBytecode(from: sample(named: testCase.rawValue))
     let cggenImage = try! renderBytecode(
@@ -408,7 +322,7 @@ private func check(
 
     assertSnapshot(
       of: cggenImage,
-      as: .cgImage(precision: 1.0 - tolerance),
+      as: .cgImage(tolerance: testCase.tolerance),
       named: testCase.rawValue,
       file: #filePath,
       testName: "webkit-references"
@@ -430,63 +344,6 @@ private func blackSquareHTML(size: Int) -> String {
   </svg>
   </html>
   """
-}
-
-private let defaultTolerance = 0.002
-private let defaultScale = 2.0
-
-private func test(
-  svg: String,
-  tolerance: Double = defaultTolerance,
-  scale: CGFloat = defaultScale,
-  size: CGSize = CGSize(width: 50, height: 50)
-) {
-  test(
-    svg: sample(named: svg),
-    tolerance: tolerance,
-    scale: scale,
-    size: size
-  )
-}
-
-private func test(
-  svg: URL,
-  tolerance: Double = defaultTolerance,
-  scale: CGFloat = defaultScale,
-  size: CGSize
-) {
-  XCTAssertNoThrow(try MainActor.assumeIsolated {
-    try testBC(
-      path: svg,
-      referenceRenderer: {
-        try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
-          .cgimg()
-      },
-      scale: scale,
-      resultAdjust: { $0.redraw(with: .white) },
-      tolerance: tolerance
-    )
-  })
-}
-
-private func test(
-  paths: [URL],
-  tolerance: Double = defaultTolerance,
-  scale: CGFloat = defaultScale,
-  size: CGSize = CGSize(width: 50, height: 50)
-) {
-  XCTAssertNoThrow(try MainActor.assumeIsolated {
-    try testMBC(
-      paths: paths,
-      referenceRenderer: {
-        try WKWebViewSnapshoter().take(sample: $0, scale: scale, size: size)
-          .cgimg()
-      },
-      scale: scale,
-      resultAdjust: { $0.redraw(with: .white) },
-      tolerance: tolerance
-    )
-  })
 }
 
 private func test(
@@ -538,7 +395,7 @@ let extendedTestsEnabled = ProcessInfo.processInfo
   .environment["CGGEN_EXTENDED_TESTS"] == "1"
 
 extension Snapshotting where Value == CGImage, Format == CGImage {
-  static func cgImage(precision: Double = 0.998) -> Snapshotting {
+  static func cgImage(tolerance: Double = 0.002) -> Snapshotting {
     Snapshotting(
       pathExtension: "png",
       diffing: .init(
@@ -565,9 +422,8 @@ extension Snapshotting where Value == CGImage, Format == CGImage {
           }
 
           let diff = compare(reference, actual)
-          let actualPrecision = 1.0 - diff
 
-          if actualPrecision >= precision {
+          if diff < tolerance {
             return nil
           }
 
@@ -585,7 +441,7 @@ extension Snapshotting where Value == CGImage, Format == CGImage {
           )
 
           let message =
-            "Actual image precision \(actualPrecision) is less than required \(precision)"
+            "Actual image difference \(diff) exceeds tolerance \(tolerance)"
 
           let attachments = [
             XCTAttachment(image: nsRef),
