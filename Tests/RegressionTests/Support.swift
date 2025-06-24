@@ -438,6 +438,40 @@ extension WKWebViewSnapshoter {
   }
 }
 
+// MARK: - Shared Bytecode Helpers
+
+// Shared helper to render bytecode to CGImage
+func renderBytecode(
+  _ bytecode: [UInt8],
+  width: Int,
+  height: Int,
+  scale: CGFloat,
+  antialiasing: Bool = true
+) throws -> CGImage {
+  let cs = CGColorSpaceCreateDeviceRGB()
+  guard let context = CGContext(
+    data: nil,
+    width: width,
+    height: height,
+    bitsPerComponent: 8,
+    bytesPerRow: 0,
+    space: cs,
+    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+  ) else {
+    throw Err("Failed to create CGContext")
+  }
+
+  context.concatenate(CGAffineTransform(scaleX: scale, y: scale))
+  context.setAllowsAntialiasing(antialiasing)
+  try runBytecode(context, fromData: Data(bytecode))
+
+  guard let image = context.makeImage() else {
+    throw Err("Failed to draw CGImage")
+  }
+
+  return image
+}
+
 func testBC(
   path: URL,
   referenceRenderer: (URL) throws -> CGImage,
@@ -449,26 +483,14 @@ func testBC(
   let reference = try referenceRenderer(path)
   let bytecode = try getImageBytecode(from: path)
 
-  let cs = CGColorSpaceCreateDeviceRGB()
-  guard let context = CGContext(
-    data: nil,
+  let rawResult = try renderBytecode(
+    bytecode,
     width: reference.width,
     height: reference.height,
-    bitsPerComponent: 8,
-    bytesPerRow: 0,
-    space: cs,
-    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-  ) else {
-    throw Err("Failed to create CGContext")
-  }
-  context
-    .concatenate(CGAffineTransform(scaleX: CGFloat(scale), y: CGFloat(scale)))
-  context.setAllowsAntialiasing(antialiasing)
-  try runBytecode(context, fromData: Data(bytecode))
+    scale: scale,
+    antialiasing: antialiasing
+  )
 
-  guard let rawResult = context.makeImage() else {
-    throw Err("Failed to draw CGImage")
-  }
   let result = resultAdjust(rawResult)
   let diff = compare(reference, result)
   XCTAssertLessThan(diff, tolerance)

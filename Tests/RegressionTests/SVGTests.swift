@@ -18,10 +18,11 @@ import Testing
 import XCTest
 
 import Base
+import CGGenCLI
 import CGGenIR
 import CGGenRuntime
+@_spi(Testing) import CGGenRTSupport
 
-// import CGGenCLI
 import Parsing
 import SVGParse
 
@@ -94,62 +95,6 @@ class SVGTest: XCTestCase {
         "Bytecode at index \(index) differs from first"
       )
     }
-  }
-
-  func testSimpliestSVG() {
-    test(svg: "fill")
-  }
-
-  func testLines() {
-    test(svg: "lines")
-  }
-
-  func testAlpha() {
-    test(svg: "alpha")
-  }
-
-  func testGroupOpacity() {
-    test(svg: "group_opacity")
-  }
-
-  func testShapes() {
-    test(svg: "shapes")
-  }
-
-  func testCapsJoins() {
-    test(svg: "caps_joins")
-  }
-
-  func testMiterLimit() {
-    test(svg: "miter_limit")
-  }
-
-  func testDashes() {
-    test(svg: "dashes")
-  }
-
-  func testColorNames() {
-    test(svg: "colornames", size: .init(width: 120, height: 130))
-  }
-
-  func testUseTag() {
-    test(svg: "use_tag")
-  }
-
-  func testUseReferencingNotInDefs() {
-    test(svg: "use_referencing_not_in_defs")
-  }
-
-  func testSimpleMask() {
-    test(svg: "simple_mask")
-  }
-
-  func testClipPath() {
-    test(svg: "clip_path")
-  }
-
-  func testTransforms() {
-    test(svg: "transforms")
   }
 
   func testTopmostPresentationAttributes() throws {
@@ -301,6 +246,123 @@ class SVGCustomCheckTests: XCTestCase {
   }
 }
 
+// MARK: - Two-Mode Test Architecture
+
+import SnapshotTesting
+
+enum SVGTestCase: String, CaseIterable {
+  case fill
+  case lines
+  case alpha
+  case group_opacity
+  case shapes
+  case caps_joins
+  case miter_limit
+  case dashes
+  case colornames
+  case use_tag
+  case use_referencing_not_in_defs
+  case simple_mask
+  case clip_path
+  case transforms
+  case topmost_presentation_attributes
+}
+
+extension SVGTestCase {
+  var size: CGSize {
+    switch self {
+    case .colornames:
+      CGSize(width: 120, height: 130)
+    default:
+      CGSize(width: 50, height: 50)
+    }
+  }
+}
+
+// MARK: - CGGen Tests Against WebKit References
+
+@Test private func fill() { check(.fill) }
+@Test private func lines() { check(.lines) }
+@Test private func alpha() { check(.alpha) }
+@Test private func groupOpacity() { check(.group_opacity) }
+@Test private func shapes() { check(.shapes) }
+@Test private func capsJoins() { check(.caps_joins) }
+@Test private func miterLimit() { check(.miter_limit) }
+@Test private func dashes() { check(.dashes) }
+@Test private func colorNames() { check(.colornames) }
+@Test private func useTag() { check(.use_tag) }
+@Test private func useReferencingNotInDefs() {
+  check(.use_referencing_not_in_defs)
+}
+
+@Test private func simpleMask() { check(.simple_mask) }
+@Test private func clipPath() { check(.clip_path) }
+@Test private func transforms() { check(.transforms) }
+@Test private func topmostPresentationAttributes() {
+  check(.topmost_presentation_attributes)
+}
+
+// MARK: - WebKit Reference Generation
+
+extension SVGTest {
+  @MainActor
+  func testWebKit() throws {
+    // Skip unless explicitly enabled via environment variable
+    try XCTSkipUnless(
+      extendedTestsEnabled,
+      "WebKit reference generation tests are disabled by default. Set CGGEN_EXTENDED_TESTS=1 to run them."
+    )
+
+    // Generate WebKit reference snapshots for all test cases
+    for testCase in SVGTestCase.allCases {
+      let snapshot = WKWebViewSnapshoter()
+      let webkitImage = try snapshot.take(
+        sample: sample(named: testCase.rawValue),
+        scale: 2.0,
+        size: testCase.size
+      )
+
+      let cgImage = try webkitImage.cgimg().redraw(with: .white)
+
+      SnapshotTesting.assertSnapshot(
+        of: cgImage,
+        as: .cgImage(),
+        named: testCase.rawValue,
+        testName: "webkit-references"
+      )
+    }
+  }
+}
+
+// MARK: - Helper Functions
+
+private func check(
+  _ testCase: SVGTestCase,
+  tolerance: Double = 0.002
+) {
+  SnapshotTesting.withSnapshotTesting(record: .never) {
+    let bytecode = try! getImageBytecode(from: sample(named: testCase.rawValue))
+    let cggenImage = try! renderBytecode(
+      bytecode,
+      width: Int(testCase.size.width * 2.0),
+      height: Int(testCase.size.height * 2.0),
+      scale: 2.0
+    ).redraw(with: .white)
+
+    assertSnapshot(
+      of: cggenImage,
+      as: .cgImage(precision: 1.0 - tolerance),
+      named: testCase.rawValue,
+      file: #filePath,
+      testName: "webkit-references"
+    )
+  }
+}
+
+private func sample(named name: String) -> URL {
+  svgSamplesPath.appendingPathComponent(name).appendingPathExtension("svg")
+}
+
 private func blackSquareHTML(size: Int) -> String {
   """
   <html>
@@ -379,10 +441,6 @@ private func test(
   )
 }
 
-private func sample(named name: String) -> URL {
-  svgSamplesPath.appendingPathComponent(name).appendingPathExtension("svg")
-}
-
 let svgSamplesPath =
   getCurrentFilePath().appendingPathComponent("svg_samples")
 
@@ -415,3 +473,72 @@ let linesAndCurvesArgs: PathTestArguments = (
     .lineTo(CGPoint(x: 0, y: 1)),
   ]
 )
+
+// MARK: - Snapshot Testing Utilities
+
+// Check if extended tests (like WebKit reference generation) should run
+let extendedTestsEnabled = ProcessInfo.processInfo
+  .environment["CGGEN_EXTENDED_TESTS"] == "1"
+
+extension Snapshotting where Value == CGImage, Format == CGImage {
+  static func cgImage(precision: Double = 0.998) -> Snapshotting {
+    Snapshotting(
+      pathExtension: "png",
+      diffing: .init(
+        toData: { cgImage in
+          let imageRep = NSBitmapImageRep(cgImage: cgImage)
+          return imageRep.representation(using: .png, properties: [:])!
+        },
+        fromData: { data in
+          guard let dataProvider = CGDataProvider(data: data as CFData),
+                let cgImage = CGImage(
+                  pngDataProviderSource: dataProvider,
+                  decode: nil,
+                  shouldInterpolate: true,
+                  intent: .defaultIntent
+                ) else {
+            fatalError("Failed to create CGImage from PNG data")
+          }
+          return cgImage
+        },
+        diff: { reference, actual in
+          guard reference.width == actual.width,
+                reference.height == actual.height else {
+            return ("Images have different sizes", [])
+          }
+
+          let diff = compare(reference, actual)
+          let actualPrecision = 1.0 - diff
+
+          if actualPrecision >= precision {
+            return nil
+          }
+
+          let nsRef = NSImage(
+            cgImage: reference,
+            size: NSSize(width: reference.width, height: reference.height)
+          )
+          let nsActual = NSImage(
+            cgImage: actual,
+            size: NSSize(width: actual.width, height: actual.height)
+          )
+          let nsDiff = NSImage(
+            cgImage: CGImage.diff(lhs: reference, rhs: actual),
+            size: NSSize(width: reference.width, height: reference.height)
+          )
+
+          let message =
+            "Actual image precision \(actualPrecision) is less than required \(precision)"
+
+          let attachments = [
+            XCTAttachment(image: nsRef),
+            XCTAttachment(image: nsActual),
+            XCTAttachment(image: nsDiff),
+          ]
+
+          return (message, attachments)
+        }
+      )
+    ) { $0 }
+  }
+}
