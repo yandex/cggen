@@ -1,144 +1,84 @@
 import CoreGraphics
-import ImageIO
+import Foundation
 import Testing
-import UniformTypeIdentifiers
+import XCTest
 
 import Base
 import CGGenRuntime
+import SnapshotTesting
 
 @Suite struct SVGRuntimeRenderingTests {
-  @Test("SVG Runtime Rendering", arguments: [
-    // Gradients
-    "gradient.svg",
-    "gradient_radial.svg",
-    "gradient_with_alpha.svg",
-    "gradient_shape.svg",
-    "gradient_three_dots.svg",
-
-    // Shapes
-    "shapes.svg",
-    "path_circle_commands.svg",
-    "path_relative_commands.svg",
-    "path_short_commands.svg",
-
-    // Styles
-    "alpha.svg",
-    "caps_joins.svg",
-    "dashes.svg",
-    "group_opacity.svg",
-    "fill.svg",
-    "lines.svg",
-
-    // Transforms
-    "transforms.svg",
-    "gradient_transform_linear.svg",
-    "gradient_transform_radial.svg",
-
-    // Special cases
-    "use_tag.svg",
-    "clip_path.svg",
-    "colornames.svg",
-    "nested_transparent_group.svg",
-    "path_fill_rule.svg",
-  ])
-  func svgRuntimeRendering(svgFile: String) throws {
-    let svgURL = getCurrentFilePath()
-      .appendingPathComponent("svg_samples")
-      .appendingPathComponent(svgFile)
+  @Test("SVG Runtime Rendering", arguments: runtimeTestCases)
+  func svgRuntimeRendering(testCase: SVGTestCase) throws {
+    let svgURL = svgSamplesPath
+      .appendingPathComponent(testCase.rawValue)
+      .appendingPathExtension("svg")
 
     let svgData = try Data(contentsOf: svgURL)
 
-    // Render using CGGenRuntime
+    // Render using CGGenRuntime with same size/scale as webkit tests
     let runtimeImage = try CGImage.svg(
       svgData,
-      size: CGSize(width: 200, height: 200),
+      size: testCase.size,
       scale: 2.0
     )
 
-    // Get expected snapshot
-    let snapshotPath = getCurrentFilePath()
-      .appendingPathComponent("__Snapshots__")
-      .appendingPathComponent("SVGRuntimeRenderingTests")
-      .appendingPathComponent(svgFile.replacingOccurrences(
-        of: ".svg",
-        with: ".png"
-      ))
-
-    let fm = FileManager.default
-
-    // Create snapshot directory if needed
-    try fm.createDirectory(
-      at: snapshotPath.deletingLastPathComponent(),
-      withIntermediateDirectories: true
-    )
-
-    if fm.fileExists(atPath: snapshotPath.path) {
-      // Compare with existing snapshot
-      let expectedImage = try readImage(filePath: snapshotPath.path)
-      let diff = compare(expectedImage, runtimeImage)
-
-      #expect(
-        diff < 0.002,
-        "SVG runtime rendering differs from snapshot for \(svgFile)"
+    // Compare against the same webkit-references used by bytecode tests
+    SnapshotTesting.withSnapshotTesting(record: .never) {
+      assertSnapshot(
+        of: runtimeImage.redraw(with: .white),
+        as: .cgImage(tolerance: testCase.tolerance),
+        named: testCase.rawValue,
+        file: svgTestsFilePath,
+        testName: "webkit-references"
       )
-
-      if diff >= 0.002 {
-        // Write actual output for debugging
-        let actualPath = snapshotPath
-          .deletingPathExtension()
-          .appendingPathExtension("actual")
-          .appendingPathExtension("png")
-
-        try writePNG(runtimeImage, to: actualPath)
-      }
-    } else {
-      // Create new snapshot
-      try writePNG(runtimeImage, to: snapshotPath)
-      Issue
-        .record(
-          "Created new snapshot for \(svgFile). Please verify the image is correct."
-        )
-    }
-  }
-
-  private func writePNG(_ image: CGImage, to url: URL) throws {
-    let colorSpace = CGColorSpaceCreateDeviceRGB()
-    let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
-
-    guard let context = CGContext(
-      data: nil,
-      width: image.width,
-      height: image.height,
-      bitsPerComponent: 8,
-      bytesPerRow: 0,
-      space: colorSpace,
-      bitmapInfo: bitmapInfo
-    ) else {
-      throw Err("Failed to create context for PNG writing")
-    }
-
-    context.draw(
-      image,
-      in: CGRect(x: 0, y: 0, width: image.width, height: image.height)
-    )
-
-    guard let outputImage = context.makeImage() else {
-      throw Err("Failed to create output image")
-    }
-
-    guard let destination = CGImageDestinationCreateWithURL(
-      url as CFURL,
-      UTType.png.identifier as CFString,
-      1,
-      nil
-    ) else {
-      throw Err("Failed to create image destination")
-    }
-
-    CGImageDestinationAddImage(destination, outputImage, nil)
-
-    guard CGImageDestinationFinalize(destination) else {
-      throw Err("Failed to finalize image")
     }
   }
 }
+
+// Test cases that are supported by runtime rendering
+private let runtimeTestCases: [SVGTestCase] = [
+  // Gradients
+  .gradient,
+  .gradient_radial,
+  .gradient_with_alpha,
+  .gradient_shape,
+  .gradient_three_dots,
+  .gradient_transform_linear,
+  .gradient_transform_radial,
+
+  // Shapes
+  .shapes,
+  .path_circle_commands,
+  .path_relative_commands,
+  .path_short_commands,
+  .path_fill_rule,
+
+  // Styles
+  .alpha,
+  .caps_joins,
+  .dashes,
+  .group_opacity,
+  .fill,
+  .lines,
+
+  // Transforms
+  .transforms,
+
+  // Special cases
+  .use_tag,
+  .clip_path,
+  .colornames,
+  .nested_transparent_group,
+
+  // Note: These test cases exist in the enum but weren't in the runtime tests:
+  // .gradient_relative, .gradient_stroke, .gradient_fill_stroke_combinations,
+  // .gradient_units, .gradient_absolute_start_end, .gradient_opacity,
+  // .gradient_with_mask, .miter_limit, .simple_mask,
+  // .use_referencing_not_in_defs,
+  // .topmost_presentation_attributes, .path_move_to_commands,
+  // .path_complex_curve,
+  // .path_short_commands, .path_smooth_curve, .path_fill_rule_nonzero_default,
+  // .path_fill_rule_gstate, .path_quadratic_bezier, .shadow_simple,
+  // .shadow_colors, .shadow_blur_radius
+]

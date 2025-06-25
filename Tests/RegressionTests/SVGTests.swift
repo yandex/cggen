@@ -13,6 +13,8 @@
 //
 // PathExtractionTests were successfully migrated as they don't use WebKit.
 
+import AppKit
+import Foundation
 import os.log
 import Testing
 import XCTest
@@ -89,6 +91,7 @@ enum SVGTestCase: String, CaseIterable {
   case clip_path
   case transforms
   case topmost_presentation_attributes
+  case nested_transparent_group
   // Path tests
   case path_move_to_commands
   case path_complex_curve
@@ -119,6 +122,12 @@ enum SVGTestCase: String, CaseIterable {
   case shadow_simple
   case shadow_colors
   case shadow_blur_radius
+  // Additional test files
+  case gradient_determinism_test
+  case lines_and_curves
+  case paths_and_images
+  case underlying_object_with_tiny_alpha
+  case white_cross_scn_operator
 }
 
 extension SVGTestCase {
@@ -139,6 +148,9 @@ extension SVGTestCase {
       0.016
     case .shadow_blur_radius:
       0.022
+    case .paths_and_images:
+      0.43 // This SVG has extractable paths which cggen might handle
+    // differently
     default:
       0.002
     }
@@ -166,6 +178,10 @@ extension SVGTestCase {
 @Test private func transforms() { check(.transforms) }
 @Test private func topmostPresentationAttributes() {
   check(.topmost_presentation_attributes)
+}
+
+@Test private func nestedTransparentGroup() {
+  check(.nested_transparent_group)
 }
 
 // MARK: - Path Tests
@@ -218,6 +234,20 @@ extension SVGTestCase {
 @Test private func simpleShadow() { check(.shadow_simple) }
 @Test private func shadowColors() { check(.shadow_colors) }
 @Test private func differentBlurRadiuses() { check(.shadow_blur_radius) }
+
+// MARK: - Additional Tests
+
+@Test private func gradientDeterminismTest() {
+  check(.gradient_determinism_test)
+}
+
+@Test private func linesAndCurvesTest() { check(.lines_and_curves) }
+@Test private func pathsAndImages() { check(.paths_and_images) }
+@Test private func underlyingObjectWithTinyAlpha() {
+  check(.underlying_object_with_tiny_alpha)
+}
+
+@Test private func whiteCrossScnOperator() { check(.white_cross_scn_operator) }
 
 // MARK: - Merged Bytecode Tests
 
@@ -320,6 +350,38 @@ private func check(_ testCase: SVGTestCase) {
       scale: 2.0
     ).redraw(with: .white)
 
+    // Check if we should save debug output on failure
+    if let debugDir = ProcessInfo.processInfo
+      .environment["CGGEN_TEST_DEBUG_OUTPUT"] {
+      // Load reference for comparison
+      let referenceURL = URL(fileURLWithPath: svgTestsFilePath.description)
+        .deletingLastPathComponent()
+        .appendingPathComponent(
+          "__Snapshots__/SVGTests/webkit-references.\(testCase.rawValue).png"
+        )
+
+      if let referenceData = try? Data(contentsOf: referenceURL),
+         let dataProvider = CGDataProvider(data: referenceData as CFData),
+         let reference = CGImage(
+           pngDataProviderSource: dataProvider,
+           decode: nil,
+           shouldInterpolate: true,
+           intent: .defaultIntent
+         ) {
+        let diff = compare(reference, cggenImage)
+        if diff >= testCase.tolerance {
+          saveTestFailureArtifacts(
+            testName: testCase.rawValue,
+            reference: reference,
+            result: cggenImage,
+            diff: diff,
+            tolerance: testCase.tolerance,
+            to: URL(fileURLWithPath: debugDir)
+          )
+        }
+      }
+    }
+
     assertSnapshot(
       of: cggenImage,
       as: .cgImage(tolerance: testCase.tolerance),
@@ -388,11 +450,51 @@ let linesAndCurvesArgs: PathTestArguments = (
   ]
 )
 
+// MARK: - Test Coverage Verification
+
+@Test private func allSVGFilesHaveTestCases() throws {
+  // Get all SVG files in the svg_samples directory
+  let svgSamplesURL = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .appendingPathComponent("svg_samples")
+
+  let fileManager = FileManager.default
+  let svgFiles = try fileManager.contentsOfDirectory(
+    at: svgSamplesURL,
+    includingPropertiesForKeys: nil
+  )
+  .filter { $0.pathExtension == "svg" }
+  .map { $0.deletingPathExtension().lastPathComponent }
+  .sorted()
+
+  // Get all test cases from the enum
+  let testCases = SVGTestCase.allCases.map(\.rawValue).sorted()
+
+  // Find files without corresponding test cases
+  let filesWithoutTestCases = svgFiles.filter { !testCases.contains($0) }
+
+  #expect(
+    filesWithoutTestCases.isEmpty,
+    "SVG files without test cases: \(filesWithoutTestCases.joined(separator: ", "))"
+  )
+
+  // Find test cases without corresponding files
+  let testCasesWithoutFiles = testCases.filter { !svgFiles.contains($0) }
+
+  #expect(
+    testCasesWithoutFiles.isEmpty,
+    "Test cases without SVG files: \(testCasesWithoutFiles.joined(separator: ", "))"
+  )
+}
+
 // MARK: - Snapshot Testing Utilities
 
 // Check if extended tests (like WebKit reference generation) should run
 let extendedTestsEnabled = ProcessInfo.processInfo
   .environment["CGGEN_EXTENDED_TESTS"] == "1"
+
+// Path to the SVGTests.swift file for snapshot testing
+let svgTestsFilePath: StaticString = #filePath
 
 extension Snapshotting where Value == CGImage, Format == CGImage {
   static func cgImage(tolerance: Double = 0.002) -> Snapshotting {

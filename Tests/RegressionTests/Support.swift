@@ -14,6 +14,11 @@ private enum Error: Swift.Error {
   case cgimageCreationFailed
 }
 
+// Test debug output directory from environment variable
+private let testDebugOutputDir = ProcessInfo.processInfo
+  .environment["CGGEN_TEST_DEBUG_OUTPUT"]
+  .map { URL(fileURLWithPath: $0) }
+
 extension NSImage {
   func cgimg() throws -> CGImage {
     // Sometimes NSImage.cgImage has different size than underlying cgimage
@@ -298,6 +303,18 @@ func test(
       diff, tolerance, "Calculated diff exceeds tolerance"
     )
     if diff >= tolerance {
+      // Save debug output if directory is specified
+      if let debugDir = testDebugOutputDir {
+        saveTestFailureArtifacts(
+          testName: path.deletingPathExtension().lastPathComponent,
+          reference: ref,
+          result: img,
+          diff: diff,
+          tolerance: tolerance,
+          to: debugDir
+        )
+      }
+
       MainActor.assumeIsolated {
         XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
           $0.add(.init(image: img, name: "result"))
@@ -495,6 +512,18 @@ func testBC(
   let diff = compare(reference, result)
   XCTAssertLessThan(diff, tolerance)
   if diff >= tolerance {
+    // Save debug output if directory is specified
+    if let debugDir = testDebugOutputDir {
+      saveTestFailureArtifacts(
+        testName: path.deletingPathExtension().lastPathComponent,
+        reference: reference,
+        result: result,
+        diff: diff,
+        tolerance: tolerance,
+        to: debugDir
+      )
+    }
+
     MainActor.assumeIsolated {
       XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
         $0.add(.init(image: result, name: "result"))
@@ -559,6 +588,18 @@ func testMBC(
     XCTAssertLessThan(diff, tolerance)
 
     if diff >= tolerance {
+      // Save debug output if directory is specified
+      if let debugDir = testDebugOutputDir {
+        saveTestFailureArtifacts(
+          testName: path.deletingPathExtension().lastPathComponent,
+          reference: reference,
+          result: result,
+          diff: diff,
+          tolerance: tolerance,
+          to: debugDir
+        )
+      }
+
       MainActor.assumeIsolated {
         XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
           $0.add(.init(image: result, name: "result"))
@@ -567,5 +608,46 @@ func testMBC(
         }
       }
     }
+  }
+}
+
+// MARK: - Test Debug Output
+
+func saveTestFailureArtifacts(
+  testName: String,
+  reference: CGImage,
+  result: CGImage,
+  diff: Double,
+  tolerance: Double,
+  to outputDir: URL
+) {
+  let testDir = outputDir.appendingPathComponent(testName)
+  try? FileManager.default.createDirectory(
+    at: testDir,
+    withIntermediateDirectories: true
+  )
+
+  // Save images
+  reference.savePNG(to: testDir.appendingPathComponent("reference.png"))
+  result.savePNG(to: testDir.appendingPathComponent("result.png"))
+  CGImage.diff(lhs: reference, rhs: result)
+    .savePNG(to: testDir.appendingPathComponent("diff.png"))
+
+  // Save simple metadata
+  let metadata: [String: Any] = [
+    "test": testName,
+    "diff": diff,
+    "tolerance": tolerance,
+    "timestamp": ISO8601DateFormatter().string(from: Date()),
+  ]
+  try? JSONSerialization.data(withJSONObject: metadata)
+    .write(to: testDir.appendingPathComponent("info.json"))
+}
+
+// Add PNG save extension
+extension CGImage {
+  func savePNG(to url: URL) {
+    let imageRep = NSBitmapImageRep(cgImage: self)
+    try? imageRep.representation(using: .png, properties: [:])?.write(to: url)
   }
 }
