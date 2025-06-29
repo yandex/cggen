@@ -148,9 +148,6 @@ extension SVGTestCase {
       0.016
     case .shadow_blur_radius:
       0.022
-    case .paths_and_images:
-      0.43 // This SVG has extractable paths which cggen might handle
-    // differently
     default:
       0.002
     }

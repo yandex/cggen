@@ -1,13 +1,12 @@
-<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <!-- Extractable paths -->
-    <path id="cggen.triangle" d="M50,10 L90,80 L10,80 Z"/>
-    <path id="cggen.diamond" d="M50,10 L90,50 L50,90 L10,50 Z"/>
-    <path id="cggen.hexagon" d="M30,20 L70,20 L90,50 L70,80 L30,80 L10,50 Z"/>
+    <path id="cggen.triangle" d="M25,5 L45,40 L5,40 Z"/>
+    <path id="cggen.diamond" d="M25,5 L45,25 L25,45 L5,25 Z"/>
+    <path id="cggen.hexagon" d="M15,10 L35,10 L45,25 L35,40 L15,40 L5,25 Z"/>
   </defs>
   
   <!-- Visible content -->
-  <rect x="10" y="10" width="30" height="30" fill="red" />
-  <circle cx="70" cy="25" r="15" fill="blue" />
-  
+  <rect x="5" y="5" width="15" height="15" fill="red" />
+  <circle cx="35" cy="12.5" r="7.5" fill="blue" />
 </svg>
