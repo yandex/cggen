@@ -6,7 +6,7 @@
 #import <CoreGraphics/CoreGraphics.h>
 #endif  // __has_feature(modules)
 
-static const CGSize kmixedPathsAndImagesImageSize = (CGSize){.width = 100.0, .height = 100.0};
+static const CGSize kmixedPathsAndImagesImageSize = (CGSize){.width = 50.0, .height = 50.0};
 void mixedDrawPathsAndImagesImageInContext(CGContextRef context);
 
 void mixedDiamondPath(CGMutablePathRef path);
