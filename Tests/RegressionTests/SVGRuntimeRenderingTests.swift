@@ -15,18 +15,17 @@ import SnapshotTesting
       .appendingPathExtension("svg")
 
     let svgData = try Data(contentsOf: svgURL)
-
-    // Render using CGGenRuntime with same size/scale as webkit tests
+    
+    // Render at 2x scale
     let runtimeImage = try CGImage.svg(
       svgData,
-      size: testCase.size,
       scale: 2.0
     )
 
     // Compare against the same webkit-references used by bytecode tests
     SnapshotTesting.withSnapshotTesting(record: .never) {
       assertSnapshot(
-        of: runtimeImage.redraw(with: .white),
+        of: runtimeImage.redraw(with: CGColor.white),
         as: .cgImage(tolerance: testCase.tolerance),
         named: testCase.rawValue,
         file: svgTestsFilePath,

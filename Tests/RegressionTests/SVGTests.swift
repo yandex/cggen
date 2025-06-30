@@ -131,15 +131,6 @@ enum SVGTestCase: String, CaseIterable {
 }
 
 extension SVGTestCase {
-  var size: CGSize {
-    switch self {
-    case .colornames:
-      CGSize(width: 120, height: 130)
-    default:
-      CGSize(width: 50, height: 50)
-    }
-  }
-
   var tolerance: Double {
     switch self {
     case .shadow_simple:
@@ -256,13 +247,13 @@ extension SVGTestCase {
     let (
       mergedBytecode,
       positions,
-      decompressedSize
-    ) =
-      try getImagesMergedBytecodeAndPositions(from: svgPaths)
+      decompressedSize,
+      dimensions
+    ) = try getImagesMergedBytecodeAndPositions(from: svgPaths)
 
-    for (testCase, position) in zip(testCases, positions) {
-      let width = Int(testCase.size.width * 2.0)
-      let height = Int(testCase.size.height * 2.0)
+    for ((testCase, position), size) in zip(zip(testCases, positions), dimensions) {
+      let width = Int(size.width * 2.0)
+      let height = Int(size.height * 2.0)
 
       guard let context = CGContext(
         data: nil,
@@ -316,11 +307,18 @@ extension SVGTest {
 
     // Generate WebKit reference snapshots for all test cases
     for testCase in SVGTestCase.allCases {
+      let svgPath = sample(named: testCase.rawValue)
+      let svgData = try Data(contentsOf: svgPath)
+      let document = try SVGParser.root(from: svgData)
+      let actualWidth = CGFloat(document.width?.number ?? 0)
+      let actualHeight = CGFloat(document.height?.number ?? 0)
+      let actualSize = CGSize(width: actualWidth, height: actualHeight)
+      
       let snapshot = WKWebViewSnapshoter()
       let webkitImage = try snapshot.take(
-        sample: sample(named: testCase.rawValue),
+        sample: svgPath,
         scale: 2.0,
-        size: testCase.size
+        size: actualSize
       )
 
       let cgImage = try webkitImage.cgimg().redraw(with: .white)
@@ -339,11 +337,12 @@ extension SVGTest {
 
 private func check(_ testCase: SVGTestCase) {
   SnapshotTesting.withSnapshotTesting(record: .never) {
-    let bytecode = try! getImageBytecode(from: sample(named: testCase.rawValue))
+    let svgPath = sample(named: testCase.rawValue)
+    let (bytecode, size) = try! getImageBytecode(from: svgPath)
     let cggenImage = try! renderBytecode(
       bytecode,
-      width: Int(testCase.size.width * 2.0),
-      height: Int(testCase.size.height * 2.0),
+      width: Int(size.width * 2.0),
+      height: Int(size.height * 2.0),
       scale: 2.0
     ).redraw(with: .white)
 

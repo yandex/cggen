@@ -498,7 +498,7 @@ func testBC(
   tolerance: Double
 ) throws {
   let reference = try referenceRenderer(path)
-  let bytecode = try getImageBytecode(from: path)
+  let (bytecode, _) = try getImageBytecode(from: path)
 
   let rawResult = try renderBytecode(
     bytecode,
@@ -543,7 +543,7 @@ func testMBC(
   tolerance: Double
 ) throws {
   let references = try paths.map { try referenceRenderer($0) }
-  let (mergedBytecode, positions, decompressedSize) =
+  let (mergedBytecode, positions, decompressedSize, _) =
     try getImagesMergedBytecodeAndPositions(from: paths)
 
   let contexts = try references.map { reference in

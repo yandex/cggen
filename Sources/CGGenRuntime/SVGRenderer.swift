@@ -16,30 +16,43 @@ public enum SVGRenderer {
   /// Create a CGImage from SVG data
   /// - Parameters:
   ///   - data: The SVG content as Data
-  ///   - size: The size to render the SVG at
+  ///   - size: The size to render the SVG at. If nil, uses the SVG's natural size
+  ///   - scale: The scale factor to apply
   /// - Returns: A CGImage containing the rendered SVG
   /// - Throws: Error if SVG parsing or rendering fails
   public static func createCGImage(
     from data: Data,
-    size: CGSize
+    size: CGSize? = nil,
+    scale: CGFloat = 1.0
   ) throws -> CGImage {
-    guard size.width > 0, size.height > 0 else {
-      throw Error.invalidSize
-    }
-
     let svg = try SVGParser.root(from: data)
     let routines = try SVGToDrawRouteConverter.convert(document: svg)
-
     let svgBounds = routines.drawRoutine.boundingRect
-    let scaleX = size.width / svgBounds.width
-    let scaleY = size.height / svgBounds.height
-    let scale = min(scaleX, scaleY)
+    
+    let targetSize: CGSize
+    let effectiveScale: CGFloat
+    
+    if let size = size {
+      guard size.width > 0, size.height > 0 else {
+        throw Error.invalidSize
+      }
+      targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+      let scaleX = size.width / svgBounds.width
+      let scaleY = size.height / svgBounds.height
+      effectiveScale = min(scaleX, scaleY) * scale
+    } else {
+      // Use natural size
+      targetSize = CGSize(width: svgBounds.width * scale, height: svgBounds.height * scale)
+      effectiveScale = scale
+    }
 
     var scaledRoutine = routines.drawRoutine
-    scaledRoutine.steps = [
-      .saveGState,
-      .concatCTM(CGAffineTransform(scaleX: scale, y: scale)),
-    ] + scaledRoutine.steps + [.restoreGState]
+    if effectiveScale != 1.0 {
+      scaledRoutine.steps = [
+        .saveGState,
+        .concatCTM(CGAffineTransform(scaleX: effectiveScale, y: effectiveScale)),
+      ] + scaledRoutine.steps + [.restoreGState]
+    }
 
     let bytecode = generateRouteBytecode(route: scaledRoutine)
 
@@ -48,8 +61,8 @@ public enum SVGRenderer {
 
     guard let context = CGContext(
       data: nil,
-      width: Int(size.width),
-      height: Int(size.height),
+      width: Int(targetSize.width),
+      height: Int(targetSize.height),
       bitsPerComponent: 8,
       bytesPerRow: 0,
       space: colorSpace,

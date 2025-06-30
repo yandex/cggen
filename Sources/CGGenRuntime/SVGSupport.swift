@@ -15,20 +15,16 @@ extension CGImage {
   /// Creates a CGImage from SVG data
   public static func svg(
     _ data: Data,
-    size: CGSize,
+    size: CGSize? = nil,
     scale: CGFloat = 1.0
   ) throws -> CGImage {
-    let scaledSize = CGSize(
-      width: size.width * scale,
-      height: size.height * scale
-    )
-    return try SVGRenderer.createCGImage(from: data, size: scaledSize)
+    try SVGRenderer.createCGImage(from: data, size: size, scale: scale)
   }
 
   /// Creates a CGImage from SVG string
   public static func svg(
     _ string: String,
-    size: CGSize,
+    size: CGSize? = nil,
     scale: CGFloat = 1.0
   ) throws -> CGImage {
     guard let data = string.data(using: .utf8) else {
