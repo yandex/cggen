@@ -1,7 +1,6 @@
 import AppKit
 import CoreGraphics
 import os.log
-import XCTest
 
 import Base
 import CGGenCLI
@@ -298,9 +297,13 @@ func test(
       compare(ref, img)
     }
 
-    XCTAssertLessThan(
-      diff, tolerance, "Calculated diff exceeds tolerance"
+    try check(
+      diff < tolerance,
+      Err(
+        "Calculated diff \(diff) exceeds tolerance \(tolerance) for \(path.lastPathComponent)"
+      )
     )
+
     if diff >= tolerance {
       // Save debug output if directory is specified
       if let debugDir = testDebugOutputDir {
@@ -313,24 +316,7 @@ func test(
           to: debugDir
         )
       }
-
-      MainActor.assumeIsolated {
-        XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-          $0.add(.init(image: img, name: "result"))
-          $0.add(.init(image: ref, name: "webkitsnapshot"))
-          $0.add(.init(image: .diff(lhs: ref, rhs: img), name: "diff"))
-        }
-      }
     }
-  }
-}
-
-extension XCTAttachment {
-  convenience init(image: CGImage, name: String) {
-    let size = NSSize(width: image.width, height: image.height)
-    let nsimage = NSImage(cgImage: image, size: size)
-    self.init(image: nsimage)
-    self.name = name
   }
 }
 
@@ -404,7 +390,14 @@ func testBC(
 
   let result = resultAdjust(rawResult)
   let diff = compare(reference, result)
-  XCTAssertLessThan(diff, tolerance)
+
+  try check(
+    diff < tolerance,
+    Err(
+      "Diff \(diff) exceeds tolerance \(tolerance) for \(path.lastPathComponent)"
+    )
+  )
+
   if diff >= tolerance {
     // Save debug output if directory is specified
     if let debugDir = testDebugOutputDir {
@@ -416,14 +409,6 @@ func testBC(
         tolerance: tolerance,
         to: debugDir
       )
-    }
-
-    MainActor.assumeIsolated {
-      XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-        $0.add(.init(image: result, name: "result"))
-        $0.add(.init(image: reference, name: "webkitsnapshot"))
-        $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
-      }
     }
   }
 }
@@ -479,7 +464,13 @@ func testMBC(
 
     let result = resultAdjust(rawResult)
     let diff = compare(reference, result)
-    XCTAssertLessThan(diff, tolerance)
+
+    try check(
+      diff < tolerance,
+      Err(
+        "Diff \(diff) exceeds tolerance \(tolerance) for \(path.lastPathComponent)"
+      )
+    )
 
     if diff >= tolerance {
       // Save debug output if directory is specified
@@ -492,14 +483,6 @@ func testMBC(
           tolerance: tolerance,
           to: debugDir
         )
-      }
-
-      MainActor.assumeIsolated {
-        XCTContext.runActivity(named: "Diff of \(path.lastPathComponent)") {
-          $0.add(.init(image: result, name: "result"))
-          $0.add(.init(image: reference, name: "webkitsnapshot"))
-          $0.add(.init(image: .diff(lhs: reference, rhs: result), name: "diff"))
-        }
       }
     }
   }
