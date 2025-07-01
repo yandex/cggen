@@ -71,17 +71,7 @@ import CGGenRTSupport
       return
     }
 
-    let testCases: [SVGTestCase] = [
-      .caps_joins,
-      .clip_path,
-      .dashes,
-      .shadow_blur_radius,
-      .fill,
-      .gradient,
-      .lines,
-      .shapes,
-      .transforms,
-    ]
+    let testCases = SVGTestCase.smokeTestSubset
 
     let svgSamplesPath = getCurrentFilePath()
       .appendingPathComponent("svg_samples")

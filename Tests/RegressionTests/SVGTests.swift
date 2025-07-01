@@ -137,6 +137,20 @@ extension SVGTestCase {
       0.002
     }
   }
+
+  // Smoke test subset - a representative selection of test cases
+  // for quick verification in compilation and runtime tests
+  static let smokeTestSubset: [SVGTestCase] = [
+    .caps_joins,
+    .clip_path,
+    .dashes,
+    .shadow_blur_radius,
+    .fill,
+    .gradient,
+    .lines,
+    .shapes,
+    .transforms,
+  ]
 }
 
 // MARK: - CGGen Tests Against WebKit References
