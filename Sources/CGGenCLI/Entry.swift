@@ -223,9 +223,11 @@ private func generateImagesAndPaths(
   }
 }
 
-public func getImageBytecode(from file: URL) throws -> [UInt8] {
+public func getImageBytecode(from file: URL) throws -> ([UInt8], CGSize) {
   let img = try generateImagesAndPaths(from: [file])[0]
-  return generateRouteBytecode(route: img.image.route)
+  let bytecode = generateRouteBytecode(route: img.image.route)
+  let size = img.image.route.boundingRect.size
+  return (bytecode, size)
 }
 
 public func getPathBytecode(from file: URL) throws -> [UInt8] {
@@ -235,11 +237,12 @@ public func getPathBytecode(from file: URL) throws -> [UInt8] {
 
 public func getImagesMergedBytecodeAndPositions(
   from files: [URL]
-) throws -> ([UInt8], [(Int, Int)], Int) {
+) throws -> ([UInt8], [(Int, Int)], Int, [CGSize]) {
   let images = try generateImagesAndPaths(from: files).map(\.image)
 
   var imagePossitions: [(Int, Int)] = []
   var mergedBytecodes: [UInt8] = []
+  var dimensions: [CGSize] = []
 
   for image in images {
     let bytecode = generateRouteBytecode(route: image.route)
@@ -249,11 +252,13 @@ public func getImagesMergedBytecodeAndPositions(
       mergedBytecodes.count + bytecode.count - 1
     ))
     mergedBytecodes += bytecode
+    dimensions.append(image.route.boundingRect.size)
   }
 
   return try (
     compressBytecode(mergedBytecodes),
     imagePossitions,
-    mergedBytecodes.count
+    mergedBytecodes.count,
+    dimensions
   )
 }

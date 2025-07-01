@@ -1,4 +1,4 @@
-<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+<svg width="50" height="50" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <!-- Multiple gradients with names that would have different ordering -->
     <linearGradient id="zebra_gradient">
@@ -28,9 +28,9 @@
   </defs>
   
   <!-- Use all gradients to ensure they're included in bytecode -->
-  <rect x="0" y="0" width="40" height="200" fill="url(#zebra_gradient)"/>
-  <rect x="40" y="0" width="40" height="200" fill="url(#alpha_gradient)"/>
-  <rect x="80" y="0" width="40" height="200" fill="url(#beta_gradient)"/>
-  <rect x="120" y="0" width="40" height="200" fill="url(#gamma_gradient)"/>
-  <rect x="160" y="0" width="40" height="200" fill="url(#delta_gradient)"/>
+  <rect x="0" y="0" width="10" height="50" fill="url(#zebra_gradient)"/>
+  <rect x="10" y="0" width="10" height="50" fill="url(#alpha_gradient)"/>
+  <rect x="20" y="0" width="10" height="50" fill="url(#beta_gradient)"/>
+  <rect x="30" y="0" width="10" height="50" fill="url(#gamma_gradient)"/>
+  <rect x="40" y="0" width="10" height="50" fill="url(#delta_gradient)"/>
 </svg>

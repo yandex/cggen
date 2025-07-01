@@ -1,0 +1,44 @@
+name: Update WebKit Snapshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update-snapshots:
+    runs-on: macos-15
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Update snapshots
+      run: |
+        swift build
+        CGGEN_EXTENDED_TESTS=1 swift test --filter "SVGTest/testWebKit" || true
+        SNAPSHOT_TESTING_RECORD=failed swift test --parallel || true
+    
+    - name: Create PR
+      run: |
+        if ! git diff --quiet; then
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          BRANCH="update-snapshots-$(date +%Y%m%d-%H%M%S)"
+          git checkout -b "$BRANCH"
+          git add "Tests/RegressionTests/__Snapshots__/"
+          git commit -m "Update WebKit reference snapshots"
+          git push origin "$BRANCH"
+          
+          gh pr create \
+            --title "Update WebKit reference snapshots" \
+            --body "Updates WebKit reference snapshots to match current rendering output." \
+            --base main
+        else
+          echo "No changes needed"
+        fi
+      env:
+        GH_TOKEN: ${{ github.token }}
