@@ -1,7 +1,7 @@
-import Foundation
-import Testing
-import SnapshotTesting
 import Base
+import Foundation
+import SnapshotTesting
+import Testing
 
 @Suite struct WebKitSVG2PNGTests {
   @MainActor
@@ -12,23 +12,23 @@ import Base
       <circle cx="50" cy="50" r="30" fill="blue" />
     </svg>
     """
-    
+
     let converter = WebKitSVG2PNG()
-    
+
     // Wait for WebView to load
     try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-    
+
     let cgImage = try await converter.convertToCGImage(
       svg: simpleSVG,
       width: 100,
       height: 100,
       scale: 2.0
     )
-    
+
     // Verify dimensions
     #expect(cgImage.width == 200) // 100 * 2.0 scale
     #expect(cgImage.height == 200)
-    
+
     // Snapshot test to verify the image is correct
     assertSnapshot(
       of: cgImage,
@@ -36,7 +36,7 @@ import Base
       named: "simple-svg"
     )
   }
-  
+
   @MainActor
   @Test func svgWithGradient() async throws {
     let gradientSVG = """
@@ -50,22 +50,22 @@ import Base
       <rect width="200" height="100" fill="url(#grad1)" />
     </svg>
     """
-    
+
     let converter = WebKitSVG2PNG()
-    
+
     // Wait for WebView to load
     try await Task.sleep(nanoseconds: 500_000_000)
-    
+
     let cgImage = try await converter.convertToCGImage(
       svg: gradientSVG,
       width: 200,
       height: 100,
       scale: 1.0
     )
-    
+
     #expect(cgImage.width == 200)
     #expect(cgImage.height == 100)
-    
+
     // Snapshot test for gradient rendering
     assertSnapshot(
       of: cgImage,
@@ -73,31 +73,31 @@ import Base
       named: "gradient-svg"
     )
   }
-  
+
   @MainActor
   @Test func complexSVGFromTestSuite() async throws {
     // Test with an actual SVG from the test suite
     let svgPath = svgSamplesPath
       .appendingPathComponent("gradient")
       .appendingPathExtension("svg")
-    
+
     let svgContent = try String(contentsOf: svgPath)
-    
+
     let converter = WebKitSVG2PNG()
-    
+
     // Wait for WebView to load
     try await Task.sleep(nanoseconds: 500_000_000)
-    
+
     let cgImage = try await converter.convertToCGImage(
       svg: svgContent,
       width: 50,
       height: 50,
       scale: 2.0
     )
-    
+
     #expect(cgImage.width == 100)
     #expect(cgImage.height == 100)
-    
+
     // Compare with existing webkit snapshot
     assertSnapshot(
       of: cgImage.redraw(with: .white),
@@ -105,16 +105,16 @@ import Base
       named: "gradient-from-suite"
     )
   }
-  
-  @MainActor 
+
+  @MainActor
   @Test func invalidSVG() async throws {
     let invalidSVG = "<svg>broken"
-    
+
     let converter = WebKitSVG2PNG()
-    
+
     // Wait for WebView to load
     try await Task.sleep(nanoseconds: 500_000_000)
-    
+
     await #expect(throws: (any Error).self) {
       _ = try await converter.convertToCGImage(
         svg: invalidSVG,

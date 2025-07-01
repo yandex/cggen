@@ -251,7 +251,10 @@ extension SVGTestCase {
       dimensions
     ) = try getImagesMergedBytecodeAndPositions(from: svgPaths)
 
-    for ((testCase, position), size) in zip(zip(testCases, positions), dimensions) {
+    for ((testCase, position), size) in zip(
+      zip(testCases, positions),
+      dimensions
+    ) {
       let width = Int(size.width * 2.0)
       let height = Int(size.height * 2.0)
 
@@ -313,7 +316,7 @@ extension SVGTest {
       let actualWidth = CGFloat(document.width?.number ?? 0)
       let actualHeight = CGFloat(document.height?.number ?? 0)
       let actualSize = CGSize(width: actualWidth, height: actualHeight)
-      
+
       let snapshot = WKWebViewSnapshoter()
       let webkitImage = try snapshot.take(
         sample: svgPath,

@@ -7,30 +7,33 @@ import XCTest
 class WebKitSVG2PNG: NSObject {
   private let webView: WKWebView
   private var pngCallback: ((Result<Data, Error>) -> Void)?
-  
+
   enum Error: Swift.Error {
     case invalidPNGData
     case invalidImageData
     case javascriptError(String)
     case timeout
   }
-  
+
   override init() {
     let config = WKWebViewConfiguration()
     config.userContentController = WKUserContentController()
-    
-    self.webView = WKWebView(frame: .zero, configuration: config)
+
+    webView = WKWebView(frame: .zero, configuration: config)
     super.init()
-    
+
     // Set up message handler
     config.userContentController.add(self, name: "svgHandler")
-    
+
     // Load the HTML template from resource file
-    let htmlPath = Bundle.module.url(forResource: "svg2canvas", withExtension: "html")!
+    let htmlPath = Bundle.module.url(
+      forResource: "svg2canvas",
+      withExtension: "html"
+    )!
     let html = try! String(contentsOf: htmlPath)
     webView.loadHTMLString(html, baseURL: nil)
   }
-  
+
   func convert(
     svg: String,
     width: Int,
@@ -41,22 +44,26 @@ class WebKitSVG2PNG: NSObject {
       self.pngCallback = { result in
         continuation.resume(with: result)
       }
-      
+
       // Prepare the message data
       let message: [String: Any] = [
         "svg": svg,
         "width": width,
         "height": height,
-        "scale": scale
+        "scale": scale,
       ]
-      
+
       // Send SVG to JavaScript
-      webView.evaluateJavaScript("handleSVG(\(jsonString(from: message)))") { _, error in
-        if let error = error {
-          continuation.resume(throwing: Error.javascriptError(error.localizedDescription))
+      webView
+        .evaluateJavaScript("handleSVG(\(jsonString(from: message)))") { _, error in
+          if let error {
+            continuation
+              .resume(throwing: Error
+                .javascriptError(error.localizedDescription)
+              )
+          }
         }
-      }
-      
+
       // Set timeout
       Task {
         try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
@@ -67,7 +74,7 @@ class WebKitSVG2PNG: NSObject {
       }
     }
   }
-  
+
   private func jsonString(from dict: [String: Any]) -> String {
     guard let data = try? JSONSerialization.data(withJSONObject: dict),
           let string = String(data: data, encoding: .utf8) else {
@@ -75,14 +82,13 @@ class WebKitSVG2PNG: NSObject {
     }
     return string
   }
-  
 }
 
 // MARK: - WKScriptMessageHandler
 
 extension WebKitSVG2PNG: WKScriptMessageHandler {
   func userContentController(
-    _ userContentController: WKUserContentController,
+    _: WKUserContentController,
     didReceive message: WKScriptMessage
   ) {
     guard let body = message.body as? [String: Any] else {
@@ -90,13 +96,13 @@ extension WebKitSVG2PNG: WKScriptMessageHandler {
       pngCallback = nil
       return
     }
-    
+
     if let error = body["error"] as? String {
       pngCallback?(.failure(Error.javascriptError(error)))
       pngCallback = nil
       return
     }
-    
+
     if let success = body["success"] as? Bool,
        success,
        let base64 = body["data"] as? String,
@@ -126,7 +132,7 @@ extension WebKitSVG2PNG {
       height: height,
       scale: scale
     )
-    
+
     guard let dataProvider = CGDataProvider(data: pngData as CFData),
           let cgImage = CGImage(
             pngDataProviderSource: dataProvider,
@@ -136,7 +142,7 @@ extension WebKitSVG2PNG {
           ) else {
       throw Error.invalidImageData
     }
-    
+
     return cgImage
   }
 }
