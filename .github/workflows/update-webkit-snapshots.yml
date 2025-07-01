@@ -18,7 +18,7 @@ jobs:
     - name: Update snapshots
       run: |
         swift build
-        CGGEN_EXTENDED_TESTS=1 swift test --filter "SVGTest/testWebKit" || true
+        CGGEN_EXTENDED_TESTS=1 SNAPSHOT_TESTING_RECORD=failed swift test --filter "SVGTest/testWebKit" || true
         SNAPSHOT_TESTING_RECORD=failed swift test --parallel || true
     
     - name: Create PR
