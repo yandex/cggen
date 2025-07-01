@@ -15,7 +15,7 @@ import SnapshotTesting
       .appendingPathExtension("svg")
 
     let svgData = try Data(contentsOf: svgURL)
-    
+
     // Render at 2x scale
     let runtimeImage = try CGImage.svg(
       svgData,

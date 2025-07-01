@@ -27,7 +27,7 @@ import CoreGraphics
  CGBlendMode                  = 0..27    (rawValue)
  */
 public enum DrawCommand: UInt8 {
-  public typealias NoArgs = ()
+  public typealias NoArgs = Void
 
   case saveGState = 0
   public typealias SaveGStateArgs = NoArgs
@@ -202,7 +202,7 @@ public enum DrawCommand: UInt8 {
 }
 
 public enum PathCommand: UInt8 {
-  public typealias NoArgs = ()
+  public typealias NoArgs = Void
 
   case moveTo = 0
   public typealias MoveToArgs = CGPoint

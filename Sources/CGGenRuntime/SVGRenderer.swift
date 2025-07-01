@@ -16,7 +16,8 @@ public enum SVGRenderer {
   /// Create a CGImage from SVG data
   /// - Parameters:
   ///   - data: The SVG content as Data
-  ///   - size: The size to render the SVG at. If nil, uses the SVG's natural size
+  ///   - size: The size to render the SVG at. If nil, uses the SVG's natural
+  /// size
   ///   - scale: The scale factor to apply
   /// - Returns: A CGImage containing the rendered SVG
   /// - Throws: Error if SVG parsing or rendering fails
@@ -28,21 +29,27 @@ public enum SVGRenderer {
     let svg = try SVGParser.root(from: data)
     let routines = try SVGToDrawRouteConverter.convert(document: svg)
     let svgBounds = routines.drawRoutine.boundingRect
-    
+
     let targetSize: CGSize
     let effectiveScale: CGFloat
-    
-    if let size = size {
+
+    if let size {
       guard size.width > 0, size.height > 0 else {
         throw Error.invalidSize
       }
-      targetSize = CGSize(width: size.width * scale, height: size.height * scale)
+      targetSize = CGSize(
+        width: size.width * scale,
+        height: size.height * scale
+      )
       let scaleX = size.width / svgBounds.width
       let scaleY = size.height / svgBounds.height
       effectiveScale = min(scaleX, scaleY) * scale
     } else {
       // Use natural size
-      targetSize = CGSize(width: svgBounds.width * scale, height: svgBounds.height * scale)
+      targetSize = CGSize(
+        width: svgBounds.width * scale,
+        height: svgBounds.height * scale
+      )
       effectiveScale = scale
     }
 
@@ -50,7 +57,10 @@ public enum SVGRenderer {
     if effectiveScale != 1.0 {
       scaledRoutine.steps = [
         .saveGState,
-        .concatCTM(CGAffineTransform(scaleX: effectiveScale, y: effectiveScale)),
+        .concatCTM(CGAffineTransform(
+          scaleX: effectiveScale,
+          y: effectiveScale
+        )),
       ] + scaledRoutine.steps + [.restoreGState]
     }
 

@@ -134,6 +134,7 @@ let package = Package(
         .copy("pdf_samples"),
         .copy("svg_samples"),
         .copy("various_filenames"),
+        .copy("Resources"),
       ]
     ),
 
