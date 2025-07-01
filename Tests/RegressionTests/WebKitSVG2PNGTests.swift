@@ -1,11 +1,11 @@
 import Foundation
-import XCTest
+import Testing
 import SnapshotTesting
 import Base
 
-class WebKitSVG2PNGTests: XCTestCase {
+@Suite struct WebKitSVG2PNGTests {
   @MainActor
-  func testSimpleSVGConversion() async throws {
+  @Test func simpleSVGConversion() async throws {
     let simpleSVG = """
     <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
       <rect x="10" y="10" width="80" height="80" fill="red" />
@@ -26,8 +26,8 @@ class WebKitSVG2PNGTests: XCTestCase {
     )
     
     // Verify dimensions
-    XCTAssertEqual(cgImage.width, 200) // 100 * 2.0 scale
-    XCTAssertEqual(cgImage.height, 200)
+    #expect(cgImage.width == 200) // 100 * 2.0 scale
+    #expect(cgImage.height == 200)
     
     // Snapshot test to verify the image is correct
     assertSnapshot(
@@ -38,7 +38,7 @@ class WebKitSVG2PNGTests: XCTestCase {
   }
   
   @MainActor
-  func testSVGWithGradient() async throws {
+  @Test func svgWithGradient() async throws {
     let gradientSVG = """
     <svg width="200" height="100" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -63,8 +63,8 @@ class WebKitSVG2PNGTests: XCTestCase {
       scale: 1.0
     )
     
-    XCTAssertEqual(cgImage.width, 200)
-    XCTAssertEqual(cgImage.height, 100)
+    #expect(cgImage.width == 200)
+    #expect(cgImage.height == 100)
     
     // Snapshot test for gradient rendering
     assertSnapshot(
@@ -75,7 +75,7 @@ class WebKitSVG2PNGTests: XCTestCase {
   }
   
   @MainActor
-  func testComplexSVGFromTestSuite() async throws {
+  @Test func complexSVGFromTestSuite() async throws {
     // Test with an actual SVG from the test suite
     let svgPath = svgSamplesPath
       .appendingPathComponent("gradient")
@@ -95,8 +95,8 @@ class WebKitSVG2PNGTests: XCTestCase {
       scale: 2.0
     )
     
-    XCTAssertEqual(cgImage.width, 100)
-    XCTAssertEqual(cgImage.height, 100)
+    #expect(cgImage.width == 100)
+    #expect(cgImage.height == 100)
     
     // Compare with existing webkit snapshot
     assertSnapshot(
@@ -107,7 +107,7 @@ class WebKitSVG2PNGTests: XCTestCase {
   }
   
   @MainActor 
-  func testInvalidSVG() async throws {
+  @Test func invalidSVG() async throws {
     let invalidSVG = "<svg>broken"
     
     let converter = WebKitSVG2PNG()
@@ -115,16 +115,12 @@ class WebKitSVG2PNGTests: XCTestCase {
     // Wait for WebView to load
     try await Task.sleep(nanoseconds: 500_000_000)
     
-    do {
+    await #expect(throws: (any Error).self) {
       _ = try await converter.convertToCGImage(
         svg: invalidSVG,
         width: 100,
         height: 100
       )
-      XCTFail("Should have thrown an error")
-    } catch {
-      // Expected error
-      print("Got expected error: \(error)")
     }
   }
 }
