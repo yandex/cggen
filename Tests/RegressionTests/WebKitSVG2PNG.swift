@@ -25,8 +25,9 @@ class WebKitSVG2PNG: NSObject {
     // Set up message handler
     config.userContentController.add(self, name: "svgHandler")
     
-    // Load the HTML template
-    let html = Self.htmlTemplate
+    // Load the HTML template from resource file
+    let htmlPath = Bundle.module.url(forResource: "svg2canvas", withExtension: "html")!
+    let html = try! String(contentsOf: htmlPath)
     webView.loadHTMLString(html, baseURL: nil)
   }
   
@@ -75,102 +76,6 @@ class WebKitSVG2PNG: NSObject {
     return string
   }
   
-  private static let htmlTemplate = """
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <style>
-      body { margin: 0; }
-      canvas { display: none; }
-    </style>
-  </head>
-  <body>
-    <canvas id="canvas"></canvas>
-    <script>
-      function handleSVG(data) {
-        try {
-          const { svg, width, height, scale } = data;
-          
-          const img = new Image();
-          const canvas = document.getElementById("canvas");
-          const ctx = canvas.getContext("2d");
-          
-          // Set canvas size with scale
-          canvas.width = width * scale;
-          canvas.height = height * scale;
-          
-          // Clear canvas
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          img.onerror = function(e) {
-            window.webkit.messageHandlers.svgHandler.postMessage({
-              error: "Failed to load SVG: " + e.toString()
-            });
-          };
-          
-          img.onload = function() {
-            try {
-              // Scale context for high DPI
-              ctx.save();
-              ctx.scale(scale, scale);
-              
-              // Draw image
-              ctx.drawImage(img, 0, 0, width, height);
-              ctx.restore();
-              
-              // Convert to PNG
-              canvas.toBlob(function(blob) {
-                if (!blob) {
-                  window.webkit.messageHandlers.svgHandler.postMessage({
-                    error: "Failed to create PNG blob"
-                  });
-                  return;
-                }
-                
-                // Convert blob to base64
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                  const base64 = reader.result.split(',')[1];
-                  window.webkit.messageHandlers.svgHandler.postMessage({
-                    success: true,
-                    data: base64
-                  });
-                };
-                reader.onerror = function() {
-                  window.webkit.messageHandlers.svgHandler.postMessage({
-                    error: "Failed to read blob"
-                  });
-                };
-                reader.readAsDataURL(blob);
-              }, 'image/png');
-              
-            } catch (e) {
-              window.webkit.messageHandlers.svgHandler.postMessage({
-                error: "Canvas error: " + e.toString()
-              });
-            }
-          };
-          
-          // Create data URL with proper encoding
-          const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
-          const url = URL.createObjectURL(svgBlob);
-          img.src = url;
-          
-          // Clean up
-          img.addEventListener('load', () => URL.revokeObjectURL(url));
-          img.addEventListener('error', () => URL.revokeObjectURL(url));
-          
-        } catch (e) {
-          window.webkit.messageHandlers.svgHandler.postMessage({
-            error: "General error: " + e.toString()
-          });
-        }
-      }
-    </script>
-  </body>
-  </html>
-  """
 }
 
 // MARK: - WKScriptMessageHandler
