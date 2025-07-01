@@ -26,10 +26,25 @@ class WebKitSVG2PNG: NSObject {
     config.userContentController.add(self, name: "svgHandler")
 
     // Load the HTML template from resource file
-    let htmlPath = Bundle.module.url(
+    guard let htmlPath = Bundle.module.url(
       forResource: "svg2canvas",
       withExtension: "html"
-    )!
+    ) else {
+      // Fallback: try to load from file system for Xcode
+      let currentFile = URL(fileURLWithPath: #file)
+      let resourcesDir = currentFile
+        .deletingLastPathComponent()
+        .appendingPathComponent("Resources")
+      let fallbackPath = resourcesDir.appendingPathComponent("svg2canvas.html")
+      
+      if FileManager.default.fileExists(atPath: fallbackPath.path) {
+        let html = try! String(contentsOf: fallbackPath)
+        webView.loadHTMLString(html, baseURL: nil)
+        return
+      }
+      
+      fatalError("Could not find svg2canvas.html resource in bundle or at \(fallbackPath)")
+    }
     let html = try! String(contentsOf: htmlPath)
     webView.loadHTMLString(html, baseURL: nil)
   }
