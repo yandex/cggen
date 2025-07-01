@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import Testing
@@ -63,47 +64,69 @@ import CGGenRTSupport
     )
   }
 
-  @MainActor
   @Test func compilationAndDrawing() throws {
-    // FIXME: WebKitSnapshoter is not available in swift-testing
-    guard Int.random(in: 0...10) > 100 else { return }
     // FIXME: Figure out how to link bcrunner code to binaries in tests
     guard ProcessInfo().environment["__XCODE_BUILT_PRODUCTS_DIR_PATHS"] != nil
     else {
       return
     }
-    withKnownIssue {
-      // Undefined symbols for architecture arm64:
-      //   "___llvm_profile_runtime", referenced from:
-      //       ___llvm_profile_runtime_user in BCCommon.o
-      //       ___llvm_profile_runtime_user in CGGenRuntimeSupport.o
-      let files = [
-        "caps_joins.svg",
-        "clip_path.svg",
-        "dashes.svg",
-        "shadow_blur_radius.svg",
-        "fill.svg",
-        "gradient.svg",
-        "lines.svg",
-        "shapes.svg",
-        "transforms.svg",
-        //      "path_smooth_curve_defs.svg",
-      ].map { svgSamplesPath.appendingPathComponent($0) }
-      try test(
-        snapshot: {
-          try WKWebViewSnapshoter()
-            .take(sample: $0, scale: CGFloat(defScale), size: defSize).cgimg()
-        },
-        adjustImage: {
-          // Unfortunately, snapshot from web view always comes with white
-          // background color
-          $0.redraw(with: .white)
-        },
-        antialiasing: true,
-        paths: files,
-        tolerance: 0.1,
-        scale: Double(defScale),
-        size: defSize
+
+    let testCases: [SVGTestCase] = [
+      .caps_joins,
+      .clip_path,
+      .dashes,
+      .shadow_blur_radius,
+      .fill,
+      .gradient,
+      .lines,
+      .shapes,
+      .transforms,
+    ]
+
+    let svgSamplesPath = getCurrentFilePath()
+      .appendingPathComponent("svg_samples")
+    let files = testCases.map { testCase in
+      svgSamplesPath.appendingPathComponent(testCase.rawValue)
+        .appendingPathExtension("svg")
+    }
+
+    // Load reference images from disk snapshots
+    let snapshotsPath = getCurrentFilePath()
+      .appendingPathComponent("__Snapshots__")
+      .appendingPathComponent("SVGTests")
+
+    var referenceImages: [CGImage] = []
+    for testCase in testCases {
+      let snapshotName = "webkit-references.\(testCase.rawValue).png"
+      let snapshotPath = snapshotsPath.appendingPathComponent(snapshotName)
+      let reference = try readImage(filePath: snapshotPath.path)
+      referenceImages.append(reference)
+    }
+
+    // Generate images using cggen
+    let generatedImages = try cggen(
+      files: files,
+      scale: defScale,
+      callerAllowAntialiasing: true
+    ).map { $0.redraw(with: .white) }
+
+    // Compare images
+    #expect(generatedImages.count == referenceImages.count)
+
+    for (i, testCase) in testCases.enumerated() {
+      let generated = generatedImages[i]
+      let reference = referenceImages[i]
+
+      #expect(
+        reference.intSize == generated.intSize,
+        "\(testCase.rawValue): size mismatch"
+      )
+
+      let diff = compare(reference, generated)
+      let tolerance = testCase.rawValue == "shadow_blur_radius" ? 0.022 : 0.002
+      #expect(
+        diff < tolerance,
+        "\(testCase.rawValue): difference \(diff) exceeds tolerance \(tolerance)"
       )
     }
   }

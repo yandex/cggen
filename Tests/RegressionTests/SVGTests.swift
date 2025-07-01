@@ -1,23 +1,7 @@
-// NOTE: SVG tests remain in XCTest due to WebKit integration issues
-//
-// The SVG tests use WKWebViewSnapshoter which depends on WebKit's navigation
-// callbacks and RunLoop.current.spin() for synchronous waiting. This
-// architecture is incompatible with Swift Testing's execution model:
-//
-// - XCTest: Runs tests on main thread with active RunLoop
-// - Swift Testing: Different execution context, RunLoop.current.spin() hangs
-//
-// The WebKit navigation callbacks (waitCallbackOnMT) never complete in
-// Swift Testing, causing tests to hang indefinitely. To fix this would
-// require rewriting the WebKit testing infrastructure to use async/await.
-//
-// PathExtractionTests were successfully migrated as they don't use WebKit.
-
 import AppKit
 import Foundation
 import os.log
 import Testing
-import XCTest
 
 import Base
 import CGGenCLI
@@ -28,13 +12,9 @@ import CGGenRuntime
 import Parsing
 import SVGParse
 
-class SVGTest: XCTestCase {
-  // This class is kept for the testWebKit() method in the extension below
-}
-
-// Sometimes it is usefull to pass some arbitrary svg to check that it is
+// Sometimes it is useful to pass some arbitrary svg to check that it is
 // correctly handled.
-class SVGCustomCheckTests: XCTestCase {
+@Suite struct SVGCustomCheckTests {
   nonisolated(unsafe)
   static let sizeParser = Parse(input: Substring.self) {
     Int.parser()
@@ -42,26 +22,40 @@ class SVGCustomCheckTests: XCTestCase {
     Int.parser()
   }.map(CGSize.init)
 
-  func testSvgFromArgs() throws {
+  @MainActor
+  @Test func svgFromArgs() async throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
           let size = args[safe: 2].flatMap({ try? Self.sizeParser.parse($0) })
-    else { throw XCTSkip() }
+    else {
+      // Skip test if no arguments provided
+      return
+    }
     print("Checking svg at \(path.path)")
 
-    // Custom command-line test using WebKit
-    XCTAssertNoThrow(try MainActor.assumeIsolated {
-      try testBC(
-        path: path,
-        referenceRenderer: {
-          try WKWebViewSnapshoter().take(sample: $0, scale: 2.0, size: size)
-            .cgimg()
-        },
-        scale: 2.0,
-        resultAdjust: { $0.redraw(with: .white) },
-        tolerance: 0.002
-      )
-    })
+    // Custom command-line test using WebKitSVG2PNG
+    let svgData = try Data(contentsOf: path)
+    let svgString = String(data: svgData, encoding: .utf8) ?? ""
+
+    let converter = WebKitSVG2PNG()
+    let referenceImage = try await converter.convertToCGImage(
+      svg: svgString,
+      scale: 2.0
+    )
+    .redraw(with: .white)
+
+    // Generate bytecode version
+    let (bytecode, imageSize) = try getImageBytecode(from: path)
+    let cggenImage = try renderBytecode(
+      bytecode,
+      width: Int(imageSize.width * 2.0),
+      height: Int(imageSize.height * 2.0),
+      scale: 2.0
+    ).redraw(with: .white)
+
+    // Compare images
+    let diff = compare(referenceImage, cggenImage)
+    #expect(diff < 0.002, "Image difference \(diff) exceeds tolerance 0.002")
   }
 }
 
@@ -299,37 +293,32 @@ extension SVGTestCase {
 
 // MARK: - WebKit Reference Generation
 
-extension SVGTest {
+@Suite(.enabled(if: extendedTestsEnabled))
+struct WebKitReferenceTests {
   @MainActor
-  func testWebKit() throws {
-    // Skip unless explicitly enabled via environment variable
-    try XCTSkipUnless(
-      extendedTestsEnabled,
-      "WebKit reference generation tests are disabled by default. Set CGGEN_EXTENDED_TESTS=1 to run them."
-    )
+  @Test("Generate WebKit reference snapshots", arguments: SVGTestCase.allCases)
+  func generateWebKitReference(testCase: SVGTestCase) async throws {
+    let svgPath = sample(named: testCase.rawValue)
+    let svgData = try Data(contentsOf: svgPath)
+    let svgString = String(data: svgData, encoding: .utf8) ?? ""
 
-    // Generate WebKit reference snapshots for all test cases
-    for testCase in SVGTestCase.allCases {
-      let svgPath = sample(named: testCase.rawValue)
-      let svgData = try Data(contentsOf: svgPath)
-      let document = try SVGParser.root(from: svgData)
-      let actualWidth = CGFloat(document.width?.number ?? 0)
-      let actualHeight = CGFloat(document.height?.number ?? 0)
-      let actualSize = CGSize(width: actualWidth, height: actualHeight)
+    let converter = WebKitSVG2PNG()
+    let cgImage = try await converter.convertToCGImage(
+      svg: svgString,
+      scale: 2.0
+    ).redraw(with: .white)
 
-      let snapshot = WKWebViewSnapshoter()
-      let webkitImage = try snapshot.take(
-        sample: svgPath,
-        scale: 2.0,
-        size: actualSize
-      )
+    // Use a custom diff tool that doesn't add the annoying message
+    let cleanDiffTool = SnapshotTestingConfiguration.DiffTool { _, _ in
+      "" // Return empty string to suppress the diff tool message
+    }
 
-      let cgImage = try webkitImage.cgimg().redraw(with: .white)
-
+    withSnapshotTesting(diffTool: cleanDiffTool) {
       SnapshotTesting.assertSnapshot(
         of: cgImage,
         as: .cgImage(),
         named: testCase.rawValue,
+        file: svgTestsFilePath,
         testName: "webkit-references"
       )
     }
@@ -528,29 +517,12 @@ extension Snapshotting where Value == CGImage, Format == CGImage {
             return nil
           }
 
-          let nsRef = NSImage(
-            cgImage: reference,
-            size: NSSize(width: reference.width, height: reference.height)
-          )
-          let nsActual = NSImage(
-            cgImage: actual,
-            size: NSSize(width: actual.width, height: actual.height)
-          )
-          let nsDiff = NSImage(
-            cgImage: CGImage.diff(lhs: reference, rhs: actual),
-            size: NSSize(width: reference.width, height: reference.height)
-          )
-
+          let percentDiff = diff * 100
+          let percentTolerance = tolerance * 100
           let message =
-            "Actual image difference \(diff) exceeds tolerance \(tolerance)"
+            "Difference: \(String(format: "%.3f%%", percentDiff)) (max allowed: \(String(format: "%.1f%%", percentTolerance)))"
 
-          let attachments = [
-            XCTAttachment(image: nsRef),
-            XCTAttachment(image: nsActual),
-            XCTAttachment(image: nsDiff),
-          ]
-
-          return (message, attachments)
+          return (message, [])
         }
       )
     ) { $0 }

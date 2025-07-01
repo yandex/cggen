@@ -1,7 +1,6 @@
 import AppKit
 import CoreGraphics
 import os.log
-import WebKit
 import XCTest
 
 import Base
@@ -348,111 +347,6 @@ func renderPDF(from pdf: URL, scale: CGFloat) throws -> CGImage {
   try check(pdf.pages.count == 1, Err("multipage pdf"))
   return try
     pdf.pages[0].render(scale: scale) !! Err("Couldnt create png from \(pdf)")
-}
-
-extension WKWebView {
-  @NSManaged
-  private func _setPageZoomFactor(_: Double)
-  @NSManaged
-  private func _pageZoomFactor() -> Double
-
-  fileprivate var pageZoomFactor: CGFloat {
-    get {
-      if #available(macOS 11, *) {
-        pageZoom
-      } else {
-        CGFloat(_pageZoomFactor())
-      }
-    }
-    set {
-      if #available(macOS 11, *) {
-        pageZoom = newValue
-      } else {
-        _setPageZoomFactor(Double(newValue))
-      }
-    }
-  }
-}
-
-class WKWebViewSnapshoter {
-  private class WKDelegate: NSObject, WKNavigationDelegate {
-    private var onNavigationFinishCallbacks = [() -> Void]()
-
-    func webView(_: WKWebView, didFinish _: WKNavigation!) {
-      let callbacks = onNavigationFinishCallbacks
-      onNavigationFinishCallbacks.removeAll()
-      callbacks.forEach(apply)
-    }
-
-    func onNavigationFinish(_ callback: @escaping () -> Void) {
-      onNavigationFinishCallbacks.append(callback)
-    }
-  }
-
-  @MainActor
-  private let webView = WKWebView()
-  @MainActor
-  private let delegate = WKDelegate()
-
-  @MainActor
-  init() {
-    webView.navigationDelegate = delegate
-  }
-
-  @MainActor
-  func take(
-    html: String,
-    viewport: CGRect,
-    scale: CGFloat
-  ) throws -> NSImage {
-    enum Error: Swift.Error {
-      case unknownSnapshotError
-    }
-    let contentScale = webView.layer.map(\.contentsScale) ?? 1
-    let effectiveScale = scale / contentScale
-    let effectiveViewport = viewport.applying(.scale(effectiveScale))
-    let origin = effectiveViewport.origin
-    let size = modified(effectiveViewport.size) {
-      $0.width += origin.x * 2
-      $0.height += origin.y * 2
-    }
-    let frame = CGRect(origin: .zero, size: size)
-    webView.frame = frame
-    webView.bounds = frame
-    webView.pageZoomFactor = scale / contentScale
-
-    let config = WKSnapshotConfiguration()
-    config.rect = effectiveViewport
-
-    webView.loadHTMLString(html, baseURL: nil)
-    waitCallbackOnMT(delegate.onNavigationFinish)
-
-    let result = waitCallbackOnMT { [webView] completion in
-      doAfterNextPresentationUpdate {
-        webView.takeSnapshot(with: config) {
-          completion(($0, $1))
-        }
-      }
-    }
-    return try result.0 !! (result.1 ?? Error.unknownSnapshotError)
-  }
-
-  private func doAfterNextPresentationUpdate(
-    _ block: @escaping @convention(block) () -> Void
-  ) {
-    webView.perform(Selector(("_doAfterNextPresentationUpdate:")), with: block)
-  }
-}
-
-extension WKWebViewSnapshoter {
-  @MainActor
-  func take(sample: URL, scale: CGFloat, size: CGSize) throws -> NSImage {
-    try take(
-      html: String(contentsOf: sample),
-      viewport: CGRect(origin: CGPoint(x: 8, y: 8), size: size),
-      scale: scale
-    )
-  }
 }
 
 // MARK: - Shared Bytecode Helpers

@@ -1,7 +1,6 @@
 import CoreGraphics
 import Foundation
 import Testing
-import XCTest
 
 import Base
 import CGGenRuntime
