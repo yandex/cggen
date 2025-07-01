@@ -4,7 +4,8 @@ import Foundation
 import SnapshotTesting
 import Testing
 
-@Suite struct WebKitSVG2PNGTests {
+@Suite(.enabled(if: extendedTestsEnabled))
+struct WebKitSVG2PNGTests {
   @MainActor
   @Test func simpleSVGConversion() async throws {
     let cgImage = try await convertSVG("""
