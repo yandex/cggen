@@ -4,15 +4,22 @@ import WebKit
 import XCTest
 
 @MainActor
-class WebKitSVG2PNG: NSObject {
+class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
   private let webView: WKWebView
   private var pngCallback: ((Result<Data, Error>) -> Void)?
+  private var readyContinuation: CheckedContinuation<Void, Swift.Error>?
+  private var isReady = false
+  private let messageHandler: MessageHandler
 
-  enum Error: Swift.Error {
-    case invalidPNGData
-    case invalidImageData
-    case javascriptError(String)
-    case timeout
+  private class MessageHandler: NSObject, WKScriptMessageHandler {
+    weak var parent: WebKitSVG2PNG?
+
+    func userContentController(
+      _: WKUserContentController,
+      didReceive message: WKScriptMessage
+    ) {
+      parent?.handleMessage(message)
+    }
   }
 
   override init() {
@@ -20,61 +27,59 @@ class WebKitSVG2PNG: NSObject {
     config.userContentController = WKUserContentController()
 
     webView = WKWebView(frame: .zero, configuration: config)
+    messageHandler = MessageHandler()
     super.init()
 
-    // Set up message handler
-    config.userContentController.add(self, name: "svgHandler")
-
-    // Load the HTML template from resource file
-    guard let htmlPath = Bundle.module.url(
-      forResource: "svg2canvas",
-      withExtension: "html"
-    ) else {
-      // Fallback: try to load from file system for Xcode
-      let currentFile = URL(fileURLWithPath: #file)
-      let resourcesDir = currentFile
-        .deletingLastPathComponent()
-        .appendingPathComponent("Resources")
-      let fallbackPath = resourcesDir.appendingPathComponent("svg2canvas.html")
-      
-      if FileManager.default.fileExists(atPath: fallbackPath.path) {
-        let html = try! String(contentsOf: fallbackPath)
-        webView.loadHTMLString(html, baseURL: nil)
-        return
-      }
-      
-      fatalError("Could not find svg2canvas.html resource in bundle or at \(fallbackPath)")
-    }
+    messageHandler.parent = self
+    config.userContentController.add(messageHandler, name: "svgHandler")
+    webView.navigationDelegate = self
+    let htmlPath = getCurrentFilePath(#filePath)
+      .appendingPathComponent("Resources")
+      .appendingPathComponent("svg2canvas.html")
     let html = try! String(contentsOf: htmlPath)
     webView.loadHTMLString(html, baseURL: nil)
   }
 
+  private func ensureReady() async throws {
+    guard !isReady else { return }
+
+    try await withCheckedThrowingContinuation { continuation in
+      self.readyContinuation = continuation
+
+      Task {
+        try await Task.sleep(nanoseconds: 2_000_000_000)
+        if self.readyContinuation != nil {
+          self.readyContinuation?
+            .resume(throwing: Err("WebView failed to load within 2 seconds"))
+          self.readyContinuation = nil
+        }
+      }
+    }
+  }
+
   func convert(
     svg: String,
-    width: Int,
-    height: Int,
     scale: CGFloat = 1.0
   ) async throws -> Data {
-    try await withCheckedThrowingContinuation { continuation in
+    try await ensureReady()
+
+    return try await withCheckedThrowingContinuation { continuation in
       self.pngCallback = { result in
         continuation.resume(with: result)
       }
 
-      // Prepare the message data
       let message: [String: Any] = [
         "svg": svg,
-        "width": width,
-        "height": height,
         "scale": scale,
       ]
-
-      // Send SVG to JavaScript
       webView
         .evaluateJavaScript("handleSVG(\(jsonString(from: message)))") { _, error in
           if let error {
             continuation
-              .resume(throwing: Error
-                .javascriptError(error.localizedDescription)
+              .resume(
+                throwing: Err(
+                  "JavaScript evaluation failed: \(error.localizedDescription)"
+                )
               )
           }
         }
@@ -84,7 +89,10 @@ class WebKitSVG2PNG: NSObject {
         try await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
         if self.pngCallback != nil {
           self.pngCallback = nil
-          continuation.resume(throwing: Error.timeout)
+          continuation
+            .resume(
+              throwing: Err("SVG to PNG conversion timed out after 5 seconds")
+            )
         }
       }
     }
@@ -99,21 +107,34 @@ class WebKitSVG2PNG: NSObject {
   }
 }
 
-// MARK: - WKScriptMessageHandler
+// MARK: - WKNavigationDelegate
 
-extension WebKitSVG2PNG: WKScriptMessageHandler {
-  func userContentController(
-    _: WKUserContentController,
-    didReceive message: WKScriptMessage
-  ) {
+extension WebKitSVG2PNG {
+  func webView(_: WKWebView, didFinish _: WKNavigation!) {
+    isReady = true
+    readyContinuation?.resume()
+    readyContinuation = nil
+  }
+}
+
+// MARK: - Message Handling
+
+extension WebKitSVG2PNG {
+  private func handleMessage(_ message: WKScriptMessage) {
     guard let body = message.body as? [String: Any] else {
-      pngCallback?(.failure(Error.invalidPNGData))
+      pngCallback?(
+        .failure(
+          Err(
+            "Invalid message format from JavaScript - expected dictionary, got \(type(of: message.body))"
+          )
+        )
+      )
       pngCallback = nil
       return
     }
 
     if let error = body["error"] as? String {
-      pngCallback?(.failure(Error.javascriptError(error)))
+      pngCallback?(.failure(Err("JavaScript error: \(error)")))
       pngCallback = nil
       return
     }
@@ -125,7 +146,11 @@ extension WebKitSVG2PNG: WKScriptMessageHandler {
       pngCallback?(.success(data))
       pngCallback = nil
     } else {
-      pngCallback?(.failure(Error.invalidPNGData))
+      pngCallback?(
+        .failure(
+          Err("Failed to decode PNG data - missing or invalid base64 data")
+        )
+      )
       pngCallback = nil
     }
   }
@@ -137,14 +162,10 @@ extension WebKitSVG2PNG: WKScriptMessageHandler {
 extension WebKitSVG2PNG {
   func convertToCGImage(
     svg: String,
-    width: Int,
-    height: Int,
     scale: CGFloat = 1.0
   ) async throws -> CGImage {
     let pngData = try await convert(
       svg: svg,
-      width: width,
-      height: height,
       scale: scale
     )
 
@@ -155,7 +176,7 @@ extension WebKitSVG2PNG {
             shouldInterpolate: true,
             intent: .defaultIntent
           ) else {
-      throw Error.invalidImageData
+      throw Err("Failed to create CGImage from PNG data")
     }
 
     return cgImage

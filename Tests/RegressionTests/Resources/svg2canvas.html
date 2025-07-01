@@ -12,18 +12,11 @@
   <script>
     function handleSVG(data) {
       try {
-        const { svg, width, height, scale } = data;
+        const { svg, scale } = data;
         
         const img = new Image();
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
-        
-        // Set canvas size with scale
-        canvas.width = width * scale;
-        canvas.height = height * scale;
-        
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         img.onerror = function(e) {
           window.webkit.messageHandlers.svgHandler.postMessage({
@@ -33,15 +26,16 @@
         
         img.onload = function() {
           try {
-            // Scale context for high DPI
+            const width = img.naturalWidth;
+            const height = img.naturalHeight;
+            
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            
             ctx.save();
             ctx.scale(scale, scale);
-            
-            // Draw image
             ctx.drawImage(img, 0, 0, width, height);
             ctx.restore();
-            
-            // Convert to PNG
             canvas.toBlob(function(blob) {
               if (!blob) {
                 window.webkit.messageHandlers.svgHandler.postMessage({
@@ -50,7 +44,6 @@
                 return;
               }
               
-              // Convert blob to base64
               const reader = new FileReader();
               reader.onloadend = function() {
                 const base64 = reader.result.split(',')[1];
@@ -74,12 +67,10 @@
           }
         };
         
-        // Create data URL with proper encoding
         const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
         img.src = url;
         
-        // Clean up
         img.addEventListener('load', () => URL.revokeObjectURL(url));
         img.addEventListener('error', () => URL.revokeObjectURL(url));
         
