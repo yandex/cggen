@@ -294,18 +294,6 @@ enum SVGAttributeParser {
     }
   }
 
-  struct IgnoreAttribute: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<Substring> {
-      Base(Rest(), attribute)
-    }
-  }
-
   struct DashArray: Parser {
     var attribute: Attribute
 

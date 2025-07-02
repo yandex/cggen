@@ -6,11 +6,9 @@ import Testing
 import Base
 import CGGenCLI
 import CGGenIR
-import CGGenRuntime
 @_spi(Testing) import CGGenRTSupport
 
 import Parsing
-import SVGParse
 
 // Sometimes it is useful to pass some arbitrary svg to check that it is
 // correctly handled.
@@ -26,7 +24,7 @@ import SVGParse
   @Test func svgFromArgs() async throws {
     let args = CommandLine.arguments
     guard let path = args[safe: 1].map(URL.init(fileURLWithPath:)),
-          let size = args[safe: 2].flatMap({ try? Self.sizeParser.parse($0) })
+          let _ = args[safe: 2].flatMap({ try? Self.sizeParser.parse($0) })
     else {
       // Skip test if no arguments provided
       return
@@ -38,7 +36,7 @@ import SVGParse
     let svgString = String(data: svgData, encoding: .utf8) ?? ""
 
     let converter = WebKitSVG2PNG()
-    let referenceImage = try await converter.convertToCGImage(
+    _ = try await converter.convertToCGImage(
       svg: svgString,
       scale: 2.0
     )
@@ -53,9 +51,15 @@ import SVGParse
       scale: 2.0
     ).redraw(with: .white)
 
-    // Compare images
-    let diff = compare(referenceImage, cggenImage)
-    #expect(diff < 0.002, "Image difference \(diff) exceeds tolerance 0.002")
+    // Compare images using SnapshotTesting's built-in comparison
+    withSnapshotTesting(record: .never) {
+      assertSnapshot(
+        of: cggenImage,
+        as: .cgImage(tolerance: 0.002),
+        named: "custom-svg",
+        record: false
+      )
+    }
   }
 }
 
@@ -352,37 +356,7 @@ private func check(_ testCase: SVGTestCase) {
       scale: 2.0
     ).redraw(with: .white)
 
-    // Check if we should save debug output on failure
-    if let debugDir = ProcessInfo.processInfo
-      .environment["CGGEN_TEST_DEBUG_OUTPUT"] {
-      // Load reference for comparison
-      let referenceURL = URL(fileURLWithPath: svgTestsFilePath.description)
-        .deletingLastPathComponent()
-        .appendingPathComponent(
-          "__Snapshots__/SVGTests/webkit-references.\(testCase.rawValue).png"
-        )
-
-      if let referenceData = try? Data(contentsOf: referenceURL),
-         let dataProvider = CGDataProvider(data: referenceData as CFData),
-         let reference = CGImage(
-           pngDataProviderSource: dataProvider,
-           decode: nil,
-           shouldInterpolate: true,
-           intent: .defaultIntent
-         ) {
-        let diff = compare(reference, cggenImage)
-        if diff >= testCase.tolerance {
-          saveTestFailureArtifacts(
-            testName: testCase.rawValue,
-            reference: reference,
-            result: cggenImage,
-            diff: diff,
-            tolerance: testCase.tolerance,
-            to: URL(fileURLWithPath: debugDir)
-          )
-        }
-      }
-    }
+    // Debug output is handled by SnapshotTesting if needed
 
     assertSnapshot(
       of: cggenImage,
@@ -396,18 +370,6 @@ private func check(_ testCase: SVGTestCase) {
 
 private func sample(named name: String) -> URL {
   svgSamplesPath.appendingPathComponent(name).appendingPathExtension("svg")
-}
-
-private func blackSquareHTML(size: Int) -> String {
-  """
-  <html>
-  <style type="text/css">html, body {width:100%;height: 100%;margin: 0px;padding: 0px;}</style>
-  <svg width="\(size)" height="\(size)" viewBox="0 0 \(size) \(size)">
-  <rect x="0" y="0" width="\(size)" height="\(size)" \
-  fill="#000000" fill-opacity="1"/>
-  </svg>
-  </html>
-  """
 }
 
 private func test(
@@ -525,7 +487,7 @@ extension Snapshotting where Value == CGImage, Format == CGImage {
             return ("Images have different sizes", [])
           }
 
-          let diff = compare(reference, actual)
+          let diff = SnapshotTestingSupport.compare(reference, actual)
 
           if diff < tolerance {
             return nil

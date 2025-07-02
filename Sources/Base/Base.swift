@@ -547,3 +547,5 @@ extension Array {
     builder()
   }
 }
+
+public func identity<T>(_ value: T) -> T { value }

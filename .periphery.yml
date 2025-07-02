@@ -1,0 +1,2 @@
+retain_assign_only_properties: true
+retain_public: true

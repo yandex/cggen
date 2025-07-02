@@ -436,7 +436,7 @@ class CustomButton: UIView {
 The test suite includes comprehensive path validation:
 
 ```swift
-func testPathExtraction() {
+@Test func pathExtraction() {
     let svg = """
     <svg>
         <path id="cggen.test" d="M0,0 L10,10 C20,20 30,30 40,40 Z"/>
@@ -445,9 +445,9 @@ func testPathExtraction() {
     
     let result = SVGToDrawRouteConverter.convert(svgString: svg)
     
-    XCTAssertEqual(result.paths.count, 1)
-    XCTAssertEqual(result.paths[0].name, "test")
-    XCTAssertEqual(result.paths[0].segments.count, 4) // moveTo, lineTo, curveTo, closePath
+    #expect(result.paths.count == 1)
+    #expect(result.paths[0].name == "test")
+    #expect(result.paths[0].segments.count == 4) // moveTo, lineTo, curveTo, closePath
 }
 ```
 

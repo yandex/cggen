@@ -1,4 +1,3 @@
-import Base
 import CGGenIR
 import CGGenRTSupport
 @preconcurrency import CoreGraphics

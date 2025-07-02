@@ -1,4 +1,3 @@
-import Base
 @preconcurrency import Parsing
 
 enum SVGShapeParser {

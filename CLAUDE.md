@@ -147,44 +147,6 @@ Migration to swift-parsing library completed. Key changes made:
 - Removed legacy `OldParser` bridge infrastructure
 - Use `Parse`, `OneOf`, `Many` builders for parser composition
 
-## Test Framework Migration (Swift Testing)
-
-### Key Principles
-When migrating tests from XCTest to Swift Testing, follow these principles:
-- **Minimal changes only**: Only change imports, declarations, and assertions
-- **Preserve all logic**: Keep test structure, naming, and coverage identical
-- **No verbose additions**: Don't add error messages or explanatory text to assertions
-- **Keep it simple**: The goal is framework migration, not test improvement
-
-### Migration Pattern
-1. **Imports**: `import XCTest` → `import Testing`
-2. **Test class/struct**: `class TestName: XCTestCase` → `@Suite struct TestName`
-3. **Test methods**: `func testX()` → `@Test func testX()`
-4. **Assertions**:
-   - `XCTAssertEqual(a, b)` → `#expect(a == b)`
-   - `XCTAssertNil(x)` → `#expect(x == nil)`
-   - `XCTAssertNotNil(x)` → `#expect(x != nil)`
-   - `XCTAssert(condition)` → `#expect(condition)`
-   - `XCTFail()` → `Issue.record("message")`
-
-### Parser Test Extensions
-The codebase includes test helper extensions for parsers. These should be kept minimal:
-```swift
-extension NewParser where Input == Substring, Output: Equatable {
-  func test(_ data: String, expected: (result: Output?, rest: String)) {
-    var dataToParse = Substring(data)
-    let res = Result { try parse(&dataToParse) }
-    #expect(expected.result == res.value)
-    #expect(expected.rest == String(dataToParse))
-  }
-}
-```
-
-### Important Notes
-- Base.Parser conforms to NewParser, so it inherits test extensions automatically
-- Don't duplicate extensions across test files
-- Swift Testing requires `import Foundation` for `sqrt` and similar math functions
-- Use `Issue.record()` instead of `XCTFail()` for recording test failures
 
 ## Parser Migration Completed
 

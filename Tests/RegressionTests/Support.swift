@@ -8,8 +8,6 @@ import CGGenCLI
 
 private enum Error: Swift.Error {
   case compilationError
-  case exitStatusNotZero
-  case cgimageCreationFailed
 }
 
 // Test debug output directory from environment variable
@@ -17,52 +15,23 @@ private let testDebugOutputDir = ProcessInfo.processInfo
   .environment["CGGEN_TEST_DEBUG_OUTPUT"]
   .map { URL(fileURLWithPath: $0) }
 
-extension NSImage {
-  func cgimg() throws -> CGImage {
-    // Sometimes NSImage.cgImage has different size than underlying cgimage
-    if representations.count == 1,
-       let repr = representations.first,
-       repr.className == "NSCGImageSnapshotRep" {
-      return try repr.cgImage(forProposedRect: nil, context: nil, hints: nil) !!
-        Error.cgimageCreationFailed
-    }
-    return try cgImage(forProposedRect: nil, context: nil, hints: nil) !!
-      Error.cgimageCreationFailed
+// Image comparison for SnapshotTesting
+enum SnapshotTestingSupport {
+  static func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
+    let buffer1 = RGBABuffer(image: img1)
+    let buffer2 = RGBABuffer(image: img2)
+
+    let rw1 = buffer1.pixels
+      .flatMap(\.self)
+      .flatMap { $0.norm(Double.self).components }
+
+    let rw2 = buffer2.pixels
+      .flatMap(\.self)
+      .flatMap { $0.norm(Double.self).components }
+
+    let ziped = zip(rw1, rw2).lazy.map(-)
+    return ziped.rootMeanSquare()
   }
-}
-
-func readImage(filePath: String) throws -> CGImage {
-  enum ReadImageError: Swift.Error {
-    case failedToCreateDataProvider
-    case failedToCreateImage
-  }
-  let url = URL(fileURLWithPath: filePath) as CFURL
-  guard let dataProvider = CGDataProvider(url: url)
-  else { throw ReadImageError.failedToCreateDataProvider }
-  guard let img = CGImage(
-    pngDataProviderSource: dataProvider,
-    decode: nil,
-    shouldInterpolate: true,
-    intent: .defaultIntent
-  )
-  else { throw ReadImageError.failedToCreateImage }
-  return img
-}
-
-func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
-  let buffer1 = RGBABuffer(image: img1)
-  let buffer2 = RGBABuffer(image: img2)
-
-  let rw1 = buffer1.pixels
-    .flatMap(\.self)
-    .flatMap { $0.norm(Double.self).components }
-
-  let rw2 = buffer2.pixels
-    .flatMap(\.self)
-    .flatMap { $0.norm(Double.self).components }
-
-  let ziped = zip(rw1, rw2).lazy.map(-)
-  return ziped.rootMeanSquare()
 }
 
 func getCurrentFilePath(_ file: StaticString = #filePath) -> URL {
@@ -70,94 +39,7 @@ func getCurrentFilePath(_ file: StaticString = #filePath) -> URL {
     .deletingLastPathComponent()
 }
 
-func cggen(
-  files: [URL],
-  scale: Double,
-  callerAllowAntialiasing: Bool
-) throws -> [CGImage] {
-  let fm = FileManager.default
-
-  let tmpdir = try fm.url(
-    for: .itemReplacementDirectory,
-    in: .userDomainMask,
-    appropriateFor: fm.homeDirectoryForCurrentUser,
-    create: true
-  )
-  defer {
-    do {
-      try fm.removeItem(at: tmpdir)
-    } catch {
-      fatalError("Unable to clean up dir: \(tmpdir), error: \(error)")
-    }
-  }
-  let header = tmpdir.appendingPathComponent("gen.h").path
-  let impl = tmpdir.appendingPathComponent("gen.m")
-  let caller = tmpdir.appendingPathComponent("main.m")
-  let genBin = tmpdir.appendingPathComponent("bin")
-  let outputPngs = tmpdir.appendingPathComponent("pngs").path
-
-  try testLog.signpostRegion("runCggen") {
-    try fm.createDirectory(
-      atPath: outputPngs, withIntermediateDirectories: true
-    )
-    try runCggen(
-      with: .init(
-        objcHeader: header,
-        objcPrefix: "Tests",
-        objcImpl: impl.path,
-        objcHeaderImportPath: header,
-        objcCallerPath: caller.path,
-        callerScale: scale,
-        callerAllowAntialiasing: callerAllowAntialiasing,
-        callerPngOutputPath: outputPngs,
-        generationStyle: .plain,
-        cggenSupportHeaderPath: nil,
-        module: nil,
-        verbose: false,
-        files: files.map(\.path),
-        swiftOutput: nil
-      )
-    )
-  }
-  try testLog.signpostRegion("clang invoc") {
-    let frameworks = [
-      "CoreGraphics",
-      "Foundation",
-      "ImageIO",
-      "CoreServices",
-    ]
-
-    let support = [
-      "BCCommon.o",
-      "CGGenRuntimeSupport.o",
-    ].map {
-      currentBundlePath.deletingLastPathComponent().appendingPathComponent($0)
-    }
-    try clang(
-      out: genBin,
-      files: [impl, caller] + support,
-      frameworks: frameworks,
-      libSearchPaths: [
-        "/usr/lib/swift",
-        toolchainPath.path + "/usr/lib/swift/macosx",
-      ]
-    )
-  }
-
-  try testLog.signpostRegion("img gen bin") {
-    try checkStatus(bin: genBin)
-  }
-
-  let pngPaths = files.map {
-    "\(outputPngs)/\($0.deletingPathExtension().lastPathComponent).png"
-  }
-
-  return try pngPaths.map(readImage)
-}
-
-private class Dummy: NSObject {}
-let currentBundlePath = Bundle(for: Dummy.self).bundleURL
-
+// Minimal clang support for BCCompilationTests
 private func check_output(cmd: String...) throws -> (out: String, err: String) {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -179,145 +61,34 @@ private let sdkPath = try! check_output(
   cmd: "xcrun", "--sdk", "macosx", "--show-sdk-path"
 ).out.trimmingCharacters(in: .newlines)
 
-private let toolchainPath = try! URL(fileURLWithPath: check_output(
-  cmd: "xcrun", "--sdk", "macosx", "--find", "clang"
-).out.trimmingCharacters(in: .newlines)).deletingLastPathComponent()
-  .deletingLastPathComponent().deletingLastPathComponent()
-
-private func subprocess(
-  cmd: [String],
-  env: [String: String]? = nil
-) throws -> Int32 {
-  let task = Process()
-  task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-  task.arguments = cmd
-  task.environment = env ?? ProcessInfo().environment
-  try task.run()
-  task.waitUntilExit()
-  return task.terminationStatus
-}
-
 func clang(
   out: URL?,
   files: [URL],
   syntaxOnly: Bool = false,
-  frameworks: [String],
-  libSearchPaths: [String] = []
+  frameworks: [String]
 ) throws {
+  let task = Process()
+  task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+
   let frameworkArgs = frameworks.flatMap { ["-framework", $0] }
   let outArgs = out.map { ["-o", $0.path] } ?? []
   let syntaxOnlyArg = syntaxOnly ? ["-fsyntax-only"] : []
-  let libSearchPathsArgs = libSearchPaths.map { "-L" + $0 }
-  let args: [String] = [
+
+  task.arguments = [
     "clang",
     "-Weverything",
     "-Werror",
     "-Wno-declaration-after-statement",
+    "-Wno-poison-system-directories",
     "-fmodules",
     "-isysroot",
     sdkPath,
-  ] + [
-    outArgs,
-    frameworkArgs,
-    syntaxOnlyArg,
-    files.map(\.path),
-    libSearchPathsArgs,
-  ].flatMap(identity)
-  let clangCode = try subprocess(
-    cmd: args,
-    env: [:]
-  )
-  try check(clangCode == 0, Error.compilationError)
-}
+  ] + outArgs + frameworkArgs + syntaxOnlyArg + files.map(\.path)
 
-private func checkStatus(bin: URL) throws {
-  let genCallerCode = try subprocess(cmd: [bin.path])
-  try check(genCallerCode == 0, Error.exitStatusNotZero)
-}
+  try task.run()
+  task.waitUntilExit()
 
-extension FileManager {
-  private func contentsOfDirectory(at url: URL) throws -> [URL] {
-    try contentsOfDirectory(
-      at: url,
-      includingPropertiesForKeys: nil,
-      options: []
-    )
-  }
-}
-
-let testLog = OSLog(
-  subsystem: "cggen.regression_tests",
-  category: .pointsOfInterest
-)
-
-let signpost = testLog.signpost
-func signpostRegion<T>(
-  _ desc: StaticString,
-  _ region: () throws -> T
-) rethrows -> T {
-  try testLog.signpostRegion(desc, region)
-}
-
-func test(
-  snapshot: (URL) throws -> CGImage,
-  adjustImage: (CGImage) -> CGImage = { $0 },
-  antialiasing: Bool,
-  paths: [URL],
-  tolerance: Double,
-  scale: Double,
-  size _: CGSize
-) throws {
-  let referenceImgs = try signpostRegion("snapshot") {
-    try paths.map(snapshot)
-  }
-
-  let images = try cggen(
-    files: paths,
-    scale: scale,
-    callerAllowAntialiasing: antialiasing
-  ).map(adjustImage)
-  try check(
-    images.count == referenceImgs.count,
-    Err(
-      "Required images count: \(referenceImgs.count), got \(images.count) from cggen"
-    )
-  )
-
-  for (i, path) in paths.enumerated() {
-    let img = images[i]
-    let ref = referenceImgs[i]
-    try check(
-      ref.intSize == img.intSize,
-      Err(
-        "reference image size: \(ref.intSize), got \(img.intSize) for \(path.path)"
-      )
-    )
-
-    let diff = signpostRegion("image comparision") {
-      compare(ref, img)
-    }
-
-    try check(
-      diff < tolerance,
-      Err(
-        "Calculated diff \(diff) exceeds tolerance \(tolerance) for \(path.lastPathComponent)"
-      )
-    )
-
-    if diff >= tolerance {
-      // Save debug output if directory is specified
-      if let debugDir = testDebugOutputDir {
-        saveTestFailureArtifacts(
-          testName: path.deletingPathExtension().lastPathComponent,
-          reference: ref,
-          result: img,
-          diff: diff,
-          tolerance: tolerance,
-          to: debugDir
-        )
-      }
-    }
-  }
+  try check(task.terminationStatus == 0, Error.compilationError)
 }
 
 struct Err: Swift.Error {
@@ -326,13 +97,6 @@ struct Err: Swift.Error {
   init(_ desc: String) {
     description = desc
   }
-}
-
-func renderPDF(from pdf: URL, scale: CGFloat) throws -> CGImage {
-  let pdf = CGPDFDocument(pdf as CFURL)!
-  try check(pdf.pages.count == 1, Err("multipage pdf"))
-  return try
-    pdf.pages[0].render(scale: scale) !! Err("Couldnt create png from \(pdf)")
 }
 
 // MARK: - Shared Bytecode Helpers
@@ -389,7 +153,7 @@ func testBC(
   )
 
   let result = resultAdjust(rawResult)
-  let diff = compare(reference, result)
+  let diff = SnapshotTestingSupport.compare(reference, result)
 
   try check(
     diff < tolerance,
@@ -398,133 +162,5 @@ func testBC(
     )
   )
 
-  if diff >= tolerance {
-    // Save debug output if directory is specified
-    if let debugDir = testDebugOutputDir {
-      saveTestFailureArtifacts(
-        testName: path.deletingPathExtension().lastPathComponent,
-        reference: reference,
-        result: result,
-        diff: diff,
-        tolerance: tolerance,
-        to: debugDir
-      )
-    }
-  }
-}
-
-func testMBC(
-  paths: [URL],
-  referenceRenderer: (URL) throws -> CGImage,
-  scale: CGFloat,
-  antialiasing: Bool = true,
-  resultAdjust: (CGImage) -> CGImage = { $0 },
-  tolerance: Double
-) throws {
-  let references = try paths.map { try referenceRenderer($0) }
-  let (mergedBytecode, positions, decompressedSize, _) =
-    try getImagesMergedBytecodeAndPositions(from: paths)
-
-  let contexts = try references.map { reference in
-    guard let context = CGContext(
-      data: nil,
-      width: reference.width,
-      height: reference.height,
-      bitsPerComponent: 8,
-      bytesPerRow: 0,
-      space: CGColorSpaceCreateDeviceRGB(),
-      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-    ) else { throw Err("Failed to create CGContext") }
-
-    return context
-  }
-
-  let data = Data(mergedBytecode)
-  for ((context, position), (reference, path)) in zip(
-    zip(contexts, positions),
-    zip(references, paths)
-  ) {
-    context.concatenate(CGAffineTransform(
-      scaleX: CGFloat(scale),
-      y: CGFloat(scale)
-    ))
-    context.setAllowsAntialiasing(antialiasing)
-
-    try runMergedBytecode(
-      fromData: data,
-      context,
-      decompressedSize,
-      position.0,
-      position.1
-    )
-
-    guard let rawResult = context.makeImage() else {
-      throw Err("Failed to draw CGImage")
-    }
-
-    let result = resultAdjust(rawResult)
-    let diff = compare(reference, result)
-
-    try check(
-      diff < tolerance,
-      Err(
-        "Diff \(diff) exceeds tolerance \(tolerance) for \(path.lastPathComponent)"
-      )
-    )
-
-    if diff >= tolerance {
-      // Save debug output if directory is specified
-      if let debugDir = testDebugOutputDir {
-        saveTestFailureArtifacts(
-          testName: path.deletingPathExtension().lastPathComponent,
-          reference: reference,
-          result: result,
-          diff: diff,
-          tolerance: tolerance,
-          to: debugDir
-        )
-      }
-    }
-  }
-}
-
-// MARK: - Test Debug Output
-
-func saveTestFailureArtifacts(
-  testName: String,
-  reference: CGImage,
-  result: CGImage,
-  diff: Double,
-  tolerance: Double,
-  to outputDir: URL
-) {
-  let testDir = outputDir.appendingPathComponent(testName)
-  try? FileManager.default.createDirectory(
-    at: testDir,
-    withIntermediateDirectories: true
-  )
-
-  // Save images
-  reference.savePNG(to: testDir.appendingPathComponent("reference.png"))
-  result.savePNG(to: testDir.appendingPathComponent("result.png"))
-  CGImage.diff(lhs: reference, rhs: result)
-    .savePNG(to: testDir.appendingPathComponent("diff.png"))
-
-  // Save simple metadata
-  let metadata: [String: Any] = [
-    "test": testName,
-    "diff": diff,
-    "tolerance": tolerance,
-    "timestamp": ISO8601DateFormatter().string(from: Date()),
-  ]
-  try? JSONSerialization.data(withJSONObject: metadata)
-    .write(to: testDir.appendingPathComponent("info.json"))
-}
-
-// Add PNG save extension
-extension CGImage {
-  func savePNG(to url: URL) {
-    let imageRep = NSBitmapImageRep(cgImage: self)
-    try? imageRep.representation(using: .png, properties: [:])?.write(to: url)
-  }
+  // Debug output removed - handled by test framework if needed
 }

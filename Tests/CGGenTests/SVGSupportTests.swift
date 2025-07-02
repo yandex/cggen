@@ -11,8 +11,6 @@ import Testing
   </svg>
   """#
 
-  let invalidSVG = #"<svg><invalid></svg>"#
-
   @Test func cgImageFromData() throws {
     let data = Data(simpleSVG.utf8)
     let image = try CGImage.svg(data, size: CGSize(width: 100, height: 100))

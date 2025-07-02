@@ -3,7 +3,6 @@ import Foundation
 import Testing
 
 import Base
-import CGGenCLI
 
 @Suite struct PDFTests {
   @Test func alpha() {
@@ -80,9 +79,14 @@ private func test(
   scale: CGFloat = defaultScale
 ) {
   do {
+    let path = sample(named: pdf)
+    let pdf = CGPDFDocument(path as CFURL)!
+    try Base.check(pdf.pages.count == 1, Err("multipage pdf"))
+    let reference = try
+      pdf.pages[0].render(scale: scale) !! Err("Couldnt create png from \(pdf)")
     try testBC(
-      path: sample(named: pdf),
-      referenceRenderer: { try renderPDF(from: $0, scale: scale) },
+      path: path,
+      referenceRenderer: { _ in reference },
       scale: scale,
       antialiasing: false,
       tolerance: tolerance

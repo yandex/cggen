@@ -1,5 +1,4 @@
 import CGGenIR
-import PDFParse
 
 struct Output {
   var image: Image

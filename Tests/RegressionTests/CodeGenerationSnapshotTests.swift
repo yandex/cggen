@@ -56,10 +56,6 @@ import CGGenCLI
         objcPrefix: prefix,
         objcImpl: objcImpl.path,
         objcHeaderImportPath: nil,
-        objcCallerPath: nil,
-        callerScale: 1.0,
-        callerAllowAntialiasing: false,
-        callerPngOutputPath: nil,
         generationStyle: .plain,
         cggenSupportHeaderPath: nil,
         module: nil,
@@ -121,18 +117,10 @@ import CGGenCLI
     return names.map { plugindemoPath.appendingPathComponent($0) }
   }
 
-  private func pluginDemoFiles(_ names: String...) -> [URL] {
-    pluginDemoFiles(names)
-  }
-
   private func svgSampleFiles(_ names: [String]) -> [URL] {
     let svgSamplesPath = getCurrentFilePath()
       .appendingPathComponent("svg_samples")
 
     return names.map { svgSamplesPath.appendingPathComponent($0) }
-  }
-
-  private func svgSampleFiles(_ names: String...) -> [URL] {
-    svgSampleFiles(names)
   }
 }
