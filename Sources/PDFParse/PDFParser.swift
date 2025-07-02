@@ -1,8 +1,6 @@
 import CoreGraphics
 import Foundation
 
-import Base
-
 public enum PDFParser {
   public static func parse(pdfURL: CFURL) throws -> [PDFPage] {
     guard let pdfDoc = CGPDFDocument(pdfURL) else {

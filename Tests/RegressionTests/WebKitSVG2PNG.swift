@@ -1,7 +1,6 @@
 import AppKit
 import CoreGraphics
 import WebKit
-import XCTest
 
 @MainActor
 class WebKitSVG2PNG: NSObject, WKNavigationDelegate {

@@ -1,9 +1,7 @@
-import BCCommon
 import Foundation
 
 import Base
 import CGGenIR
-import CGGenRTSupport
 import PDFParse
 import SVGParse
 
@@ -12,10 +10,6 @@ public struct Args {
   let objcPrefix: String?
   let objcImpl: String?
   let objcHeaderImportPath: String?
-  let objcCallerPath: String?
-  let callerScale: Double
-  let callerAllowAntialiasing: Bool
-  let callerPngOutputPath: String?
   let generationStyle: GenerationStyle
   let cggenSupportHeaderPath: String?
   let module: String?
@@ -28,10 +22,6 @@ public struct Args {
     objcPrefix: String?,
     objcImpl: String?,
     objcHeaderImportPath: String?,
-    objcCallerPath: String?,
-    callerScale: Double,
-    callerAllowAntialiasing: Bool = false,
-    callerPngOutputPath: String?,
     generationStyle: GenerationStyle,
     cggenSupportHeaderPath: String?,
     module: String?,
@@ -43,10 +33,6 @@ public struct Args {
     self.objcPrefix = objcPrefix
     self.objcImpl = objcImpl
     self.objcHeaderImportPath = objcHeaderImportPath
-    self.objcCallerPath = objcCallerPath
-    self.callerScale = callerScale
-    self.callerAllowAntialiasing = callerAllowAntialiasing
-    self.callerPngOutputPath = callerPngOutputPath
     self.generationStyle = generationStyle
     self.cggenSupportHeaderPath = cggenSupportHeaderPath
     self.module = module
@@ -118,25 +104,6 @@ public func runCggen(with args: Args) throws {
     )
     log("Swift code generated in: \(stopwatch.reset())")
   }
-
-  if let objcCallerPath = args.objcCallerPath,
-     let pngOutputPath = args.callerPngOutputPath,
-     let headerImportPath = args.objcHeaderImportPath {
-    let fileStr = generateObjCCallerFile(
-      headerImportPath: headerImportPath,
-      scale: args.callerScale.cgfloat,
-      allowAntialiasing: args.callerAllowAntialiasing,
-      prefix: objcPrefix,
-      outputPath: pngOutputPath,
-      outputs: outputs
-    )
-    try fileStr.write(
-      toFile: objcCallerPath,
-      atomically: true,
-      encoding: .utf8
-    )
-    log("Caller generated in: \(stopwatch.reset())")
-  }
 }
 
 public enum Error: Swift.Error {
@@ -167,7 +134,7 @@ private let pdfAndSvgGenerator: Generator = {
   }
 }
 
-func flattenDrawSteps(_ steps: [DrawStep]) -> [DrawStep] {
+private func flattenDrawSteps(_ steps: [DrawStep]) -> [DrawStep] {
   steps.flatMap { step -> [DrawStep] in
     guard case let .composite(substeps) = step else { return [step] }
     return flattenDrawSteps(substeps)

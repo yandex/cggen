@@ -1,6 +1,4 @@
-import BCCommon
 import CGGenIR
-import CGGenRTSupport
 import Foundation
 
 private struct UnifiedBytecodeData {
