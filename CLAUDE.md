@@ -61,11 +61,17 @@ open Demo/Demo.xcodeproj
 - Update only failed snapshots: `SNAPSHOT_TESTING_RECORD=failed swift test`
 - Update only missing snapshots: `SNAPSHOT_TESTING_RECORD=missing swift test` (default)
 - Never record snapshots: `SNAPSHOT_TESTING_RECORD=never swift test`
+- Update all reference snapshots: `CGGEN_EXTENDED_TESTS=1 SNAPSHOT_TESTING_RECORD=all swift test --filter "SVGReferencesTests"`
 
 #### Extended Tests
 - WebKit reference generation tests are disabled by default
 - Enable with: `CGGEN_EXTENDED_TESTS=1 swift test`
 - The `extendedTestsEnabled` constant in `SVGTests.swift` controls this behavior
+
+#### Debug Output
+- Save test failure images: `CGGEN_TEST_DEBUG_OUTPUT=/path/to/debug/dir swift test`
+- When tests fail, saves reference.png, result.png, diff.png and info.json to the specified directory
+- Useful for debugging visual differences between expected and actual output
 
 ### Lint and Type Checking
 - Format check: `swiftformat --lint .`

@@ -22,14 +22,9 @@ import SnapshotTesting
     )
 
     // Compare against the same webkit-references used by bytecode tests
-    SnapshotTesting.withSnapshotTesting(record: .never) {
-      assertSnapshot(
-        of: runtimeImage.redraw(with: CGColor.white),
-        as: .cgImage(tolerance: testCase.tolerance),
-        named: testCase.rawValue,
-        file: svgTestsFilePath,
-        testName: "webkit-references"
-      )
-    }
+    assertAgainstReference(
+      image: runtimeImage.redraw(with: CGColor.white),
+      testCase: testCase
+    )
   }
 }
