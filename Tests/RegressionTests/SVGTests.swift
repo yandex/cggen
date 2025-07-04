@@ -5,6 +5,7 @@ import Testing
 
 import CGGenCLI
 import CGGenCore
+import CGGenDiagnosticSupport
 import CGGenIR
 @_spi(Testing) import CGGenRTSupport
 
@@ -374,7 +375,7 @@ private func assertReferenceSnapshot(
          intent: .defaultIntent
        ) {
       // Compare images
-      let diff = SnapshotTestingSupport.compare(referenceImage, image)
+      let diff = ImageComparison.compare(referenceImage, image)
       let tolerance = testCase.tolerance
 
       // Save debug output if test would fail
@@ -528,7 +529,7 @@ extension Snapshotting where Value == CGImage, Format == CGImage {
             return ("Images have different sizes", [])
           }
 
-          let diff = SnapshotTestingSupport.compare(reference, actual)
+          let diff = ImageComparison.compare(reference, actual)
 
           if diff < tolerance {
             return nil

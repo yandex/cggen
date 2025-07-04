@@ -3,6 +3,7 @@ import Foundation
 import Testing
 
 import CGGenCore
+import CGGenDiagnosticSupport
 
 @Suite struct PDFTests {
   @Test func alpha() {

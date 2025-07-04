@@ -107,6 +107,15 @@ let package = Package(
       name: "CGGenBytecode"
     ),
 
+    // Diagnostic support: reference rendering and image comparison
+    .target(
+      name: "CGGenDiagnosticSupport",
+      dependencies: ["CGGenCore", "CGGenCLI", "CGGenRTSupport"],
+      resources: [
+        .copy("Resources"),
+      ]
+    ),
+
     // MARK: - Test targets
 
     .testTarget(
@@ -124,6 +133,7 @@ let package = Package(
       name: "RegressionTests",
       dependencies: [
         "CGGenCLI", "CGGenRTSupport", "CGGenIR", "CGGenRuntime",
+        "CGGenDiagnosticSupport",
         .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
       ],
       exclude: [
@@ -135,7 +145,6 @@ let package = Package(
         .copy("pdf_samples"),
         .copy("svg_samples"),
         .copy("various_filenames"),
-        .copy("Resources"),
       ]
     ),
 
@@ -145,6 +154,18 @@ let package = Package(
       name: "plugin-demo",
       dependencies: ["CGGenRTSupport"],
       plugins: ["CGGenPlugin"]
+    ),
+
+    // Diagnostic tool: compares cggen rendering with reference implementations
+    .executableTarget(
+      name: "cggen-diagnostic",
+      dependencies: [
+        "CGGenCLI",
+        "CGGenCore",
+        "CGGenRTSupport",
+        "CGGenDiagnosticSupport",
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ]
     ),
   ]
 )

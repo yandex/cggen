@@ -23,6 +23,9 @@ swiftformat .
 # Run CLI
 swift run cggen --swift-output Generated.swift *.svg *.pdf
 
+# Run diagnostic tool (compares cggen rendering with WebKit/CoreGraphics)
+swift run cggen-diagnostic input.svg --output diagnostics/
+
 # Run demos
 swift run plugin-demo
 open Demo/Demo.xcodeproj
@@ -147,26 +150,6 @@ The project uses swift-parsing library with custom operators:
 - Add runtime rendering support: Update `SVGRenderer.swift` and `SVGSupport.swift`
 - Modify bytecode generation: Update `BytecodeGeneration.swift` in `CGGenIR/`
 
-### Migration Notes
-Migration to swift-parsing library completed. Key changes made:
-- Replaced custom `zip` functions with `Parse` builder syntax
-- Removed legacy `OldParser` bridge infrastructure
-- Use `Parse`, `OneOf`, `Many` builders for parser composition
-
-
-## Parser Migration Completed
-
-The migration from legacy parser infrastructure to swift-parsing is now complete:
-
-**Completed work**:
-- Replaced all `zip` function calls with `Parse` builder syntax
-- Removed `OldParser` struct and bridge infrastructure
-- Eliminated `.oldParser` extension usage throughout codebase
-- Updated test files to use direct Parser types
-
-**Key infrastructure**:
-- `DicitionaryKey<Key, Value>: Parser` - Direct dictionary key extraction
-- Custom parser operators (`~>>`, `<<~`, `~`, `*`, `+`, `~?`) for parsing DSL
 
 ## Documentation
 
@@ -190,14 +173,14 @@ The migration from legacy parser infrastructure to swift-parsing is now complete
 
 See [Demo/CLAUDE.md](Demo/CLAUDE.md) for detailed workflow documentation including:
 - Command line arguments for tab selection
-- Screenshot capture workflow using `.claude_temp` folder
+- Screenshot capture workflow using `.claude.local.temp/` folder
 - Building and running instructions
 - Architecture notes and key fixes
 
 ## Project Memories
 - Consider updating your project memory before finishing the task
 - Launch xcodebuild with -quiet option if not strongly necessary otherwise
-- ALWAYS use .claude_temp folder for temporary files, NEVER use /tmp or temp directories
+- ALWAYS use .claude.local.temp/ folder for temporary files, NEVER use /tmp or temp directories
 - Extended tests (like WebKit reference generation) are controlled by `CGGEN_EXTENDED_TESTS=1` environment variable
 - The `extendedTestsEnabled` constant is defined at the bottom of SVGTests.swift and can be used to skip tests that should only run in extended mode
 

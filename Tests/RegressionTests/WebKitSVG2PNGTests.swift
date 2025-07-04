@@ -1,4 +1,5 @@
 import CGGenCore
+import CGGenDiagnosticSupport
 import CoreGraphics
 import Foundation
 import SnapshotTesting

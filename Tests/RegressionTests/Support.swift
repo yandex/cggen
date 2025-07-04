@@ -4,6 +4,7 @@ import os.log
 
 import CGGenCLI
 import CGGenCore
+import CGGenDiagnosticSupport
 @_spi(Testing) import CGGenRTSupport
 
 private enum Error: Swift.Error {
@@ -14,26 +15,6 @@ private enum Error: Swift.Error {
 let testDebugOutputDir = ProcessInfo.processInfo
   .environment["CGGEN_TEST_DEBUG_OUTPUT"]
   .map { URL(fileURLWithPath: $0) }
-
-// Image comparison for SnapshotTesting
-enum SnapshotTestingSupport {
-  @_optimize(speed)
-  static func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
-    let buffer1 = RGBABuffer(image: img1)
-    let buffer2 = RGBABuffer(image: img2)
-
-    let rw1 = buffer1.pixels
-      .flatMap(\.self)
-      .flatMap { $0.norm(Double.self).components }
-
-    let rw2 = buffer2.pixels
-      .flatMap(\.self)
-      .flatMap { $0.norm(Double.self).components }
-
-    let ziped = zip(rw1, rw2).lazy.map(-)
-    return ziped.rootMeanSquare()
-  }
-}
 
 func getCurrentFilePath(_ file: StaticString = #filePath) -> URL {
   URL(fileURLWithPath: file.description, isDirectory: false)
@@ -92,14 +73,6 @@ func clang(
   try check(task.terminationStatus == 0, Error.compilationError)
 }
 
-struct Err: Swift.Error {
-  var description: String
-
-  init(_ desc: String) {
-    description = desc
-  }
-}
-
 // MARK: - Shared Bytecode Helpers
 
 // Shared helper to render bytecode to CGImage
@@ -110,28 +83,13 @@ func renderBytecode(
   scale: CGFloat,
   antialiasing: Bool = true
 ) throws -> CGImage {
-  let cs = CGColorSpaceCreateDeviceRGB()
-  guard let context = CGContext(
-    data: nil,
+  try ReferenceRendering.renderBytecode(
+    bytecode,
     width: width,
     height: height,
-    bitsPerComponent: 8,
-    bytesPerRow: 0,
-    space: cs,
-    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-  ) else {
-    throw Err("Failed to create CGContext")
-  }
-
-  context.concatenate(CGAffineTransform(scaleX: scale, y: scale))
-  context.setAllowsAntialiasing(antialiasing)
-  try runBytecode(context, fromData: Data(bytecode))
-
-  guard let image = context.makeImage() else {
-    throw Err("Failed to draw CGImage")
-  }
-
-  return image
+    scale: scale,
+    antialiasing: antialiasing
+  )
 }
 
 func testBC(
@@ -154,7 +112,7 @@ func testBC(
   )
 
   let result = resultAdjust(rawResult)
-  let diff = SnapshotTestingSupport.compare(reference, result)
+  let diff = ImageComparison.compare(reference, result)
 
   try check(
     diff < tolerance,
@@ -193,9 +151,9 @@ func saveTestFailureArtifacts(
   )
 
   // Save images
-  reference.savePNG(to: testDir.appendingPathComponent("reference.png"))
-  result.savePNG(to: testDir.appendingPathComponent("result.png"))
-  CGImage.diff(lhs: reference, rhs: result)
+  try? reference.savePNG(to: testDir.appendingPathComponent("reference.png"))
+  try? result.savePNG(to: testDir.appendingPathComponent("result.png"))
+  try? CGImage.diff(lhs: reference, rhs: result)
     .savePNG(to: testDir.appendingPathComponent("diff.png"))
 
   // Save metadata
@@ -207,12 +165,4 @@ func saveTestFailureArtifacts(
   ]
   try? JSONSerialization.data(withJSONObject: metadata)
     .write(to: testDir.appendingPathComponent("info.json"))
-}
-
-// PNG save extension
-extension CGImage {
-  func savePNG(to url: URL) {
-    let imageRep = NSBitmapImageRep(cgImage: self)
-    try? imageRep.representation(using: .png, properties: [:])?.write(to: url)
-  }
 }
