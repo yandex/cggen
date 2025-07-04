@@ -1,9 +1,12 @@
 import AppKit
+import CGGenCore
 import CoreGraphics
+import Foundation
 import WebKit
 
+/// WebKit-based SVG to PNG converter for reference rendering
 @MainActor
-class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
+public class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
   private let webView: WKWebView
   private var pngCallback: ((Result<Data, Error>) -> Void)?
   private var readyContinuation: CheckedContinuation<Void, Swift.Error>?
@@ -21,7 +24,7 @@ class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
     }
   }
 
-  override init() {
+  override public init() {
     let config = WKWebViewConfiguration()
     config.userContentController = WKUserContentController()
 
@@ -32,10 +35,13 @@ class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
     messageHandler.parent = self
     config.userContentController.add(messageHandler, name: "svgHandler")
     webView.navigationDelegate = self
-    let htmlPath = getCurrentFilePath(#filePath)
-      .appendingPathComponent("Resources")
-      .appendingPathComponent("svg2canvas.html")
-    let html = try! String(contentsOf: htmlPath)
+
+    // Load HTML from module resources
+    let htmlURL = Bundle.module.url(
+      forResource: "svg2canvas",
+      withExtension: "html"
+    )!
+    let html = try! String(contentsOf: htmlURL)
     webView.loadHTMLString(html, baseURL: nil)
   }
 
@@ -56,7 +62,7 @@ class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
     }
   }
 
-  func convert(
+  public func convert(
     svg: String,
     scale: CGFloat = 1.0
   ) async throws -> Data {
@@ -109,7 +115,7 @@ class WebKitSVG2PNG: NSObject, WKNavigationDelegate {
 // MARK: - WKNavigationDelegate
 
 extension WebKitSVG2PNG {
-  func webView(_: WKWebView, didFinish _: WKNavigation!) {
+  public func webView(_: WKWebView, didFinish _: WKNavigation!) {
     isReady = true
     readyContinuation?.resume()
     readyContinuation = nil
@@ -155,11 +161,11 @@ extension WebKitSVG2PNG {
   }
 }
 
-// MARK: - Test Helper
+// MARK: - CGImage Conversion
 
 @MainActor
 extension WebKitSVG2PNG {
-  func convertToCGImage(
+  public func convertToCGImage(
     svg: String,
     scale: CGFloat = 1.0
   ) async throws -> CGImage {
