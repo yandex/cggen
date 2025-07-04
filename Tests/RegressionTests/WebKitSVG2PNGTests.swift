@@ -1,4 +1,4 @@
-import Base
+import CGGenCore
 import CoreGraphics
 import Foundation
 import SnapshotTesting

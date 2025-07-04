@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-import Base
+import CGGenCore
 import CGGenIR
 import PDFParse
 

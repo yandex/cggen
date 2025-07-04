@@ -1,6 +1,6 @@
 import CoreGraphics
 
-import Base
+import CGGenCore
 
 public struct PDFShading {
   public typealias Extend = (before: Bool, after: Bool)

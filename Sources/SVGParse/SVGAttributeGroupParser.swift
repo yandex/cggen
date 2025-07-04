@@ -1,4 +1,4 @@
-import Base
+import CGGenCore
 import Foundation
 @preconcurrency import Parsing
 

@@ -1,6 +1,6 @@
 import Testing
 
-import Base
+import CGGenCore
 
 @Suite struct XMLRenderTests {
   @Test func simpleXML() {

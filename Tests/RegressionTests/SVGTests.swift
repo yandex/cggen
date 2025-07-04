@@ -3,8 +3,8 @@ import Foundation
 import os.log
 import Testing
 
-import Base
 import CGGenCLI
+import CGGenCore
 import CGGenIR
 @_spi(Testing) import CGGenRTSupport
 

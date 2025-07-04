@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 
-import Base
+import CGGenCore
 
 @Suite struct PDFTests {
   @Test func alpha() {
@@ -81,7 +81,7 @@ private func test(
   do {
     let path = sample(named: pdf)
     let pdf = CGPDFDocument(path as CFURL)!
-    try Base.check(pdf.pages.count == 1, Err("multipage pdf"))
+    try CGGenCore.check(pdf.pages.count == 1, Err("multipage pdf"))
     let reference = try
       pdf.pages[0].render(scale: scale) !! Err("Couldnt create png from \(pdf)")
     try testBC(

@@ -1,6 +1,6 @@
 import CoreGraphics
 
-import BCCommon
+import CGGenBytecode
 
 public struct InvalidRawValue<T: RawRepresentable>: Swift.Error
   where T.RawValue: Sendable {

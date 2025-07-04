@@ -37,7 +37,7 @@ let package = Package(
       name: "cggen",
       dependencies: [
         "CGGenCLI",
-        "Base",
+        "CGGenCore",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),
@@ -45,13 +45,13 @@ let package = Package(
     // Runtime SVG rendering: parse and render without code generation
     .target(
       name: "CGGenRuntime",
-      dependencies: ["Base", "CGGenRTSupport", "CGGenIR"]
+      dependencies: ["CGGenCore", "CGGenRTSupport", "CGGenIR"]
     ),
 
     // Runtime support: bytecode executor and helpers for image creation
     .target(
       name: "CGGenRTSupport",
-      dependencies: ["BCCommon"],
+      dependencies: ["CGGenBytecode"],
       exclude: ["README.md"]
     ),
 
@@ -68,19 +68,20 @@ let package = Package(
     .target(
       name: "CGGenCLI",
       dependencies: [
-        "Base", "SVGParse", "PDFParse", "BCCommon", "CGGenIR", "CGGenRTSupport",
+        "CGGenCore", "SVGParse", "PDFParse", "CGGenBytecode", "CGGenIR",
+        "CGGenRTSupport",
       ]
     ),
 
     // Intermediate representation: DrawRoute and bytecode generation
     .target(
       name: "CGGenIR",
-      dependencies: ["Base", "BCCommon", "SVGParse"]
+      dependencies: ["CGGenCore", "CGGenBytecode", "SVGParse"]
     ),
 
     // Common utilities: parsers, math, colors, XML
     .target(
-      name: "Base",
+      name: "CGGenCore",
       dependencies: [
         .product(name: "Parsing", package: "swift-parsing"),
       ]
@@ -90,7 +91,7 @@ let package = Package(
     .target(
       name: "SVGParse",
       dependencies: [
-        "Base",
+        "CGGenCore",
         .product(name: "Parsing", package: "swift-parsing"),
       ]
     ),
@@ -98,12 +99,12 @@ let package = Package(
     // PDF parser: reads PDF content streams and resources
     .target(
       name: "PDFParse",
-      dependencies: ["Base"]
+      dependencies: ["CGGenCore"]
     ),
 
     // Bytecode definitions and compression
     .target(
-      name: "BCCommon"
+      name: "CGGenBytecode"
     ),
 
     // MARK: - Test targets
@@ -114,7 +115,7 @@ let package = Package(
     ),
     .testTarget(
       name: "UnitTests",
-      dependencies: ["Base", "SVGParse", "CGGenCLI"],
+      dependencies: ["CGGenCore", "SVGParse", "CGGenCLI"],
       resources: [
         .copy("UnitTests.xctestplan"),
       ]

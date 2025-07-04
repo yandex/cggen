@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-import Base
+import CGGenCore
 @preconcurrency import Parsing
 
 // https://www.w3.org/TR/SVG11/

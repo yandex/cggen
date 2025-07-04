@@ -1,6 +1,6 @@
 import Testing
 
-import Base
+import CGGenCore
 
 @Suite struct XMLParserTests {
   @Test func testSimpleXML() throws {

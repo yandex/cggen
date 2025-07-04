@@ -1,6 +1,6 @@
 import CoreGraphics
 
-import Base
+import CGGenCore
 import SVGParse
 
 public enum SVGToDrawRouteConverter {
