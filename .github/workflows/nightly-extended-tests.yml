@@ -47,7 +47,7 @@ jobs:
         xcode-version: latest-stable
     
     - name: Build
-      run: swift build
+      run: swift build --enable-experimental-prebuilts
     
     - name: Run gradient determinism test multiple times
       run: |
