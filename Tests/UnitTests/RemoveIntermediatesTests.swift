@@ -1,4 +1,4 @@
-@testable import Base
+@testable import CGGenCore
 import Foundation
 import Testing
 

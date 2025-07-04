@@ -1,4 +1,4 @@
-import Base
+import CGGenCore
 @preconcurrency import Parsing
 
 public enum SVGValueParser {

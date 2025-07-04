@@ -1,6 +1,6 @@
 import Foundation
 
-import Base
+import CGGenCore
 @preconcurrency import Parsing
 
 private enum Tag: String {

@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 import Testing
 
-import Base
+import CGGenCore
 import CGGenRuntime
 import SnapshotTesting
 

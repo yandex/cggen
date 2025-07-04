@@ -1,6 +1,6 @@
 import Testing
 
-import Base
+import CGGenCore
 
 @Suite struct SplitByTests {
   @Test func testSplitBy() {

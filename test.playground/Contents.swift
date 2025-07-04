@@ -1,6 +1,6 @@
 import CoreGraphics
 
-import Base
+import CGGenCore
 
 // https://www.w3.org/TR/SVG11/types.html#ColorKeywords
 let svgColorsString = """

@@ -1,6 +1,6 @@
 import Testing
 
-import Base
+import CGGenCore
 @preconcurrency import Parsing
 
 @Suite struct ParserTests {

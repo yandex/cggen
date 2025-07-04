@@ -1,4 +1,4 @@
-@testable import Base
+@testable import CGGenCore
 @preconcurrency import Parsing
 @testable import SVGParse
 import Testing

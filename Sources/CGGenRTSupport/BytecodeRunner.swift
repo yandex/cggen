@@ -2,7 +2,7 @@ import Compression
 @preconcurrency import CoreGraphics
 import Foundation
 
-import BCCommon
+import CGGenBytecode
 
 public func runBytecode(
   _ context: CGContext,

@@ -2,8 +2,8 @@ import AppKit
 import CoreGraphics
 import os.log
 
-import Base
 import CGGenCLI
+import CGGenCore
 @_spi(Testing) import CGGenRTSupport
 
 private enum Error: Swift.Error {

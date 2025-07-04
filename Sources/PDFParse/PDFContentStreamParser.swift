@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 
-import Base
+import CGGenCore
 
 enum PDFContentStreamParser {
   static func parse(stream: CGPDFContentStreamRef) throws -> [PDFOperator] {
