@@ -11,12 +11,13 @@ private enum Error: Swift.Error {
 }
 
 // Test debug output directory from environment variable
-private let testDebugOutputDir = ProcessInfo.processInfo
+let testDebugOutputDir = ProcessInfo.processInfo
   .environment["CGGEN_TEST_DEBUG_OUTPUT"]
   .map { URL(fileURLWithPath: $0) }
 
 // Image comparison for SnapshotTesting
 enum SnapshotTestingSupport {
+  @_optimize(speed)
   static func compare(_ img1: CGImage, _ img2: CGImage) -> Double {
     let buffer1 = RGBABuffer(image: img1)
     let buffer2 = RGBABuffer(image: img2)
@@ -162,5 +163,56 @@ func testBC(
     )
   )
 
-  // Debug output removed - handled by test framework if needed
+  // Save debug output if directory is specified and test fails
+  if diff >= tolerance, let debugDir = testDebugOutputDir {
+    saveTestFailureArtifacts(
+      testName: path.deletingPathExtension().lastPathComponent,
+      reference: reference,
+      result: result,
+      diff: diff,
+      tolerance: tolerance,
+      to: debugDir
+    )
+  }
+}
+
+// MARK: - Test Debug Output
+
+func saveTestFailureArtifacts(
+  testName: String,
+  reference: CGImage,
+  result: CGImage,
+  diff: Double,
+  tolerance: Double,
+  to outputDir: URL
+) {
+  let testDir = outputDir.appendingPathComponent(testName)
+  try? FileManager.default.createDirectory(
+    at: testDir,
+    withIntermediateDirectories: true
+  )
+
+  // Save images
+  reference.savePNG(to: testDir.appendingPathComponent("reference.png"))
+  result.savePNG(to: testDir.appendingPathComponent("result.png"))
+  CGImage.diff(lhs: reference, rhs: result)
+    .savePNG(to: testDir.appendingPathComponent("diff.png"))
+
+  // Save metadata
+  let metadata: [String: Any] = [
+    "test": testName,
+    "diff": diff,
+    "tolerance": tolerance,
+    "timestamp": ISO8601DateFormatter().string(from: Date()),
+  ]
+  try? JSONSerialization.data(withJSONObject: metadata)
+    .write(to: testDir.appendingPathComponent("info.json"))
+}
+
+// PNG save extension
+extension CGImage {
+  func savePNG(to url: URL) {
+    let imageRep = NSBitmapImageRep(cgImage: self)
+    try? imageRep.representation(using: .png, properties: [:])?.write(to: url)
+  }
 }

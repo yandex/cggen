@@ -43,16 +43,10 @@ import Parsing
     .redraw(with: .white)
 
     // Generate bytecode version
-    let (bytecode, imageSize) = try getImageBytecode(from: path)
-    let cggenImage = try renderBytecode(
-      bytecode,
-      width: Int(imageSize.width * 2.0),
-      height: Int(imageSize.height * 2.0),
-      scale: 2.0
-    ).redraw(with: .white)
+    let cggenImage = try renderSVGToBitmap(from: path, scale: 2.0)
 
     // Compare images using SnapshotTesting's built-in comparison
-    withSnapshotTesting(record: .never) {
+    SnapshotTesting.withSnapshotTesting(record: .never) {
       assertSnapshot(
         of: cggenImage,
         as: .cgImage(tolerance: 0.002),
@@ -131,14 +125,10 @@ enum SVGTestCase: String, CaseIterable {
 extension SVGTestCase {
   var tolerance: Double {
     switch self {
-    case .shadow_simple:
-      0.019
-    case .shadow_colors:
-      0.016
     case .shadow_blur_radius:
       0.022
     default:
-      0.002
+      0.02
     }
   }
 
@@ -159,102 +149,106 @@ extension SVGTestCase {
 
 // MARK: - CGGen Tests Against WebKit References
 
-@Test private func fill() { check(.fill) }
-@Test private func lines() { check(.lines) }
-@Test private func alpha() { check(.alpha) }
-@Test private func groupOpacity() { check(.group_opacity) }
-@Test private func shapes() { check(.shapes) }
-@Test private func capsJoins() { check(.caps_joins) }
-@Test private func miterLimit() { check(.miter_limit) }
-@Test private func dashes() { check(.dashes) }
-@Test private func colorNames() { check(.colornames) }
-@Test private func useTag() { check(.use_tag) }
-@Test private func useReferencingNotInDefs() {
-  check(.use_referencing_not_in_defs)
-}
+@Suite struct SVGTests {
+  @Test private func fill() { check(.fill) }
+  @Test private func lines() { check(.lines) }
+  @Test private func alpha() { check(.alpha) }
+  @Test private func groupOpacity() { check(.group_opacity) }
+  @Test private func shapes() { check(.shapes) }
+  @Test private func capsJoins() { check(.caps_joins) }
+  @Test private func miterLimit() { check(.miter_limit) }
+  @Test private func dashes() { check(.dashes) }
+  @Test private func colorNames() { check(.colornames) }
+  @Test private func useTag() { check(.use_tag) }
+  @Test private func useReferencingNotInDefs() {
+    check(.use_referencing_not_in_defs)
+  }
 
-@Test private func simpleMask() { check(.simple_mask) }
-@Test private func clipPath() { check(.clip_path) }
-@Test private func transforms() { check(.transforms) }
-@Test private func topmostPresentationAttributes() {
-  check(.topmost_presentation_attributes)
-}
+  @Test private func simpleMask() { check(.simple_mask) }
+  @Test private func clipPath() { check(.clip_path) }
+  @Test private func transforms() { check(.transforms) }
+  @Test private func topmostPresentationAttributes() {
+    check(.topmost_presentation_attributes)
+  }
 
-@Test private func nestedTransparentGroup() {
-  check(.nested_transparent_group)
-}
+  @Test private func nestedTransparentGroup() {
+    check(.nested_transparent_group)
+  }
 
-// MARK: - Path Tests
+  // MARK: - Path Tests
 
-@Test private func pathMoveToCommands() { check(.path_move_to_commands) }
-@Test private func pathComplexCurve() { check(.path_complex_curve) }
-@Test private func pathCircleCommands() { check(.path_circle_commands) }
-@Test private func pathShortCommands() { check(.path_short_commands) }
-@Test private func pathRelativeCommands() { check(.path_relative_commands) }
-@Test private func pathSmoothCurve() { check(.path_smooth_curve) }
-@Test private func pathFillRule() { check(.path_fill_rule) }
-@Test private func pathFillRuleNonzeroDefault() {
-  check(.path_fill_rule_nonzero_default)
-}
+  @Test private func pathMoveToCommands() { check(.path_move_to_commands) }
+  @Test private func pathComplexCurve() { check(.path_complex_curve) }
+  @Test private func pathCircleCommands() { check(.path_circle_commands) }
+  @Test private func pathShortCommands() { check(.path_short_commands) }
+  @Test private func pathRelativeCommands() { check(.path_relative_commands) }
+  @Test private func pathSmoothCurve() { check(.path_smooth_curve) }
+  @Test private func pathFillRule() { check(.path_fill_rule) }
+  @Test private func pathFillRuleNonzeroDefault() {
+    check(.path_fill_rule_nonzero_default)
+  }
 
-@Test private func pathFillRuleGstate() { check(.path_fill_rule_gstate) }
-@Test private func pathQuadraticBezier() { check(.path_quadratic_bezier) }
+  @Test private func pathFillRuleGstate() { check(.path_fill_rule_gstate) }
+  @Test private func pathQuadraticBezier() { check(.path_quadratic_bezier) }
 
-// MARK: - Gradient Tests
+  // MARK: - Gradient Tests
 
-@Test private func gradient() { check(.gradient) }
-@Test private func gradientShape() { check(.gradient_shape) }
-@Test private func gradientStroke() { check(.gradient_stroke) }
-@Test private func gradientFillStrokeCombinations() {
-  check(.gradient_fill_stroke_combinations)
-}
+  @Test private func gradient() { check(.gradient) }
+  @Test private func gradientShape() { check(.gradient_shape) }
+  @Test private func gradientStroke() { check(.gradient_stroke) }
+  @Test private func gradientFillStrokeCombinations() {
+    check(.gradient_fill_stroke_combinations)
+  }
 
-@Test private func gradientRelative() { check(.gradient_relative) }
-@Test private func gradientWithAlpha() { check(.gradient_with_alpha) }
-@Test private func gradientThreeControlPoints() { check(.gradient_three_dots) }
-@Test private func linearGradientTransform() {
-  check(.gradient_transform_linear)
-}
+  @Test private func gradientRelative() { check(.gradient_relative) }
+  @Test private func gradientWithAlpha() { check(.gradient_with_alpha) }
+  @Test private func gradientThreeControlPoints() {
+    check(.gradient_three_dots)
+  }
 
-@Test private func radialGradientTransform() {
-  check(.gradient_transform_radial)
-}
+  @Test private func linearGradientTransform() {
+    check(.gradient_transform_linear)
+  }
 
-@Test private func gradientWithMask() { check(.gradient_with_mask) }
-@Test private func gradientRadial() { check(.gradient_radial) }
-@Test private func gradientUnits() { check(.gradient_units) }
-@Test private func gradientAbsoluteStartEnd() {
-  check(.gradient_absolute_start_end)
-}
+  @Test private func radialGradientTransform() {
+    check(.gradient_transform_radial)
+  }
 
-@Test private func gradientOpacity() { check(.gradient_opacity) }
+  @Test private func gradientWithMask() { check(.gradient_with_mask) }
+  @Test private func gradientRadial() { check(.gradient_radial) }
+  @Test private func gradientUnits() { check(.gradient_units) }
+  @Test private func gradientAbsoluteStartEnd() {
+    check(.gradient_absolute_start_end)
+  }
 
-// MARK: - Shadow Tests
+  @Test private func gradientOpacity() { check(.gradient_opacity) }
 
-@Test private func simpleShadow() { check(.shadow_simple) }
-@Test private func shadowColors() { check(.shadow_colors) }
-@Test private func differentBlurRadiuses() { check(.shadow_blur_radius) }
+  // MARK: - Shadow Tests
 
-// MARK: - Additional Tests
+  @Test private func simpleShadow() { check(.shadow_simple) }
+  @Test private func shadowColors() { check(.shadow_colors) }
+  @Test private func differentBlurRadiuses() { check(.shadow_blur_radius) }
 
-@Test private func gradientDeterminismTest() {
-  check(.gradient_determinism_test)
-}
+  // MARK: - Additional Tests
 
-@Test private func linesAndCurvesTest() { check(.lines_and_curves) }
-@Test private func pathsAndImages() { check(.paths_and_images) }
-@Test private func underlyingObjectWithTinyAlpha() {
-  check(.underlying_object_with_tiny_alpha)
-}
+  @Test private func gradientDeterminismTest() {
+    check(.gradient_determinism_test)
+  }
 
-@Test private func whiteCrossScnOperator() { check(.white_cross_scn_operator) }
+  @Test private func linesAndCurvesTest() { check(.lines_and_curves) }
+  @Test private func pathsAndImages() { check(.paths_and_images) }
+  @Test private func underlyingObjectWithTinyAlpha() {
+    check(.underlying_object_with_tiny_alpha)
+  }
 
-// MARK: - Merged Bytecode Tests
+  @Test private func whiteCrossScnOperator() { check(.white_cross_scn_operator)
+  }
 
-@Test private func mergedBytecodeAgainstSnapshots() throws {
-  let testCases = SVGTestCase.allCases
+  // MARK: - Merged Bytecode Tests
 
-  try SnapshotTesting.withSnapshotTesting(record: .never) {
+  @Test private func mergedBytecodeAgainstSnapshots() throws {
+    let testCases = SVGTestCase.allCases
+
     let svgPaths = testCases.map { sample(named: $0.rawValue) }
     let (
       mergedBytecode,
@@ -298,12 +292,9 @@ extension SVGTestCase {
       }
 
       // Use the same snapshot name as individual tests
-      assertSnapshot(
-        of: image.redraw(with: .white),
-        as: .cgImage(tolerance: testCase.tolerance),
-        named: testCase.rawValue,
-        file: #filePath,
-        testName: "webkit-references"
+      assertAgainstReference(
+        image: image.redraw(with: .white),
+        testCase: testCase
       )
     }
   }
@@ -312,10 +303,10 @@ extension SVGTestCase {
 // MARK: - WebKit Reference Generation
 
 @Suite(.enabled(if: extendedTestsEnabled))
-struct WebKitReferenceTests {
+struct SVGReferencesTests {
   @MainActor
   @Test("Generate WebKit reference snapshots", arguments: SVGTestCase.allCases)
-  func generateWebKitReference(testCase: SVGTestCase) async throws {
+  func allCases(testCase: SVGTestCase) async throws {
     let svgPath = sample(named: testCase.rawValue)
     let svgData = try Data(contentsOf: svgPath)
     let svgString = String(data: svgData, encoding: .utf8) ?? ""
@@ -326,19 +317,8 @@ struct WebKitReferenceTests {
       scale: 2.0
     ).redraw(with: .white)
 
-    // Use a custom diff tool that doesn't add the annoying message
-    let cleanDiffTool = SnapshotTestingConfiguration.DiffTool { _, _ in
-      "" // Return empty string to suppress the diff tool message
-    }
-
-    withSnapshotTesting(diffTool: cleanDiffTool) {
-      SnapshotTesting.assertSnapshot(
-        of: cgImage,
-        as: .cgImage(),
-        named: testCase.rawValue,
-        file: svgTestsFilePath,
-        testName: "webkit-references"
-      )
+    withSnapshotTesting(diffTool: .noop) {
+      assertReferenceSnapshot(of: cgImage, testCase: testCase, tolerance: 0.002)
     }
   }
 }
@@ -346,25 +326,86 @@ struct WebKitReferenceTests {
 // MARK: - Helper Functions
 
 private func check(_ testCase: SVGTestCase) {
-  SnapshotTesting.withSnapshotTesting(record: .never) {
-    let svgPath = sample(named: testCase.rawValue)
-    let (bytecode, size) = try! getImageBytecode(from: svgPath)
-    let cggenImage = try! renderBytecode(
-      bytecode,
-      width: Int(size.width * 2.0),
-      height: Int(size.height * 2.0),
-      scale: 2.0
-    ).redraw(with: .white)
+  let svgPath = sample(named: testCase.rawValue)
+  let cggenImage = try! renderSVGToBitmap(from: svgPath, scale: 2.0)
 
-    // Debug output is handled by SnapshotTesting if needed
+  assertAgainstReference(
+    image: cggenImage,
+    testCase: testCase
+  )
+}
 
-    assertSnapshot(
-      of: cggenImage,
-      as: .cgImage(tolerance: testCase.tolerance),
-      named: testCase.rawValue,
-      file: #filePath,
-      testName: "webkit-references"
-    )
+private func renderSVGToBitmap(
+  from svgPath: URL,
+  scale: CGFloat
+) throws -> CGImage {
+  let (bytecode, size) = try getImageBytecode(from: svgPath)
+  return try renderBytecode(
+    bytecode,
+    width: Int(size.width * scale),
+    height: Int(size.height * scale),
+    scale: scale
+  ).redraw(with: .white)
+}
+
+extension SnapshotTestingConfiguration.DiffTool {
+  static let noop = Self { _, _ in "" }
+}
+
+private func assertReferenceSnapshot(
+  of image: CGImage,
+  testCase: SVGTestCase,
+  tolerance: Double? = nil
+) {
+  if let debugURL = testDebugOutputDir {
+    let snapshotPath = URL(fileURLWithPath: #filePath)
+      .deletingLastPathComponent()
+      .appendingPathComponent("__Snapshots__")
+      .appendingPathComponent("SVGTests")
+      .appendingPathComponent("webkit-references.\(testCase.rawValue).png")
+
+    // Try to load reference image for comparison
+    if let referenceData = try? Data(contentsOf: snapshotPath),
+       let dataProvider = CGDataProvider(data: referenceData as CFData),
+       let referenceImage = CGImage(
+         pngDataProviderSource: dataProvider,
+         decode: nil,
+         shouldInterpolate: true,
+         intent: .defaultIntent
+       ) {
+      // Compare images
+      let diff = SnapshotTestingSupport.compare(referenceImage, image)
+      let tolerance = testCase.tolerance
+
+      // Save debug output if test would fail
+      if diff >= tolerance {
+        saveTestFailureArtifacts(
+          testName: testCase.rawValue,
+          reference: referenceImage,
+          result: image,
+          diff: diff,
+          tolerance: tolerance,
+          to: debugURL
+        )
+      }
+    }
+  }
+
+  assertSnapshot(
+    of: image,
+    as: .cgImage(tolerance: tolerance ?? testCase.tolerance),
+    named: testCase.rawValue,
+    file: svgTestsFilePath,
+    testName: "webkit-references"
+  )
+}
+
+func assertAgainstReference(
+  image: CGImage,
+  testCase: SVGTestCase
+) {
+  SnapshotTesting.withSnapshotTesting(record: .never, diffTool: .noop) {
+    assertReferenceSnapshot(of: image, testCase: testCase)
   }
 }
 

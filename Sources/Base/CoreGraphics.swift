@@ -244,24 +244,46 @@ extension CGImage {
 
   public static func diff(lhs: CGImage, rhs: CGImage) -> CGImage {
     let rect = CGRect(x: 0, y: 0, width: lhs.width, height: rhs.height)
-    let lhs = CIImage(cgImage: lhs)
-    let rhs = CIImage(cgImage: rhs)
-    let blended = rhs.applyingFilter(
+    let lhsCI = CIImage(cgImage: lhs)
+    let rhsCI = CIImage(cgImage: rhs)
+
+    // Use CIDifferenceBlendMode to get the difference
+    let difference = rhsCI.applyingFilter(
       "CIDifferenceBlendMode",
-      parameters: [kCIInputBackgroundImageKey: lhs]
+      parameters: [kCIInputBackgroundImageKey: lhsCI]
     )
-    let autoadjustments =
-      blended.autoAdjustmentFilters(options: [.enhance: true])
-    let diff = autoadjustments.reduce(blended) {
-      $1.setValue($0, forKey: kCIInputImageKey)
-      return $1.outputImage!
-    }
-    let transparentDiff = diff.applyingFilter(
+
+    // Amplify the differences using color matrix
+    // This makes even small differences visible
+    let amplified = difference.applyingFilter(
       "CIColorMatrix",
-      parameters: ["inputAVector": CIVector(x: 0, y: 0, z: 0, w: 0.95)]
+      parameters: [
+        "inputRVector": CIVector(x: 5, y: 0, z: 0, w: 0),
+        "inputGVector": CIVector(x: 0, y: 5, z: 0, w: 0),
+        "inputBVector": CIVector(x: 0, y: 0, z: 5, w: 0),
+        "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+        "inputBiasVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+      ]
     )
+
+    // Convert to red channel only for better visibility
+    let redOnly = amplified.applyingFilter(
+      "CIColorMatrix",
+      parameters: [
+        "inputRVector": CIVector(x: 1, y: 1, z: 1, w: 0),
+        "inputGVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+        "inputBVector": CIVector(x: 0, y: 0, z: 0, w: 0),
+        "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+      ]
+    )
+
+    // Composite over white background
+    let white = CIImage(color: CIColor(red: 1, green: 1, blue: 1))
+      .cropped(to: rect)
+    let final = redOnly.composited(over: white)
+
     return CIContext()
-      .createCGImage(transparentDiff.composited(over: lhs), from: rect)!
+      .createCGImage(final, from: rect)!
   }
 
   public enum CGImageWriteError: Error {
