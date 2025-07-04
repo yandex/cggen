@@ -17,7 +17,7 @@ jobs:
     
     - name: Update snapshots
       run: |
-        swift build
+        swift build --enable-experimental-prebuilts
         CGGEN_EXTENDED_TESTS=1 SNAPSHOT_TESTING_RECORD=failed swift test || true
     
     - name: Create PR
