@@ -234,6 +234,41 @@ Drawing.icon
   - Minimal memory footprint
   - Type-safe API
 
+## Bytecode Architecture
+
+cggen uses a compact bytecode format for its intermediate representation and runtime execution.
+
+### DrawCommand Instructions
+The bytecode uses single-byte commands (UInt8) for drawing operations:
+- **Path**: `moveTo`, `lineTo`, `curveTo`, `closePath`
+- **Drawing**: `fill`, `stroke`, `clip`
+- **State**: `saveGState`, `restoreGState`, `concatCTM`
+- **Style**: `fillColor`, `strokeColor`, `lineWidth`, `shadow`
+- **Special**: `gradient`, `transparencyLayer`
+
+### Encoding Format
+- **Commands**: Single byte (UInt8)
+- **Floats**: Float32 (4 bytes) instead of Float64
+- **Colors**: RGB as UInt8 (3 bytes) + alpha as Float32 (4 bytes)
+- **Points**: Two Float32 values (8 bytes total)
+- **Arrays**: Length prefix (UInt32) + elements
+
+### Example: Shadow Encoding
+```
+DrawStep: .shadow(offset: CGSize(10, 5), blur: 3.0, color: .black)
+    ↓
+Bytecode: [0x2C][10.0f][5.0f][3.0f][0][0][0][1.0f]
+          └─cmd─┘└──offset──┘└blur┘└─────color─────┘
+    ↓
+Runtime: ctx.setShadow(offset: CGSize(10, 5), blur: 3.0, color: .black)
+```
+
+### Advantages
+- **Size**: ~10-20% of equivalent Swift source code
+- **Speed**: Direct interpretation without parsing
+- **Compression**: Further reduced with DEFLATE/LZ4
+- **Deterministic**: Sorted operations ensure reproducible output
+
 ## Key Design Decisions
 
 1. **Intermediate Representation**: Both SVG and PDF are converted to a common `DrawRoute` format before code generation.
