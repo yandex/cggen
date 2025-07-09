@@ -20,7 +20,7 @@ swift test --filter <test-name>
 swiftformat --lint .
 swiftformat .
 
-# Run CLI
+# Run CLI (generates Swift wrapper with bytecode)
 swift run cggen --swift-output Generated.swift *.svg *.pdf
 
 # Run diagnostic tool (compares cggen rendering with WebKit/CoreGraphics)
@@ -95,19 +95,31 @@ open Demo/Demo.xcodeproj
 
 ## Architecture
 
+cggen converts SVG/PDF files into compressed bytecode that is executed at runtime by CGGenRTSupport. The generated Swift/ObjC files contain bytecode arrays and wrapper code.
+
+### Code Generation Model
+1. **Input**: SVG/PDF files
+2. **Parse**: Convert to internal representation (DrawRoute/DrawStep)
+3. **Generate Bytecode**: Compress drawing operations into bytecode array
+4. **Emit Wrapper**: Generate Swift/ObjC code containing:
+   - Static bytecode arrays
+   - `Drawing` objects with size/bytecode references
+5. **Runtime**: App imports CGGenRTSupport which executes bytecode
+
 ### Core Components
 - **cggen**: CLI entry point using Swift Argument Parser
-- **CGGenCLI**: Main library for PDF/SVG → Core Graphics conversion
-  - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input to DrawRoute
-  - `MBCCGGenerator` / `ObjCGen` / `SwiftCGGenerator`: Generate bytecode, Objective-C, or Swift code
+- **CGGenCLI**: Main library for PDF/SVG → bytecode generation
+  - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input files to DrawRoute IR
+  - `MBCCGGenerator`: Generates compressed bytecode from DrawRoute
+  - `ObjCGen` / `SwiftCGGenerator`: Generate wrapper code containing bytecode arrays
   - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
 - **CGGenIR**: Intermediate representation and bytecode generation
   - `DrawStep` / `PathSegment`: Low-level drawing operations
   - `BytecodeGeneration`: Compiles IR to compressed bytecode
-- **CGGenRuntime**: Runtime library for parsing and rendering SVG/PDF directly
-  - `SVGRenderer`: Direct SVG rendering without code generation
+- **CGGenRuntime**: Alternative runtime library for direct SVG/PDF rendering (bypasses bytecode)
+  - `SVGRenderer`: Direct SVG rendering using Core Graphics (no bytecode generation)
   - `SVGSupport`: Runtime SVG parsing and rendering utilities
-  - Can be used to render graphics at runtime without code generation
+  - Used when you need runtime parsing instead of pre-compiled bytecode
 - **CGGenRTSupport**: Bytecode execution library
   - Provides `Drawing` type used by generated Swift code
   - `BytecodeRunner`: Executes compressed bytecode to draw on CGContext
@@ -131,24 +143,24 @@ The project uses swift-parsing library with custom operators:
 **Swift-parsing reference**: Available combinators and parsers documented at https://pointfreeco.github.io/swift-parsing/main/documentation/parsing/parser
 
 ### Key Patterns
-- **Functional composition**: Heavy use of `>>>` and `|>` operators
-- **Protocol-oriented**: `GenerationStyle` for swift-friendly vs plain output
+- **Functional composition**: Heavy use of `>>>` and `|>` operators for data transformation
+- **Protocol-oriented**: `GenerationStyle` for different output formats (affects wrapper code, not bytecode)
 - **Concurrent processing**: `concurrentMap` for parallel file handling
 - **Parser combinators**: All parsing logic uses declarative parser composition
 
 ## Development Workflow
 
 ### Testing Changes
-1. Run `swift test` after any parser or generation changes
-2. Regression tests compare generated output against expected results
+1. Run `swift test` after any parser or bytecode generation changes
+2. Regression tests compare bytecode execution output against expected results
 3. Use `swift test --filter <test-name>` to run specific failing tests
 
 ### Common Tasks
 - Add new SVG attribute: Update `SVGValueParser.swift` and `SVGParsing.swift`
 - Add new PDF operator: Update `PDFOperator.swift` and `PDFContentStreamParser.swift`
-- Modify code generation: Update relevant files in `CGGenCLI/`
-- Add runtime rendering support: Update `SVGRenderer.swift` and `SVGSupport.swift`
 - Modify bytecode generation: Update `BytecodeGeneration.swift` in `CGGenIR/`
+- Add runtime bytecode execution: Update `BytecodeRunner.swift` in `CGGenRTSupport/`
+- Add runtime rendering support (without bytecode generation): Update `SVGRenderer.swift` in `CGGenRuntime/`
 
 
 ## Documentation
