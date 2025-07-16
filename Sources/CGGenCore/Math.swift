@@ -27,7 +27,12 @@ extension Array where Element: LinearInterpolatable {
           .distanceTo($0)
       }
       let initialValue = (range.lowerBound, start.distanceTo(start))
-      return zip(range, self[range])
+      // Only check intermediate points, not endpoints
+      let intermediateRange = (range.lowerBound + 1)..<range.upperBound
+      guard !intermediateRange.isEmpty else {
+        return initialValue
+      }
+      return zip(intermediateRange, self[intermediateRange])
         .reduce(initialValue) { intermediate, current in
           let maxEror = intermediate.1
           let error = linearInterpolationErrorFor(current.1)
@@ -41,20 +46,45 @@ extension Array where Element: LinearInterpolatable {
       guard range.count >= 2 else {
         return self[range]
       }
-      let (idxOfMaxError, maxError) = maxLinearInterpolationError(in: range)
-      // Check whether linear interpolation has acceptable accuracy on this
-      // segment.
-      // If not, split this segment into two, for each of which we recursively
-      // check
-      // if linear interpolation is OK.
-      if maxError > tolerance {
-        let r1 = range.lowerBound...idxOfMaxError
-        let r2 = idxOfMaxError...range.upperBound
-        return removeIntermediates(range: r1) +
-          removeIntermediates(range: r2).dropFirst()
-      } else {
-        return [self[range.lowerBound], self[range.upperBound]]
+
+      // Use iterative approach with explicit stack to avoid stack overflow
+      var keep = [Bool](repeating: false, count: count)
+      keep[range.lowerBound] = true
+      keep[range.upperBound] = true
+
+      var stack = [range]
+
+      while let currentRange = stack.popLast() {
+        // Skip ranges with less than 3 points (no intermediate points to check)
+        guard currentRange.count > 2 else { continue }
+
+        let (
+          idxOfMaxError,
+          maxError
+        ) = maxLinearInterpolationError(in: currentRange)
+
+        if maxError > tolerance {
+          keep[idxOfMaxError] = true
+
+          let r1 = currentRange.lowerBound...idxOfMaxError
+          let r2 = idxOfMaxError...currentRange.upperBound
+
+          // Only add ranges that have intermediate points to check
+          if r1.count > 2 {
+            stack.append(r1)
+          }
+          if r2.count > 2 {
+            stack.append(r2)
+          }
+        }
       }
+
+      // Build result from kept points within the range
+      var result = [Element]()
+      for i in range where keep[i] {
+        result.append(self[i])
+      }
+      return ArraySlice(result)
     }
     return isEmpty ? [] :
       Array(removeIntermediates(range: CountableClosedRange(indices)))
