@@ -96,4 +96,23 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
         expected
     )
   }
+
+  @Test func recursionDepthIsNotLinear() {
+    // Sawtooth pattern: worst case for Douglas-Peucker
+    // With zero tolerance, forces O(N) recursion depth
+    let pointCount = 10000
+
+    let points = (0..<pointCount).map { i in
+      let x = Double(i)
+      let y = (i % 2 == 0) ? 0.0 : 1.0
+      return Point(x: x, y: y)
+    }
+
+    let tolerance = 0.0
+
+    // Should complete without stack overflow
+    let result = points.removeIntermediates(tolerance: tolerance)
+
+    #expect(result.count == points.count)
+  }
 }
