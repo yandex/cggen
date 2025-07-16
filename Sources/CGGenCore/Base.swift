@@ -424,6 +424,33 @@ public func modified<T>(_ value: T, _ modifier: (inout T) -> Void) -> T {
   return copy
 }
 
+/// Performs an in-place modification of a value.
+///
+/// This function provides a convenient way to modify a value in-place within a
+/// closure scope.
+/// It's particularly useful for modifying nested properties or when you want to
+/// group
+/// multiple modifications together.
+///
+/// Example:
+/// ```swift
+/// var config = Configuration()
+/// with(&config) { cfg in
+///   cfg.timeout = 30
+///   cfg.retryCount = 3
+///   cfg.enableLogging = true
+/// }
+/// ```
+///
+/// - Parameters:
+///   - value: The value to modify in-place.
+///   - modifier: A closure that receives the value as an `inout` parameter and
+/// performs modifications.
+@inlinable
+public func with<T>(_ value: inout T, _ modifier: (inout T) -> Void) {
+  modifier(&value)
+}
+
 extension KeyPath {
   @inlinable
   public var getter: @Sendable (Root) -> Value {

@@ -2,10 +2,11 @@ import ArgumentParser
 import Foundation
 
 import CGGenCLI
+import CGGenCore
 
 extension GenerationStyle: ExpressibleByArgument {}
 
-struct Main: ParsableCommand {
+struct CGGen: ParsableCommand {
   @Option var objcHeader: String?
   @Option var objcPrefix = ""
   @Option var objcImpl: String?
@@ -41,4 +42,18 @@ struct Main: ParsableCommand {
   }
 }
 
-Main.main()
+@main
+struct Main {
+  static func main() {
+    SignalHandling.intercepting(.bus, .segmentationFault) {
+      CGGen.main()
+    } onSignal: { signal in
+      print("\(signal.name) received!")
+      print("Working directory: \(FileManager.default.currentDirectoryPath)")
+      print("Command line: \(CommandLine.arguments.joined(separator: " "))")
+      print("\nStack trace:")
+      Thread.callStackSymbols.forEach { print($0) }
+      fflush(stdout)
+    }
+  }
+}
