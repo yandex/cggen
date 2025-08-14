@@ -27,9 +27,9 @@ class UIKitDemoViewController: UIViewController {
         category: "UIImage Creation",
         items: [
           UIKitExample(
-            code: "UIImage.draw(\\.star)",
+            code: "UIImage.draw(.star)",
             createView: {
-              let imageView = UIImageView(image: UIImage.draw(\.star))
+              let imageView = UIImageView(image: UIImage.draw(.star))
               imageView.contentMode = .scaleAspectFit
               imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
               return imageView
@@ -45,12 +45,11 @@ class UIKitDemoViewController: UIViewController {
             }
           ),
           UIKitExample(
-            code: "UIImage.draw(\\.rocket, scale: 3.0)",
+            code: "UIImage.draw(.rocket, scale: 3.0)",
             createView: {
-              let imageView = UIImageView(image: UIImage.draw(
-                \.rocket,
-                scale: 3.0
-              ))
+              let imageView = UIImageView(
+                image: UIImage.draw(.rocket, scale: 3.0)
+              )
               imageView.contentMode = .scaleAspectFit
               imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
               return imageView
@@ -62,11 +61,11 @@ class UIKitDemoViewController: UIViewController {
         category: "Sizing",
         items: [
           UIKitExample(
-            code: "UIImage.draw(\\.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFit)",
+            code: "UIImage.draw(.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFit)",
             createView: {
               let imageView = UIImageView(
                 image: UIImage.draw(
-                  \.mountain,
+                  .mountain,
                   size: CGSize(width: 60, height: 40),
                   contentMode: .aspectFit
                 )
@@ -80,11 +79,11 @@ class UIKitDemoViewController: UIViewController {
             }
           ),
           UIKitExample(
-            code: "UIImage.draw(\\.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFill)",
+            code: "UIImage.draw(.mountain,\n  size: CGSize(width: 60, height: 40),\n  contentMode: .aspectFill)",
             createView: {
               let imageView = UIImageView(
                 image: UIImage.draw(
-                  \.mountain,
+                  .mountain,
                   size: CGSize(width: 60, height: 40),
                   contentMode: .aspectFill
                 )
@@ -103,20 +102,20 @@ class UIKitDemoViewController: UIViewController {
         category: "UIButton Integration",
         items: [
           UIKitExample(
-            code: "button.setImage(UIImage.draw(\\.gear), for: .normal)",
+            code: "button.setImage(UIImage.draw(.gear), for: .normal)",
             createView: {
               let button = UIButton(type: .system)
-              button.setImage(UIImage.draw(\.gear), for: .normal)
+              button.setImage(UIImage.draw(.gear), for: .normal)
               button.setTitle(" Settings", for: .normal)
               button.frame = CGRect(x: 0, y: 0, width: 100, height: 44)
               return button
             }
           ),
           UIKitExample(
-            code: "// Tinted button\nbutton.setImage(UIImage.draw(\\.heart), for: .normal)\nbutton.tintColor = .systemRed",
+            code: "// Tinted button\nbutton.setImage(UIImage.draw(.heart), for: .normal)\nbutton.tintColor = .systemRed",
             createView: {
               let button = UIButton(type: .system)
-              button.setImage(UIImage.draw(\.heart), for: .normal)
+              button.setImage(UIImage.draw(.heart), for: .normal)
               button.tintColor = .systemRed
               button.frame = CGRect(x: 0, y: 0, width: 44, height: 44)
               return button
