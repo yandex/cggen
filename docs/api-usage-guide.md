@@ -19,18 +19,7 @@ Drawing.star
 
 ### UIKit/AppKit Images
 
-#### Preferred KeyPath Syntax (Swift 6.1+)
-```swift
-// UIKit
-let circleImage = UIImage.draw(\.circle)
-let starImage = UIImage.draw(\.star, scale: 2.0)
-
-// AppKit
-let circleImage = NSImage.draw(\.circle)
-let starImage = NSImage.draw(\.star, scale: 2.0)
-```
-
-#### Direct Initializers
+#### Using Initializers
 ```swift
 // UIKit
 let circleImage = UIImage(drawing: .circle)
@@ -39,6 +28,17 @@ let starImage = UIImage(drawing: .star, scale: 2.0)
 // AppKit
 let circleImage = NSImage(drawing: .circle)
 let starImage = NSImage(drawing: .star, scale: 2.0)
+```
+
+#### Using Static Factory Methods
+```swift
+// UIKit
+let circleImage = UIImage.draw(.circle)
+let starImage = UIImage.draw(.star, scale: 2.0)
+
+// AppKit
+let circleImage = NSImage.draw(.circle)
+let starImage = NSImage.draw(.star, scale: 2.0)
 ```
 
 ## Content Mode Support
@@ -61,16 +61,16 @@ public enum DrawingContentMode {
 ### Creating Images with Content Modes
 
 ```swift
-// Create thumbnail with aspect fit
+// Create thumbnail with aspect fit (using initializer)
 let thumbnail = UIImage(
   drawing: .logo,
   size: CGSize(width: 100, height: 100),
   contentMode: .aspectFit
 )
 
-// Create banner with aspect fill
+// Create banner with aspect fill (using static method)
 let banner = UIImage.draw(
-  \.banner,
+  .banner,
   size: CGSize(width: 320, height: 80),
   contentMode: .aspectFill
 )

@@ -182,13 +182,10 @@ struct ContentView: View {
 
 ## Final Decision
 
-A hybrid approach combining **Drawing namespace (#4)** and **KeyPath-based methods (#3)**:
+**Drawing namespace approach (#4)** with direct initializers:
 
 * **SwiftUI Views:** Direct usage as views (`Drawing.circle`).
-* **UIKit/AppKit Images:**
-
-  * Preferred: KeyPath-based (`UIImage.draw(\.circle)`).
-  * Alternative: Direct initializer (`UIImage(drawing: .circle)`).
+* **UIKit/AppKit Images:** Direct initializer (`UIImage(drawing: .circle)`).
 * **Core Graphics:** Direct drawing (`Drawing.circle.draw(context)`).
 
-This approach provides a clean, consistent API across platforms, offering optimal ergonomics for all scenarios.
+The KeyPath-based API was initially included but has been deprecated as it adds unnecessary complexity without providing real benefits. The direct initializer approach is simpler and more intuitive.

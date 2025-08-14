@@ -20,10 +20,10 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     // NSImage Creation
     Example(
       category: "NSImage Creation",
-      code: "NSImage.draw(\\.star)",
+      code: "NSImage.draw(.star)",
       createView: {
         let imageView = NSImageView()
-        imageView.image = NSImage.draw(\.star)
+        imageView.image = NSImage.draw(.star)
         imageView.imageScaling = .scaleProportionallyUpOrDown
         return imageView
       }
@@ -42,21 +42,21 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     // Sizing
     Example(
       category: "Sizing",
-      code: "NSImage.draw(\\.gear, scale: 2.0)",
+      code: "NSImage.draw(.gear, scale: 2.0)",
       createView: {
         let imageView = NSImageView()
-        imageView.image = NSImage.draw(\.gear, scale: 2.0)
+        imageView.image = NSImage.draw(.gear, scale: 2.0)
         imageView.imageScaling = .scaleProportionallyUpOrDown
         return imageView
       }
     ),
     Example(
       category: "Sizing",
-      code: ".draw(\\.mountain, size: CGSize(40, 30), contentMode: .aspectFit)",
+      code: ".draw(.mountain, size: CGSize(40, 30), contentMode: .aspectFit)",
       createView: {
         let imageView = NSImageView()
         imageView.image = NSImage.draw(
-          \.mountain,
+          .mountain,
           size: CGSize(width: 40, height: 30),
           contentMode: .aspectFit
         )
@@ -98,10 +98,10 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     // Interactive
     Example(
       category: "Interactive",
-      code: "NSButton(image: NSImage.draw(\\.gear))",
+      code: "NSButton(image: NSImage.draw(.gear))",
       createView: {
         let button = NSButton(
-          image: NSImage.draw(\.gear),
+          image: NSImage.draw(.gear),
           target: nil,
           action: nil
         )
@@ -111,11 +111,11 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     ),
     Example(
       category: "Interactive",
-      code: "button.image = NSImage.draw(\\.heart)",
+      code: "button.image = NSImage.draw(.heart)",
       createView: {
         let button = NSButton(
           title: "Like",
-          image: NSImage.draw(\.heart),
+          image: NSImage.draw(.heart),
           target: nil,
           action: nil
         )

@@ -7,8 +7,6 @@ import SwiftUI
 public typealias CGGenPlatformImage = __CGGenPlatformImage
 
 extension CGGenPlatformImage {
-  // MARK: @MainActor methods using default scale
-
   @MainActor
   public convenience init(drawing: Drawing) {
     self.init(drawing: drawing, scale: defaultScale)
@@ -28,50 +26,42 @@ extension CGGenPlatformImage {
     )
   }
 
+  // MARK: Static Factory Methods
+
   @MainActor
-  @inlinable
-  public static func draw(_ keyPath: KeyPath<Drawing.Type, Drawing>)
-    -> CGGenPlatformImage {
-    CGGenPlatformImage(
-      drawing: Drawing.self[keyPath: keyPath],
-      scale: defaultScale
-    )
+  public static func draw(_ drawing: Drawing) -> CGGenPlatformImage {
+    CGGenPlatformImage(drawing: drawing, scale: defaultScale)
   }
 
   @MainActor
-  @inlinable
   public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    _ drawing: Drawing,
     size: CGSize,
     contentMode: DrawingContentMode = .aspectFit
   ) -> CGGenPlatformImage {
     CGGenPlatformImage(
-      drawing: Drawing.self[keyPath: keyPath],
+      drawing: drawing,
       size: size,
       contentMode: contentMode,
       scale: defaultScale
     )
   }
 
-  // MARK: Methods with explicit scale
-
-  @inlinable
   public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    _ drawing: Drawing,
     scale: CGFloat
   ) -> CGGenPlatformImage {
-    CGGenPlatformImage(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+    CGGenPlatformImage(drawing: drawing, scale: scale)
   }
 
-  @inlinable
   public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
+    _ drawing: Drawing,
     size: CGSize,
     contentMode: DrawingContentMode = .aspectFit,
     scale: CGFloat
   ) -> CGGenPlatformImage {
     CGGenPlatformImage(
-      drawing: Drawing.self[keyPath: keyPath],
+      drawing: drawing,
       size: size,
       contentMode: contentMode,
       scale: scale
@@ -85,23 +75,20 @@ extension Image {
     self.init(drawing: drawing, scale: defaultScale)
   }
 
-  @MainActor
-  @inlinable
-  public static func draw(_ keyPath: KeyPath<Drawing.Type, Drawing>) -> Self {
-    Self(drawing: Drawing.self[keyPath: keyPath], scale: defaultScale)
-  }
-
   public init(drawing: Drawing, scale: CGFloat) {
     let image = CGGenPlatformImage(drawing: drawing, scale: scale)
     self.init(platformImage: image)
   }
 
-  @inlinable
-  public static func draw(
-    _ keyPath: KeyPath<Drawing.Type, Drawing>,
-    scale: CGFloat
-  ) -> Image {
-    Image(drawing: Drawing.self[keyPath: keyPath], scale: scale)
+  // MARK: Static Factory Methods
+
+  @MainActor
+  public static func draw(_ drawing: Drawing) -> Image {
+    Image(drawing: drawing, scale: defaultScale)
+  }
+
+  public static func draw(_ drawing: Drawing, scale: CGFloat) -> Image {
+    Image(drawing: drawing, scale: scale)
   }
 }
 
