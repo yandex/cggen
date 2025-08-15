@@ -3,7 +3,6 @@ import CoreImage
 import CoreServices
 import ImageIO
 import simd
-import UniformTypeIdentifiers
 
 public typealias RGBAPixel = RGBAColor<UInt8>
 
@@ -286,23 +285,6 @@ extension CGImage {
       .createCGImage(final, from: rect)!
   }
 
-  public enum CGImageWriteError: Error {
-    case failedToCreateDestination
-    case failedDestinationFinalize
-  }
-
-  public func write(fileURL: CFURL) throws {
-    guard let destination = CGImageDestinationCreateWithURL(
-      fileURL,
-      UTType.png.identifier as CFString,
-      1,
-      nil
-    )
-    else { throw CGImageWriteError.failedDestinationFinalize }
-    CGImageDestinationAddImage(destination, self, nil)
-    guard CGImageDestinationFinalize(destination)
-    else { throw CGImageWriteError.failedDestinationFinalize }
-  }
 
   public func redraw(with background: CGColor) -> CGImage {
     let size = intSize
