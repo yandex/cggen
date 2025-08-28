@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
-      
+
       - name: Check for recent commits
         id: check
         run: |
@@ -23,7 +23,7 @@ jobs:
           LAST_COMMIT_TIME=$(git log -1 --format=%ct)
           CURRENT_TIME=$(date +%s)
           TIME_DIFF=$((CURRENT_TIME - LAST_COMMIT_TIME))
-          
+
           # 86400 seconds = 24 hours
           if [ $TIME_DIFF -lt 86400 ]; then
             echo "New commits found in the last 24 hours"
@@ -37,18 +37,18 @@ jobs:
     needs: check-for-changes
     if: needs.check-for-changes.outputs.should-run == 'true'
     runs-on: macos-15
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Xcode
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: latest-stable
-    
+
     - name: Build
       run: swift build --enable-experimental-prebuilts
-    
+
     - name: Run gradient determinism test multiple times
       run: |
         echo "Running gradient determinism test 5 times without deterministic hashing..."
@@ -60,7 +60,7 @@ jobs:
           }
         done
         echo "✅ All 5 runs passed successfully!"
-    
+
     - name: Run all tests including extended tests
       run: |
         echo "Running all tests including extended tests..."
@@ -69,7 +69,7 @@ jobs:
           exit 1
         }
         echo "✅ All tests passed!"
-    
+
     - name: Create issue on failure
       if: failure()
       uses: actions/github-script@v7
@@ -77,11 +77,11 @@ jobs:
         script: |
           const title = 'Nightly flaky test failure';
           const body = `The nightly flaky test run failed. This likely indicates non-deterministic behavior in the code.
-          
+
           [View failed workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
-          
+
           Please investigate the failure.`;
-          
+
           // Check if issue already exists
           const issues = await github.rest.issues.listForRepo({
             owner: context.repo.owner,
@@ -89,7 +89,7 @@ jobs:
             state: 'open',
             labels: ['flaky-test']
           });
-          
+
           if (issues.data.length === 0) {
             await github.rest.issues.create({
               owner: context.repo.owner,

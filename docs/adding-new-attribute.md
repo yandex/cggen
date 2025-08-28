@@ -122,4 +122,4 @@ The test uses the project's standard test infrastructure which:
 - The implementation should follow the existing patterns in the codebase
 - All changes should be properly tested
 - The attribute should be documented in the code where appropriate
-- Consider adding the attribute to the PDF support if relevant 
+- Consider adding the attribute to the PDF support if relevant

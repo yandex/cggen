@@ -58,7 +58,7 @@ shortcuts run "cggendemo" --output-path .claude_temp/screenshot_name.png
 ## Demo App Architecture
 
 - **SwiftUI tab**: Shows SwiftUI API usage with Drawing views
-- **AppKit tab**: Shows AppKit/NSImage API usage  
+- **AppKit tab**: Shows AppKit/NSImage API usage
 - **Playground tab**: Interactive demo for testing different drawings and sizes
 
 ## Key Fixes Applied
