@@ -10,8 +10,13 @@ public enum SVGValueParser {
   }}
 
   // (wsp+ comma? wsp*) | (comma wsp*)
-  static let commaWsp =
-    Skip { wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp* }
+  struct CommaWSP: Parser {
+    var body: some Parser<Substring, Void> {
+      Skip { wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp* }
+    }
+  }
+  
+  static let commaWsp = CommaWSP()
   static let number =
     From(.utf8) { SVG.Float.parser() }
   static let listOfNumbers = Many { number } separator: { commaWsp }
@@ -159,14 +164,20 @@ public enum SVGValueParser {
     Skip { wsp* }
   }
 
-  static let transform = OneOf {
-    translate
-    scale
-    rotate
-    skewX
-    skewY
-    matrix
+  struct Transform: Parser {
+    var body: some Parser<Substring, SVG.Transform> {
+      OneOf {
+        translate
+        scale
+        rotate
+        skewX
+        skewY
+        matrix
+      }
+    }
   }
+  
+  static let transform = Transform()
 
   static let hexByteFromSingle = First().flatMap {
     if let value = hexFromChar($0) {
@@ -202,20 +213,35 @@ public enum SVGValueParser {
     hexByte
   }
 
-  public static let rgbcolor = OneOf {
-    "#" ~>> (rgb | shortRGB)
-    SVGColorKeyword.parser().map(\.color)
+  public struct RGBColor: Parser, Sendable {
+    public init() {}
+    
+    public var body: some Parser<Substring, SVG.Color> {
+      OneOf {
+        "#" ~>> (rgb | shortRGB)
+        SVGColorKeyword.parser().map(\.color)
+      }
+    }
   }
+  
+  public static let rgbcolor = RGBColor()
 
   static let iri =
     "#" ~>> Rest().map(String.init)
   static let funciri =
     "url(#" ~>> Prefix(while: { $0 != ")" }).map(String.init) <<~ ")"
 
-  static let paint =
-    "none".map(always(.none)) |
-    rgbcolor.map(SVG.Paint.rgb) |
-    funciri.map(SVG.Paint.funciri(id:))
+  struct Paint: Parser {
+    var body: some Parser<Substring, SVG.Paint> {
+      OneOf {
+        "none".map(always(SVG.Paint.none))
+        rgbcolor.map(SVG.Paint.rgb)
+        funciri.map(SVG.Paint.funciri(id:))
+      }
+    }
+  }
+  
+  static let paint = Paint()
 
   // Add miter limit parser
   static let miterLimit = number
@@ -243,14 +269,20 @@ public enum SVGValueParser {
   // elliptical-arc-argument:
   //   nonnegative-number comma-wsp? nonnegative-number comma-wsp?
   //     number comma-wsp flag comma-wsp? flag comma-wsp? coordinate-pair
-  static let ellipticalArcArg = Parse(SVG.PathData.EllipticalArcArgument.init) {
-    number
-    commaWsp~? ~>> number
-    commaWsp~? ~>> number
-    commaWsp ~>> flag
-    commaWsp~? ~>> flag
-    commaWsp~? ~>> coordinatePair
+  struct EllipticalArcArg: Parser {
+    var body: some Parser<Substring, SVG.PathData.EllipticalArcArgument> {
+      Parse(SVG.PathData.EllipticalArcArgument.init) {
+        number
+        commaWsp~? ~>> number
+        commaWsp~? ~>> number
+        commaWsp ~>> flag
+        commaWsp~? ~>> flag
+        commaWsp~? ~>> coordinatePair
+      }
+    }
   }
+  
+  static let ellipticalArcArg = EllipticalArcArg()
 
   static let identifier = Rest<Substring>().map(String.init)
 
@@ -288,43 +320,72 @@ public enum SVGValueParser {
     }
   }
 
-  private static let anyCommand = OneOf {
-    Command("M", arg: coordinatePair) { .moveto($0) }
-    Command("L", arg: coordinatePair) { .lineto($0) }
-    Command("H", arg: coord) { .horizontalLineto($0) }
-    Command("V", arg: coord) { .verticalLineto($0) }
-    Command("C", arg: curveArgument) { .curveto($0) }
-    Command("S", arg: smoothCurveArgument) { .smoothCurveto($0) }
-    Command("Q", arg: quadraticCurveArgument) { .quadraticBezierCurveto($0) }
-    Command("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto(to: $0) }
-    Command("A", arg: ellipticalArcArg) { .ellipticalArc($0) }
-    Positioning(of: "Z").map { .init(positioning: $0, kind: .closepath) }
+  private struct AnyCommand: Parser {
+    var body: some Parser<Substring, SVG.PathData.Command> {
+      OneOf {
+        Command("M", arg: coordinatePair) { .moveto($0) }
+        Command("L", arg: coordinatePair) { .lineto($0) }
+        Command("H", arg: coord) { .horizontalLineto($0) }
+        Command("V", arg: coord) { .verticalLineto($0) }
+        Command("C", arg: curveArgument) { .curveto($0) }
+        Command("S", arg: smoothCurveArgument) { .smoothCurveto($0) }
+        Command("Q", arg: quadraticCurveArgument) { .quadraticBezierCurveto($0) }
+        Command("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto(to: $0) }
+        Command("A", arg: ellipticalArcArg) { .ellipticalArc($0) }
+        Positioning(of: "Z").map { .init(positioning: $0, kind: .closepath) }
+      }
+    }
   }
+  
+  private static let anyCommand = AnyCommand()
 
-  static let pathData =
-    wsp* ~>> Many(1...) { anyCommand } separator: { wsp* } <<~ wsp*
-
-  private static let quadraticCurveArgument = Parse {
-    SVG.PathData.QuadraticCurveArgument(cp1: $0.0, to: $0.1)
-  } with: {
-    coordinatePair <<~ commaWsp~?
-    coordinatePair
+  struct PathData: Parser {
+    var body: some Parser<Substring, [SVG.PathData.Command]> {
+      wsp* ~>> Many(1...) { anyCommand } separator: { wsp* } <<~ wsp*
+    }
   }
+  
+  static let pathData = PathData()
 
-  private static let smoothCurveArgument = Parse {
-    SVG.PathData.SmoothCurveArgument(cp2: $0.0, to: $0.1)
-  } with: {
-    coordinatePair <<~ commaWsp~?
-    coordinatePair
+  private struct QuadraticCurveArgument: Parser {
+    var body: some Parser<Substring, SVG.PathData.QuadraticCurveArgument> {
+      Parse {
+        SVG.PathData.QuadraticCurveArgument(cp1: $0.0, to: $0.1)
+      } with: {
+        coordinatePair <<~ commaWsp~?
+        coordinatePair
+      }
+    }
   }
+  
+  private static let quadraticCurveArgument = QuadraticCurveArgument()
 
-  private static let curveArgument = Parse {
-    SVG.PathData.CurveArgument(cp1: $0.0, cp2: $0.1, to: $0.2)
-  } with: {
-    coordinatePair <<~ commaWsp~?
-    coordinatePair <<~ commaWsp~?
-    coordinatePair
+  private struct SmoothCurveArgument: Parser {
+    var body: some Parser<Substring, SVG.PathData.SmoothCurveArgument> {
+      Parse {
+        SVG.PathData.SmoothCurveArgument(cp2: $0.0, to: $0.1)
+      } with: {
+        coordinatePair <<~ commaWsp~?
+        coordinatePair
+      }
+    }
   }
+  
+  private static let smoothCurveArgument = SmoothCurveArgument()
+
+  private struct CurveArgument: Parser {
+    var body: some Parser<Substring, SVG.PathData.CurveArgument> {
+      Parse {
+        SVG.PathData.CurveArgument(cp1: $0.0, cp2: $0.1, to: $0.2)
+      } with: {
+        coordinatePair <<~ commaWsp~?
+        coordinatePair <<~ commaWsp~?
+        coordinatePair
+      }
+    }
+  }
+  
+  private static let curveArgument = CurveArgument()
 
   struct Positioning: Parser, Sendable {
     var cmd: Character

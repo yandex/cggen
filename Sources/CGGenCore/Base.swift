@@ -178,49 +178,8 @@ extension Array {
     map { (a, $0) }
   }
 
-  public func concurrentMap<T>(
-    _ transform: @Sendable (Element) throws -> T
-  ) throws -> [T] where Element: Sendable, T: Sendable {
-    nonisolated(unsafe)
-    var result = [T?](repeating: nil, count: count)
-    let lock = NSLock()
-    nonisolated(unsafe)
-    var barrier: Error?
-    DispatchQueue.concurrentPerform(iterations: count) { i in
-      guard lock.withLock({ barrier == nil }) else { return }
-      do {
-        let val = try transform(self[i])
-        lock.withLock { result[i] = val }
-      } catch {
-        lock.withLock { barrier = error }
-      }
-    }
-    if let error = barrier {
-      throw error
-    }
-    return result.map { $0! }
-  }
-
-  public func concurrentMap<T>(
-    _ transform: @Sendable (Element) -> T
-  ) -> [T] where Element: Sendable, T: Sendable {
-    [T](unsafeUninitializedCapacity: count) { buffer, finalCount in
-      finalCount = count
-      let bufferAccess = NSLock()
-      let uncheckedBuffer = UncheckedSendable(value: buffer)
-      DispatchQueue.concurrentPerform(iterations: count) { i in
-        let val = transform(self[i])
-        bufferAccess.withLock {
-          uncheckedBuffer.value.initializeElement(at: i, to: val)
-        }
-      }
-    }
-  }
-
   public mutating func modifyLast(_ modifier: (inout Element) -> Void) {
-    guard var el = popLast() else { return }
-    modifier(&el)
-    append(el)
+    indices.last.map { modifier(&self[$0]) }
   }
 }
 
@@ -245,31 +204,6 @@ extension [String] {
 }
 
 extension Sequence {
-  public func concurrentMap<T>(
-    _ transform: @Sendable @escaping (Element) -> T
-  ) -> [T] where Element: Sendable, T: Sendable {
-    nonisolated(unsafe)
-    var result = [T?]()
-    let syncQueue = DispatchQueue(label: "sync_queue")
-    let workQueue = DispatchQueue(label: "work_queue", attributes: .concurrent)
-    for (i, e) in enumerated() {
-      syncQueue.async {
-        result.append(nil)
-      }
-      workQueue.async {
-        let val = transform(e)
-        syncQueue.sync {
-          result[i] = val
-        }
-      }
-    }
-    return workQueue.sync(flags: .barrier) {
-      syncQueue.sync {
-        result.map { $0! }
-      }
-    }
-  }
-
   public func insertSeparator(
     _ separator: Element
   ) -> JoinedSequence<[[Self.Element]]> {
