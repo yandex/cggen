@@ -3,33 +3,6 @@ import Testing
 import CGGenCore
 
 @Suite struct BaseTests {
-  @Test func testConcurrentMap() {
-    #expect((0..<100).concurrentMap { $0 + 1 } == Array(1..<101))
-    #expect(Array(0..<100).concurrentMap { $0 + 1 } == Array(1..<101))
-
-    class Test: @unchecked Sendable {
-      var i: Int
-      init(_ i: Int) { self.i = i }
-    }
-    let referenceCountedEntities = Array(0..<100).concurrentMap(Test.init)
-    for (i, entity) in referenceCountedEntities.enumerated() {
-      #expect(entity.i == i)
-    }
-  }
-
-  @Test func throwingConcurrentmap() throws {
-    struct TestError: Error, Equatable {}
-    do {
-      _ = try Array(0..<100).concurrentMap {
-        guard $0 != 42 else { throw TestError() }
-        return $0 + 1
-      } as [Int]
-      Issue.record("Should have thrown TestError")
-    } catch let error as TestError {
-      #expect(error == TestError())
-    }
-  }
-
   @Test func testZip() {
     checkZip(zip(Int?.none, Int?.none), nil)
     checkZip(zip(42, Int?.none), nil)

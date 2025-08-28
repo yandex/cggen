@@ -164,7 +164,7 @@ private func generateImagesAndPaths(
     Result(catching: { try generator(url) })
   }
 
-  let generated = zip(files, files.concurrentMap(generator))
+  let generated = zip(files, files.map(generator))
 
   let failed = generated.compactMap { url, result -> (URL, Swift.Error)? in
     switch result {
