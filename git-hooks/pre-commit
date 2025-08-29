@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Check for whitespace errors
+git diff --cached --check
+if [ $? -ne 0 ]; then
+  echo "❌ Whitespace errors found. Please fix them."
+  exit 1
+fi
+
+# Check for missing newline at EOF in text files
+for file in $(git diff --cached --name-only --diff-filter=ACMR); do
+  if [ -f "$file" ] && [ -s "$file" ]; then
+    # Check if file is text (not binary)
+    if file "$file" | grep -q text; then
+      if [ -n "$(tail -c 1 "$file")" ]; then
+        echo "❌ Missing newline at end of file: $file"
+        exit 1
+      fi
+    fi
+  fi
+done
+
+# Check swiftformat
+OUTPUT=$(swiftformat --lint . 2>&1)
+if [ $? -ne 0 ]; then
+  echo "❌ SwiftFormat issues found. Please run 'swiftformat .' to fix them."
+  echo "$OUTPUT"
+  exit 1
+fi

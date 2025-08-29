@@ -1,28 +1,28 @@
 <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
   <!-- Sky background -->
   <rect width="40" height="40" fill="#87CEEB"/>
-  
+
   <!-- Sun -->
   <circle cx="30" cy="8" r="3" fill="#FFD700"/>
-  
+
   <!-- Back mountain -->
   <path d="M0 25 L12 10 L24 25 L24 40 L0 40 Z" fill="#6B7280"/>
-  
+
   <!-- Front mountain -->
   <path d="M12 22 L20 12 L28 22 L34 15 L40 22 L40 40 L12 40 Z" fill="#374151"/>
-  
+
   <!-- Snow caps -->
   <path d="M12 10 L8 14 L16 14 Z" fill="white"/>
   <path d="M20 12 L17 15 L23 15 Z" fill="white"/>
   <path d="M34 15 L31 18 L37 18 Z" fill="white"/>
-  
+
   <!-- Trees -->
   <path d="M4 32 L6 28 L8 32 Z" fill="#065F46"/>
   <path d="M5 35 L6 32 L7 35 Z" fill="#047857"/>
-  
+
   <path d="M10 34 L11 30 L12 34 Z" fill="#065F46"/>
   <path d="M10.5 36 L11 34 L11.5 36 Z" fill="#047857"/>
-  
+
   <path d="M28 31 L29.5 27 L31 31 Z" fill="#065F46"/>
   <path d="M28.5 34 L29.5 31 L30.5 34 Z" fill="#047857"/>
 </svg>
