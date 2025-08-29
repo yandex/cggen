@@ -1321,7 +1321,7 @@ extension SVG.PresentationAttributes {
     case let (phase?, nil):
       return .dashPhase(phase)
     case let (nil, lengths?):
-      return .dashLenghts(lengths)
+      return .dashLengths(lengths)
     case (nil, nil):
       return nil
     }

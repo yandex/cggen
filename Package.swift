@@ -51,7 +51,7 @@ let package = Package(
     // Runtime support: bytecode executor and helpers for image creation
     .target(
       name: "CGGenRTSupport",
-      dependencies: ["CGGenBytecode"],
+      dependencies: ["CGGenBytecode", "CGGenBytecodeDecoding"],
       exclude: ["README.md"]
     ),
 
@@ -105,6 +105,12 @@ let package = Package(
     // Bytecode definitions and compression
     .target(
       name: "CGGenBytecode"
+    ),
+
+    // Bytecode decompression
+    .target(
+      name: "CGGenBytecodeDecoding",
+      dependencies: ["CGGenBytecode"]
     ),
 
     // Diagnostic support: reference rendering and image comparison
@@ -164,6 +170,8 @@ let package = Package(
         "CGGenCore",
         "CGGenRTSupport",
         "CGGenDiagnosticSupport",
+        "CGGenBytecode",
+        "CGGenBytecodeDecoding",
         .product(name: "ArgumentParser", package: "swift-argument-parser"),
       ]
     ),

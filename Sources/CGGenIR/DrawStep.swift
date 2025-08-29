@@ -63,7 +63,7 @@ public enum DrawStep: Sendable {
   case clipToRect(CGRect)
   case dash(DashPattern)
   case dashPhase(CGFloat)
-  case dashLenghts([CGFloat])
+  case dashLengths([CGFloat])
 
   case fill
   case fillWithRule(CGPathFillRule)

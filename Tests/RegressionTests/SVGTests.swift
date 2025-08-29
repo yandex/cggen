@@ -14,8 +14,7 @@ import Parsing
 // Sometimes it is useful to pass some arbitrary svg to check that it is
 // correctly handled.
 @Suite struct SVGCustomCheckTests {
-  nonisolated(unsafe)
-  static let sizeParser = Parse(input: Substring.self) {
+  nonisolated(unsafe) static let sizeParser = Parse(input: Substring.self) {
     Int.parser()
     "x"
     Int.parser()

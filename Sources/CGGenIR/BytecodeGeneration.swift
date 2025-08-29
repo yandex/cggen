@@ -339,8 +339,8 @@ private func generateDrawSteps(
       encode(.dash, DrawCommand.DashArgs.self, BCDashPattern(pattern), >>)
     case let .dashPhase(phase):
       encode(.dashPhase, DrawCommand.DashPhaseArgs.self, phase, >>)
-    case let .dashLenghts(lenghts):
-      encode(.dashLenghts, DrawCommand.DashLenghtsArgs.self, lenghts, >>)
+    case let .dashLengths(lengths):
+      encode(.dashLengths, DrawCommand.DashLengthsArgs.self, lengths, >>)
     case .fill:
       encode(.fill, DrawCommand.FillArgs.self, (), >>)
     case let .fillWithRule(rule):

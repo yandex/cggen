@@ -14,21 +14,21 @@ public struct InvalidRawValue<T: RawRepresentable>: Swift.Error
 
 // MARK: - Bytecode
 
-struct Bytecode {
-  enum ReadingError: Swift.Error {
+public struct Bytecode {
+  public enum ReadingError: Swift.Error {
     case outOfBounds(left: Int, required: Int)
     case isNotPOD(Any.Type)
   }
 
-  var base: UnsafeRawPointer
-  var count: Int
+  public var base: UnsafeRawPointer
+  public var count: Int
 
-  init(base: UnsafeRawPointer, count: Int) {
+  public init(base: UnsafeRawPointer, count: Int) {
     self.base = base
     self.count = count
   }
 
-  mutating func read<T: FixedWidthInteger>(type _: T.Type) throws -> T {
+  public mutating func read<T: FixedWidthInteger>(type _: T.Type) throws -> T {
     let size = MemoryLayout<T>.size
 
     guard _isPOD(T.self) else { throw ReadingError.isNotPOD(T.self) }
@@ -44,7 +44,7 @@ struct Bytecode {
     return T(littleEndian: value)
   }
 
-  mutating func advance(count: Int) -> Self {
+  public mutating func advance(count: Int) -> Self {
     defer {
       base = base.advanced(by: count)
       self.count -= count
@@ -53,7 +53,7 @@ struct Bytecode {
   }
 }
 
-protocol BytecodeDecodable {
+public protocol BytecodeDecodable {
   init(bytecode: inout Bytecode) throws
 }
 
@@ -61,7 +61,7 @@ protocol BytecodeDecodable {
 
 extension BytecodeDecodable
   where Self: RawRepresentable, RawValue: FixedWidthInteger & Sendable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     let rawValue = try bytecode.read(type: UInt8.self)
     let converted = Self.RawValue(rawValue)
     guard let ret = Self(rawValue: converted) else {
@@ -77,7 +77,7 @@ extension BCFillRule: BytecodeDecodable {}
 extension BCCoordinateUnits: BytecodeDecodable {}
 
 extension BCDashPattern: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       phase: .init(bytecode: &bytecode), lengths: .init(bytecode: &bytecode)
     )
@@ -85,7 +85,7 @@ extension BCDashPattern: BytecodeDecodable {
 }
 
 extension BCRGBAColor: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       r: .init(bytecode: &bytecode),
       g: .init(bytecode: &bytecode),
@@ -96,7 +96,7 @@ extension BCRGBAColor: BytecodeDecodable {
 }
 
 extension BCRGBColor: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       r: .init(bytecode: &bytecode),
       g: .init(bytecode: &bytecode),
@@ -106,7 +106,7 @@ extension BCRGBColor: BytecodeDecodable {
 }
 
 extension BCLinearGradientDrawingOptions: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       start: .init(bytecode: &bytecode),
       end: .init(bytecode: &bytecode),
@@ -118,7 +118,7 @@ extension BCLinearGradientDrawingOptions: BytecodeDecodable {
 }
 
 extension BCRadialGradientDrawingOptions: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       startCenter: .init(bytecode: &bytecode),
       startRadius: .init(bytecode: &bytecode),
@@ -131,7 +131,7 @@ extension BCRadialGradientDrawingOptions: BytecodeDecodable {
 }
 
 extension BCLocationAndColor: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       location: .init(bytecode: &bytecode), color: .init(bytecode: &bytecode)
     )
@@ -139,7 +139,7 @@ extension BCLocationAndColor: BytecodeDecodable {
 }
 
 extension BCShadow: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       offset: .init(bytecode: &bytecode),
       blur: .init(bytecode: &bytecode),
@@ -149,7 +149,7 @@ extension BCShadow: BytecodeDecodable {
 }
 
 extension BCCubicCurve: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       control1: .init(bytecode: &bytecode),
       control2: .init(bytecode: &bytecode),
@@ -159,7 +159,7 @@ extension BCCubicCurve: BytecodeDecodable {
 }
 
 extension BCQuadCurve: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       control: .init(bytecode: &bytecode),
       to: .init(bytecode: &bytecode)
@@ -172,7 +172,7 @@ extension BCQuadCurve: BytecodeDecodable {
 // It's suspicious to conform types from SDK to custom protocols
 
 extension BytecodeDecodable where Self: FixedWidthInteger {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     self = try bytecode.read(type: Self.self)
   }
 }
@@ -189,20 +189,20 @@ extension CGGradientDrawingOptions: BytecodeDecodable {}
 extension CGColorRenderingIntent: BytecodeDecodable {}
 
 extension CGFloat: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     let float32 = try Float32(bitPattern: bytecode.read(type: UInt32.self))
     self.init(float32)
   }
 }
 
 extension CGPoint: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(x: .init(bytecode: &bytecode), y: .init(bytecode: &bytecode))
   }
 }
 
 extension CGSize: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       width: .init(bytecode: &bytecode), height: .init(bytecode: &bytecode)
     )
@@ -210,7 +210,7 @@ extension CGSize: BytecodeDecodable {
 }
 
 extension CGRect: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       origin: .init(bytecode: &bytecode), size: .init(bytecode: &bytecode)
     )
@@ -218,14 +218,14 @@ extension CGRect: BytecodeDecodable {
 }
 
 extension Array: BytecodeDecodable where Element: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     let size = try bytecode.read(type: BCSizeType.self)
     try self.init((0..<size).map { _ in try .init(bytecode: &bytecode) })
   }
 }
 
 extension Optional where Wrapped: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     if try Bool(bytecode: &bytecode) {
       self = try .some(Wrapped(bytecode: &bytecode))
     } else {
@@ -235,7 +235,7 @@ extension Optional where Wrapped: BytecodeDecodable {
 }
 
 extension CGAffineTransform: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(
       a: .init(bytecode: &bytecode),
       b: .init(bytecode: &bytecode),
@@ -248,7 +248,7 @@ extension CGAffineTransform: BytecodeDecodable {
 }
 
 extension Bool: BytecodeDecodable {
-  init(bytecode: inout Bytecode) throws {
+  public init(bytecode: inout Bytecode) throws {
     try self.init(UInt8(bytecode: &bytecode) != 0)
   }
 }

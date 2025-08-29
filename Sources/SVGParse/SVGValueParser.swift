@@ -15,7 +15,7 @@ public enum SVGValueParser {
       Skip { wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp* }
     }
   }
-  
+
   static let commaWsp = CommaWSP()
   static let number =
     From(.utf8) { SVG.Float.parser() }
@@ -176,7 +176,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   static let transform = Transform()
 
   static let hexByteFromSingle = First().flatMap {
@@ -215,7 +215,7 @@ public enum SVGValueParser {
 
   public struct RGBColor: Parser, Sendable {
     public init() {}
-    
+
     public var body: some Parser<Substring, SVG.Color> {
       OneOf {
         "#" ~>> (rgb | shortRGB)
@@ -223,7 +223,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   public static let rgbcolor = RGBColor()
 
   static let iri =
@@ -240,7 +240,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   static let paint = Paint()
 
   // Add miter limit parser
@@ -281,7 +281,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   static let ellipticalArcArg = EllipticalArcArg()
 
   static let identifier = Rest<Substring>().map(String.init)
@@ -329,14 +329,17 @@ public enum SVGValueParser {
         Command("V", arg: coord) { .verticalLineto($0) }
         Command("C", arg: curveArgument) { .curveto($0) }
         Command("S", arg: smoothCurveArgument) { .smoothCurveto($0) }
-        Command("Q", arg: quadraticCurveArgument) { .quadraticBezierCurveto($0) }
-        Command("T", arg: coordinatePair) { .smoothQuadraticBezierCurveto(to: $0) }
+        Command("Q", arg: quadraticCurveArgument) { .quadraticBezierCurveto($0)
+        }
+        Command("T", arg: coordinatePair) {
+          .smoothQuadraticBezierCurveto(to: $0)
+        }
         Command("A", arg: ellipticalArcArg) { .ellipticalArc($0) }
         Positioning(of: "Z").map { .init(positioning: $0, kind: .closepath) }
       }
     }
   }
-  
+
   private static let anyCommand = AnyCommand()
 
   struct PathData: Parser {
@@ -344,7 +347,7 @@ public enum SVGValueParser {
       wsp* ~>> Many(1...) { anyCommand } separator: { wsp* } <<~ wsp*
     }
   }
-  
+
   static let pathData = PathData()
 
   private struct QuadraticCurveArgument: Parser {
@@ -357,7 +360,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   private static let quadraticCurveArgument = QuadraticCurveArgument()
 
   private struct SmoothCurveArgument: Parser {
@@ -370,7 +373,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   private static let smoothCurveArgument = SmoothCurveArgument()
 
   private struct CurveArgument: Parser {
@@ -384,7 +387,7 @@ public enum SVGValueParser {
       }
     }
   }
-  
+
   private static let curveArgument = CurveArgument()
 
   struct Positioning: Parser, Sendable {

@@ -285,7 +285,6 @@ extension CGImage {
       .createCGImage(final, from: rect)!
   }
 
-
   public func redraw(with background: CGColor) -> CGImage {
     let size = intSize
     let ctx = CGContext.bitmapRGBContext(size: size)
