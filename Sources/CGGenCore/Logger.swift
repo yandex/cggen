@@ -1,8 +1,7 @@
 import os.log
 
 public struct Logger {
-  public nonisolated(unsafe)
-  static var shared = Logger()
+  public nonisolated(unsafe) static var shared = Logger()
   private var level: Bool?
   public mutating func setLevel(level: Bool) {
     self.level = level

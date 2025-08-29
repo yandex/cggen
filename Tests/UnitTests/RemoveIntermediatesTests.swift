@@ -9,7 +9,7 @@ struct Point: Equatable, LinearInterpolatable {
   typealias AbscissaType = Double
   typealias DistanceType = Double
 
-  public var abscissa: AbscissaType {
+  var abscissa: AbscissaType {
     x
   }
 

@@ -74,4 +74,3 @@ extension Image {
     Image(drawing: Drawing.self[keyPath: keyPath], scale: scale)
   }
 }
-

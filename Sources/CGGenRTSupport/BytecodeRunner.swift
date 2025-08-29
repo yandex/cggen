@@ -3,6 +3,7 @@ import Compression
 import Foundation
 
 import CGGenBytecode
+import CGGenBytecodeDecoding
 
 public func runBytecode(
   _ context: CGContext,
@@ -343,115 +344,61 @@ struct BytecodeRunner {
 
     // MARK: Executing commands
 
-    while programCounter.count > 0 {
-      let command = try DrawCommand(bytecode: &programCounter)
-      switch command {
-      case .addArc:
-        try exec.addArc(read())
-      case .addEllipse:
-        try exec.addEllipse(read())
-      case .appendRectangle:
-        try exec.appendRectangle(read())
-      case .appendRoundedRect:
-        try exec.appendRoundedRect(read())
-      case .beginTransparencyLayer:
-        try exec.beginTransparencyLayer(read())
-      case .blendMode:
-        try exec.blendMode(read())
-      case .clip:
-        try exec.clip(read())
-      case .clipWithRule:
-        try exec.clipWithRule(read())
-      case .clipToRect:
-        try exec.clipToRect(read())
-      case .closePath:
-        try exec.closePath(read())
-      case .colorRenderingIntent:
-        try exec.colorRenderingIntent(read())
-      case .concatCTM:
-        try exec.concatCTM(read())
-      case .curveTo:
-        try exec.curveTo(read())
-      case .quadCurveTo:
-        try exec.quadCurveTo(read())
-      case .dash:
-        try exec.dash(read())
-      case .dashPhase:
-        try exec.dashPhase(read())
-      case .dashLenghts:
-        try exec.dashLenghts(read())
-      case .drawPath:
-        try exec.drawPath(read())
-      case .endTransparencyLayer:
-        try exec.endTransparencyLayer(read())
-      case .fill:
-        try exec.fill(read())
-      case .fillWithRule:
-        try exec.fillWithRule(read())
-      case .fillAndStroke:
-        try exec.fillAndStroke(read())
-      case .fillColor:
-        try exec.fillColor(read())
-      case .fillRule:
-        try exec.fillRule(read())
-      case .fillEllipse:
-        try exec.fillEllipse(read())
-      case .flatness:
-        try exec.flatness(read())
-      case .globalAlpha:
-        try exec.globalAlpha(read())
-      case .lineCapStyle:
-        try exec.lineCapStyle(read())
-      case .lineJoinStyle:
-        try exec.lineJoinStyle(read())
-      case .lineTo:
-        try exec.lineTo(read())
-      case .lineWidth:
-        try exec.lineWidth(read())
-      case .linearGradient:
-        try exec.linearGradient(read())
-      case .lines:
-        try exec.lines(read())
-      case .moveTo:
-        try exec.moveTo(read())
-      case .radialGradient:
-        try exec.radialGradient(read())
-      case .fillLinearGradient:
-        try exec.fillLinearGradient(read())
-      case .fillRadialGradient:
-        try exec.fillRadialGradient(read())
-      case .strokeLinearGradient:
-        try exec.strokeLinearGradient(read())
-      case .strokeRadialGradient:
-        try exec.strokeRadialGradient(read())
-      case .replacePathWithStrokePath:
-        try exec.replacePathWithStrokePath(read())
-      case .restoreGState:
-        try exec.restoreGState(read())
-      case .saveGState:
-        try exec.saveGState(read())
-      case .stroke:
-        try exec.stroke(read())
-      case .strokeColor:
-        try exec.strokeColor(read())
-      case .subrouteWithId:
-        try exec.subrouteWithId(read())
-      case .shadow:
-        try exec.shadow(read())
-      case .strokeAlpha:
-        try exec.strokeAlpha(read())
-      case .fillAlpha:
-        try exec.fillAlpha(read())
-      case .strokeNone:
-        try exec.strokeNone(read())
-      case .fillNone:
-        try exec.fillNone(read())
-      case .setGlobalAlphaToFillAlpha:
-        try exec.setGlobalAlphaToFillAlpha(read())
-      case .miterLimit:
-        try exec.miterLimit(read())
-      }
-    }
+    try BytecodeVisitor.visit(
+      &programCounter,
+      onSaveGState: { arg, _ in exec.saveGState(arg) },
+      onRestoreGState: { arg, _ in exec.restoreGState(arg) },
+      onMoveTo: { arg, _ in exec.moveTo(arg) },
+      onLineTo: { arg, _ in exec.lineTo(arg) },
+      onCurveTo: { arg, _ in exec.curveTo(arg) },
+      onQuadCurveTo: { arg, _ in exec.quadCurveTo(arg) },
+      onClosePath: { arg, _ in exec.closePath(arg) },
+      onAppendRectangle: { arg, _ in exec.appendRectangle(arg) },
+      onAppendRoundedRect: { arg, _ in exec.appendRoundedRect(arg) },
+      onAddEllipse: { arg, _ in exec.addEllipse(arg) },
+      onAddArc: { arg, _ in exec.addArc(arg) },
+      onFill: { arg, _ in exec.fill(arg) },
+      onFillWithRule: { arg, _ in exec.fillWithRule(arg) },
+      onStroke: { arg, _ in exec.stroke(arg) },
+      onFillAndStroke: { arg, _ in try exec.fillAndStroke(arg) },
+      onDrawPath: { arg, _ in exec.drawPath(arg) },
+      onFillColor: { arg, _ in exec.fillColor(arg) },
+      onStrokeColor: { arg, _ in exec.strokeColor(arg) },
+      onFillAlpha: { arg, _ in exec.fillAlpha(arg) },
+      onStrokeAlpha: { arg, _ in exec.strokeAlpha(arg) },
+      onFillNone: { arg, _ in exec.fillNone(arg) },
+      onStrokeNone: { arg, _ in exec.strokeNone(arg) },
+      onLineWidth: { arg, _ in exec.lineWidth(arg) },
+      onLineCapStyle: { arg, _ in exec.lineCapStyle(arg) },
+      onLineJoinStyle: { arg, _ in exec.lineJoinStyle(arg) },
+      onMiterLimit: { arg, _ in exec.miterLimit(arg) },
+      onDash: { arg, _ in exec.dash(arg) },
+      onDashPhase: { arg, _ in exec.dashPhase(arg) },
+      onDashLengths: { arg, _ in exec.dashLengths(arg) },
+      onConcatCTM: { arg, _ in exec.concatCTM(arg) },
+      onGlobalAlpha: { arg, _ in exec.globalAlpha(arg) },
+      onSetGlobalAlphaToFillAlpha: { arg, _ in exec.setGlobalAlphaToFillAlpha(arg) },
+      onBlendMode: { arg, _ in exec.blendMode(arg) },
+      onFillLinearGradient: { arg, _ in try exec.fillLinearGradient(arg) },
+      onFillRadialGradient: { arg, _ in try exec.fillRadialGradient(arg) },
+      onStrokeLinearGradient: { arg, _ in try exec.strokeLinearGradient(arg) },
+      onStrokeRadialGradient: { arg, _ in try exec.strokeRadialGradient(arg) },
+      onLinearGradient: { arg, _ in try exec.linearGradient(arg) },
+      onRadialGradient: { arg, _ in try exec.radialGradient(arg) },
+      onClip: { arg, _ in exec.clip(arg) },
+      onClipWithRule: { arg, _ in exec.clipWithRule(arg) },
+      onClipToRect: { arg, _ in exec.clipToRect(arg) },
+      onBeginTransparencyLayer: { arg, _ in exec.beginTransparencyLayer(arg) },
+      onEndTransparencyLayer: { arg, _ in exec.endTransparencyLayer(arg) },
+      onShadow: { arg, _ in exec.shadow(arg) },
+      onSubrouteWithId: { arg, _ in try exec.subrouteWithId(arg) },
+      onFlatness: { arg, _ in exec.flatness(arg) },
+      onFillEllipse: { arg, _ in exec.fillEllipse(arg) },
+      onColorRenderingIntent: { arg, _ in exec.colorRenderingIntent(arg) },
+      onFillRule: { arg, _ in exec.fillRule(arg) },
+      onReplacePathWithStrokePath: { arg, _ in exec.replacePathWithStrokePath(arg) },
+      onLines: { arg, _ in exec.lines(arg) }
+    )
   }
 
   func read() throws {}
@@ -644,7 +591,7 @@ private struct CommandExecution {
     cg.setDash(ctx.dash)
   }
 
-  mutating func dashLenghts(_ args: DrawCommand.DashLenghtsArgs) {
+  mutating func dashLengths(_ args: DrawCommand.DashLengthsArgs) {
     ctx.dash.lengths = args
     cg.setDash(ctx.dash)
   }
@@ -1182,29 +1129,6 @@ extension CGGradient {
     }
     return gradient
   }
-}
-
-private func decompressBytecode(
-  _ start: UnsafePointer<UInt8>,
-  _ compressedLen: Int,
-  _ decompressedLen: Int
-) throws -> [UInt8] {
-  let decodedDestinationBuffer = UnsafeMutablePointer<UInt8>
-    .allocate(capacity: decompressedLen)
-
-  let decompressedSize = compression_decode_buffer(
-    decodedDestinationBuffer,
-    decompressedLen,
-    start,
-    compressedLen,
-    nil,
-    COMPRESSION_LZFSE
-  )
-
-  return [UInt8](UnsafeBufferPointer(
-    start: decodedDestinationBuffer,
-    count: decompressedSize
-  ))
 }
 
 private final class Cache<Value>: @unchecked Sendable {

@@ -83,8 +83,8 @@ public enum DrawCommand: UInt8 {
   case dashPhase
   public typealias DashPhaseArgs = CGFloat
 
-  case dashLenghts
-  public typealias DashLenghtsArgs = [CGFloat]
+  case dashLengths
+  public typealias DashLengthsArgs = [CGFloat]
 
   case fill
   public typealias FillArgs = NoArgs

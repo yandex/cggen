@@ -357,8 +357,7 @@ public enum SVGParser {
     ).pullback(\XML.el)
   }
 
-  private nonisolated(unsafe)
-  static let filterPrimitiveContent: some Parser<
+  private nonisolated(unsafe) static let filterPrimitiveContent: some Parser<
     XML, SVG.FilterPrimitiveContent
   > = OneOf {
     FilterPrimitiveParser.feBlend.map(SVG.FilterPrimitiveContent.feBlend)
