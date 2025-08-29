@@ -32,15 +32,27 @@ import CGGenCLI
     )
   }
 
+  @Test func pdfExtGStateDeterminismGeneration() throws {
+    try testCodeGeneration(
+      fromSamples: true,
+      isPDF: true,
+      files: "extgstate_multiple_params.pdf",
+      prefix: "pdf_extgstate_determ"
+    )
+  }
+
   private func testCodeGeneration(
     fromSamples: Bool = false,
+    isPDF: Bool = false,
     files: String...,
     prefix: String = "test",
     file: StaticString = #filePath,
     testName: String = #function,
     line: UInt = #line
   ) throws {
-    let fileURLs = fromSamples ? svgSampleFiles(files) : pluginDemoFiles(files)
+    let fileURLs = fromSamples ? 
+      (isPDF ? pdfSampleFiles(files) : svgSampleFiles(files)) : 
+      pluginDemoFiles(files)
 
     let tmpdir = try createTempDirectory()
     defer { cleanupTempDirectory(tmpdir) }
@@ -65,23 +77,23 @@ import CGGenCLI
       )
     )
 
-    // Test all three outputs
-    let outputs: [(file: URL, name: String, ext: String)] = [
-      (swiftOutput, "swift", "swift"),
-      (objcHeader, "objcHeader", "h"),
-      (objcImpl, "objcImpl", "m"),
+    // Test all three outputs  
+    let outputs: [(file: URL, ext: String)] = [
+      (swiftOutput, "swift"),
+      (objcHeader, "h"),
+      (objcImpl, "m"),
     ]
 
-    for (outputFile, name, ext) in outputs {
+    for (outputFile, ext) in outputs {
       let generatedCode = try String(contentsOf: outputFile, encoding: .utf8)
-
+      
       var strategy = Snapshotting<String, String>.lines
       strategy.pathExtension = ext
 
       assertSnapshot(
         of: generatedCode,
         as: strategy,
-        named: name,
+        named: nil,
         file: file,
         testName: testName,
         line: line
@@ -122,5 +134,12 @@ import CGGenCLI
       .appendingPathComponent("svg_samples")
 
     return names.map { svgSamplesPath.appendingPathComponent($0) }
+  }
+
+  private func pdfSampleFiles(_ names: [String]) -> [URL] {
+    let pdfSamplesPath = getCurrentFilePath()
+      .appendingPathComponent("pdf_samples")
+
+    return names.map { pdfSamplesPath.appendingPathComponent($0) }
   }
 }
