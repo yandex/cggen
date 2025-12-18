@@ -18,6 +18,7 @@ Create $ARGUMENTS release
 **IF ANY OF THESE CONDITIONS ARE NOT MET, EXIT NOW**
 
 - Validate version format (must be semantic versioning x.y.z)
+- Update version in all podspecs (Podspecs/*.podspec) to match the release version
 - Review 3-4 recent releases to understand the format and style:
   - Use `gh release view` to check formatting conventions
   - Note emoji usage, section organization, and tone
