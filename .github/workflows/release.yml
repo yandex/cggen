@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-15
+
+    steps:
+      - name: Find draft release
+        id: find-draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get all releases via API (includes target_commitish)
+          releases=$(gh api repos/${{ github.repository }}/releases)
+
+          # Filter: draft=true, semver tag (x.y.z), no [WIP] in title
+          semver_drafts=$(echo "$releases" | jq '[.[] | select(.draft == true) | select(.tag_name | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) | select(.name | test("^\\[WIP\\]") | not)]')
+
+          count=$(echo "$semver_drafts" | jq 'length')
+
+          if [ "$count" -eq 0 ]; then
+            echo "❌ No draft release found with semver tag"
+            echo ""
+            echo "Create a draft release first with a tag like '1.2.0'"
+            exit 1
+          fi
+
+          if [ "$count" -gt 1 ]; then
+            echo "❌ Multiple draft releases found with semver tags:"
+            echo "$semver_drafts" | jq -r '.[].tag_name'
+            echo ""
+            echo "Mark other drafts with [WIP] prefix in title to exclude them"
+            exit 1
+          fi
+
+          # Extract release info
+          tag=$(echo "$semver_drafts" | jq -r '.[0].tag_name')
+          target=$(echo "$semver_drafts" | jq -r '.[0].target_commitish')
+
+          # Check if tag already exists via API
+          if gh api repos/${{ github.repository }}/git/refs/tags/$tag --silent 2>/dev/null; then
+            echo "❌ Tag $tag already exists"
+            echo ""
+            echo "Delete the existing tag or use a different version"
+            exit 1
+          fi
+
+          echo "✅ Found draft release: $tag (target: $target)"
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "target=$target" >> $GITHUB_OUTPUT
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.find-draft.outputs.target }}
+          fetch-depth: 0
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Update podspec versions
+        env:
+          VERSION: ${{ steps.find-draft.outputs.tag }}
+        run: |
+          echo "Updating podspecs to version $VERSION"
+
+          for podspec in Podspecs/*.podspec; do
+            # Use perl for reliable in-place replacement (works on both Linux and macOS)
+            perl -i -pe "s/s\.version\s*=\s*'[^']*'/s.version          = '$VERSION'/" "$podspec"
+            echo "Updated: $podspec"
+          done
+
+          # Show changes
+          git diff Podspecs/
+
+      - name: Enable Xcode prebuilts
+        run: defaults write com.apple.dt.Xcode IDEPackageEnablePrebuilts YES
+
+      - name: Run tests
+        run: SWIFT_DETERMINISTIC_HASHING=1 swift test --parallel --enable-experimental-prebuilts
+
+      - name: Build release
+        run: swift build --configuration release --enable-experimental-prebuilts
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ steps.find-draft.outputs.tag }}
+          TARGET: ${{ steps.find-draft.outputs.target }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Podspecs/*.podspec
+
+          if git diff --cached --quiet; then
+            echo "No changes to podspecs (versions already match)"
+          else
+            git commit -m "Update podspec versions to $VERSION"
+            git push origin "HEAD:$TARGET"
+          fi
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ steps.find-draft.outputs.tag }}
+        run: |
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.find-draft.outputs.tag }}
+        run: |
+          gh release edit "$VERSION" --repo ${{ github.repository }} --draft=false
+          echo "✅ Published release $VERSION"
+          echo ""
+          echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/$VERSION"
