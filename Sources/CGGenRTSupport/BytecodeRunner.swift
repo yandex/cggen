@@ -50,7 +50,8 @@ public func runMergedBytecode(
 }
 
 @_cdecl("runMergedBytecode")
-func runMergedBytecode(
+@_spi(CGGenInternal)
+public func runMergedBytecode(
   _ context: CGContext,
   _ start: UnsafePointer<UInt8>,
   _ decompressedLen: Int,
@@ -73,7 +74,8 @@ func runMergedBytecode(
 }
 
 @_cdecl("runBytecode")
-func runBytecode(
+@_spi(CGGenInternal)
+public func runBytecode(
   _ context: CGContext,
   _ start: UnsafePointer<UInt8>,
   _ len: Int
@@ -86,7 +88,8 @@ func runBytecode(
 }
 
 @_cdecl("runPathBytecode")
-func runPathBytecode(
+@_spi(CGGenInternal)
+public func runPathBytecode(
   _ path: CGMutablePath,
   _ start: UnsafePointer<UInt8>,
   _ len: Int
@@ -99,7 +102,8 @@ func runPathBytecode(
 }
 
 @_cdecl("runMergedPathBytecode")
-func runMergedPathBytecode(
+@_spi(CGGenInternal)
+public func runMergedPathBytecode(
   _ path: CGMutablePath,
   _ compressedStart: UnsafePointer<UInt8>,
   _ decompressedSize: Int,
