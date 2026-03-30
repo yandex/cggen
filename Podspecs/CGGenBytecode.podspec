@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'CGGenBytecode'
-  s.version          = '1.1.3'
+  s.version          = '1.1.4'
   s.summary          = 'Bytecode definitions for cggen vector graphics'
   s.description      = <<-DESC
     Low-level bytecode command definitions and data structures for cggen.

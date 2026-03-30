@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'CGGenBytecodeDecoding'
-  s.version          = '1.1.3'
+  s.version          = '1.1.4'
   s.summary          = 'Bytecode decoding for cggen vector graphics'
   s.description      = <<-DESC
     Bytecode decompression and visitor pattern implementation for cggen.
