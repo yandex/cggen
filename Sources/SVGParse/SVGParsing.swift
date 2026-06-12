@@ -46,433 +46,592 @@ extension SVG.Length: ExpressibleByIntegerLiteral {
   }
 }
 
+// Any parsing failure with the 1-based position of the element or markup
+// the parser stopped at.
+public struct SVGParsingError: Swift.Error, CustomStringConvertible {
+  public var line: Int
+  public var column: Int
+  public var reason: Swift.Error
+
+  public var description: String {
+    "\(line):\(column): \(reason)"
+  }
+}
+
 public enum SVGParser {
-  typealias Attribute = SVGAttributeParser
-  typealias AttributeGroup = SVGAttributeGroupParser
   typealias ShapeParser = SVGShapeParser
   typealias FilterPrimitiveParser = SVGFilterPrimitiveParser
+  private typealias RawElement = XMLParsing.RawElement<Node>
 
-  private enum Error: Swift.Error, CustomStringConvertible {
+  // What an XML node parses into. Stops, filter primitives and text runs
+  // are not SVG elements of their own — they only exist as children of
+  // specific elements, which unwrap them while the tree is parsed bottom-up.
+  private enum Node {
+    case element(SVG)
+    case stop(SVG.Stop)
+    case filterPrimitive(SVG.FilterPrimitiveContent)
+    case text(String)
+  }
+
+  private enum Error: Swift.Error {
     case expectedSVGTag(got: String)
     case unexpectedXMLText(String)
-    case unknown(attribute: String, tag: Tag)
-    case nonbelongig(attributes: Set<SVGParse.Attribute>, tag: Tag)
-    case invalidAttributeFormat(
-      tag: String,
-      attribute: String,
-      value: String,
-      type: String,
-      parseError: Swift.Error
-    )
-    case titleHasInvalidFormat(XML)
+    case unexpectedChild(String, of: String)
+    case childrenNotAllowed(of: String)
+    case titleHasInvalidFormat(String)
     case uknownTag(String)
-    case invalidVersion(String)
-    case notImplemented
-    case unknownAttributes(String)
+    case notImplemented(String)
+  }
 
-    var description: String {
-      switch self {
-      case let .unknownAttributes(attrs):
-        attrs
-      default:
-        "\(self)"
-      }
+  private struct ElementNode: Parser {
+    func parse(_ element: inout RawElement) throws -> Node {
+      try node(from: &element)
+    }
+  }
+
+  private struct TextNode: Parser {
+    func parse(_ text: inout String) throws -> Node {
+      .text(text)
     }
   }
 
   public static func root(from data: Data) throws -> SVG.Document {
-    try root(from: XML.parse(from: data).get())
-  }
-
-  public static func root(from xml: XML) throws -> SVG.Document {
-    switch xml {
-    case let .el(el):
-      try check(el.tag == Tag.svg.rawValue, Error.expectedSVGTag(got: el.tag))
-      return try document(from: el)
-    case let .text(t):
-      throw Error.unexpectedXMLText(t)
+    guard let text = String(data: data, encoding: .utf8) else {
+      throw XMLSwiftParsingError(description: "input is not valid UTF-8")
+    }
+    var input = text[...].utf8
+    let document = XMLParsing.DocumentParser(
+      element: ElementNode(), text: TextNode()
+    )
+    let root: Node
+    do {
+      root = try document.parse(&input)
+    } catch {
+      let position = XMLParsing.position(ofRemainder: input, in: text)
+      throw SVGParsingError(
+        line: position.line, column: position.column, reason: error
+      )
+    }
+    switch root {
+    case let .element(.svg(document)):
+      return document
+    case let node:
+      let position = try rootElementPosition(in: text)
+      throw SVGParsingError(
+        line: position.line, column: position.column,
+        reason: Error.expectedSVGTag(got: describe(node))
+      )
     }
   }
 
-  public static func document(
-    from el: XML.Element
-  ) throws -> SVG.Document {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, width, height, viewBox in
-        (core, presentation, width, height, viewBox)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        AttributeGroup.width
-        AttributeGroup.height
-        Attribute.ViewBox(.viewBox)
-      } <<~ AttributeGroup.version <<~ AttributeGroup.xml
-    )
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      width: attrs.2,
-      height: attrs.3,
-      viewBox: attrs.4,
-      children: el.children.map(element(from:))
-    )
-  }
-
-  private static func parseElementAttributes<P: Parser>(
-    _ attrs: [String: String],
-    _ parser: P
-  ) throws -> P.Output where P.Input == [String: String] {
-    var attrs = attrs
-    let result = try parser.parse(&attrs)
-
-    if !attrs.isEmpty {
-      let unknownAttrs = attrs.map { "\($0.key)=\"\($0.value)\"" }
-        .joined(separator: ", ")
-      throw Error.unknownAttributes(unknownAttrs)
+  private static func rootElementPosition(
+    in text: String
+  ) throws -> (line: Int, column: Int) {
+    var input = text[...].utf8
+    _ = Optionally { "\u{FEFF}".utf8 }.parse(&input)
+    if input.starts(with: "<?xml".utf8) {
+      try XMLParsing.Declaration().parse(&input)
     }
-
-    return result
+    try XMLParsing.Misc().parse(&input)
+    return XMLParsing.position(ofRemainder: input, in: text)
   }
 
-  public static func rect(from el: XML.Element) throws -> SVG.Rect {
-    try parseElementAttributes(el.attrs, ShapeParser.rect)
-  }
-
-  public static func group(from el: XML.Element) throws -> SVG.Group {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, transform in
-        (core, presentation, transform)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Transform(.transform)
-      }
-    )
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      transform: attrs.2,
-      children: el.children.map(element(from:))
-    )
-  }
-
-  public static func defs(from el: XML.Element) throws -> SVG.Defs {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, transform in
-        (core, presentation, transform)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Transform(.transform)
-      }
-    )
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      transform: attrs.2,
-      children: el.children.map(element(from:))
-    )
-  }
-
-  public static func polygon(from el: XML.Element) throws -> SVG.Polygon {
-    try parseElementAttributes(el.attrs, ShapeParser.polygon)
-  }
-
-  public static func circle(from el: XML.Element) throws -> SVG.Circle {
-    try parseElementAttributes(el.attrs, ShapeParser.circle)
-  }
-
-  public static func ellipse(from el: XML.Element) throws -> SVG.Ellipse {
-    try parseElementAttributes(el.attrs, ShapeParser.ellipse)
-  }
-
-  public static func stops(from el: XML.Element) throws -> SVG.Stop {
-    try parseElementAttributes(el.attrs, AttributeGroup.stop)
-  }
-
-  public static func linearGradient(
-    from el: XML.Element
-  ) throws -> SVG.LinearGradient {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, units, x1, y1, x2, y2, transform in
-        (core, presentation, units, x1, y1, x2, y2, transform)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Units(.gradientUnits)
-        Attribute.Coord(.x1)
-        Attribute.Coord(.y1)
-        Attribute.Coord(.x2)
-        Attribute.Coord(.y2)
-        Attribute.Transform(.gradientTransform)
-      }
-    )
-    let subelements: [XML.Element] = try el.children.map {
-      switch $0 {
-      case let .el(el):
-        return el
-      case let .text(t):
-        throw Error.unexpectedXMLText(t)
-      }
+  private static func node(from el: inout RawElement) throws -> Node {
+    guard let tag = Tag(rawValue: el.tag) else {
+      throw Error.uknownTag(el.tag)
     }
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      unit: attrs.2,
-      x1: attrs.3,
-      y1: attrs.4,
-      x2: attrs.5,
-      y2: attrs.6,
-      gradientTransform: attrs.7,
-      stops: subelements.map(stops(from:))
-    )
-  }
-
-  public static func radialGradient(
-    from el: XML.Element
-  ) throws -> SVG.RadialGradient {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, units, cx, cy, r, fx, fy, transform in
-        (core, presentation, units, cx, cy, r, fx, fy, transform)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Units(.gradientUnits)
-        Attribute.Coord(.cx)
-        Attribute.Coord(.cy)
-        Attribute.Len(.r)
-        Attribute.Coord(.fx)
-        Attribute.Coord(.fy)
-        Attribute.Transform(.gradientTransform)
-      }
-    )
-    let subelements: [XML.Element] = try el.children.map {
-      switch $0 {
-      case let .el(el):
-        return el
-      case let .text(t):
-        throw Error.unexpectedXMLText(t)
-      }
-    }
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      unit: attrs.2,
-      cx: attrs.3,
-      cy: attrs.4,
-      r: attrs.5,
-      fx: attrs.6,
-      fy: attrs.7,
-      gradientTransform: attrs.8,
-      stops: subelements.map(stops(from:))
-    )
-  }
-
-  public static func path(from el: XML.Element) throws -> SVG.Path {
-    try parseElementAttributes(el.attrs, ShapeParser.path)
-  }
-
-  fileprivate static let useParser = Parse(SVG.Use.init) {
-    AttributeGroup.core
-    AttributeGroup.presentation
-    Attribute.Transform(.transform)
-    AttributeGroup.x
-    AttributeGroup.y
-    AttributeGroup.width
-    AttributeGroup.height
-    Attribute.Iri(.xlinkHref)
-  }
-
-  public static func use(from el: XML.Element) throws -> SVG.Use {
-    try parseElementAttributes(el.attrs, useParser)
-  }
-
-  public static func mask(from el: XML.Element) throws -> SVG.Mask {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, transform, x, y, width, height, maskUnits, maskContentUnits in
-        (
-          core,
-          presentation,
-          transform,
-          x,
-          y,
-          width,
-          height,
-          maskUnits,
-          maskContentUnits
+    switch tag {
+    case .svg:
+      return try .element(.svg(document(from: &el)))
+    case .g:
+      return try .element(.group(group(from: &el)))
+    case .defs:
+      return try .element(.defs(defs(from: &el)))
+    case .rect:
+      return try .element(.rect(
+        leaf(ShapeParser.rect, .init(data: .init()), &el, tag)
+      ))
+    case .circle:
+      return try .element(.circle(
+        leaf(ShapeParser.circle, .init(data: .init()), &el, tag)
+      ))
+    case .ellipse:
+      return try .element(.ellipse(
+        leaf(ShapeParser.ellipse, .init(data: .init()), &el, tag)
+      ))
+    case .polygon:
+      return try .element(.polygon(
+        leaf(ShapeParser.polygon, .init(data: .init()), &el, tag)
+      ))
+    case .path:
+      return try .element(.path(
+        leaf(ShapeParser.path, .init(data: .init()), &el, tag)
+      ))
+    case .use:
+      return try .element(.use(leaf(useSchema, .init(), &el, tag)))
+    case .title:
+      return try .element(.title(textContent(of: el)))
+    case .desc:
+      return try .element(.desc(textContent(of: el)))
+    case .linearGradient:
+      return try .element(.linearGradient(linearGradient(from: &el)))
+    case .radialGradient:
+      return try .element(.radialGradient(radialGradient(from: &el)))
+    case .mask:
+      return try .element(.mask(mask(from: &el)))
+    case .clipPath:
+      return try .element(.clipPath(clipPath(from: &el)))
+    case .filter:
+      return try .element(.filter(filter(from: &el)))
+    case .stop:
+      return try .stop(leaf(stopSchema, .init(), &el, tag))
+    case .feBlend:
+      return try .filterPrimitive(.feBlend(
+        leaf(FilterPrimitiveParser.feBlend, .init(data: .init()), &el, tag)
+      ))
+    case .feColorMatrix:
+      return try .filterPrimitive(.feColorMatrix(
+        leaf(
+          FilterPrimitiveParser.feColorMatrix, .init(data: .init()), &el, tag
         )
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Transform(.transform)
-        AttributeGroup.x
-        AttributeGroup.y
-        AttributeGroup.width
-        AttributeGroup.height
-        Attribute.Units(.maskUnits)
-        Attribute.Units(.maskContentUnits)
-      } <<~ AttributeGroup.ignore
-    )
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      transform: attrs.2,
-      x: attrs.3,
-      y: attrs.4,
-      width: attrs.5,
-      height: attrs.6,
-      maskUnits: attrs.7,
-      maskContentUnits: attrs.8,
-      children: el.children.map(element(from:))
-    )
-  }
-
-  public static func clipPath(from el: XML.Element) throws -> SVG.ClipPath {
-    let attrs = try parseElementAttributes(
-      el.attrs,
-      Parse { core, presentation, transform, units in
-        (core, presentation, transform, units)
-      } with: {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Transform(.transform)
-        Attribute.Units(.clipPathUnits)
-      }
-    )
-    return try .init(
-      core: attrs.0,
-      presentation: attrs.1,
-      transform: attrs.2,
-      clipPathUnits: attrs.3,
-      children: el.children.map(element(from:))
-    )
-  }
-
-  private static func elementWithChildren<
-    Attributes: Equatable, Child: Equatable
-  >(
-    attributes: some Parser<[String: String], Attributes>,
-    child: some Parser<XML, Child>
-  ) -> some Parser<XML, SVG.ElementWithChildren<Attributes, Child>> {
-    let childParser = First<ArraySlice<XML>>().compactMap { element in
-      try? child.parse(element)
+      ))
+    case .feFlood:
+      return try .filterPrimitive(.feFlood(
+        leaf(FilterPrimitiveParser.feFlood, .init(data: .init()), &el, tag)
+      ))
+    case .feGaussianBlur:
+      return try .filterPrimitive(.feGaussianBlur(
+        leaf(
+          FilterPrimitiveParser.feGaussianBlur, .init(data: .init()), &el, tag
+        )
+      ))
+    case .feOffset:
+      return try .filterPrimitive(.feOffset(
+        leaf(FilterPrimitiveParser.feOffset, .init(data: .init()), &el, tag)
+      ))
+    case .feComponentTransfer,
+         .feComposite,
+         .feConvolveMatrix,
+         .feDiffuseLighting,
+         .feDisplacementMap,
+         .feImage,
+         .feMerge,
+         .feMorphology,
+         .feSpecularLighting,
+         .feTile,
+         .feTurbulence:
+      throw Error.notImplemented(el.tag)
     }
-    let childrenParser: some Parser<[XML], [Child]> =
-      (childParser* <<~ End())
-        .pullback(\.slice)
-    let attrs = (attributes <<~ End())
-    return OptionalInput(Parse(SVG.ElementWithChildren.init) {
-      attrs.pullback(\XML.Element.attrs)
-      childrenParser.pullback(\XML.Element.children)
-    }).pullback(\XML.el)
   }
 
-  private static func element<Attributes>(
-    tag: Tag,
-    attributes: some Parser<[String: String], Attributes>
-  ) -> some Parser<XML, Attributes> {
-    let tag: some Parser<XML.Element, Void> =
-      tag.rawValue
-        .pullback(\.substring)
-        .pullback(\XML.Element.tag)
+  // MARK: - Elements with children
 
-    return OptionalInput(
-      tag ~>> (attributes <<~ End())
-        .pullback(\.attrs)
-    ).pullback(\XML.el)
+  private static func document(
+    from el: inout RawElement
+  ) throws -> SVG.Document {
+    var document = SVG.Document()
+    try documentSchema.parse(el.attrs, into: &document, of: el.tag)
+    document.children = try elements(el.children, in: .svg)
+    return document
   }
 
-  private nonisolated(unsafe) static let filterPrimitiveContent: some Parser<
-    XML, SVG.FilterPrimitiveContent
-  > = OneOf {
-    FilterPrimitiveParser.feBlend.map(SVG.FilterPrimitiveContent.feBlend)
-    FilterPrimitiveParser.feColorMatrix
-      .map(SVG.FilterPrimitiveContent.feColorMatrix)
-    FilterPrimitiveParser.feFlood.map(SVG.FilterPrimitiveContent.feFlood)
-    FilterPrimitiveParser.feGaussianBlur
-      .map(SVG.FilterPrimitiveContent.feGaussianBlur)
-    FilterPrimitiveParser.feOffset.map(SVG.FilterPrimitiveContent.feOffset)
+  private static func group(from el: inout RawElement) throws -> SVG.Group {
+    var group = SVG.Group()
+    try groupSchema.parse(el.attrs, into: &group, of: el.tag)
+    group.children = try elements(el.children, in: .g)
+    return group
   }
 
-  private nonisolated(unsafe) static let filter: some Parser<
-    XML, SVG.Filter
-  > = elementWithChildren(
-    attributes: AttributeGroup.filterAttributes, child: filterPrimitiveContent
-  )
+  private static func defs(from el: inout RawElement) throws -> SVG.Defs {
+    var defs = SVG.Defs()
+    try defsSchema.parse(el.attrs, into: &defs, of: el.tag)
+    defs.children = try elements(el.children, in: .defs)
+    return defs
+  }
 
-  public static func element(from xml: XML) throws -> SVG {
-    switch xml {
-    case let .el(el):
-      guard let tag = Tag(rawValue: el.tag) else {
-        throw Error.uknownTag(el.tag)
+  private static func linearGradient(
+    from el: inout RawElement
+  ) throws -> SVG.LinearGradient {
+    var gradient = SVG.LinearGradient()
+    try linearGradientSchema.parse(el.attrs, into: &gradient, of: el.tag)
+    gradient.stops = try stops(el.children, in: .linearGradient)
+    return gradient
+  }
+
+  private static func radialGradient(
+    from el: inout RawElement
+  ) throws -> SVG.RadialGradient {
+    var gradient = SVG.RadialGradient()
+    try radialGradientSchema.parse(el.attrs, into: &gradient, of: el.tag)
+    gradient.stops = try stops(el.children, in: .radialGradient)
+    return gradient
+  }
+
+  private static func mask(from el: inout RawElement) throws -> SVG.Mask {
+    var mask = SVG.Mask()
+    try maskSchema.parse(el.attrs, into: &mask, of: el.tag)
+    mask.children = try elements(el.children, in: .mask)
+    return mask
+  }
+
+  private static func clipPath(
+    from el: inout RawElement
+  ) throws -> SVG.ClipPath {
+    var clipPath = SVG.ClipPath()
+    try clipPathSchema.parse(el.attrs, into: &clipPath, of: el.tag)
+    clipPath.children = try elements(el.children, in: .clipPath)
+    return clipPath
+  }
+
+  private static func filter(from el: inout RawElement) throws -> SVG.Filter {
+    var attrs = SVG.FilterAttributes()
+    try filterSchema.parse(el.attrs, into: &attrs, of: el.tag)
+    return try .init(
+      attributes: attrs,
+      children: filterPrimitives(el.children)
+    )
+  }
+
+  // MARK: - Element schemas
+
+  private typealias Value = SVGValueParser
+
+  private static let documentSchema = AttributeSchema<SVG.Document> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.width, \.width, Value.length)
+    $0.field(.height, \.height, Value.length)
+    $0.field(.viewBox, \.viewBox, Value.viewBox)
+    $0.validate(.version) {
+      guard $0 == "1.1" else {
+        throw ParseError.consume(expected: "1.1", got: String($0))
       }
-      switch tag {
-      case .svg:
-        return try .svg(document(from: el))
-      case .rect:
-        return try .rect(rect(from: el))
-      case .title:
-        guard case let .text(title)? = el.children.firstAndOnly else {
-          throw Error.titleHasInvalidFormat(xml)
-        }
-        return .title(title)
-      case .desc:
-        guard case let .text(desc)? = el.children.firstAndOnly else {
-          throw Error.titleHasInvalidFormat(xml)
-        }
-        return .desc(desc)
-      case .g:
-        return try .group(group(from: el))
-      case .polygon:
-        return try .polygon(polygon(from: el))
-      case .defs:
-        return try .defs(defs(from: el))
-      case .linearGradient:
-        return try .linearGradient(linearGradient(from: el))
-      case .radialGradient:
-        return try .radialGradient(radialGradient(from: el))
-      case .stop:
-        fatalError()
-      case .path:
-        return try .path(path(from: el))
-      case .circle:
-        return try .circle(circle(from: el))
-      case .ellipse:
-        return try .ellipse(ellipse(from: el))
-      case .mask:
-        return try .mask(mask(from: el))
-      case .use:
-        return try .use(use(from: el))
-      case .clipPath:
-        return try .clipPath(clipPath(from: el))
-      case .filter:
-        return try .filter(filter.run(xml).get())
-      case .feColorMatrix,
-           .feComponentTransfer,
-           .feComposite,
-           .feConvolveMatrix,
-           .feDiffuseLighting,
-           .feDisplacementMap,
-           .feBlend,
-           .feFlood,
-           .feGaussianBlur,
-           .feImage,
-           .feMerge,
-           .feMorphology,
-           .feOffset,
-           .feSpecularLighting,
-           .feTile,
-           .feTurbulence:
-        fatalError()
-      }
-    case let .text(t):
-      throw Error.unexpectedXMLText(t)
     }
+    $0.ignore(.xmlns)
+    $0.ignore(.xmlnsxlink)
+  }
+
+  private static let groupSchema = AttributeSchema<SVG.Group> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+  }
+
+  private static let defsSchema = AttributeSchema<SVG.Defs> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+  }
+
+  private static let useSchema = AttributeSchema<SVG.Use> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.x, \.x, Value.length)
+    $0.field(.y, \.y, Value.length)
+    $0.field(.width, \.width, Value.length)
+    $0.field(.height, \.height, Value.length)
+    $0.field(.xlinkHref, \.xlinkHref, Value.iri)
+  }
+
+  private static let stopSchema = AttributeSchema<SVG.Stop> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.offset, \.offset, Value.stopOffset)
+  }
+
+  private static let linearGradientSchema =
+    AttributeSchema<SVG.LinearGradient> {
+      $0.core(\.core)
+      $0.presentation(\.presentation)
+      $0.field(.gradientUnits, \.unit, SVG.Units.parser())
+      $0.field(.x1, \.x1, Value.length)
+      $0.field(.y1, \.y1, Value.length)
+      $0.field(.x2, \.x2, Value.length)
+      $0.field(.y2, \.y2, Value.length)
+      $0.field(.gradientTransform, \.gradientTransform, Value.transformsList)
+    }
+
+  private static let radialGradientSchema =
+    AttributeSchema<SVG.RadialGradient> {
+      $0.core(\.core)
+      $0.presentation(\.presentation)
+      $0.field(.gradientUnits, \.unit, SVG.Units.parser())
+      $0.field(.cx, \.cx, Value.length)
+      $0.field(.cy, \.cy, Value.length)
+      $0.field(.r, \.r, Value.length)
+      $0.field(.fx, \.fx, Value.length)
+      $0.field(.fy, \.fy, Value.length)
+      $0.field(.gradientTransform, \.gradientTransform, Value.transformsList)
+    }
+
+  private static let maskSchema = AttributeSchema<SVG.Mask> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.x, \.x, Value.length)
+    $0.field(.y, \.y, Value.length)
+    $0.field(.width, \.width, Value.length)
+    $0.field(.height, \.height, Value.length)
+    $0.field(.maskUnits, \.maskUnits, SVG.Units.parser())
+    $0.field(.maskContentUnits, \.maskContentUnits, SVG.Units.parser())
+    $0.ignore(.maskType)
+  }
+
+  private static let clipPathSchema = AttributeSchema<SVG.ClipPath> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.clipPathUnits, \.clipPathUnits, SVG.Units.parser())
+  }
+
+  private static let filterSchema = AttributeSchema<SVG.FilterAttributes> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.x, \.x, Value.length)
+    $0.field(.y, \.y, Value.length)
+    $0.field(.width, \.width, Value.length)
+    $0.field(.height, \.height, Value.length)
+    $0.field(.filterUnits, \.filterUnits, SVG.Units.parser())
+  }
+
+  // MARK: - Children helpers
+
+  // An element with no permitted children.
+  private static func leaf<State>(
+    _ schema: AttributeSchema<State>,
+    _ state: State,
+    _ el: inout RawElement,
+    _ tag: Tag
+  ) throws -> State {
+    guard el.children.isEmpty else {
+      throw Error.childrenNotAllowed(of: tag.rawValue)
+    }
+    var state = state
+    try schema.parse(el.attrs, into: &state, of: el.tag)
+    return state
+  }
+
+  private static func textContent(of el: RawElement) throws -> String {
+    guard case let .text(text)? = el.children.firstAndOnly else {
+      throw Error.titleHasInvalidFormat(el.tag)
+    }
+    return text
+  }
+
+  private static func elements(
+    _ children: [Node], in tag: Tag
+  ) throws -> [SVG] {
+    try children.map { child in
+      switch child {
+      case let .element(element):
+        return element
+      case let .text(text):
+        throw Error.unexpectedXMLText(text)
+      case .stop, .filterPrimitive:
+        throw Error.unexpectedChild(describe(child), of: tag.rawValue)
+      }
+    }
+  }
+
+  private static func stops(
+    _ children: [Node], in tag: Tag
+  ) throws -> [SVG.Stop] {
+    try children.map { child in
+      guard case let .stop(stop) = child else {
+        throw Error.unexpectedChild(describe(child), of: tag.rawValue)
+      }
+      return stop
+    }
+  }
+
+  private static func filterPrimitives(
+    _ children: [Node]
+  ) throws -> [SVG.FilterPrimitiveContent] {
+    try children.map { child in
+      guard case let .filterPrimitive(primitive) = child else {
+        throw Error.unexpectedChild(describe(child), of: Tag.filter.rawValue)
+      }
+      return primitive
+    }
+  }
+
+  private static func describe(_ node: Node) -> String {
+    switch node {
+    case let .element(element):
+      tagName(of: element)
+    case .stop:
+      Tag.stop.rawValue
+    case .filterPrimitive:
+      "filter primitive"
+    case .text:
+      "text"
+    }
+  }
+
+  private static func tagName(of element: SVG) -> String {
+    let tag: Tag = switch element {
+    case .svg: .svg
+    case .group: .g
+    case .use: .use
+    case .path: .path
+    case .rect: .rect
+    case .circle: .circle
+    case .ellipse: .ellipse
+    case .polygon: .polygon
+    case .mask: .mask
+    case .clipPath: .clipPath
+    case .defs: .defs
+    case .title: .title
+    case .desc: .desc
+    case .linearGradient: .linearGradient
+    case .radialGradient: .radialGradient
+    case .filter: .filter
+    }
+    return tag.rawValue
+  }
+}
+
+// MARK: - Empty parsing states
+
+extension SVG.CoreAttributes {
+  fileprivate init() {
+    self.init(id: nil)
+  }
+}
+
+extension SVG.PresentationAttributes {
+  fileprivate init() {
+    self.init(
+      clipPath: nil,
+      clipRule: nil,
+      mask: nil,
+      filter: nil,
+      fill: nil,
+      fillRule: nil,
+      fillOpacity: nil,
+      stroke: nil,
+      strokeWidth: nil,
+      strokeLineCap: nil,
+      strokeLineJoin: nil,
+      strokeDashArray: nil,
+      strokeDashOffset: nil,
+      strokeOpacity: nil,
+      strokeMiterlimit: nil,
+      opacity: nil,
+      stopColor: nil,
+      stopOpacity: nil,
+      colorInterpolationFilters: nil
+    )
+  }
+}
+
+extension SVG.Document {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(),
+      width: nil, height: nil, viewBox: nil, children: []
+    )
+  }
+}
+
+extension SVG.Group {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil, children: []
+    )
+  }
+}
+
+extension SVG.Defs {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil, children: []
+    )
+  }
+}
+
+extension SVG.Use {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil,
+      x: nil, y: nil, width: nil, height: nil, xlinkHref: nil
+    )
+  }
+}
+
+extension SVG.Mask {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil,
+      x: nil, y: nil, width: nil, height: nil,
+      maskUnits: nil, maskContentUnits: nil, children: []
+    )
+  }
+}
+
+extension SVG.ClipPath {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil,
+      clipPathUnits: nil, children: []
+    )
+  }
+}
+
+extension SVG.Stop {
+  fileprivate init() {
+    self.init(core: .init(), presentation: .init(), offset: nil)
+  }
+}
+
+extension SVG.LinearGradient {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), unit: nil,
+      x1: nil, y1: nil, x2: nil, y2: nil,
+      gradientTransform: nil, stops: []
+    )
+  }
+}
+
+extension SVG.RadialGradient {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(), unit: nil,
+      cx: nil, cy: nil, r: nil, fx: nil, fy: nil,
+      gradientTransform: nil, stops: []
+    )
+  }
+}
+
+extension SVG.FilterAttributes {
+  fileprivate init() {
+    self.init(
+      core: .init(), presentation: .init(),
+      x: nil, y: nil, width: nil, height: nil, filterUnits: nil
+    )
+  }
+}
+
+extension SVG.ShapeElement {
+  fileprivate init(data: T) {
+    self.init(
+      core: .init(), presentation: .init(), transform: nil, data: data
+    )
+  }
+}
+
+extension SVG.FilterPrimitiveElement {
+  fileprivate init(data: T) {
+    self.init(
+      core: .init(), presentation: .init(), common: .init(), data: data
+    )
+  }
+}
+
+extension SVG.RectData {
+  fileprivate init() {
+    self.init(x: nil, y: nil, rx: nil, ry: nil, width: nil, height: nil)
   }
 }

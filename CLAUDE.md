@@ -70,6 +70,7 @@ open Demo/Demo.xcodeproj
 - WebKit reference generation tests are disabled by default
 - Enable with: `CGGEN_EXTENDED_TESTS=1 swift test`
 - The `extendedTestsEnabled` constant in `SVGTests.swift` controls this behavior
+- XML conformance tests (`XMLConformanceTests`) are behind the same flag; they download the W3C suite from w3.org and cache it in the user caches directory
 
 #### Debug Output
 - Save test failure images: `CGGEN_TEST_DEBUG_OUTPUT=/path/to/debug/dir swift test`
@@ -80,6 +81,7 @@ open Demo/Demo.xcodeproj
 - Format check: `swiftformat --lint .`
 - Format fix: `swiftformat .`
 - **Run formatter before commit**
+- CI does not run swiftformat; a few files have pre-existing lint failures. Lint the files you touched, don't fold unrelated reformatting into a feature diff
 
 ### CI/CD
 - **Main workflow**: Runs on every push/PR with deterministic hashing
@@ -109,11 +111,12 @@ cggen converts SVG/PDF files into compressed bytecode that is executed at runtim
 ### Core Components
 - **cggen**: CLI entry point using Swift Argument Parser
 - **CGGenCLI**: Main library for PDF/SVG → bytecode generation
-  - `PDFToDrawRouteConverter` / `SVGToDrawRouteConverter`: Convert input files to DrawRoute IR
+  - `PDFToDrawRouteConverter`: Converts parsed PDF to DrawRoute IR
   - `MBCCGGenerator`: Generates compressed bytecode from DrawRoute
   - `ObjCGen` / `SwiftCGGenerator`: Generate wrapper code containing bytecode arrays
-  - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
 - **CGGenIR**: Intermediate representation and bytecode generation
+  - `SVGToDrawRouteConverter`: Converts parsed SVG to DrawRoute IR
+  - `DrawRoute` / `PathRoutine`: Intermediate representation of graphics operations
   - `DrawStep` / `PathSegment`: Low-level drawing operations
   - `BytecodeGeneration`: Compiles IR to compressed bytecode
 - **CGGenRuntime**: Alternative runtime library for direct SVG/PDF rendering (bypasses bytecode)
@@ -126,8 +129,10 @@ cggen converts SVG/PDF files into compressed bytecode that is executed at runtim
   - Platform-specific image support (UIKit/AppKit)
   - Required dependency for apps using cggen-generated code
 - **SVGParse**: SVG parsing infrastructure
-  - Parser combinators for SVG attributes and elements
-  - Color, gradient, filter, and shape parsing
+  - `XMLParsing.swift`: XML grammar over UTF-8 bytes, generic over element/text node sub-parsers; `SVGParser` plugs into it to parse SVG types directly — there is no intermediate XML tree in production (the generic `XML` tree for grammar tests lives in `Tests/UnitTests/XML.swift`)
+  - Parsing is bottom-up: children are parsed before their parent, which then validates them (stops only in gradients, `fe*` only in filter, no children on shapes)
+  - Strict by design: unknown tags, unknown attributes, and misplaced children are parse errors, not skipped
+  - Color, gradient, filter, and shape parsing via parser combinators over each element's scanned attributes
 - **PDFParse**: PDF parsing infrastructure
   - PDF object model and content stream parsing
   - Support for graphics operators, resources, and functions
@@ -157,23 +162,24 @@ The project uses swift-parsing library with custom operators:
 
 ### Common Tasks
 - Add new SVG attribute: Update `SVGValueParser.swift` and `SVGParsing.swift`
+- Add new SVG element: Add to the `Tag` enum and `node(from:)` dispatch in `SVGParsing.swift`; child validation happens in the parent element's parser
 - Add new PDF operator: Update `PDFOperator.swift` and `PDFContentStreamParser.swift`
 - Modify bytecode generation: Update `BytecodeGeneration.swift` in `CGGenIR/`
 - Add runtime bytecode execution: Update `BytecodeRunner.swift` in `CGGenRTSupport/`
 - Add runtime rendering support (without bytecode generation): Update `SVGRenderer.swift` in `CGGenRuntime/`
 
-
 ## Documentation
 
 ### Available Documentation
-- [docs/architecture.md](docs/architecture.md) - Detailed architecture overview
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Detailed architecture overview (partially outdated: predates module renames)
+- [docs/svg-filter-implementation-guide.md](docs/svg-filter-implementation-guide.md) - SVG filter support guide
 - [docs/api-usage-guide.md](docs/api-usage-guide.md) - API usage examples
 - [docs/api-design-considerations.md](docs/api-design-considerations.md) - Design rationale
 - [docs/adding-new-attribute.md](docs/adding-new-attribute.md) - Contributing guide for SVG attributes
 - [docs/path-generation.md](docs/path-generation.md) - Path extraction feature guide
 
 ### Key File Locations
-- **CLI Entry**: `Sources/cggen/main.swift`
+- **CLI Entry**: `Sources/cggen/CGGen.swift`
 - **Main Logic**: `Sources/CGGenCLI/`
 - **Runtime Support**: `Sources/CGGenRTSupport/`
 - **SVG Parsing**: `Sources/SVGParse/`
