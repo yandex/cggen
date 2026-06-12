@@ -1,5 +1,4 @@
 import CGGenCore
-import Foundation
 @preconcurrency import Parsing
 
 // MARK: - Attribute Enum
@@ -60,314 +59,141 @@ enum Attribute: String {
   case maskType = "mask-type"
 }
 
-enum SVGAttributeParser {
-  typealias AttributeParserProtocol<T> = Parser<[String: String], T?>
-  struct Base<P: Parser>: Parser where P.Input == Substring {
-    var attribute: Attribute
-    var valueParser: P
+// MARK: - Attribute Schema
 
-    init(_ parser: P, _ attribute: Attribute) {
-      self.attribute = attribute
-      valueParser = parser
-    }
+enum SVGAttributeError: Swift.Error {
+  case unknown(attribute: String, value: String, element: String)
+  case invalid(attribute: String, element: String, reason: Swift.Error)
+}
 
-    init(_ parser: (SVGValueParser.Type) -> P, _ attribute: Attribute) {
-      self.attribute = attribute
-      valueParser = parser(SVGValueParser.self)
-    }
+// Parses one element's attributes: each XML attribute selects by name a
+// typed value parser writing one field of State, so source order is
+// irrelevant and values parse straight from their slice of the document.
+// A name the schema doesn't know is an error — every attribute must be
+// consumed.
+struct AttributeSchema<State>: @unchecked Sendable {
+  typealias Value = SVGValueParser
 
-    var body: some Parser<[String: String], P.Output?> {
-      Optionally {
-        DicitionaryKey<String, String>(attribute.rawValue)
-          .map { $0[...] }.pipe { valueParser }
+  private var fields: [String: (inout State, Substring) throws -> Void] = [:]
+
+  init(_ configure: (inout Self) -> Void) {
+    configure(&self)
+  }
+
+  func parse(
+    _ attrs: [(name: String, value: Substring)],
+    into state: inout State,
+    of tag: String
+  ) throws {
+    for (name, value) in attrs {
+      guard let apply = fields[name] else {
+        throw SVGAttributeError.unknown(
+          attribute: name, value: String(value), element: tag
+        )
+      }
+      do {
+        try apply(&state, value)
+      } catch {
+        throw SVGAttributeError.invalid(
+          attribute: name, element: tag, reason: error
+        )
       }
     }
   }
 
-  // MARK: - Nested Attribute Parsers
-
-  struct Len: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Length> {
-      Base(\.length, attribute)
+  mutating func field<T>(
+    _ attribute: Attribute,
+    _ keyPath: WritableKeyPath<State, T?>,
+    _ value: some Parser<Substring, T>
+  ) {
+    let parser = value <<~ End()
+    fields[attribute.rawValue] = { state, raw in
+      state[keyPath: keyPath] = try parser.parse(raw)
     }
   }
 
-  // Since SVG.Coordinate is just a typealias for SVG.Length,
-  // Coord can be a typealias for Len
-  typealias Coord = Len
-
-  struct Color: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Color> {
-      Base(\.rgbcolor, attribute)
-    }
+  mutating func validate(
+    _ attribute: Attribute,
+    _ check: @escaping (Substring) throws -> Void
+  ) {
+    fields[attribute.rawValue] = { _, raw in try check(raw) }
   }
 
-  struct Paint: Parser {
-    var attribute: Attribute
+  mutating func ignore(_ attribute: Attribute) {
+    fields[attribute.rawValue] = { _, _ in }
+  }
+}
 
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
+// MARK: - Shared attribute groups
 
-    var body: some AttributeParserProtocol<SVG.Paint> {
-      Base(\.paint, attribute)
-    }
+extension AttributeSchema {
+  mutating func core(
+    _ keyPath: WritableKeyPath<State, SVG.CoreAttributes>
+  ) {
+    field(.id, keyPath.appending(path: \.id), Value.identifier)
   }
 
-  struct ViewBox: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.ViewBox> {
-      Base(\.viewBox, attribute)
-    }
+  mutating func presentation(
+    _ keyPath: WritableKeyPath<State, SVG.PresentationAttributes>
+  ) {
+    field(.clipPath, keyPath.appending(path: \.clipPath), Value.funciri)
+    field(
+      .clipRule, keyPath.appending(path: \.clipRule), SVG.FillRule.parser()
+    )
+    field(.mask, keyPath.appending(path: \.mask), Value.funciri)
+    field(.filter, keyPath.appending(path: \.filter), Value.funciri)
+    field(.fill, keyPath.appending(path: \.fill), Value.paint)
+    field(
+      .fillRule, keyPath.appending(path: \.fillRule), SVG.FillRule.parser()
+    )
+    field(.fillOpacity, keyPath.appending(path: \.fillOpacity), Value.number)
+    field(.stroke, keyPath.appending(path: \.stroke), Value.paint)
+    field(.strokeWidth, keyPath.appending(path: \.strokeWidth), Value.length)
+    field(
+      .strokeLinecap,
+      keyPath.appending(path: \.strokeLineCap),
+      SVG.LineCap.parser()
+    )
+    field(
+      .strokeLinejoin,
+      keyPath.appending(path: \.strokeLineJoin),
+      SVG.LineJoin.parser()
+    )
+    field(
+      .strokeDasharray,
+      keyPath.appending(path: \.strokeDashArray),
+      Value.dashArray
+    )
+    field(
+      .strokeDashoffset,
+      keyPath.appending(path: \.strokeDashOffset),
+      Value.length
+    )
+    field(
+      .strokeOpacity, keyPath.appending(path: \.strokeOpacity), Value.number
+    )
+    field(
+      .strokeMiterlimit,
+      keyPath.appending(path: \.strokeMiterlimit),
+      Value.number
+    )
+    field(.opacity, keyPath.appending(path: \.opacity), Value.number)
+    field(.stopColor, keyPath.appending(path: \.stopColor), Value.rgbcolor)
+    field(.stopOpacity, keyPath.appending(path: \.stopOpacity), Value.number)
+    field(
+      .colorInterpolationFilters,
+      keyPath.appending(path: \.colorInterpolationFilters),
+      SVG.ColorInterpolation.parser()
+    )
   }
 
-  struct Num: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Float> {
-      Base(\.number, attribute)
-    }
-  }
-
-  struct NumList: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Float]> {
-      Base(\.listOfNumbers, attribute)
-    }
-  }
-
-  struct NumberOptionalNumber: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.NumberOptionalNumber> {
-      Base(\.numberOptionalNumber, attribute)
-    }
-  }
-
-  struct Identifier: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      Base(\.identifier, attribute)
-    }
-  }
-
-  struct Transform: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Transform]> {
-      Base(\.transformsList, attribute)
-    }
-  }
-
-  struct ListOfPoints: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.CoordinatePairs> {
-      Base(\.listOfPoints, attribute)
-    }
-  }
-
-  struct PathData: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.PathData.Command]> {
-      Base(\.pathData, attribute)
-    }
-  }
-
-  struct StopOffset: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Stop.Offset> {
-      Base(\.stopOffset, attribute)
-    }
-  }
-
-  struct FillRule: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FillRule> {
-      Base(SVG.FillRule.parser(), attribute)
-    }
-  }
-
-  struct LineCap: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.LineCap> {
-      Base(SVG.LineCap.parser(), attribute)
-    }
-  }
-
-  struct LineJoin: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.LineJoin> {
-      Base(SVG.LineJoin.parser(), attribute)
-    }
-  }
-
-  struct Funciri: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      Base(\.funciri, attribute)
-    }
-  }
-
-  struct ColorInterpolation: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.ColorInterpolation> {
-      Base(SVG.ColorInterpolation.parser(), attribute)
-    }
-  }
-
-  struct DashArray: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<[SVG.Length]> {
-      Base(\.dashArray, attribute)
-    }
-  }
-
-  struct Units: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.Units> {
-      Base(SVG.Units.parser(), attribute)
-    }
-  }
-
-  struct Iri: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<String> {
-      Base(\.iri, attribute)
-    }
-  }
-
-  struct FilterPrimitiveIn: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FilterPrimitiveIn> {
-      Base(\.filterPrimitiveIn, attribute)
-    }
-  }
-
-  struct BlendMode: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.BlendMode> {
-      Base(\.blendMode, attribute)
-    }
-  }
-
-  struct FeColorMatrixType: Parser {
-    var attribute: Attribute
-
-    init(_ attribute: Attribute) {
-      self.attribute = attribute
-    }
-
-    var body: some AttributeParserProtocol<SVG.FilterPrimitiveFeColorMatrix
-      .Kind
-    > {
-      Base(
-        SVG.FilterPrimitiveFeColorMatrix.Kind.parser(),
-        attribute
-      )
-    }
+  mutating func filterPrimitiveCommon(
+    _ keyPath: WritableKeyPath<State, SVG.FilterPrimitiveCommonAttributes>
+  ) {
+    field(.result, keyPath.appending(path: \.result), Value.identifier)
+    field(.height, keyPath.appending(path: \.height), Value.length)
+    field(.width, keyPath.appending(path: \.width), Value.length)
+    field(.x, keyPath.appending(path: \.x), Value.length)
+    field(.y, keyPath.appending(path: \.y), Value.length)
   }
 }

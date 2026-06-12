@@ -117,7 +117,6 @@ Common utilities and parser infrastructure.
   - `Parser.swift` - Parser protocol and operators
   - `Color.swift` - Color representations
   - `Logger.swift` - Logging utilities
-  - `XML.swift` - XML parsing utilities
 
 #### `BCCommon`
 Bytecode common definitions.

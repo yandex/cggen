@@ -1,67 +1,51 @@
 @preconcurrency import Parsing
 
 enum SVGShapeParser {
-  typealias Attribute = SVGAttributeParser
-  typealias AttributeGroup = SVGAttributeGroupParser
+  typealias Value = SVGValueParser
 
-  struct ShapeParser<DataParser: Parser & Sendable>: Parser, Sendable
-    where DataParser.Input == [String: String],
-    DataParser.Output: Equatable & Sendable {
-    typealias Input = [String: String]
-    typealias Output = SVG.ShapeElement<DataParser.Output>
-
-    let dataParser: DataParser
-
-    init(_ dataParser: DataParser) {
-      self.dataParser = dataParser
-    }
-
-    var body: some Parser<Input, Output> {
-      Parse(SVG.ShapeElement.init) {
-        AttributeGroup.core
-        AttributeGroup.presentation
-        Attribute.Transform(.transform)
-        dataParser
-      }
-    }
+  static let rect = AttributeSchema<SVG.Rect> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.x, \.data.x, Value.length)
+    $0.field(.y, \.data.y, Value.length)
+    $0.field(.rx, \.data.rx, Value.length)
+    $0.field(.ry, \.data.ry, Value.length)
+    $0.field(.width, \.data.width, Value.length)
+    $0.field(.height, \.data.height, Value.length)
   }
 
-  static let rect = ShapeParser(
-    Parse(SVG.RectData.init) {
-      AttributeGroup.x
-      AttributeGroup.y
-      Attribute.Len(.rx)
-      Attribute.Len(.ry)
-      AttributeGroup.width
-      AttributeGroup.height
-    }
-  )
+  static let polygon = AttributeSchema<SVG.Polygon> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.points, \.data.points, Value.listOfPoints)
+  }
 
-  static let polygon = ShapeParser(
-    Attribute.ListOfPoints(.points).map(SVG.PolygonData.init)
-  )
+  static let circle = AttributeSchema<SVG.Circle> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.cx, \.data.cx, Value.length)
+    $0.field(.cy, \.data.cy, Value.length)
+    $0.field(.r, \.data.r, Value.length)
+  }
 
-  static let circle = ShapeParser(
-    Parse(SVG.CircleData.init) {
-      Attribute.Coord(.cx)
-      Attribute.Coord(.cy)
-      Attribute.Coord(.r)
-    }
-  )
+  static let ellipse = AttributeSchema<SVG.Ellipse> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.cx, \.data.cx, Value.length)
+    $0.field(.cy, \.data.cy, Value.length)
+    $0.field(.rx, \.data.rx, Value.length)
+    $0.field(.ry, \.data.ry, Value.length)
+  }
 
-  static let ellipse = ShapeParser(
-    Parse(SVG.EllipseData.init) {
-      Attribute.Coord(.cx)
-      Attribute.Coord(.cy)
-      Attribute.Len(.rx)
-      Attribute.Len(.ry)
-    }
-  )
-
-  static let path = ShapeParser(
-    Parse(SVG.PathData.init) {
-      Attribute.PathData(.d)
-      Attribute.Num(.pathLength)
-    }
-  )
+  static let path = AttributeSchema<SVG.Path> {
+    $0.core(\.core)
+    $0.presentation(\.presentation)
+    $0.field(.transform, \.transform, Value.transformsList)
+    $0.field(.d, \.data.d, Value.pathData)
+    $0.field(.pathLength, \.data.pathLength, Value.number)
+  }
 }

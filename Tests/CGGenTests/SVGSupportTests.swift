@@ -38,10 +38,10 @@ import Testing
   }
 
   @Test func invalidSVGThrows() {
-    // TODO: Fix XML parser to not call fatalError
-    // #expect(throws: Error.self) {
-    //   _ = try CGImage.svg(invalidSVG, size: CGSize(width: 100, height: 100))
-    // }
+    let invalidSVG = "<svg><rect></svg>"
+    #expect(throws: (any Error).self) {
+      _ = try CGImage.svg(invalidSVG, size: CGSize(width: 100, height: 100))
+    }
   }
 
   #if canImport(UIKit)
