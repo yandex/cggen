@@ -58,10 +58,10 @@ func clang(
 
   task.arguments = [
     "clang",
-    "-Weverything",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
     "-Werror",
-    "-Wno-declaration-after-statement",
-    "-Wno-poison-system-directories",
     "-fmodules",
     "-isysroot",
     sdkPath,
