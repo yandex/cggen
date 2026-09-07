@@ -32,8 +32,13 @@ func generateObjCImplementationFile(
   void runMergedBytecode(CGContextRef context, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
   void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
   void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
+  """)
 
-  static const uint8_t mergedBytecodes[];
+  // Bytecode array
+  sections.append("""
+  static const uint8_t mergedBytecodes[] = {
+  \(formatBytecodeArray(unifiedBytecodeData.compressedBytecode))
+  };
   """)
 
   // Image functions
@@ -51,13 +56,6 @@ func generateObjCImplementationFile(
   if !pathFunctions.isEmpty {
     sections.append(pathFunctions)
   }
-
-  // Bytecode array
-  sections.append("""
-  static const uint8_t mergedBytecodes[] = {
-  \(formatBytecodeArray(unifiedBytecodeData.compressedBytecode))
-  };
-  """)
 
   return sections.joined(separator: "\n\n") + "\n"
 }

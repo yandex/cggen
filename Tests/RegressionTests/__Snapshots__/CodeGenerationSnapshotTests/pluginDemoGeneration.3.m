@@ -4,20 +4,6 @@ void runMergedBytecode(CGContextRef context, const uint8_t* arr, int decompresse
 void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
 void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
 
-static const uint8_t mergedBytecodes[];
-
-void plugin_demoDrawCircleImageInContext(CGContextRef context) {
-  runMergedBytecode(context, mergedBytecodes, 275, 157, 0, 65);
-}
-
-void plugin_demoDrawSquareImageInContext(CGContextRef context) {
-  runMergedBytecode(context, mergedBytecodes, 275, 157, 66, 139);
-}
-
-void plugin_demoDrawStarImageInContext(CGContextRef context) {
-  runMergedBytecode(context, mergedBytecodes, 275, 157, 140, 274);
-}
-
 static const uint8_t mergedBytecodes[] = {
   0x62, 0x76, 0x78, 0x6E, 0x13, 0x01, 0x00, 0x00, 0x8D, 0x00, 0x00, 0x00,
   0x60, 0x01, 0x00, 0xE6, 0x1A, 0x00, 0x00, 0x80, 0x3F, 0x00, 0xF9, 0x98,
@@ -34,3 +20,15 @@ static const uint8_t mergedBytecodes[] = {
   0x01, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x62, 0x76, 0x78,
   0x24
 };
+
+void plugin_demoDrawCircleImageInContext(CGContextRef context) {
+  runMergedBytecode(context, mergedBytecodes, 275, 157, 0, 65);
+}
+
+void plugin_demoDrawSquareImageInContext(CGContextRef context) {
+  runMergedBytecode(context, mergedBytecodes, 275, 157, 66, 139);
+}
+
+void plugin_demoDrawStarImageInContext(CGContextRef context) {
+  runMergedBytecode(context, mergedBytecodes, 275, 157, 140, 274);
+}

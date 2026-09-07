@@ -4,24 +4,6 @@ void runMergedBytecode(CGContextRef context, const uint8_t* arr, int decompresse
 void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
 void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
 
-static const uint8_t mergedBytecodes[];
-
-void testDrawPathsImageInContext(CGContextRef context) {
-  runMergedBytecode(context, mergedBytecodes, 369, 217, 0, 63);
-}
-
-void testSimpleArrowPath(CGMutablePathRef path) {
-  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 64, 117);
-}
-
-void testSimpleHeartPath(CGMutablePathRef path) {
-  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 118, 277);
-}
-
-void testSimpleStarPath(CGMutablePathRef path) {
-  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 278, 368);
-}
-
 static const uint8_t mergedBytecodes[] = {
   0x62, 0x76, 0x78, 0x6E, 0x71, 0x01, 0x00, 0x00, 0xC9, 0x00, 0x00, 0x00,
   0x60, 0x01, 0x00, 0xE6, 0x1A, 0x00, 0x00, 0x80, 0x3F, 0x00, 0xF9, 0x98,
@@ -43,3 +25,19 @@ static const uint8_t mergedBytecodes[] = {
   0x07, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x62, 0x76, 0x78,
   0x24
 };
+
+void testDrawPathsImageInContext(CGContextRef context) {
+  runMergedBytecode(context, mergedBytecodes, 369, 217, 0, 63);
+}
+
+void testSimpleArrowPath(CGMutablePathRef path) {
+  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 64, 117);
+}
+
+void testSimpleHeartPath(CGMutablePathRef path) {
+  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 118, 277);
+}
+
+void testSimpleStarPath(CGMutablePathRef path) {
+  runMergedPathBytecode(path, mergedBytecodes, 369, 217, 278, 368);
+}

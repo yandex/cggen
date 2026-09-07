@@ -4,12 +4,6 @@ void runMergedBytecode(CGContextRef context, const uint8_t* arr, int decompresse
 void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
 void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
 
-static const uint8_t mergedBytecodes[];
-
-void grad_determDrawGradientDeterminismTestImageInContext(CGContextRef context) {
-  runMergedBytecode(context, mergedBytecodes, 408, 189, 0, 407);
-}
-
 static const uint8_t mergedBytecodes[] = {
   0x62, 0x76, 0x78, 0x6E, 0x98, 0x01, 0x00, 0x00, 0xAD, 0x00, 0x00, 0x00,
   0xE5, 0x05, 0x00, 0x00, 0x00, 0x01, 0x00, 0x04, 0x98, 0x01, 0x02, 0x00,
@@ -28,3 +22,7 @@ static const uint8_t mergedBytecodes[] = {
   0x06, 0x20, 0x87, 0x6E, 0x42, 0xF4, 0xE2, 0x18, 0x01, 0x06, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x62, 0x76, 0x78, 0x24
 };
+
+void grad_determDrawGradientDeterminismTestImageInContext(CGContextRef context) {
+  runMergedBytecode(context, mergedBytecodes, 408, 189, 0, 407);
+}
