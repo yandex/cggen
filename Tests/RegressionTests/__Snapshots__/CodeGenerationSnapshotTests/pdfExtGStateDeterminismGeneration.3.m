@@ -4,7 +4,7 @@ void runMergedBytecode(CGContextRef context, const uint8_t* arr, int decompresse
 void runPathBytecode(CGMutablePathRef path, const uint8_t* arr, int len);
 void runMergedPathBytecode(CGMutablePathRef path, const uint8_t* arr, int decompressedLen, int compressedLen, int startIndex, int endIndex);
 
-static const uint8_t mergedBytecodes[];
+static const uint8_t mergedBytecodes[53];
 
 void pdf_extgstate_determDrawExtgstateMultipleParamsImageInContext(CGContextRef context) {
   runMergedBytecode(context, mergedBytecodes, 41, 53, 0, 40);
