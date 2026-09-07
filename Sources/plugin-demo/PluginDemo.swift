@@ -78,9 +78,9 @@ public enum PluginDemo {
     #endif
     #else
     print("\n⚠️  KeyPath API requires Swift 6.1+")
-    print("  Please use direct initializers instead:")
-    print("  • UIImage(drawing: .circle)")
-    print("  • NSImage(drawing: .square)")
+    print("  Please use direct Drawing values instead:")
+    print("  • UIImage.draw(.circle)")
+    print("  • NSImage.draw(.square)")
     #endif
 
     // Core Graphics direct drawing
@@ -91,14 +91,14 @@ public enum PluginDemo {
       )
     }
 
-    // Show alternative direct initializer syntax
-    print("\n📝 Alternative Direct Initializer (also available):")
+    // Show alternative direct Drawing syntax
+    print("\n📝 Alternative Direct Drawing Syntax:")
     #if canImport(UIKit)
-    let altImage = UIImage(drawing: .star)
-    print("  • UIImage(drawing: .star) → size: \(altImage.size)")
+    let altImage = UIImage.draw(.star)
+    print("  • UIImage.draw(.star) → size: \(altImage.size)")
     #elseif canImport(AppKit)
-    let altImage = NSImage(drawing: .star)
-    print("  • NSImage(drawing: .star) → size: \(altImage.size)")
+    let altImage = NSImage.draw(.star)
+    print("  • NSImage.draw(.star) → size: \(altImage.size)")
     #endif
 
     // Demonstrate content mode API
@@ -106,43 +106,43 @@ public enum PluginDemo {
     let targetSize = CGSize(width: 100, height: 100)
 
     #if canImport(UIKit)
-    let aspectFitImage = UIImage(
-      drawing: .circle,
+    let aspectFitImage = UIImage.draw(
+      .circle,
       size: targetSize,
       contentMode: .aspectFit
     )
     print("  • Aspect Fit (100×100): \(aspectFitImage.size)")
 
-    let aspectFillImage = UIImage(
-      drawing: .star,
+    let aspectFillImage = UIImage.draw(
+      .star,
       size: targetSize,
       contentMode: .aspectFill
     )
     print("  • Aspect Fill (100×100): \(aspectFillImage.size)")
 
-    let scaleToFillImage = UIImage(
-      drawing: .square,
+    let scaleToFillImage = UIImage.draw(
+      .square,
       size: CGSize(width: 150, height: 75),
       contentMode: .scaleToFill
     )
     print("  • Scale to Fill (150×75): \(scaleToFillImage.size)")
     #elseif canImport(AppKit)
-    let aspectFitImage = NSImage(
-      drawing: .circle,
+    let aspectFitImage = NSImage.draw(
+      .circle,
       size: targetSize,
       contentMode: .aspectFit
     )
     print("  • Aspect Fit (100×100): \(aspectFitImage.size)")
 
-    let aspectFillImage = NSImage(
-      drawing: .star,
+    let aspectFillImage = NSImage.draw(
+      .star,
       size: targetSize,
       contentMode: .aspectFill
     )
     print("  • Aspect Fill (100×100): \(aspectFillImage.size)")
 
-    let scaleToFillImage = NSImage(
-      drawing: .square,
+    let scaleToFillImage = NSImage.draw(
+      .square,
       size: CGSize(width: 150, height: 75),
       contentMode: .scaleToFill
     )

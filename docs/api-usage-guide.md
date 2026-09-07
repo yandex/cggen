@@ -19,17 +19,6 @@ Drawing.star
 
 ### UIKit/AppKit Images
 
-#### Using Initializers
-```swift
-// UIKit
-let circleImage = UIImage(drawing: .circle)
-let starImage = UIImage(drawing: .star, scale: 2.0)
-
-// AppKit
-let circleImage = NSImage(drawing: .circle)
-let starImage = NSImage(drawing: .star, scale: 2.0)
-```
-
 #### Using Static Factory Methods
 ```swift
 // UIKit
@@ -61,9 +50,9 @@ public enum DrawingContentMode {
 ### Creating Images with Content Modes
 
 ```swift
-// Create thumbnail with aspect fit (using initializer)
-let thumbnail = UIImage(
-  drawing: .logo,
+// Create thumbnail with aspect fit
+let thumbnail = UIImage.draw(
+  .logo,
   size: CGSize(width: 100, height: 100),
   contentMode: .aspectFit
 )

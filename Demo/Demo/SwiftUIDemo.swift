@@ -42,20 +42,20 @@ struct SwiftUIDemo: View {
       }
 
       // Image conversion
-      Section("Image(drawing:)") {
+      Section("Image.draw") {
         HStack {
-          Image(drawing: .rocket)
+          Image.draw(.rocket)
             .resizable()
             .frame(width: 30, height: 30)
           Spacer()
-          Text("Image(drawing: .rocket).resizable()")
+          Text("Image.draw(.rocket).resizable()")
         }
 
         HStack {
-          Image(drawing: .star, scale: 2.0)
+          Image.draw(.star, scale: 2.0)
             .foregroundColor(.orange)
           Spacer()
-          Text("Image(drawing: .star, scale: 2.0)")
+          Text("Image.draw(.star, scale: 2.0)")
         }
       }
 

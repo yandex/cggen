@@ -30,10 +30,10 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     ),
     Example(
       category: "NSImage Creation",
-      code: "NSImage(drawing: .heart)",
+      code: "NSImage.draw(.heart)",
       createView: {
         let imageView = NSImageView()
-        imageView.image = NSImage(drawing: .heart)
+        imageView.image = NSImage.draw(.heart)
         imageView.imageScaling = .scaleProportionallyUpOrDown
         return imageView
       }
@@ -68,10 +68,10 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
     // Image Views
     Example(
       category: "NSImageView",
-      code: "imageView.image = NSImage(drawing: .rocket)",
+      code: "imageView.image = NSImage.draw(.rocket)",
       createView: {
         let imageView = NSImageView()
-        imageView.image = NSImage(drawing: .rocket)
+        imageView.image = NSImage.draw(.rocket)
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.wantsLayer = true
         imageView.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor
@@ -85,7 +85,7 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
       code: "imageView.imageScaling = .scaleNone",
       createView: {
         let imageView = NSImageView()
-        imageView.image = NSImage(drawing: .star)
+        imageView.image = NSImage.draw(.star)
         imageView.imageScaling = .scaleNone
         imageView.wantsLayer = true
         imageView.layer?.backgroundColor = NSColor.textBackgroundColor.cgColor

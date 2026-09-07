@@ -7,88 +7,90 @@ import SwiftUI
 public typealias CGGenPlatformImage = __CGGenPlatformImage
 
 extension CGGenPlatformImage {
-  @MainActor
-  public convenience init(drawing: Drawing) {
-    self.init(drawing: drawing, scale: defaultScale)
-  }
-
-  @MainActor
-  public convenience init(
-    drawing: Drawing,
-    size: CGSize,
-    contentMode: DrawingContentMode = .aspectFit
-  ) {
-    self.init(
-      drawing: drawing,
-      size: size,
-      contentMode: contentMode,
-      scale: defaultScale
-    )
-  }
-
   // MARK: Static Factory Methods
 
   @MainActor
-  public static func draw(_ drawing: Drawing) -> CGGenPlatformImage {
-    CGGenPlatformImage(drawing: drawing, scale: defaultScale)
+  public static func draw(
+    _ drawing: Drawing,
+    tintColor: CGColor? = nil
+  ) -> CGGenPlatformImage {
+    CGGenPlatformImage.draw(
+      drawing,
+      scale: defaultScale,
+      tintColor: tintColor
+    )
   }
 
   @MainActor
   public static func draw(
     _ drawing: Drawing,
     size: CGSize,
-    contentMode: DrawingContentMode = .aspectFit
+    contentMode: DrawingContentMode = .aspectFit,
+    tintColor: CGColor? = nil
   ) -> CGGenPlatformImage {
-    CGGenPlatformImage(
-      drawing: drawing,
+    CGGenPlatformImage.draw(
+      drawing,
       size: size,
       contentMode: contentMode,
-      scale: defaultScale
+      scale: defaultScale,
+      tintColor: tintColor
     )
   }
 
   public static func draw(
     _ drawing: Drawing,
-    scale: CGFloat
+    scale: CGFloat,
+    tintColor: CGColor? = nil
   ) -> CGGenPlatformImage {
-    CGGenPlatformImage(drawing: drawing, scale: scale)
+    let cgImage = CGImage.draw(
+      from: drawing,
+      scale: scale,
+      tintColor: tintColor
+    )
+    return CGGenPlatformImage.platformImage(
+      cgImage,
+      size: drawing.size,
+      scale: scale
+    )
   }
 
   public static func draw(
     _ drawing: Drawing,
     size: CGSize,
     contentMode: DrawingContentMode = .aspectFit,
-    scale: CGFloat
+    scale: CGFloat,
+    tintColor: CGColor? = nil
   ) -> CGGenPlatformImage {
-    CGGenPlatformImage(
-      drawing: drawing,
-      size: size,
+    let cgImage = CGImage.draw(
+      from: drawing,
+      targetSize: size,
       contentMode: contentMode,
+      scale: scale,
+      tintColor: tintColor
+    )
+    return CGGenPlatformImage.platformImage(
+      cgImage,
+      size: size,
       scale: scale
     )
   }
 }
 
 extension Image {
-  @MainActor
-  public init(drawing: Drawing) {
-    self.init(drawing: drawing, scale: defaultScale)
-  }
-
-  public init(drawing: Drawing, scale: CGFloat) {
-    let image = CGGenPlatformImage(drawing: drawing, scale: scale)
-    self.init(platformImage: image)
-  }
-
   // MARK: Static Factory Methods
 
   @MainActor
   public static func draw(_ drawing: Drawing) -> Image {
-    Image(drawing: drawing, scale: defaultScale)
+    Image.draw(drawing, scale: defaultScale)
   }
 
   public static func draw(_ drawing: Drawing, scale: CGFloat) -> Image {
-    Image(drawing: drawing, scale: scale)
+    let image = CGGenPlatformImage.draw(drawing, scale: scale)
+    #if canImport(UIKit)
+    return Image(uiImage: image)
+    #elseif canImport(AppKit)
+    return Image(nsImage: image)
+    #endif
   }
 }
 
@@ -104,39 +106,17 @@ var defaultScale: CGFloat {
 }
 
 extension UIImage {
-  public convenience init(
-    drawing: Drawing,
+  fileprivate static func platformImage(
+    _ cgImage: CGImage?,
+    size _: CGSize,
     scale: CGFloat
-  ) {
-    if let cgImage = CGImage.draw(from: drawing, scale: scale) {
-      self.init(cgImage: cgImage, scale: scale, orientation: .up)
-    } else {
-      self.init()
-    }
-  }
-
-  public convenience init(
-    drawing: Drawing,
-    size: CGSize,
-    contentMode: DrawingContentMode = .aspectFit,
-    scale: CGFloat
-  ) {
-    if let cgImage = CGImage.draw(
-      from: drawing,
-      targetSize: size,
-      contentMode: contentMode,
-      scale: scale
-    ) {
-      self.init(cgImage: cgImage, scale: scale, orientation: .up)
-    } else {
-      self.init()
-    }
-  }
-}
-
-extension Image {
-  public init(platformImage: UIImage) {
-    self.init(uiImage: platformImage)
+  ) -> CGGenPlatformImage {
+    guard let cgImage else { return CGGenPlatformImage() }
+    return CGGenPlatformImage(
+      cgImage: cgImage,
+      scale: scale,
+      orientation: .up
+    )
   }
 }
 
@@ -152,39 +132,13 @@ var defaultScale: CGFloat {
 }
 
 extension NSImage {
-  public convenience init(
-    drawing: Drawing,
-    scale: CGFloat
-  ) {
-    if let cgImage = CGImage.draw(from: drawing, scale: scale) {
-      self.init(cgImage: cgImage, size: drawing.size)
-    } else {
-      self.init()
-    }
-  }
-
-  public convenience init(
-    drawing: Drawing,
+  fileprivate static func platformImage(
+    _ cgImage: CGImage?,
     size: CGSize,
-    contentMode: DrawingContentMode = .aspectFit,
-    scale: CGFloat
-  ) {
-    if let cgImage = CGImage.draw(
-      from: drawing,
-      targetSize: size,
-      contentMode: contentMode,
-      scale: scale
-    ) {
-      self.init(cgImage: cgImage, size: size)
-    } else {
-      self.init()
-    }
-  }
-}
-
-extension Image {
-  public init(platformImage: NSImage) {
-    self.init(nsImage: platformImage)
+    scale _: CGFloat
+  ) -> CGGenPlatformImage {
+    guard let cgImage else { return CGGenPlatformImage() }
+    return CGGenPlatformImage(cgImage: cgImage, size: size)
   }
 }
 

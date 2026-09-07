@@ -120,17 +120,17 @@ import CGGenRuntimeSupport
 let iconImage = UIImage.draw(\.icon)
 let scaledIcon = UIImage.draw(\.icon, scale: 2.0)
 
-// Using direct initializers
-let logoImage = UIImage(drawing: .logo)
-let thumbnail = UIImage(
-  drawing: .logo,
+// Using Drawing values directly
+let logoImage = UIImage.draw(.logo)
+let thumbnail = UIImage.draw(
+  .logo,
   size: CGSize(width: 100, height: 100),
   contentMode: .aspectFit
 )
 
 // AppKit (macOS)
 let nsIcon = NSImage.draw(\.icon)
-let nsLogo = NSImage(drawing: .logo)
+let nsLogo = NSImage.draw(.logo)
 ```
 
 ### Content Modes
@@ -148,8 +148,8 @@ public enum DrawingContentMode {
 }
 
 // Example: Create app icons at various sizes
-let icon = UIImage(
-  drawing: .appIcon,
+let icon = UIImage.draw(
+  .appIcon,
   size: CGSize(width: 128, height: 128),
   contentMode: .aspectFit
 )

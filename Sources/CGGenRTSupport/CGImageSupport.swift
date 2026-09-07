@@ -35,7 +35,7 @@ extension Drawing: View {
       }
       .aspectRatio(size, contentMode: .fit)
     } else {
-      Image(drawing: self)
+      Image.draw(self)
         .renderingMode(.original)
         .resizable()
         .aspectRatio(contentMode: .fit)
@@ -48,7 +48,8 @@ extension CGImage {
   public static func draw(
     from descriptor: Drawing,
     scale: CGFloat,
-    colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
+    colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB(),
+    tintColor: CGColor? = nil
   ) -> CGImage? {
     let size = descriptor.size
     let scaledSize = CGSize(
@@ -76,6 +77,12 @@ extension CGImage {
     }
 
     descriptor.draw(in: context)
+    if let tintColor {
+      context.recolorContents(
+        in: CGRect(origin: .zero, size: size),
+        with: tintColor
+      )
+    }
 
     return context.makeImage()
   }
@@ -91,5 +98,14 @@ extension CGContext {
 
     translateBy(x: origin.x, y: origin.y)
     descriptor.draw(in: self)
+  }
+
+  func recolorContents(in rect: CGRect, with color: CGColor) {
+    saveGState()
+    defer { restoreGState() }
+
+    setBlendMode(.sourceIn)
+    setFillColor(color)
+    fill(rect)
   }
 }
