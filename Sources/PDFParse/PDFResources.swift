@@ -1,6 +1,5 @@
-import CoreGraphics
-
 import CGGenCore
+import CoreGraphics
 
 public struct PDFResources {
   public let shadings: [String: PDFShading]

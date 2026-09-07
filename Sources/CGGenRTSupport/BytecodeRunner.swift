@@ -1,9 +1,8 @@
+import CGGenBytecode
+import CGGenBytecodeDecoding
 import Compression
 @preconcurrency import CoreGraphics
 import Foundation
-
-import CGGenBytecode
-import CGGenBytecodeDecoding
 
 public func runBytecode(
   _ context: CGContext,
@@ -134,7 +133,7 @@ public func runMergedPathBytecode(
   }
 }
 
-// Array-based bytecode execution function
+/// Array-based bytecode execution function
 func runCompressedBytecode(
   context: CGContext,
   bytecodeArray: [UInt8],
@@ -163,7 +162,7 @@ func runPathBytecode(
   }
 }
 
-// Compressed path bytecode execution function
+/// Compressed path bytecode execution function
 func runCompressedPathBytecode(
   path: CGMutablePath,
   bytecodeArray: [UInt8],
@@ -381,7 +380,9 @@ struct BytecodeRunner {
       onDashLengths: { arg, _ in exec.dashLengths(arg) },
       onConcatCTM: { arg, _ in exec.concatCTM(arg) },
       onGlobalAlpha: { arg, _ in exec.globalAlpha(arg) },
-      onSetGlobalAlphaToFillAlpha: { arg, _ in exec.setGlobalAlphaToFillAlpha(arg) },
+      onSetGlobalAlphaToFillAlpha: { arg, _ in
+        exec.setGlobalAlphaToFillAlpha(arg)
+      },
       onBlendMode: { arg, _ in exec.blendMode(arg) },
       onFillLinearGradient: { arg, _ in try exec.fillLinearGradient(arg) },
       onFillRadialGradient: { arg, _ in try exec.fillRadialGradient(arg) },
@@ -400,7 +401,9 @@ struct BytecodeRunner {
       onFillEllipse: { arg, _ in exec.fillEllipse(arg) },
       onColorRenderingIntent: { arg, _ in exec.colorRenderingIntent(arg) },
       onFillRule: { arg, _ in exec.fillRule(arg) },
-      onReplacePathWithStrokePath: { arg, _ in exec.replacePathWithStrokePath(arg) },
+      onReplacePathWithStrokePath: { arg, _ in
+        exec.replacePathWithStrokePath(arg)
+      },
       onLines: { arg, _ in exec.lines(arg) }
     )
   }
@@ -452,8 +455,8 @@ struct BytecodeRunner {
   }
 }
 
-private struct GState: Sendable {
-  struct DashPattern: Sendable {
+private struct GState {
+  struct DashPattern {
     var phase: CGFloat
     var lengths: [CGFloat]?
 
@@ -468,8 +471,8 @@ private struct GState: Sendable {
     }
   }
 
-  enum Dye: Sendable {
-    enum GradientType: Sendable {
+  enum Dye {
+    enum GradientType {
       case linear(BCLinearGradientDrawingOptions)
       case radial(BCRadialGradientDrawingOptions)
     }
@@ -480,7 +483,7 @@ private struct GState: Sendable {
     case gradient(Gradient)
   }
 
-  struct Paint: Sendable {
+  struct Paint {
     var dye: Dye?
     var alpha: CGFloat
 
@@ -517,7 +520,9 @@ private struct CommandExecution {
   var gradients: [BCIdType: BCGradient] = [:]
 
   var ctx: ExtendedContext
-  var cg: CGContext { ctx.cg }
+  var cg: CGContext {
+    ctx.cg
+  }
 
   func getGradient(id: BCIdType) throws -> CGGradient {
     guard let gradient = gradients[id] else {
@@ -1139,7 +1144,9 @@ private final class Cache<Value>: @unchecked Sendable {
   class WrappedValue {
     let value: Value
 
-    init(_ value: Value) { self.value = value }
+    init(_ value: Value) {
+      self.value = value
+    }
   }
 
   private let cache = NSCache<NSNumber, WrappedValue>()

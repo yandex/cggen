@@ -3,7 +3,7 @@ import CoreGraphics
 import Foundation
 import Testing
 
-@Suite struct SVGRendererTests {
+struct SVGRendererTests {
   func render(
     _ svg: String,
     size: CGSize = .init(width: 100, height: 100)

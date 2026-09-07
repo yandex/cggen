@@ -1,12 +1,11 @@
-import CoreGraphics
-import Foundation
-import Testing
-
 import CGGenCore
 import CGGenRuntime
+import CoreGraphics
+import Foundation
 import SnapshotTesting
+import Testing
 
-@Suite struct SVGRuntimeRenderingTests {
+struct SVGRuntimeRenderingTests {
   @Test("SVG Runtime Rendering", arguments: SVGTestCase.smokeTestSubset)
   func svgRuntimeRendering(testCase: SVGTestCase) throws {
     let svgURL = svgSamplesPath

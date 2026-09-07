@@ -3,7 +3,7 @@
 @testable import SVGParse
 import Testing
 
-@Suite struct SVGParserTests {
+struct SVGParserTests {
   @Test func testSimpleSVG() throws {
     let dim = SVG.Length(50, .px)
     #expect(try parse(simpleSVG) == SVG.Document(
@@ -115,7 +115,7 @@ private func expectError(
   }
 }
 
-@Suite struct SVGAttributesParserTest {
+struct SVGAttributesParserTest {
   @Test func utils() {
     let wsp = SVGValueParser.wsp
     let commaWsp = SVGValueParser.commaWsp

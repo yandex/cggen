@@ -1,19 +1,17 @@
 import AppKit
-import Foundation
-import os.log
-import Testing
-
 import CGGenCLI
 import CGGenCore
 import CGGenDiagnosticSupport
 import CGGenIR
+import Foundation
+import os.log
+import Testing
 @_spi(Testing) import CGGenRTSupport
-
 import Parsing
 
-// Sometimes it is useful to pass some arbitrary svg to check that it is
-// correctly handled.
-@Suite struct SVGCustomCheckTests {
+/// Sometimes it is useful to pass some arbitrary svg to check that it is
+/// correctly handled.
+struct SVGCustomCheckTests {
   nonisolated(unsafe) static let sizeParser = Parse(input: Substring.self) {
     Int.parser()
     "x"
@@ -57,7 +55,7 @@ import Parsing
   }
 }
 
-@Suite struct PathExtractionTests {
+struct PathExtractionTests {
   @Test func linesAndCurves() {
     test(args: linesAndCurvesArgs)
   }
@@ -132,8 +130,8 @@ extension SVGTestCase {
     }
   }
 
-  // Smoke test subset - a representative selection of test cases
-  // for quick verification in compilation and runtime tests
+  /// Smoke test subset - a representative selection of test cases
+  /// for quick verification in compilation and runtime tests
   static let smokeTestSubset: [SVGTestCase] = [
     .caps_joins,
     .clip_path,
@@ -149,24 +147,63 @@ extension SVGTestCase {
 
 // MARK: - CGGen Tests Against WebKit References
 
-@Suite struct SVGTests {
-  @Test private func fill() { check(.fill) }
-  @Test private func lines() { check(.lines) }
-  @Test private func alpha() { check(.alpha) }
-  @Test private func groupOpacity() { check(.group_opacity) }
-  @Test private func shapes() { check(.shapes) }
-  @Test private func capsJoins() { check(.caps_joins) }
-  @Test private func miterLimit() { check(.miter_limit) }
-  @Test private func dashes() { check(.dashes) }
-  @Test private func colorNames() { check(.colornames) }
-  @Test private func useTag() { check(.use_tag) }
+struct SVGTests {
+  @Test private func fill() {
+    check(.fill)
+  }
+
+  @Test private func lines() {
+    check(.lines)
+  }
+
+  @Test private func alpha() {
+    check(.alpha)
+  }
+
+  @Test private func groupOpacity() {
+    check(.group_opacity)
+  }
+
+  @Test private func shapes() {
+    check(.shapes)
+  }
+
+  @Test private func capsJoins() {
+    check(.caps_joins)
+  }
+
+  @Test private func miterLimit() {
+    check(.miter_limit)
+  }
+
+  @Test private func dashes() {
+    check(.dashes)
+  }
+
+  @Test private func colorNames() {
+    check(.colornames)
+  }
+
+  @Test private func useTag() {
+    check(.use_tag)
+  }
+
   @Test private func useReferencingNotInDefs() {
     check(.use_referencing_not_in_defs)
   }
 
-  @Test private func simpleMask() { check(.simple_mask) }
-  @Test private func clipPath() { check(.clip_path) }
-  @Test private func transforms() { check(.transforms) }
+  @Test private func simpleMask() {
+    check(.simple_mask)
+  }
+
+  @Test private func clipPath() {
+    check(.clip_path)
+  }
+
+  @Test private func transforms() {
+    check(.transforms)
+  }
+
   @Test private func topmostPresentationAttributes() {
     check(.topmost_presentation_attributes)
   }
@@ -177,31 +214,72 @@ extension SVGTestCase {
 
   // MARK: - Path Tests
 
-  @Test private func pathMoveToCommands() { check(.path_move_to_commands) }
-  @Test private func pathComplexCurve() { check(.path_complex_curve) }
-  @Test private func pathCircleCommands() { check(.path_circle_commands) }
-  @Test private func pathShortCommands() { check(.path_short_commands) }
-  @Test private func pathRelativeCommands() { check(.path_relative_commands) }
-  @Test private func pathSmoothCurve() { check(.path_smooth_curve) }
-  @Test private func pathFillRule() { check(.path_fill_rule) }
+  @Test private func pathMoveToCommands() {
+    check(.path_move_to_commands)
+  }
+
+  @Test private func pathComplexCurve() {
+    check(.path_complex_curve)
+  }
+
+  @Test private func pathCircleCommands() {
+    check(.path_circle_commands)
+  }
+
+  @Test private func pathShortCommands() {
+    check(.path_short_commands)
+  }
+
+  @Test private func pathRelativeCommands() {
+    check(.path_relative_commands)
+  }
+
+  @Test private func pathSmoothCurve() {
+    check(.path_smooth_curve)
+  }
+
+  @Test private func pathFillRule() {
+    check(.path_fill_rule)
+  }
+
   @Test private func pathFillRuleNonzeroDefault() {
     check(.path_fill_rule_nonzero_default)
   }
 
-  @Test private func pathFillRuleGstate() { check(.path_fill_rule_gstate) }
-  @Test private func pathQuadraticBezier() { check(.path_quadratic_bezier) }
+  @Test private func pathFillRuleGstate() {
+    check(.path_fill_rule_gstate)
+  }
+
+  @Test private func pathQuadraticBezier() {
+    check(.path_quadratic_bezier)
+  }
 
   // MARK: - Gradient Tests
 
-  @Test private func gradient() { check(.gradient) }
-  @Test private func gradientShape() { check(.gradient_shape) }
-  @Test private func gradientStroke() { check(.gradient_stroke) }
+  @Test private func gradient() {
+    check(.gradient)
+  }
+
+  @Test private func gradientShape() {
+    check(.gradient_shape)
+  }
+
+  @Test private func gradientStroke() {
+    check(.gradient_stroke)
+  }
+
   @Test private func gradientFillStrokeCombinations() {
     check(.gradient_fill_stroke_combinations)
   }
 
-  @Test private func gradientRelative() { check(.gradient_relative) }
-  @Test private func gradientWithAlpha() { check(.gradient_with_alpha) }
+  @Test private func gradientRelative() {
+    check(.gradient_relative)
+  }
+
+  @Test private func gradientWithAlpha() {
+    check(.gradient_with_alpha)
+  }
+
   @Test private func gradientThreeControlPoints() {
     check(.gradient_three_dots)
   }
@@ -214,20 +292,39 @@ extension SVGTestCase {
     check(.gradient_transform_radial)
   }
 
-  @Test private func gradientWithMask() { check(.gradient_with_mask) }
-  @Test private func gradientRadial() { check(.gradient_radial) }
-  @Test private func gradientUnits() { check(.gradient_units) }
+  @Test private func gradientWithMask() {
+    check(.gradient_with_mask)
+  }
+
+  @Test private func gradientRadial() {
+    check(.gradient_radial)
+  }
+
+  @Test private func gradientUnits() {
+    check(.gradient_units)
+  }
+
   @Test private func gradientAbsoluteStartEnd() {
     check(.gradient_absolute_start_end)
   }
 
-  @Test private func gradientOpacity() { check(.gradient_opacity) }
+  @Test private func gradientOpacity() {
+    check(.gradient_opacity)
+  }
 
   // MARK: - Shadow Tests
 
-  @Test private func simpleShadow() { check(.shadow_simple) }
-  @Test private func shadowColors() { check(.shadow_colors) }
-  @Test private func differentBlurRadiuses() { check(.shadow_blur_radius) }
+  @Test private func simpleShadow() {
+    check(.shadow_simple)
+  }
+
+  @Test private func shadowColors() {
+    check(.shadow_colors)
+  }
+
+  @Test private func differentBlurRadiuses() {
+    check(.shadow_blur_radius)
+  }
 
   // MARK: - Additional Tests
 
@@ -235,13 +332,20 @@ extension SVGTestCase {
     check(.gradient_determinism_test)
   }
 
-  @Test private func linesAndCurvesTest() { check(.lines_and_curves) }
-  @Test private func pathsAndImages() { check(.paths_and_images) }
+  @Test private func linesAndCurvesTest() {
+    check(.lines_and_curves)
+  }
+
+  @Test private func pathsAndImages() {
+    check(.paths_and_images)
+  }
+
   @Test private func underlyingObjectWithTinyAlpha() {
     check(.underlying_object_with_tiny_alpha)
   }
 
-  @Test private func whiteCrossScnOperator() { check(.white_cross_scn_operator)
+  @Test private func whiteCrossScnOperator() {
+    check(.white_cross_scn_operator)
   }
 
   // MARK: - Merged Bytecode Tests
@@ -494,11 +598,11 @@ let linesAndCurvesArgs: PathTestArguments = (
 
 // MARK: - Snapshot Testing Utilities
 
-// Check if extended tests (like WebKit reference generation) should run
+/// Check if extended tests (like WebKit reference generation) should run
 let extendedTestsEnabled = ProcessInfo.processInfo
   .environment["CGGEN_EXTENDED_TESTS"] == "1"
 
-// Path to the SVGTests.swift file for snapshot testing
+/// Path to the SVGTests.swift file for snapshot testing
 let svgTestsFilePath: StaticString = #filePath
 
 extension Snapshotting where Value == CGImage, Format == CGImage {

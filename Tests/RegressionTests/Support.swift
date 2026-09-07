@@ -1,17 +1,16 @@
 import AppKit
-import CoreGraphics
-import os.log
-
 import CGGenCLI
 import CGGenCore
 import CGGenDiagnosticSupport
+import CoreGraphics
+import os.log
 @_spi(Testing) import CGGenRTSupport
 
 private enum Error: Swift.Error {
   case compilationError
 }
 
-// Test debug output directory from environment variable
+/// Test debug output directory from environment variable
 let testDebugOutputDir = ProcessInfo.processInfo
   .environment["CGGEN_TEST_DEBUG_OUTPUT"]
   .map { URL(fileURLWithPath: $0) }
@@ -21,7 +20,7 @@ func getCurrentFilePath(_ file: StaticString = #filePath) -> URL {
     .deletingLastPathComponent()
 }
 
-// Minimal clang support for BCCompilationTests
+/// Minimal clang support for BCCompilationTests
 private func check_output(cmd: String...) throws -> (out: String, err: String) {
   let task = Process()
   task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
@@ -75,7 +74,7 @@ func clang(
 
 // MARK: - Shared Bytecode Helpers
 
-// Shared helper to render bytecode to CGImage
+/// Shared helper to render bytecode to CGImage
 func renderBytecode(
   _ bytecode: [UInt8],
   width: Int,

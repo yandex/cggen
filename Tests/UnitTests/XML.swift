@@ -3,9 +3,9 @@ import Foundation
 @preconcurrency import Parsing
 @testable import SVGParse
 
-// Test-only XML tree: production code parses SVG directly from the XML
-// grammar in SVGParse, so the generic tree exists just to exercise the
-// grammar in tests.
+/// Test-only XML tree: production code parses SVG directly from the XML
+/// grammar in SVGParse, so the generic tree exists just to exercise the
+/// grammar in tests.
 enum XML: Equatable {
   struct Element: Equatable {
     var tag: String

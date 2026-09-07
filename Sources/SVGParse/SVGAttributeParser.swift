@@ -4,14 +4,14 @@ import CGGenCore
 // MARK: - Attribute Enum
 
 enum Attribute: String {
-  // XML
+  /// XML
   case xmlns, xmlnsxlink = "xmlns:xlink"
-  // Core
+  /// Core
   case id
 
   case x, y, width, height, rx, ry
 
-  // Filters
+  /// Filters
   case result, `in`, in2, mode
 
   // - Presentation
@@ -55,7 +55,7 @@ enum Attribute: String {
 
   case maskUnits, maskContentUnits, clipPathUnits
 
-  // Ignore
+  /// Ignore
   case maskType = "mask-type"
 }
 
@@ -66,11 +66,11 @@ enum SVGAttributeError: Swift.Error {
   case invalid(attribute: String, element: String, reason: Swift.Error)
 }
 
-// Parses one element's attributes: each XML attribute selects by name a
-// typed value parser writing one field of State, so source order is
-// irrelevant and values parse straight from their slice of the document.
-// A name the schema doesn't know is an error — every attribute must be
-// consumed.
+/// Parses one element's attributes: each XML attribute selects by name a
+/// typed value parser writing one field of State, so source order is
+/// irrelevant and values parse straight from their slice of the document.
+/// A name the schema doesn't know is an error — every attribute must be
+/// consumed.
 struct AttributeSchema<State>: @unchecked Sendable {
   typealias Value = SVGValueParser
 

@@ -1,11 +1,10 @@
 import AppKit
+import CGGenCLI
 import CoreGraphics
 import Foundation
 import Testing
 
-import CGGenCLI
-
-@Suite struct BCCompilationTests {
+struct BCCompilationTests {
   @Test func compilation() throws {
     let variousFilenamesDir =
       getCurrentFilePath().appendingPathComponent("various_filenames")

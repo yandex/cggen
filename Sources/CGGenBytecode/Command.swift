@@ -1,6 +1,6 @@
 import CoreGraphics
 
-/*
+/**
  A: [T]                       = size: UInt32, A[0], A[1], ..., A[size-1]
  (T, Y)                       = T, Y
 

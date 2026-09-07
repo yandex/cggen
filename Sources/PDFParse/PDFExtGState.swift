@@ -41,26 +41,27 @@ public struct PDFExtGState {
   public let commands: [PDFGStateCommand]
   init(obj: PDFObject, xobjFactory: PDFXObject.Factory) throws {
     guard let dict = obj.dictionaryVal() else { throw Error.parsingError() }
-    commands = try dict.sorted(by: { $0.key < $1.key }).compactMap { (key, val) -> PDFGStateCommand? in
-      switch key {
-      case "Type":
-        guard val.nameVal() == "ExtGState" else { throw Error.parsingError() }
-        return nil
-      case "ca":
-        let alpha = val.realFromIntOrReal()!
-        return .fillAlpha(alpha)
-      case "CA":
-        let alpha = val.realFromIntOrReal()!
-        return .strokeAlpha(alpha)
-      case "BM":
-        let name = val.nameVal()!
-        return .blendMode(name)
-      case "SMask":
-        let sMask = try PDFSoftMask(obj: val, xobjFactory: xobjFactory)
-        return .sMask(sMask)
-      default:
-        throw Error.unsupported("graphical state command - '\(key)'")
+    commands = try dict.sorted(by: { $0.key < $1.key })
+      .compactMap { key, val -> PDFGStateCommand? in
+        switch key {
+        case "Type":
+          guard val.nameVal() == "ExtGState" else { throw Error.parsingError() }
+          return nil
+        case "ca":
+          let alpha = val.realFromIntOrReal()!
+          return .fillAlpha(alpha)
+        case "CA":
+          let alpha = val.realFromIntOrReal()!
+          return .strokeAlpha(alpha)
+        case "BM":
+          let name = val.nameVal()!
+          return .blendMode(name)
+        case "SMask":
+          let sMask = try PDFSoftMask(obj: val, xobjFactory: xobjFactory)
+          return .sMask(sMask)
+        default:
+          throw Error.unsupported("graphical state command - '\(key)'")
+        }
       }
-    }
   }
 }

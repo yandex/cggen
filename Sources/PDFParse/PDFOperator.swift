@@ -2,148 +2,148 @@ import CoreGraphics
 import Foundation
 
 public enum PDFOperator {
-  // b
+  /// b
   case closeFillStrokePathWinding
-  // B
+  /// B
   case fillStrokePathWinding
-  // b*
+  /// b*
   case closeFillStrokePathEvenOdd
-  // B*
+  /// B*
   case fillStrokePathEvenOdd
-  // BDC
+  /// BDC
   case markedContentSequenceWithPListBegin
-  // BI
+  /// BI
   case inlineImageBegin
-  // BMC
+  /// BMC
   case markedContentSequenceBegin
-  // BT
+  /// BT
   case textObjectBegin
-  // BX
+  /// BX
   case compatabilitySectionBegin
-  // c
+  /// c
   case curveTo(CGPoint, CGPoint, CGPoint)
-  // cm
+  /// cm
   case concatCTM(CGAffineTransform)
-  // CS
+  /// CS
   case colorSpaceStroke(String)
-  // cs
+  /// cs
   case colorSpaceNonstroke(String)
-  // d
+  /// d
   case dash(CGFloat, [CGFloat])
-  // d0
+  /// d0
   case glyphWidthInType3Font
-  // d1
+  /// d1
   case glyphWidthAndBoundingBoxInType3Font
-  // Do
+  /// Do
   case invokeXObject(String)
-  // DP
+  /// DP
   case markedContentPointWithPListDefine
-  // EI
+  /// EI
   case inlineImageEnd
-  // EMC
+  /// EMC
   case markedContentSequenceEnd
-  // ET
+  /// ET
   case textObjectEnd
-  // EX
+  /// EX
   case compatabilitySectionEnd
-  // f, F
+  /// f, F
   case fillWinding
-  // f*
+  /// f*
   case fillEvenOdd
-  // G
+  /// G
   case grayLevelStroke
-  // g
+  /// g
   case grayLevelNonstroke
-  // gs
+  /// gs
   case applyGState(String)
-  // h
+  /// h
   case closeSubpath
-  // i
+  /// i
   case setFlatnessTolerance(CGFloat)
-  // ID
+  /// ID
   case inlineImageDataBegin
-  // j
+  /// j
   case lineJoinStyle(Int)
-  // J
+  /// J
   case lineCapStyle(Int)
-  // K
+  /// K
   case cmykColorStroke
-  // k
+  /// k
   case cmykColorNonstroke
-  // l
+  /// l
   case lineTo(CGPoint)
-  // m
+  /// m
   case moveTo(CGPoint)
-  // M
+  /// M
   case miterLimit
-  // MP
+  /// MP
   case markedContentPointDefine
-  // n
+  /// n
   case endPath
-  // q
+  /// q
   case saveGState
-  // Q
+  /// Q
   case restoreGState
-  // re
+  /// re
   case appendRectangle(CGRect)
-  // RG
+  /// RG
   case rgbColorStroke(PDFColor)
-  // rg
+  /// rg
   case rgbColorNonstroke(PDFColor)
-  // ri
+  /// ri
   case colorRenderingIntent(String)
-  // s
+  /// s
   case closeAndStrokePath
-  // S
+  /// S
   case strokePath
-  // SC
+  /// SC
   case colorStroke(PDFColor)
-  // sc
+  /// sc
   case colorNonstroke(PDFColor)
-  // SCN
+  /// SCN
   case iccOrSpecialColorStroke
-  // scn
+  /// scn
   case iccOrSpecialColorNonstroke
-  // sh
+  /// sh
   case shadingFill(String)
-  // T*
+  /// T*
   case startNextTextLine
-  // Tc
+  /// Tc
   case characterSpacing
-  // Td
+  /// Td
   case moveTextPosition
-  // TD
+  /// TD
   case moveTextPositionAnsSetLeading
-  // Tf
+  /// Tf
   case textFontAndSize
-  // Tj
+  /// Tj
   case showText
-  // TJ
+  /// TJ
   case showTextAllowingIndividualGlyphPositioning
-  // TL
+  /// TL
   case textLeading
-  // Tm
+  /// Tm
   case textAndTextLineMatrix
-  // Tr
+  /// Tr
   case textRenderingMode
-  // Ts
+  /// Ts
   case textRise
-  // Tw
+  /// Tw
   case wordSpacing
-  // Tz
+  /// Tz
   case horizontalTextScaling
-  // v
+  /// v
   case curveToWithInitailPointReplicated
-  // w
+  /// w
   case lineWidth(CGFloat)
-  // W
+  /// W
   case clipWinding
-  // W*
+  /// W*
   case clipEvenOdd
-  // y
+  /// y
   case curveToWithFinalPointReplicated
-  // '
+  /// '
   case moveToNextLineAndShowText
-  // "
+  /// "
   case wordAndCharacterSpacingMoveToNextLineAndShowText
 }

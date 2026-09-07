@@ -1,10 +1,9 @@
+import CGGenCore
 import CoreGraphics
 import Foundation
-
-import CGGenCore
 @preconcurrency import Parsing
 
-// https://www.w3.org/TR/SVG11/
+/// https://www.w3.org/TR/SVG11/
 public enum SVG: Equatable, Sendable {
   public typealias NotImplemented = Never
   public typealias NotNeeded = Never
@@ -26,8 +25,8 @@ public enum SVG: Equatable, Sendable {
 
   public typealias Coordinate = SVG.Length
 
-  // Should be tuple, when Equatable synthesys improves
-  // https://bugs.swift.org/browse/SR-1222
+  /// Should be tuple, when Equatable synthesys improves
+  /// https://bugs.swift.org/browse/SR-1222
   public struct CoordinatePair: Equatable, Sendable {
     public var _1: Float
     public var _2: Float
@@ -37,8 +36,8 @@ public enum SVG: Equatable, Sendable {
     }
   }
 
-  // Should be tuple, when Equatable synthesys improves
-  // https://bugs.swift.org/browse/SR-1222
+  /// Should be tuple, when Equatable synthesys improves
+  /// https://bugs.swift.org/browse/SR-1222
   public struct NumberOptionalNumber: Equatable {
     public var _1: Float
     public var _2: Float?
@@ -339,7 +338,7 @@ public enum SVG: Equatable, Sendable {
       public var to: CoordinatePair
     }
 
-    /*
+    /**
      8.3.8 The elliptical arc curve commands
      */
     public struct EllipticalArcArgument: Equatable {

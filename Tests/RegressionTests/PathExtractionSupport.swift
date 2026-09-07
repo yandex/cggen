@@ -1,9 +1,8 @@
+import CGGenCLI
+import CGGenIR
 import CoreGraphics
 import Foundation
 import Testing
-
-import CGGenCLI
-import CGGenIR
 @_spi(Testing) import CGGenRTSupport
 
 func testPathExtraction(

@@ -22,18 +22,18 @@ precedencegroup StreamOptional {
   associativity: right
 }
 
-// Performs zip on two operands with map droping rhs
+/// Performs zip on two operands with map droping rhs
 infix operator ~>>: StreamRight
-// Performs zip on two operands with map droping lhs
+/// Performs zip on two operands with map droping lhs
 infix operator <<~: StreamLeft
-// Equivalent to zip(rhs, lhs)
+/// Equivalent to zip(rhs, lhs)
 infix operator ~: StreamAddition
 
-// "Zero or more"
+/// "Zero or more"
 postfix operator *
-// "One or more"
+/// "One or more"
 postfix operator +
-// "Zero or one"
+/// "Zero or one"
 postfix operator ~?
 
 public enum ParseError: Error {

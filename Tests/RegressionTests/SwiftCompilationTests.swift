@@ -1,10 +1,9 @@
+import CGGenCLI
 import CoreGraphics
 import Foundation
 import Testing
 
-import CGGenCLI
-
-@Suite struct SwiftCompilationTests {
+struct SwiftCompilationTests {
   @Test func swiftCodeCompilation() throws {
     let svgSamplesPath = getCurrentFilePath()
       .appendingPathComponent("svg_samples")

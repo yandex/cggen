@@ -91,8 +91,10 @@ public struct CGIntSize: Equatable {
 }
 
 extension CGFloat {
-  // Explicit initializer for not to accidently fall into conversion
-  @inlinable public init(native val: NativeType) { self.init(val) }
+  /// Explicit initializer for not to accidently fall into conversion
+  @inlinable public init(native val: NativeType) {
+    self.init(val)
+  }
 }
 
 extension CGRect {
@@ -141,7 +143,9 @@ extension CGPoint: Point2D {
   }
 
   @inlinable
-  public var simdVec: SIMD2<CGFloat.NativeType> { .init(x.native, y.native) }
+  public var simdVec: SIMD2<CGFloat.NativeType> {
+    .init(x.native, y.native)
+  }
 
   @inlinable
   public func distance(to point: CGPoint) -> CGFloat {

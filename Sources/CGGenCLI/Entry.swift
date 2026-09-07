@@ -1,7 +1,6 @@
-import Foundation
-
 import CGGenCore
 import CGGenIR
+import Foundation
 import PDFParse
 import SVGParse
 

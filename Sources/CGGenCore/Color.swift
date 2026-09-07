@@ -1,7 +1,9 @@
 import Foundation
 
 public struct Ø: Numeric, Comparable, Sendable {
-  @inlinable public var magnitude: Ø { Ø() }
+  @inlinable public var magnitude: Ø {
+    Ø()
+  }
 
   @inlinable public init(exactly _: some BinaryInteger) {}
   @inlinable public init() {}
@@ -11,10 +13,21 @@ public struct Ø: Numeric, Comparable, Sendable {
   @inlinable public static func -=(_: inout Ø, _: Ø) {}
   @inlinable public static func +=(_: inout Ø, _: Ø) {}
   @inlinable public static func *=(_: inout Ø, _: Ø) {}
-  @inlinable public static func *(_: Ø, _: Ø) -> Ø { .init() }
-  @inlinable public static func +(_: Ø, _: Ø) -> Ø { .init() }
-  @inlinable public static func -(_: Ø, _: Ø) -> Ø { .init() }
-  @inlinable public static func <(_: Ø, _: Ø) -> Bool { false }
+  @inlinable public static func *(_: Ø, _: Ø) -> Ø {
+    .init()
+  }
+
+  @inlinable public static func +(_: Ø, _: Ø) -> Ø {
+    .init()
+  }
+
+  @inlinable public static func -(_: Ø, _: Ø) -> Ø {
+    .init()
+  }
+
+  @inlinable public static func <(_: Ø, _: Ø) -> Bool {
+    false
+  }
 }
 
 public struct RGBAColorType<
