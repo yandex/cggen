@@ -48,8 +48,8 @@ import Testing
   @MainActor
   @Test func uiImageFromData() throws {
     let data = Data(simpleSVG.utf8)
-    let image = try UIImage(
-      svgData: data,
+    let image = try UIImage.svg(
+      data,
       size: CGSize(width: 100, height: 100)
     )
     #expect(image.size.width == 100)
@@ -58,8 +58,8 @@ import Testing
 
   @MainActor
   @Test func uiImageFromString() throws {
-    let image = try UIImage(
-      svgString: simpleSVG,
+    let image = try UIImage.svg(
+      simpleSVG,
       size: CGSize(width: 100, height: 100)
     )
     #expect(image.size.width == 100)
@@ -67,8 +67,8 @@ import Testing
   }
 
   @Test func uiImageWithExplicitScale() throws {
-    let image = try UIImage(
-      svgString: simpleSVG,
+    let image = try UIImage.svg(
+      simpleSVG,
       size: CGSize(width: 100, height: 100),
       scale: 2.0
     )
@@ -82,8 +82,8 @@ import Testing
   @MainActor
   @Test func nsImageFromData() throws {
     let data = Data(simpleSVG.utf8)
-    let image = try NSImage(
-      svgData: data,
+    let image = try NSImage.svg(
+      data,
       size: CGSize(width: 100, height: 100)
     )
     #expect(image.size.width == 100)
@@ -92,8 +92,8 @@ import Testing
 
   @MainActor
   @Test func nsImageFromString() throws {
-    let image = try NSImage(
-      svgString: simpleSVG,
+    let image = try NSImage.svg(
+      simpleSVG,
       size: CGSize(width: 100, height: 100)
     )
     #expect(image.size.width == 100)
@@ -101,8 +101,8 @@ import Testing
   }
 
   @Test func nsImageWithExplicitScale() throws {
-    let image = try NSImage(
-      svgString: simpleSVG,
+    let image = try NSImage.svg(
+      simpleSVG,
       size: CGSize(width: 100, height: 100),
       scale: 2.0
     )
@@ -114,17 +114,17 @@ import Testing
   @MainActor
   @Test func swiftUIImageFromData() throws {
     let data = Data(simpleSVG.utf8)
-    _ = try Image(svgData: data, size: CGSize(width: 100, height: 100))
+    _ = try Image.svg(data, size: CGSize(width: 100, height: 100))
   }
 
   @MainActor
   @Test func swiftUIImageFromString() throws {
-    _ = try Image(svgString: simpleSVG, size: CGSize(width: 100, height: 100))
+    _ = try Image.svg(simpleSVG, size: CGSize(width: 100, height: 100))
   }
 
   @Test func swiftUIImageWithExplicitScale() throws {
-    _ = try Image(
-      svgString: simpleSVG,
+    _ = try Image.svg(
+      simpleSVG,
       size: CGSize(width: 100, height: 100),
       scale: 2.0
     )
