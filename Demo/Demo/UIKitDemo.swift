@@ -3,13 +3,13 @@ import CGGenRTSupport
 import SwiftUI
 import UIKit
 
-// Example model for table view
+/// Example model for table view
 struct UIKitExample {
   var code: String
   var createView: () -> UIView
 }
 
-// UIKit View Controller demonstrating cggen API usage
+/// UIKit View Controller demonstrating cggen API usage
 class UIKitDemoViewController: UIViewController {
   private let tableView = UITableView(frame: .zero, style: .grouped)
   private var examples: [(category: String, items: [UIKitExample])] = []
@@ -211,7 +211,7 @@ extension UIKitDemoViewController: UITableViewDataSource, UITableViewDelegate {
   }
 }
 
-// Custom cell for displaying examples
+/// Custom cell for displaying examples
 class UIKitExampleCell: UITableViewCell {
   private let codeLabel = UILabel()
   private let containerView = UIView()
@@ -305,7 +305,7 @@ class UIKitExampleCell: UITableViewCell {
   }
 }
 
-// SwiftUI wrapper
+/// SwiftUI wrapper
 struct UIKitDemo: UIViewControllerRepresentable {
   func makeUIViewController(context _: Context) -> UIKitDemoViewController {
     UIKitDemoViewController()

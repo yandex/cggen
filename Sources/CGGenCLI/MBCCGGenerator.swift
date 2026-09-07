@@ -1,7 +1,6 @@
+import CGGenIR
 import Compression
 import Foundation
-
-import CGGenIR
 
 private struct UnifiedBytecodeData {
   let compressedBytecode: [UInt8]

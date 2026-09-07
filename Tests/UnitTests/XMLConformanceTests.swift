@@ -1,14 +1,13 @@
+import CGGenCore
 import Foundation
+import SVGParse
 import Testing
 
-import CGGenCore
-import SVGParse
-
-// Not-wf cases from the W3C XML Conformance Test Suite, downloaded from
-// w3.org and cached. The XML parser in SVGParse supports only the XML
-// subset SVG uses, so only cases within that subset run: valid UTF-8, no
-// encoding declaration other than UTF-8, no DOCTYPE, no CDATA. The release
-// is immutable, so the curated case count is pinned.
+/// Not-wf cases from the W3C XML Conformance Test Suite, downloaded from
+/// w3.org and cached. The XML parser in SVGParse supports only the XML
+/// subset SVG uses, so only cases within that subset run: valid UTF-8, no
+/// encoding declaration other than UTF-8, no DOCTYPE, no CDATA. The release
+/// is immutable, so the curated case count is pinned.
 @Suite(.enabled(if: extendedTestsEnabled))
 struct XMLConformanceTests {
   @Test func rejectsNotWellFormed() async throws {
@@ -23,8 +22,8 @@ struct XMLConformanceTests {
   }
 }
 
-// Same switch as `extendedTestsEnabled` in SVGTests.swift; the nightly
-// extended CI job sets it.
+/// Same switch as `extendedTestsEnabled` in SVGTests.swift; the nightly
+/// extended CI job sets it.
 private let extendedTestsEnabled = ProcessInfo.processInfo
   .environment["CGGEN_EXTENDED_TESTS"] == "1"
 
@@ -70,7 +69,7 @@ private func notWellFormedCases(
   return cases
 }
 
-// <TEST TYPE="not-wf" ID="..." URI="..." ...> attributes
+/// <TEST TYPE="not-wf" ID="..." URI="..." ...> attributes
 private func testElements(in catalog: String) -> [[String: String]] {
   catalog.matches(of: /<TEST\b([^>]*?)>/.dotMatchesNewlines()).map { match in
     var attributes: [String: String] = [:]

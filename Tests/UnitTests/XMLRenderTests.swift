@@ -1,8 +1,7 @@
+import CGGenCore
 import Testing
 
-import CGGenCore
-
-@Suite struct XMLRenderTests {
+struct XMLRenderTests {
   @Test func simpleXML() {
     #expect(
       XML.el("note", children: [

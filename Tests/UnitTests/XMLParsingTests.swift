@@ -1,10 +1,9 @@
+import CGGenCore
 import Foundation
+import SVGParse
 import Testing
 
-import CGGenCore
-import SVGParse
-
-@Suite struct XMLParsingTests {
+struct XMLParsingTests {
   @Test func simpleXML() throws {
     try #expect(parse("""
     <note>

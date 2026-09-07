@@ -1,6 +1,5 @@
-import CoreGraphics
-
 import CGGenCore
+import CoreGraphics
 import SVGParse
 
 public enum SVGToDrawRouteConverter {
@@ -454,9 +453,9 @@ private func pathConstruction(
   return (.addEllipse(in: rect), rect)
 }
 
-// Adhoc helper to reset last control points, because it is annoying to
-// reset them before every return statement, so reseting done via defer,
-// but if control point was set – avoid reseting.
+/// Adhoc helper to reset last control points, because it is annoying to
+/// reset them before every return statement, so reseting done via defer,
+/// but if control point was set – avoid reseting.
 private struct Resetable<T> {
   private var ignoreNextReset = false
   private var valuePrivate: T?
@@ -1127,8 +1126,13 @@ extension SVG.LinearGradient {
 }
 
 extension SVG.RadialGradient {
-  private var cxWithDefault: SVG.Coordinate { cx ?? 50% }
-  private var cyWithDefault: SVG.Coordinate { cy ?? 50% }
+  private var cxWithDefault: SVG.Coordinate {
+    cx ?? 50%
+  }
+
+  private var cyWithDefault: SVG.Coordinate {
+    cy ?? 50%
+  }
 
   func startCenter(in drawingAres: CGRect) -> CGPoint {
     abs(fx ?? cxWithDefault, fy ?? cyWithDefault, drawingAres)
@@ -1170,7 +1174,9 @@ extension SVG.Coordinate {
 }
 
 extension SVG.Angle {
-  var radians: CGFloat { CGFloat(degrees) * .pi / 180 }
+  var radians: CGFloat {
+    CGFloat(degrees) * .pi / 180
+  }
 }
 
 extension SVG.Paint {

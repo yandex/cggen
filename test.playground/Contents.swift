@@ -1,8 +1,7 @@
+import CGGenCore
 import CoreGraphics
 
-import CGGenCore
-
-// https://www.w3.org/TR/SVG11/types.html#ColorKeywords
+/// https://www.w3.org/TR/SVG11/types.html#ColorKeywords
 let svgColorsString = """
 aliceblue #F0F8FF
 antiquewhite #FAEBD7

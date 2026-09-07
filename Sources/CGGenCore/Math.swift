@@ -121,7 +121,9 @@ public enum Matrix {
     }
 
     @inlinable
-    public var components: [T] { [c1, c2, c3, c4, c5] }
+    public var components: [T] {
+      [c1, c2, c3, c4, c5]
+    }
   }
 
   public struct Row4<T: Equatable & Sendable>: Equatable, Sendable {
@@ -139,7 +141,9 @@ public enum Matrix {
     }
 
     @inlinable
-    public var components: [T] { [r1, r2, r3, r4] }
+    public var components: [T] {
+      [r1, r2, r3, r4]
+    }
   }
 
   public typealias D4x5<T: Equatable> = Row4<Column5<T>>
@@ -172,7 +176,7 @@ extension Comparable {
 }
 
 extension BinaryFloatingPoint {
-  // https://github.com/apple/swift-evolution/blob/master/proposals/0259-approximately-equal.md
+  /// https://github.com/apple/swift-evolution/blob/master/proposals/0259-approximately-equal.md
   @inlinable
   public func isAlmostEqual(
     _ other: Self,

@@ -7,7 +7,7 @@ public enum BytecodeVisitor {
     public let offset: Int
     public let commandIndex: Int
     public let totalSize: Int
-    
+
     public init(offset: Int, commandIndex: Int, totalSize: Int) {
       self.offset = offset
       self.commandIndex = commandIndex
@@ -75,12 +75,12 @@ public enum BytecodeVisitor {
   ) throws {
     let totalSize = bytecode.count
     var commandIndex = 0
-    
+
     while bytecode.count > 0 {
       let currentOffset = totalSize - bytecode.count
       let commandStartOffset = currentOffset
       let command = try DrawCommand(bytecode: &bytecode)
-      
+
       let context = Context(
         offset: commandStartOffset,
         commandIndex: commandIndex,

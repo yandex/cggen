@@ -1,10 +1,9 @@
+import CGGenCLI
 import Foundation
 import SnapshotTesting
 import Testing
 
-import CGGenCLI
-
-@Suite struct CodeGenerationSnapshotTests {
+struct CodeGenerationSnapshotTests {
   @Test func pluginDemoGeneration() throws {
     try testCodeGeneration(
       files: "circle.svg", "square.svg", "star.svg",
@@ -50,8 +49,8 @@ import CGGenCLI
     testName: String = #function,
     line: UInt = #line
   ) throws {
-    let fileURLs = fromSamples ? 
-      (isPDF ? pdfSampleFiles(files) : svgSampleFiles(files)) : 
+    let fileURLs = fromSamples ?
+      (isPDF ? pdfSampleFiles(files) : svgSampleFiles(files)) :
       pluginDemoFiles(files)
 
     let tmpdir = try createTempDirectory()
@@ -77,7 +76,7 @@ import CGGenCLI
       )
     )
 
-    // Test all three outputs  
+    // Test all three outputs
     let outputs: [(file: URL, ext: String)] = [
       (swiftOutput, "swift"),
       (objcHeader, "h"),
@@ -86,7 +85,7 @@ import CGGenCLI
 
     for (outputFile, ext) in outputs {
       let generatedCode = try String(contentsOf: outputFile, encoding: .utf8)
-      
+
       var strategy = Snapshotting<String, String>.lines
       strategy.pathExtension = ext
 

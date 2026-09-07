@@ -1,11 +1,10 @@
+import CGGenCore
+import CGGenDiagnosticSupport
 import CoreGraphics
 import Foundation
 import Testing
 
-import CGGenCore
-import CGGenDiagnosticSupport
-
-@Suite struct PDFTests {
+struct PDFTests {
   @Test func alpha() {
     test(pdf: "alpha")
   }

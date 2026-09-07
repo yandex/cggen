@@ -8,15 +8,15 @@ struct XMLSwiftParsingError: Swift.Error, CustomStringConvertible {
 
 typealias XMLInput = Substring.UTF8View
 
-// Parses the XML subset used by SVG: elements with attributes, nesting,
-// the XML declaration, comments, text nodes, the predefined entity
-// references (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`) and numeric
-// character references. CDATA sections, DTDs and processing instructions
-// are not supported.
-//
-// The structure is parsed from bytes; the meaning of elements and text is
-// delegated to sub-parsers over the parsed pieces, so the same grammar can
-// build an XML tree or domain types directly.
+/// Parses the XML subset used by SVG: elements with attributes, nesting,
+/// the XML declaration, comments, text nodes, the predefined entity
+/// references (`&lt;` `&gt;` `&amp;` `&quot;` `&apos;`) and numeric
+/// character references. CDATA sections, DTDs and processing instructions
+/// are not supported.
+///
+/// The structure is parsed from bytes; the meaning of elements and text is
+/// delegated to sub-parsers over the parsed pieces, so the same grammar can
+/// build an XML tree or domain types directly.
 enum XMLParsing {
   // One element's pieces before interpretation; children already parsed.
   // Attribute values are slices of the document, except when entity
@@ -33,9 +33,9 @@ enum XMLParsing {
     var children: [Node]
   }
 
-  // 1-based line and byte-column of the first unconsumed byte. Failing
-  // parsers leave the input at (or rewound to) the offending construct,
-  // so this is the error position.
+  /// 1-based line and byte-column of the first unconsumed byte. Failing
+  /// parsers leave the input at (or rewound to) the offending construct,
+  /// so this is the error position.
   static func position(
     ofRemainder remainder: XMLInput, in text: String
   ) -> (line: Int, column: Int) {
@@ -52,7 +52,7 @@ enum XMLParsing {
     return (line, column)
   }
 
-  // BOM? declaration? misc element misc EOF
+  /// BOM? declaration? misc element misc EOF
   struct DocumentParser<ElementNode: Parser, TextNode: Parser>: Parser
     where ElementNode.Input == RawElement<ElementNode.Output>,
     TextNode.Input == String, TextNode.Output == ElementNode.Output {
@@ -76,7 +76,7 @@ enum XMLParsing {
     }
   }
 
-  // <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+  /// <?xml version="1.0" encoding="UTF-8" standalone="no"?>
   struct Declaration: Parser {
     func parse(_ input: inout XMLInput) throws {
       guard input.starts(with: "<?xml".utf8) else {
@@ -137,7 +137,7 @@ enum XMLParsing {
       input.removeFirst(2)
     }
 
-    // S? = S? quoted value, raw
+    /// S? = S? quoted value, raw
     private func quotedLiteral(
       _ input: inout XMLInput
     ) throws -> XMLInput {
@@ -167,7 +167,7 @@ enum XMLParsing {
     }
   }
 
-  // <!-- comment -->; "--" inside is not allowed
+  /// <!-- comment -->; "--" inside is not allowed
   struct Comment: Parser {
     func parse(_ input: inout XMLInput) throws {
       guard input.starts(with: "<!--".utf8) else {
@@ -201,7 +201,7 @@ enum XMLParsing {
     }
   }
 
-  // (comment | whitespace)*
+  /// (comment | whitespace)*
   struct Misc: Parser {
     var body: some Parser<XMLInput, Void> {
       Skip {
@@ -226,7 +226,7 @@ enum XMLParsing {
     }
   }
 
-  // &lt; &gt; &amp; &quot; &apos; &#10; &#x22;
+  /// &lt; &gt; &amp; &quot; &apos; &#10; &#x22;
   struct Reference: Parser {
     func parse(_ input: inout XMLInput) throws -> String {
       let rest = input.dropFirst()
@@ -246,8 +246,8 @@ enum XMLParsing {
     }
   }
 
-  // One maximal run of character data between markup; empty if none.
-  // CRLF and lone CR normalize to LF.
+  /// One maximal run of character data between markup; empty if none.
+  /// CRLF and lone CR normalize to LF.
   struct CharData: Parser {
     func parse(_ input: inout XMLInput) throws -> String {
       let first = input.prefix { !isCharDataBreak($0) }
@@ -285,9 +285,9 @@ enum XMLParsing {
     }
   }
 
-  // Quoted value; literal tab/LF/CR normalize to space (character
-  // references like &#x9; don't), entity references decode. The common
-  // entity-free value comes back as a slice of the document.
+  /// Quoted value; literal tab/LF/CR normalize to space (character
+  /// references like &#x9; don't), entity references decode. The common
+  /// entity-free value comes back as a slice of the document.
   struct AttributeValue: Parser {
     func parse(_ input: inout XMLInput) throws -> Substring {
       guard let quote = input.first,
@@ -341,7 +341,7 @@ enum XMLParsing {
     }
   }
 
-  // name S? = S? "value"
+  /// name S? = S? "value"
   struct XMLAttribute: Parser {
     func parse(_ input: inout XMLInput) throws -> (String, Substring) {
       let name = try Name().parse(&input)
@@ -355,7 +355,7 @@ enum XMLParsing {
     }
   }
 
-  // < name (S attribute)* S? (/> | > content </ name >)
+  /// < name (S attribute)* S? (/> | > content </ name >)
   struct ElementParser<ElementNode: Parser, TextNode: Parser>: Parser
     where ElementNode.Input == RawElement<ElementNode.Output>,
     TextNode.Input == String, TextNode.Output == ElementNode.Output {
@@ -453,9 +453,9 @@ enum XMLParsing {
       )
     }
 
-    // The element sub-parser rejecting means this whole element is the
-    // offender, so the input is rewound to its start for the error
-    // position to point at the element rather than after it.
+    /// The element sub-parser rejecting means this whole element is the
+    /// offender, so the input is rewound to its start for the error
+    /// position to point at the element rather than after it.
     private func node(
       tag: String,
       attrs: [(name: String, value: Substring)],
@@ -545,8 +545,8 @@ private func isCommentBreak(_ byte: UInt8) -> Bool {
     || byte < 0x20 && byte != 0x09 && byte != 0x0A && byte != 0x0D
 }
 
-// U+FFFE and U+FFFF are the only scalars excluded from the XML 1.0 Char
-// production representable in valid UTF-8.
+/// U+FFFE and U+FFFF are the only scalars excluded from the XML 1.0 Char
+/// production representable in valid UTF-8.
 private func skipCheckingNoncharacter(_ input: inout XMLInput) throws {
   if input.starts(with: [0xEF, 0xBF, 0xBE]) || input
     .starts(with: [0xEF, 0xBF, 0xBF]) {

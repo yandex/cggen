@@ -1,8 +1,7 @@
-import CoreGraphics
-import Foundation
-
 import CGGenCore
 import CGGenIR
+import CoreGraphics
+import Foundation
 import PDFParse
 
 private enum PDFGradientDrawingOptions {
@@ -57,13 +56,12 @@ enum PDFToDrawRouteConverter {
       resources: resources,
       gradients: gradients.mapValues { $0.1 }
     )
-    let route = DrawRoutine(
+    return DrawRoutine(
       boundingRect: bbox,
       gradients: gradients.mapValues { $0.0 },
       subroutines: subroutines,
       steps: prependSteps + steps + appendSteps
     )
-    return route
   }
 
   private static func operatorsToSteps(

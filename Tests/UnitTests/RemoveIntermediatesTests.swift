@@ -37,7 +37,7 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
   { Point(x: $0, y: k * $0 + b) }
 }
 
-@Suite struct RemoveIntermediatesTests {
+struct RemoveIntermediatesTests {
   @Test func empty() {
     let points = [Point]()
     #expect(points.removeIntermediates(tolerance: 0) == points)
@@ -53,44 +53,52 @@ private func line(k: Double, b: Double) -> (Double) -> Point {
     #expect(points.removeIntermediates(tolerance: 0) == points)
   }
 
-  @Test func oneDirectlyProportionalLine() {
+  @Test func oneDirectlyProportionalLine() throws {
     let l = line(k: 1, b: 0)
     let points = stride(from: 0.0, to: 2.0, by: 0.01).map(l)
     #expect(
-      points.removeIntermediates(tolerance: Double.ulpOfOne) ==
-        [points.first!, points.last!]
+      try points.removeIntermediates(tolerance: Double.ulpOfOne) ==
+        [#require(points.first), #require(points.last)]
     )
   }
 
-  @Test func oneLine() {
+  @Test func oneLine() throws {
     let l = line(k: -2, b: 10)
     let points = stride(from: -10.0, through: 2.0, by: 0.01).map(l)
     #expect(
-      points.removeIntermediates(tolerance: delta) ==
-        [points.first!, points.last!]
+      try points.removeIntermediates(tolerance: delta) ==
+        [#require(points.first), #require(points.last)]
     )
   }
 
-  @Test func twoLines() {
+  @Test func twoLines() throws {
     let line1 = line(k: -1, b: 4)
     let line2 = line(k: 0.5, b: 4)
     let points1 = stride(from: -2, to: 0, by: 0.01).map(line1)
     let points2 = stride(from: 0, to: 2, by: 0.01).map(line2)
     let points = points1 + points2
-    let expected = [points1.first!, points2.first!, points2.last!]
+    let expected = try [
+      #require(points1.first),
+      #require(points2.first),
+      #require(points2.last),
+    ]
     #expect(
       points.removeIntermediates(tolerance: delta) ==
         expected
     )
   }
 
-  @Test func twoLinesWithBigTolerance() {
+  @Test func twoLinesWithBigTolerance() throws {
     let line1 = line(k: -1, b: 0)
     let line2 = line(k: 1, b: 0)
     let points1 = stride(from: -1, to: 0, by: 0.01).map(line1)
     let points2 = stride(from: 0, to: 1, by: 0.01).map(line2)
     let points = points1 + points2
-    let expected = [points1.first!, points2.first!, points2.last!]
+    let expected = try [
+      #require(points1.first),
+      #require(points2.first),
+      #require(points2.last),
+    ]
     #expect(
       points.removeIntermediates(tolerance: 0.1) ==
         expected

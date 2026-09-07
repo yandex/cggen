@@ -37,7 +37,7 @@ extension SVGFilterNode {
   }
 }
 
-private struct FilterPrimitiveProcessAccumulator: Sendable {
+private struct FilterPrimitiveProcessAccumulator {
   var prev: SVGFilterNode
   var preceding: [String: SVGFilterNode]
 
@@ -115,7 +115,7 @@ private func colorMatrixFromValues(
   )
 }
 
-/*
+/**
  15.7.2
  Identifies input for the given filter primitive.
  The value can be either one of six keywords or can be a string which matches a
@@ -132,16 +132,18 @@ private func colorMatrixFromValues(
  */
 private func node(
   acc: FilterPrimitiveProcessAccumulator
-) -> (SVG.FilterPrimitiveIn?) throws -> SVGFilterNode { {
-  switch $0 {
-  case let .predefined(predefined):
-    node(from: predefined)
-  case let .previous(name):
-    try acc.preceding[name] !! FilterGraphCreationError.inputNotDefined
-  case .none:
-    acc.prev
+) -> (SVG.FilterPrimitiveIn?) throws -> SVGFilterNode {
+  {
+    switch $0 {
+    case let .predefined(predefined):
+      node(from: predefined)
+    case let .previous(name):
+      try acc.preceding[name] !! FilterGraphCreationError.inputNotDefined
+    case .none:
+      acc.prev
+    }
   }
-} }
+}
 
 private func node(
   from predefinedInput: SVG.FilterPrimitiveIn.Predefined

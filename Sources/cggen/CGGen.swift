@@ -1,8 +1,7 @@
 import ArgumentParser
-import Foundation
-
 import CGGenCLI
 import CGGenCore
+import Foundation
 
 extension GenerationStyle: ExpressibleByArgument {}
 

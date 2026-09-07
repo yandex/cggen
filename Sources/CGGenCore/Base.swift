@@ -82,7 +82,9 @@ public protocol OptionalType {
 }
 
 extension Optional: OptionalType {
-  public var optional: Wrapped? { self }
+  public var optional: Wrapped? {
+    self
+  }
 }
 
 public func ?= <T>(v: inout T, val: T?) {
@@ -119,7 +121,10 @@ public struct Splitted<Collection: Swift.Collection>: Swift.Collection {
   public typealias SubSequence = Slice<Splitted<Collection>>
   public typealias Element = Collection.SubSequence
 
-  public var startIndex: Int { 0 }
+  public var startIndex: Int {
+    0
+  }
+
   public var endIndex: Int {
     precondition(step > 0)
     return collection.count / step
@@ -509,4 +514,6 @@ extension Array {
   }
 }
 
-public func identity<T>(_ value: T) -> T { value }
+public func identity<T>(_ value: T) -> T {
+  value
+}

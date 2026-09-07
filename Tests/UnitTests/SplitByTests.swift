@@ -1,8 +1,7 @@
+import CGGenCore
 import Testing
 
-import CGGenCore
-
-@Suite struct SplitByTests {
+struct SplitByTests {
   @Test func testSplitBy() {
     #expect(
       Array([0, 1, 2, 3].splitBy(subSize: 2)) ==

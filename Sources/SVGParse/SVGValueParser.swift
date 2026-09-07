@@ -9,7 +9,7 @@ public enum SVGValueParser {
     }
   }}
 
-  // (wsp+ comma? wsp*) | (comma wsp*)
+  /// (wsp+ comma? wsp*) | (comma wsp*)
   struct CommaWSP: Parser {
     var body: some Parser<Substring, Void> {
       Skip { wsp+ ~>> comma~? ~>> wsp* | comma ~>> wsp* }
@@ -48,8 +48,8 @@ public enum SVGValueParser {
     number
   }
 
-  // "$name" wsp* "(" wsp* parser wsp* ")"
-  struct NamedTransform<P: Parser & Sendable>: Parser, Sendable
+  /// "$name" wsp* "(" wsp* parser wsp* ")"
+  struct NamedTransform<P: Parser & Sendable>: Parser
     where P.Input == Substring {
     var name: String
     var parser: Parsers.Map<P, SVG.Transform>
@@ -80,19 +80,19 @@ public enum SVGValueParser {
     }
   }
 
-  // "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
+  /// "translate" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
   static let translate = NamedTransform("translate", SVG.Transform.translate) {
     number
     (commaWsp~? ~>> number)~?
   }
 
-  // "scale" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
+  /// "scale" wsp* "(" wsp* number ( comma-wsp number )? wsp* ")"
   static let scale = NamedTransform("scale", SVG.Transform.scale) {
     number
     (commaWsp~? ~>> number)~?
   }
 
-  // comma-wsp number comma-wsp number
+  /// comma-wsp number comma-wsp number
   private static let anchor = Parse(SVG.Transform.Anchor.init) {
     commaWsp ~>> number
     commaWsp ~>> number
@@ -100,8 +100,8 @@ public enum SVGValueParser {
 
   private static let angle = number.map(SVG.Angle.init)
 
-  // "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp*
-  // ")"
+  /// "rotate" wsp* "(" wsp* number ( comma-wsp number comma-wsp number )? wsp*
+  /// ")"
   static let rotate = NamedTransform("rotate", SVG.Transform.rotate) {
     number.map(SVG.Angle.init)
     Parse { (values: (SVG.Float?, SVG.Float?)) -> SVG.Transform.Anchor? in
@@ -115,17 +115,17 @@ public enum SVGValueParser {
     }
   }
 
-  // "skewX" wsp* "(" wsp* number wsp* ")"
+  /// "skewX" wsp* "(" wsp* number wsp* ")"
   static let skewX = NamedTransform("skewX", SVG.Transform.skewX) {
     number.map(SVG.Angle.init)
   }
 
-  // "skewY" wsp* "(" wsp* number wsp* ")"
+  /// "skewY" wsp* "(" wsp* number wsp* ")"
   static let skewY = NamedTransform("skewY", SVG.Transform.skewY) {
     number.map(SVG.Angle.init)
   }
 
-  /*
+  /**
    "matrix" wsp* "(" wsp*
       number comma-wsp
       number comma-wsp
@@ -243,11 +243,11 @@ public enum SVGValueParser {
 
   static let paint = Paint()
 
-  // Add miter limit parser
+  /// Add miter limit parser
   static let miterLimit = number
 
-  // coordinate comma-wsp coordinate
-  // | coordinate negative-coordinate
+  /// coordinate comma-wsp coordinate
+  /// | coordinate negative-coordinate
   static let coordinatePair = Parse {
     SVG.CoordinatePair(($0.0, $0.1))
   } with: {
@@ -255,20 +255,20 @@ public enum SVGValueParser {
     commaWsp~? ~>> number
   }
 
-  // list-of-points:
-  //   wsp* coordinate-pairs? wsp*
-  // coordinate-pairs:
-  //   coordinate-pair
-  //   | coordinate-pair comma-wsp coordinate-pairs
+  /// list-of-points:
+  ///   wsp* coordinate-pairs? wsp*
+  /// coordinate-pairs:
+  ///   coordinate-pair
+  ///   | coordinate-pair comma-wsp coordinate-pairs
   static let listOfPoints = Parse {
     Skip { wsp* }
     Many { coordinatePair } separator: { commaWsp }
     Skip { wsp* }
   }
 
-  // elliptical-arc-argument:
-  //   nonnegative-number comma-wsp? nonnegative-number comma-wsp?
-  //     number comma-wsp flag comma-wsp? flag comma-wsp? coordinate-pair
+  /// elliptical-arc-argument:
+  ///   nonnegative-number comma-wsp? nonnegative-number comma-wsp?
+  ///     number comma-wsp flag comma-wsp? flag comma-wsp? coordinate-pair
   struct EllipticalArcArg: Parser {
     var body: some Parser<Substring, SVG.PathData.EllipticalArcArgument> {
       Parse(SVG.PathData.EllipticalArcArgument.init) {
@@ -390,7 +390,7 @@ public enum SVGValueParser {
 
   private static let curveArgument = CurveArgument()
 
-  struct Positioning: Parser, Sendable {
+  struct Positioning: Parser {
     var cmd: Character
 
     init(of cmd: Character) {
@@ -403,7 +403,7 @@ public enum SVGValueParser {
     }
   }
 
-  private struct ArgumentSequence<P: Parser & Sendable>: Parser, Sendable
+  private struct ArgumentSequence<P: Parser & Sendable>: Parser
     where P.Input == Substring {
     var parser: P
 
@@ -420,7 +420,7 @@ public enum SVGValueParser {
     c.hexDigitValue.flatMap(UInt8.init(exactly:))
   }
 
-  // Dash Array
+  /// Dash Array
   static let dashArray =
     Many(1...) {
       length

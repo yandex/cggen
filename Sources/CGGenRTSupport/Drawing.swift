@@ -10,7 +10,9 @@ public struct Drawing: Sendable, Equatable, Hashable {
   @usableFromInline var height: Float
   @usableFromInline var bytecode: BytecodeProcedure
 
+  /// @usableFromInline types require explicit Sendable conformance.
   @usableFromInline
+  // swiftformat:disable:next redundantSendable
   struct BytecodeProcedure: Sendable, Equatable, Hashable {
     @usableFromInline var bytecodeArray: [UInt8]
     @usableFromInline var decompressedSize: Int32

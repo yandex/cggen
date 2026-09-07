@@ -3,7 +3,7 @@ import AppKit
 import CGGenRTSupport
 import SwiftUI
 
-// AppKit demo showing cggen API examples
+/// AppKit demo showing cggen API examples
 class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
   NSTableViewDelegate {
   private let tableView = NSTableView()
@@ -284,7 +284,7 @@ class AppKitDemoViewController: NSViewController, NSTableViewDataSource,
   }
 }
 
-// SwiftUI wrapper
+/// SwiftUI wrapper
 struct AppKitDemo: NSViewControllerRepresentable {
   func makeNSViewController(context _: Context) -> AppKitDemoViewController {
     AppKitDemoViewController()

@@ -1,16 +1,15 @@
-import Foundation
-
 import CGGenCore
+import Foundation
 @preconcurrency import Parsing
 
 private enum Tag: String {
-  // shape
+  /// shape
   case circle, ellipse, polygon, rect, path
-  // structural
+  /// structural
   case defs, g, svg, use
-  // gradient
+  /// gradient
   case linearGradient, radialGradient
-  // descriptive
+  /// descriptive
   case title, desc
 
   case stop, mask, clipPath, filter
@@ -46,8 +45,8 @@ extension SVG.Length: ExpressibleByIntegerLiteral {
   }
 }
 
-// Any parsing failure with the 1-based position of the element or markup
-// the parser stopped at.
+/// Any parsing failure with the 1-based position of the element or markup
+/// the parser stopped at.
 public struct SVGParsingError: Swift.Error, CustomStringConvertible {
   public var line: Int
   public var column: Int
@@ -63,9 +62,9 @@ public enum SVGParser {
   typealias FilterPrimitiveParser = SVGFilterPrimitiveParser
   private typealias RawElement = XMLParsing.RawElement<Node>
 
-  // What an XML node parses into. Stops, filter primitives and text runs
-  // are not SVG elements of their own — they only exist as children of
-  // specific elements, which unwrap them while the tree is parsed bottom-up.
+  /// What an XML node parses into. Stops, filter primitives and text runs
+  /// are not SVG elements of their own — they only exist as children of
+  /// specific elements, which unwrap them while the tree is parsed bottom-up.
   private enum Node {
     case element(SVG)
     case stop(SVG.Stop)
@@ -397,7 +396,7 @@ public enum SVGParser {
 
   // MARK: - Children helpers
 
-  // An element with no permitted children.
+  /// An element with no permitted children.
   private static func leaf<State>(
     _ schema: AttributeSchema<State>,
     _ state: State,

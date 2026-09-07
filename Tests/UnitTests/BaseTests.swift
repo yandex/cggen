@@ -1,8 +1,7 @@
+import CGGenCore
 import Testing
 
-import CGGenCore
-
-@Suite struct BaseTests {
+struct BaseTests {
   @Test func testZip() {
     checkZip(zip(Int?.none, Int?.none), nil)
     checkZip(zip(42, Int?.none), nil)
