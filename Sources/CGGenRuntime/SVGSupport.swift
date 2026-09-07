@@ -40,45 +40,55 @@ extension CGGenPlatformImage {
   // MARK: @MainActor methods using default scale
 
   @MainActor
-  public convenience init(svgData: Data, size: CGSize) throws {
+  public static func svg(
+    _ data: Data,
+    size: CGSize
+  ) throws -> CGGenPlatformImage {
     #if canImport(UIKit)
     let scale = UIScreen.main.scale
     #elseif canImport(AppKit)
     let scale = NSScreen.main?.backingScaleFactor ?? 1.0
     #endif
-    try self.init(svgData: svgData, size: size, scale: scale)
+    return try svg(data, size: size, scale: scale)
   }
 
   @MainActor
-  public convenience init(svgString: String, size: CGSize) throws {
+  public static func svg(
+    _ string: String,
+    size: CGSize
+  ) throws -> CGGenPlatformImage {
     #if canImport(UIKit)
     let scale = UIScreen.main.scale
     #elseif canImport(AppKit)
     let scale = NSScreen.main?.backingScaleFactor ?? 1.0
     #endif
-    try self.init(svgString: svgString, size: size, scale: scale)
+    return try svg(string, size: size, scale: scale)
   }
 
   // MARK: Methods with explicit scale
 
-  public convenience init(svgData: Data, size: CGSize, scale: CGFloat) throws {
-    let cgImage = try CGImage.svg(svgData, size: size, scale: scale)
+  public static func svg(
+    _ data: Data,
+    size: CGSize,
+    scale: CGFloat
+  ) throws -> CGGenPlatformImage {
+    let cgImage = try CGImage.svg(data, size: size, scale: scale)
     #if canImport(UIKit)
-    self.init(cgImage: cgImage, scale: scale, orientation: .up)
+    return CGGenPlatformImage(cgImage: cgImage, scale: scale, orientation: .up)
     #elseif canImport(AppKit)
-    self.init(cgImage: cgImage, size: size)
+    return CGGenPlatformImage(cgImage: cgImage, size: size)
     #endif
   }
 
-  public convenience init(
-    svgString: String,
+  public static func svg(
+    _ string: String,
     size: CGSize,
     scale: CGFloat
-  ) throws {
-    guard let data = svgString.data(using: .utf8) else {
+  ) throws -> CGGenPlatformImage {
+    guard let data = string.data(using: .utf8) else {
       throw SVGRenderer.Error.invalidUTF8String
     }
-    try self.init(svgData: data, size: size, scale: scale)
+    return try svg(data, size: size, scale: scale)
   }
 }
 
@@ -86,32 +96,56 @@ extension CGGenPlatformImage {
 
 extension Image {
   @MainActor
-  public init(svgData: Data, size: CGSize) throws {
-    let image = try CGGenPlatformImage(svgData: svgData, size: size)
-    self.init(platformImage: image)
+  public static func svg(_ data: Data, size: CGSize) throws -> Image {
+    let image = try CGGenPlatformImage.svg(data, size: size)
+    #if canImport(UIKit)
+    return Image(uiImage: image)
+    #elseif canImport(AppKit)
+    return Image(nsImage: image)
+    #endif
   }
 
   @MainActor
-  public init(svgString: String, size: CGSize) throws {
-    let image = try CGGenPlatformImage(svgString: svgString, size: size)
-    self.init(platformImage: image)
+  public static func svg(_ string: String, size: CGSize) throws -> Image {
+    let image = try CGGenPlatformImage.svg(string, size: size)
+    #if canImport(UIKit)
+    return Image(uiImage: image)
+    #elseif canImport(AppKit)
+    return Image(nsImage: image)
+    #endif
   }
 
-  public init(svgData: Data, size: CGSize, scale: CGFloat) throws {
-    let image = try CGGenPlatformImage(
-      svgData: svgData,
+  public static func svg(
+    _ data: Data,
+    size: CGSize,
+    scale: CGFloat
+  ) throws -> Image {
+    let image = try CGGenPlatformImage.svg(
+      data,
       size: size,
       scale: scale
     )
-    self.init(platformImage: image)
+    #if canImport(UIKit)
+    return Image(uiImage: image)
+    #elseif canImport(AppKit)
+    return Image(nsImage: image)
+    #endif
   }
 
-  public init(svgString: String, size: CGSize, scale: CGFloat) throws {
-    let image = try CGGenPlatformImage(
-      svgString: svgString,
+  public static func svg(
+    _ string: String,
+    size: CGSize,
+    scale: CGFloat
+  ) throws -> Image {
+    let image = try CGGenPlatformImage.svg(
+      string,
       size: size,
       scale: scale
     )
-    self.init(platformImage: image)
+    #if canImport(UIKit)
+    return Image(uiImage: image)
+    #elseif canImport(AppKit)
+    return Image(nsImage: image)
+    #endif
   }
 }
