@@ -36,9 +36,9 @@ class UIKitDemoViewController: UIViewController {
             }
           ),
           UIKitExample(
-            code: "UIImage(drawing: .heart)",
+            code: "UIImage.draw(.heart)",
             createView: {
-              let imageView = UIImageView(image: UIImage(drawing: .heart))
+              let imageView = UIImageView(image: UIImage.draw(.heart))
               imageView.contentMode = .scaleAspectFit
               imageView.frame = CGRect(x: 0, y: 0, width: 30, height: 30)
               return imageView
@@ -127,9 +127,9 @@ class UIKitDemoViewController: UIViewController {
         category: "UIImageView Content Modes",
         items: [
           UIKitExample(
-            code: "imageView.image = UIImage(drawing: .rocket)\nimageView.contentMode = .scaleAspectFit",
+            code: "imageView.image = UIImage.draw(.rocket)\nimageView.contentMode = .scaleAspectFit",
             createView: {
-              let imageView = UIImageView(image: UIImage(drawing: .rocket))
+              let imageView = UIImageView(image: UIImage.draw(.rocket))
               imageView.contentMode = .scaleAspectFit
               imageView.backgroundColor = .systemGray6
               imageView.layer.borderColor = UIColor.systemGray4.cgColor
@@ -139,9 +139,9 @@ class UIKitDemoViewController: UIViewController {
             }
           ),
           UIKitExample(
-            code: "imageView.image = UIImage(drawing: .star)\nimageView.contentMode = .center",
+            code: "imageView.image = UIImage.draw(.star)\nimageView.contentMode = .center",
             createView: {
-              let imageView = UIImageView(image: UIImage(drawing: .star))
+              let imageView = UIImageView(image: UIImage.draw(.star))
               imageView.contentMode = .center
               imageView.backgroundColor = .systemGray6
               imageView.layer.borderColor = UIColor.systemGray4.cgColor

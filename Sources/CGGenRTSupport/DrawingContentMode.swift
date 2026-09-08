@@ -23,7 +23,8 @@ extension CGImage {
     targetSize: CGSize,
     contentMode: DrawingContentMode,
     scale: CGFloat = 1.0,
-    colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB()
+    colorSpace: CGColorSpace = CGColorSpaceCreateDeviceRGB(),
+    tintColor: CGColor? = nil
   ) -> CGImage? {
     let sourceSize = descriptor.size
     let scaledTargetSize = CGSize(
@@ -62,6 +63,12 @@ extension CGImage {
     context.scaleBy(x: transform.scale.width, y: transform.scale.height)
     descriptor.draw(in: context)
     context.restoreGState()
+    if let tintColor {
+      context.recolorContents(
+        in: CGRect(origin: .zero, size: targetSize),
+        with: tintColor
+      )
+    }
 
     return context.makeImage()
   }

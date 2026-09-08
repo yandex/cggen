@@ -150,6 +150,7 @@ let package = Package(
       resources: [
         .copy("pdf_samples"),
         .copy("svg_samples"),
+        .copy("tint_samples"),
         .copy("various_filenames"),
       ]
     ),

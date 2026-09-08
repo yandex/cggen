@@ -182,10 +182,10 @@ struct ContentView: View {
 
 ## Final Decision
 
-**Drawing namespace approach (#4)** with direct initializers:
+**Drawing namespace approach (#4)** with static image factories:
 
 * **SwiftUI Views:** Direct usage as views (`Drawing.circle`).
-* **UIKit/AppKit Images:** Direct initializer (`UIImage(drawing: .circle)`).
+* **UIKit/AppKit Images:** Static factory (`UIImage.draw(.circle)`).
 * **Core Graphics:** Direct drawing (`Drawing.circle.draw(context)`).
 
-The KeyPath-based API was initially included but has been deprecated as it adds unnecessary complexity without providing real benefits. The direct initializer approach is simpler and more intuitive.
+The KeyPath-based API was initially included but has been deprecated as it adds unnecessary complexity without providing real benefits. The factory methods accept Drawing values directly. The old image initializers remain available as deprecated compatibility wrappers.

@@ -204,3 +204,5 @@ See [Demo/CLAUDE.md](Demo/CLAUDE.md) for detailed workflow documentation includi
 
 ## Project Guidelines
 - AVOID marketing tone of new changes in documentation
+
+- New drawing-to-image APIs use `.draw` factory methods; retain deprecated image initializers for source compatibility.
