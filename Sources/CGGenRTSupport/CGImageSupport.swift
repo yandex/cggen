@@ -10,6 +10,7 @@ extension Drawing: View {
   public var body: some View {
     if #available(iOS 15.0, macOS 12.0, tvOS 15.0, watchOS 8.0, *) {
       Canvas { context, canvasSize in
+        DrawingRenderCounter.record()
         context.withCGContext { cgContext in
           // Calculate scale to fit the canvas
           let scaleX = canvasSize.width / size.width
