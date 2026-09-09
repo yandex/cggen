@@ -4,36 +4,27 @@ import CoreGraphics
 ///
 /// This struct is designed for minimal memory footprint.
 public struct Drawing: Sendable, Equatable, Hashable {
-  // Implementation note: Using Float (4 bytes) vs CGFloat (8 bytes) and Int32
-  // (4 bytes) vs Int (8 bytes) reduces memory from 48 to 28 bytes per instance.
-  @usableFromInline var width: Float
-  @usableFromInline var height: Float
-  @usableFromInline var bytecode: BytecodeProcedure
+  var width: Float
+  var height: Float
+  var bytecode: BytecodeProcedure
 
-  /// @usableFromInline types require explicit Sendable conformance.
-  @usableFromInline
-  // swiftformat:disable:next redundantSendable
-  struct BytecodeProcedure: Sendable, Equatable, Hashable {
-    @usableFromInline var bytecodeArray: [UInt8]
-    @usableFromInline var decompressedSize: Int32
-    @usableFromInline var startIndex: Int32
-    @usableFromInline var endIndex: Int32
+  struct BytecodeProcedure: Equatable, Hashable {
+    var storage: BytecodeStorage
+    var startIndex: Int32
+    var endIndex: Int32
 
-    @inlinable
-    init(
-      bytecodeArray: [UInt8],
-      decompressedSize: Int32,
-      startIndex: Int32,
-      endIndex: Int32
-    ) {
-      self.bytecodeArray = bytecodeArray
-      self.decompressedSize = decompressedSize
-      self.startIndex = startIndex
-      self.endIndex = endIndex
+    static func ==(lhs: Self, rhs: Self) -> Bool {
+      lhs.startIndex == rhs.startIndex && lhs.endIndex == rhs.endIndex &&
+        lhs.storage.hasSameContents(as: rhs.storage)
+    }
+
+    func hash(into hasher: inout Hasher) {
+      storage.hashContents(into: &hasher)
+      hasher.combine(startIndex)
+      hasher.combine(endIndex)
     }
   }
 
-  @inlinable
   @_spi(Generator) public init(
     width: Float,
     height: Float,
@@ -42,17 +33,29 @@ public struct Drawing: Sendable, Equatable, Hashable {
     startIndex: Int32,
     endIndex: Int32
   ) {
-    self.width = width
-    self.height = height
-    bytecode = BytecodeProcedure(
-      bytecodeArray: bytecodeArray,
-      decompressedSize: decompressedSize,
-      startIndex: startIndex,
-      endIndex: endIndex
+    self.init(
+      width: width, height: height,
+      storage: BytecodeStorage.shared(
+        bytes: bytecodeArray, decompressedSize: Int(decompressedSize)
+      ),
+      startIndex: startIndex, endIndex: endIndex
     )
   }
 
-  @inlinable
+  @_spi(Generator) public init(
+    width: Float,
+    height: Float,
+    storage: BytecodeStorage,
+    startIndex: Int32,
+    endIndex: Int32
+  ) {
+    self.width = width
+    self.height = height
+    bytecode = BytecodeProcedure(
+      storage: storage, startIndex: startIndex, endIndex: endIndex
+    )
+  }
+
   init(width: Float, height: Float, bytecode: BytecodeProcedure) {
     self.width = width
     self.height = height
@@ -71,8 +74,7 @@ public struct Drawing: Sendable, Equatable, Hashable {
   public func draw(in context: CGContext) {
     runCompressedBytecode(
       context: context,
-      bytecodeArray: bytecode.bytecodeArray,
-      decompressedSize: Int(bytecode.decompressedSize),
+      storage: bytecode.storage,
       startIndex: Int(bytecode.startIndex),
       endIndex: Int(bytecode.endIndex)
     )
@@ -84,20 +86,29 @@ public struct Drawing: Sendable, Equatable, Hashable {
 extension Drawing {
   /// A path representation backed by compressed bytecode.
   public struct Path: Sendable, Equatable, Hashable {
-    @usableFromInline var bytecode: BytecodeProcedure
+    var bytecode: BytecodeProcedure
 
-    @inlinable
     @_spi(Generator) public init(
       bytecodeArray: [UInt8],
       decompressedSize: Int32,
       startIndex: Int32,
       endIndex: Int32
     ) {
+      self.init(
+        storage: BytecodeStorage.shared(
+          bytes: bytecodeArray, decompressedSize: Int(decompressedSize)
+        ),
+        startIndex: startIndex, endIndex: endIndex
+      )
+    }
+
+    @_spi(Generator) public init(
+      storage: BytecodeStorage,
+      startIndex: Int32,
+      endIndex: Int32
+    ) {
       bytecode = BytecodeProcedure(
-        bytecodeArray: bytecodeArray,
-        decompressedSize: decompressedSize,
-        startIndex: startIndex,
-        endIndex: endIndex
+        storage: storage, startIndex: startIndex, endIndex: endIndex
       )
     }
 
@@ -106,8 +117,7 @@ extension Drawing {
     public func apply(to path: CGMutablePath) {
       runCompressedPathBytecode(
         path: path,
-        bytecodeArray: bytecode.bytecodeArray,
-        decompressedSize: Int(bytecode.decompressedSize),
+        storage: bytecode.storage,
         startIndex: Int(bytecode.startIndex),
         endIndex: Int(bytecode.endIndex)
       )

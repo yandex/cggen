@@ -1,6 +1,5 @@
 import CGGenBytecode
 import CGGenBytecodeDecoding
-import Compression
 @preconcurrency import CoreGraphics
 import Foundation
 
@@ -8,22 +7,14 @@ public func runBytecode(
   _ context: CGContext,
   fromData data: Data
 ) throws {
-  let sz = data.count
-  try data.withUnsafeBytes {
-    let ptr = $0.baseAddress!
-    try BytecodeRunner.run(context, ptr, sz)
-  }
+  try BytecodeRunner.run(context, Bytecode(Array(data)[...]))
 }
 
 public func runPathBytecode(
   _ path: CGMutablePath,
   fromData data: Data
 ) throws {
-  let sz = data.count
-  try data.withUnsafeBytes {
-    let ptr = $0.baseAddress!
-    try PathBytecodeRunner.run(path, ptr, sz)
-  }
+  try PathBytecodeRunner.run(path, Bytecode(Array(data)[...]))
 }
 
 public func runMergedBytecode(
@@ -33,21 +24,75 @@ public func runMergedBytecode(
   _ startIndex: Int,
   _ endIndex: Int
 ) throws {
-  let sz = data.count
-  try data.withUnsafeBytes {
-    let ptr = $0.baseAddress!.assumingMemoryBound(to: UInt8.self)
-
-    let decompressedArray = try cache[ptr] ?? {
-      let bytecode = try decompressBytecode(ptr, sz, decompressedLen)
-      cache[ptr] = bytecode
-      return bytecode
-    }()
-
-    let partArray = Array(decompressedArray[startIndex...endIndex])
-    try BytecodeRunner.run(context, partArray, partArray.count)
-  }
+  let storage = BytecodeStorage(
+    bytes: Array(data), decompressedSize: decompressedLen
+  )
+  try BytecodeRunner.run(context, Bytecode(storage.slice(
+    startIndex: startIndex, endIndex: endIndex
+  )))
 }
 
+/// The source must contain `len` initialized bytes during this call.
+/// The returned handle owns a retain, balanced by `releaseBytecodeStorage`.
+@unsafe
+@_cdecl("CGGenCreateBytecodeStorage")
+@_spi(CGGenInternal)
+public func createBytecodeStorage(
+  _ start: UnsafePointer<UInt8>,
+  _ len: Int,
+  _ decompressedLen: Int
+) -> UnsafeRawPointer {
+  let bytes = unsafe Array(UnsafeBufferPointer(start: start, count: len))
+  let storage = BytecodeStorage(bytes: bytes, decompressedSize: decompressedLen)
+  return unsafe UnsafeRawPointer(Unmanaged.passRetained(storage).toOpaque())
+}
+
+/// The handle must own an unreleased retain from `createBytecodeStorage`.
+@unsafe
+@_cdecl("CGGenReleaseBytecodeStorage")
+@_spi(CGGenInternal)
+public func releaseBytecodeStorage(_ handle: UnsafeRawPointer) {
+  unsafe Unmanaged<BytecodeStorage>.fromOpaque(handle).release()
+}
+
+/// The handle must remain retained for the duration of this call.
+@unsafe
+@_cdecl("CGGenDrawBytecode")
+@_spi(CGGenInternal)
+public func drawBytecode(
+  _ context: CGContext,
+  _ handle: UnsafeRawPointer,
+  _ startIndex: Int,
+  _ endIndex: Int
+) {
+  let storage = unsafe Unmanaged<BytecodeStorage>.fromOpaque(handle)
+    .takeUnretainedValue()
+  runCompressedBytecode(
+    context: context, storage: storage,
+    startIndex: startIndex, endIndex: endIndex
+  )
+}
+
+/// The handle must remain retained for the duration of this call.
+@unsafe
+@_cdecl("CGGenApplyPathBytecode")
+@_spi(CGGenInternal)
+public func applyPathBytecode(
+  _ path: CGMutablePath,
+  _ handle: UnsafeRawPointer,
+  _ startIndex: Int,
+  _ endIndex: Int
+) {
+  let storage = unsafe Unmanaged<BytecodeStorage>.fromOpaque(handle)
+    .takeUnretainedValue()
+  runCompressedPathBytecode(
+    path: path, storage: storage,
+    startIndex: startIndex, endIndex: endIndex
+  )
+}
+
+/// The source must be immutable static storage, valid for the process lifetime.
+@unsafe
 @_cdecl("runMergedBytecode")
 @_spi(CGGenInternal)
 public func runMergedBytecode(
@@ -58,20 +103,17 @@ public func runMergedBytecode(
   _ startIndex: Int,
   _ endIndex: Int
 ) {
-  do {
-    let decompressedArray = try cache[start] ?? {
-      let bytecode = try decompressBytecode(start, len, decompressedLen)
-      cache[start] = bytecode
-      return bytecode
-    }()
-
-    let partArray = Array(decompressedArray[startIndex...endIndex])
-    try BytecodeRunner.run(context, partArray, partArray.count)
-  } catch let t {
-    assertionFailure("Failed to run bytecode with error: \(t)")
-  }
+  let storage = unsafe staticBytecodes.storage(
+    start: start, count: len, decompressedSize: decompressedLen
+  )
+  runCompressedBytecode(
+    context: context, storage: storage,
+    startIndex: startIndex, endIndex: endIndex
+  )
 }
 
+/// The source must contain `len` initialized bytes during this call.
+@unsafe
 @_cdecl("runBytecode")
 @_spi(CGGenInternal)
 public func runBytecode(
@@ -80,12 +122,15 @@ public func runBytecode(
   _ len: Int
 ) {
   do {
-    try BytecodeRunner.run(context, start, len)
-  } catch let t {
-    assertionFailure("Failed to run bytecode with error: \(t)")
+    let bytecode = unsafe Bytecode(base: start, count: len)
+    try BytecodeRunner.run(context, bytecode)
+  } catch {
+    assertionFailure("Failed to run bytecode with error: \(error)")
   }
 }
 
+/// The source must contain `len` initialized bytes during this call.
+@unsafe
 @_cdecl("runPathBytecode")
 @_spi(CGGenInternal)
 public func runPathBytecode(
@@ -94,94 +139,69 @@ public func runPathBytecode(
   _ len: Int
 ) {
   do {
-    try PathBytecodeRunner.run(path, start, len)
-  } catch let t {
-    assertionFailure("Failed to run bytecode with error: \(t)")
+    let bytecode = unsafe Bytecode(base: start, count: len)
+    try PathBytecodeRunner.run(path, bytecode)
+  } catch {
+    assertionFailure("Failed to run path bytecode with error: \(error)")
   }
 }
 
+/// The source must be immutable static storage, valid for the process lifetime.
+@unsafe
 @_cdecl("runMergedPathBytecode")
 @_spi(CGGenInternal)
 public func runMergedPathBytecode(
   _ path: CGMutablePath,
-  _ compressedStart: UnsafePointer<UInt8>,
+  _ start: UnsafePointer<UInt8>,
   _ decompressedSize: Int,
   _ compressedSize: Int,
   _ startIndex: Int,
   _ endIndex: Int
 ) {
-  do {
-    let decompressedArray = try decompressBytecode(
-      compressedStart,
-      compressedSize,
-      decompressedSize
-    )
-
-    // Extract the relevant portion
-    let partArray = Array(decompressedArray[startIndex...endIndex])
-
-    // Run the path bytecode
-    partArray.withUnsafeBufferPointer { buffer in
-      do {
-        try PathBytecodeRunner.run(path, buffer.baseAddress!, partArray.count)
-      } catch let t {
-        assertionFailure("Failed to run path bytecode with error: \(t)")
-      }
-    }
-  } catch let t {
-    assertionFailure("Failed to decompress path bytecode with error: \(t)")
-  }
+  let storage = unsafe staticBytecodes.storage(
+    start: start, count: compressedSize, decompressedSize: decompressedSize
+  )
+  runCompressedPathBytecode(
+    path: path, storage: storage,
+    startIndex: startIndex, endIndex: endIndex
+  )
 }
 
-/// Array-based bytecode execution function
 func runCompressedBytecode(
   context: CGContext,
-  bytecodeArray: [UInt8],
-  decompressedSize: Int,
+  storage: BytecodeStorage,
   startIndex: Int,
   endIndex: Int
 ) {
-  bytecodeArray.withUnsafeBufferPointer { buffer in
-    runMergedBytecode(
-      context,
-      buffer.baseAddress!,
-      decompressedSize,
-      bytecodeArray.count,
-      startIndex,
-      endIndex
-    )
+  do {
+    try BytecodeRunner.run(context, Bytecode(storage.slice(
+      startIndex: startIndex, endIndex: endIndex
+    )))
+  } catch {
+    assertionFailure("Failed to run bytecode with error: \(error)")
   }
 }
 
-func runPathBytecode(
-  path: CGMutablePath,
-  bytecodeArray: [UInt8]
-) {
-  bytecodeArray.withUnsafeBufferPointer { buffer in
-    runPathBytecode(path, buffer.baseAddress!, bytecodeArray.count)
+func runPathBytecode(path: CGMutablePath, bytecodeArray: [UInt8]) {
+  do {
+    try PathBytecodeRunner.run(path, Bytecode(bytecodeArray[...]))
+  } catch {
+    assertionFailure("Failed to run path bytecode with error: \(error)")
   }
 }
 
-/// Compressed path bytecode execution function
 func runCompressedPathBytecode(
   path: CGMutablePath,
-  bytecodeArray: [UInt8],
-  decompressedSize: Int,
+  storage: BytecodeStorage,
   startIndex: Int,
   endIndex: Int
 ) {
-  let length = bytecodeArray.count
-
-  bytecodeArray.withUnsafeBufferPointer { buffer in
-    let ptr = buffer.baseAddress!
-    runMergedPathBytecode(
-      path,
-      ptr,
-      decompressedSize,
-      length,
-      startIndex,
-      endIndex
-    )
+  do {
+    try PathBytecodeRunner.run(path, Bytecode(storage.slice(
+      startIndex: startIndex, endIndex: endIndex
+    )))
+  } catch {
+    assertionFailure("Failed to run path bytecode with error: \(error)")
   }
 }
 
@@ -224,10 +244,8 @@ struct PathBytecodeRunner {
 
   static func run(
     _ path: CGMutablePath,
-    _ start: UnsafeRawPointer,
-    _ len: Int
+    _ bytecode: Bytecode
   ) throws {
-    let bytecode = Bytecode(base: start, count: len)
     var runner = PathBytecodeRunner(bytecode: bytecode, exec: .init(path: path))
     try runner.run()
   }
@@ -314,10 +332,8 @@ struct BytecodeRunner {
 
   static func run(
     _ context: CGContext,
-    _ start: UnsafeRawPointer,
-    _ len: Int
+    _ bytecode: Bytecode
   ) throws {
-    let bytecode = Bytecode(base: start, count: len)
     let ctx = ExtendedContext(initial: .default, context: context)
     var runner = BytecodeRunner(bytecode: bytecode, executor: .init(ctx: ctx))
     try runner.run()
@@ -1140,29 +1156,31 @@ extension CGGradient {
   }
 }
 
-private final class Cache<Value>: @unchecked Sendable {
-  class WrappedValue {
-    let value: Value
+private final class StaticBytecodeCache: @unchecked Sendable {
+  // Only legacy generated C entry points accept immortal source addresses.
+  private let lock = NSLock()
+  private var storageByAddress: [UInt: BytecodeStorage] = [:]
 
-    init(_ value: Value) {
-      self.value = value
+  @unsafe
+  func storage(
+    start: UnsafePointer<UInt8>, count: Int, decompressedSize: Int
+  ) -> BytecodeStorage {
+    let address = UInt(bitPattern: start)
+    lock.lock()
+    defer { lock.unlock() }
+    if let storage = storageByAddress[address],
+       storage.bytes.count == count,
+       storage.decompressedSize == decompressedSize {
+      return storage
     }
-  }
-
-  private let cache = NSCache<NSNumber, WrappedValue>()
-
-  subscript(key: UnsafePointer<UInt8>) -> Value? {
-    get {
-      cache.object(forKey: NSNumber(pointer: key))?.value
-    }
-    set {
-      if let newValue {
-        cache.setObject(WrappedValue(newValue), forKey: NSNumber(pointer: key))
-      } else {
-        cache.removeObject(forKey: NSNumber(pointer: key))
-      }
-    }
+    let bytes = unsafe Array(UnsafeBufferPointer(start: start, count: count))
+    let storage = BytecodeStorage(
+      bytes: bytes,
+      decompressedSize: decompressedSize
+    )
+    storageByAddress[address] = storage
+    return storage
   }
 }
 
-private let cache = Cache<[UInt8]>()
+private let staticBytecodes = StaticBytecodeCache()
