@@ -50,37 +50,29 @@ public enum PluginDemo {
 
     print("\n✨ All shapes rendered using optimized bytecode!")
 
-    // Demonstrate the preferred KeyPath-based API
-    print("\n=== 🎨 Modern Swift API with KeyPaths ===")
+    print("\n=== 🎨 Image Factories ===")
 
-    #if swift(>=6.1)
     // Platform-specific image creation
     #if canImport(UIKit)
-    print("\n📱 iOS UIImage Creation (KeyPath API):")
-    let circleImage = UIImage.draw(\.circle)
-    print("  • UIImage.draw(\\.circle) → size: \(circleImage.size)")
+    print("\n📱 iOS UIImage Creation:")
+    let circleImage = UIImage.draw(.circle)
+    print("  • UIImage.draw(.circle) → size: \(circleImage.size)")
 
-    let squareImage = UIImage.draw(\.square)
-    print("  • UIImage.draw(\\.square) → size: \(squareImage.size)")
+    let squareImage = UIImage.draw(.square)
+    print("  • UIImage.draw(.square) → size: \(squareImage.size)")
 
-    let starImage = UIImage.draw(\.star, scale: 2.0)
-    print("  • UIImage.draw(\\.star, scale: 2.0) → size: \(starImage.size)")
+    let starImage = UIImage.draw(.star, scale: 2.0)
+    print("  • UIImage.draw(.star, scale: 2.0) → size: \(starImage.size)")
     #elseif canImport(AppKit)
-    print("\n🖥️  macOS NSImage Creation (KeyPath API):")
-    let circleImage = NSImage.draw(\.circle)
-    print("  • NSImage.draw(\\.circle) → size: \(circleImage.size)")
+    print("\n🖥️  macOS NSImage Creation:")
+    let circleImage = NSImage.draw(.circle)
+    print("  • NSImage.draw(.circle) → size: \(circleImage.size)")
 
-    let squareImage = NSImage.draw(\.square)
-    print("  • NSImage.draw(\\.square) → size: \(squareImage.size)")
+    let squareImage = NSImage.draw(.square)
+    print("  • NSImage.draw(.square) → size: \(squareImage.size)")
 
-    let starImage = NSImage.draw(\.star, scale: 2.0)
-    print("  • NSImage.draw(\\.star, scale: 2.0) → size: \(starImage.size)")
-    #endif
-    #else
-    print("\n⚠️  KeyPath API requires Swift 6.1+")
-    print("  Please use direct Drawing values instead:")
-    print("  • UIImage.draw(.circle)")
-    print("  • NSImage.draw(.square)")
+    let starImage = NSImage.draw(.star, scale: 2.0)
+    print("  • NSImage.draw(.star, scale: 2.0) → size: \(starImage.size)")
     #endif
 
     // Core Graphics direct drawing

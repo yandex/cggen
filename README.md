@@ -18,6 +18,8 @@ Instead of bundling vector assets as resources, cggen compiles them into compres
 
 ## Installation
 
+Building cggen requires Swift 6.2 or newer. The runtime supports macOS 14 and iOS 13 or newer.
+
 Add cggen as a dependency to your `Package.swift`:
 
 ```swift
@@ -234,4 +236,3 @@ cggen uses a sophisticated compilation approach:
 - [API Design Considerations](docs/api-design-considerations.md) - Design decisions and alternatives
 - [Adding New Attributes](docs/adding-new-attribute.md) - Guide for contributing SVG attribute support
 - [Path Generation](docs/path-generation.md) - Path extraction for animations and custom rendering
-

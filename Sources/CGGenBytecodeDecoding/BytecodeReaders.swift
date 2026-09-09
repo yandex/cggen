@@ -13,42 +13,64 @@ public struct InvalidRawValue<T: RawRepresentable>: Swift.Error
 
 // MARK: - Bytecode
 
-public struct Bytecode {
+public struct Bytecode: Sendable {
   public enum ReadingError: Swift.Error {
     case outOfBounds(left: Int, required: Int)
     case isNotPOD(Any.Type)
   }
 
-  public var base: UnsafeRawPointer
-  public var count: Int
+  @usableFromInline var bytes: ArraySlice<UInt8>
 
-  public init(base: UnsafeRawPointer, count: Int) {
-    self.base = base
-    self.count = count
+  @inlinable
+  public var count: Int {
+    bytes.count
   }
 
-  public mutating func read<T: FixedWidthInteger>(type _: T.Type) throws -> T {
-    let size = MemoryLayout<T>.size
+  @inlinable
+  public init(_ bytes: ArraySlice<UInt8>) {
+    self.bytes = bytes
+  }
 
-    guard _isPOD(T.self) else { throw ReadingError.isNotPOD(T.self) }
+  /// The pointer must reference `count` initialized bytes during this call.
+  @unsafe
+  public init(base: UnsafeRawPointer, count: Int) {
+    let buffer = unsafe UnsafeRawBufferPointer(start: base, count: count)
+    bytes = unsafe Array(buffer)[...]
+  }
+
+  @inlinable
+  public mutating func read<T: FixedWidthInteger>(type _: T.Type) throws -> T {
+    let size = T.bitWidth / 8
+
     guard size <= count else {
       throw ReadingError.outOfBounds(left: count, required: size)
     }
 
-    var value: T = 0
-    memcpy(&value, base, size)
-    base = base.advanced(by: size)
-    count -= size
+    let value = Self.readInteger(bytes.span, as: T.self)
+    bytes = bytes.dropFirst(size)
 
-    return T(littleEndian: value)
+    return value
   }
 
-  public mutating func advance(count: Int) -> Self {
-    defer {
-      base = base.advanced(by: count)
-      self.count -= count
+  @inlinable
+  public mutating func advance(count: Int) throws -> Self {
+    guard count >= 0, count <= bytes.count else {
+      throw ReadingError.outOfBounds(left: bytes.count, required: count)
     }
-    return Self(base: base, count: count)
+    let result = Self(bytes.prefix(count))
+    bytes = bytes.dropFirst(count)
+    return result
+  }
+
+  @inlinable @inline(__always)
+  static func readInteger<T: FixedWidthInteger>(
+    _ bytes: Span<UInt8>, as _: T.Type
+  ) -> T {
+    var value: T = 0
+    for index in 0..<T.bitWidth / 8 {
+      value |= T(truncatingIfNeeded: bytes[index]) << (index * 8)
+    }
+    return value
   }
 }
 

@@ -186,16 +186,16 @@ struct PlaygroundView: View {
 
   private func generateImage() -> Image {
     #if canImport(UIKit)
-    let platformImage = UIImage(
-      drawing: selectedDrawing.drawing,
+    let platformImage = UIImage.draw(
+      selectedDrawing.drawing,
       size: CGSize(width: targetWidth, height: targetHeight),
       contentMode: contentMode,
       scale: scale
     )
     return Image(uiImage: platformImage)
     #elseif canImport(AppKit)
-    let platformImage = NSImage(
-      drawing: selectedDrawing.drawing,
+    let platformImage = NSImage.draw(
+      selectedDrawing.drawing,
       size: CGSize(width: targetWidth, height: targetHeight),
       contentMode: contentMode,
       scale: scale

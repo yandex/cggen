@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to
 // build this package.
 
@@ -110,7 +110,8 @@ let package = Package(
     // Bytecode decompression
     .target(
       name: "CGGenBytecodeDecoding",
-      dependencies: ["CGGenBytecode"]
+      dependencies: ["CGGenBytecode"],
+      swiftSettings: [.strictMemorySafety()]
     ),
 
     // Diagnostic support: reference rendering and image comparison
