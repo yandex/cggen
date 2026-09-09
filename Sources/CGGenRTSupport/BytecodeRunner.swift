@@ -303,7 +303,7 @@ struct PathBytecodeRunner {
     guard sz <= programCounter.count else {
       throw Error.outOfBounds(left: programCounter.count, required: sz)
     }
-    return programCounter.advance(count: sz)
+    return try programCounter.advance(count: sz)
   }
 }
 
@@ -451,7 +451,7 @@ struct BytecodeRunner {
     guard sz <= programCounter.count else {
       throw Error.outOfBounds(left: programCounter.count, required: sz)
     }
-    return programCounter.advance(count: sz)
+    return try programCounter.advance(count: sz)
   }
 }
 

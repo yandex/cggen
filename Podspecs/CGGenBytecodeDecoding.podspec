@@ -15,7 +15,8 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '13.0'
   s.osx.deployment_target = '14.0'
 
-  s.swift_versions = ['5.9', '6.0']
+  s.swift_versions = ['6.0']
+  s.pod_target_xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -strict-memory-safety' }
 
   s.source_files = 'Sources/CGGenBytecodeDecoding/**/*.swift'
 
