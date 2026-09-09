@@ -133,6 +133,7 @@ let package = Package(
       name: "UnitTests",
       dependencies: [
         "CGGenCore", "SVGParse", "CGGenCLI", "CGGenBytecodeDecoding",
+        "CGGenRTSupport",
       ],
       resources: [
         .copy("UnitTests.xctestplan"),
