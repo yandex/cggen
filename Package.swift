@@ -130,7 +130,9 @@ let package = Package(
     ),
     .testTarget(
       name: "UnitTests",
-      dependencies: ["CGGenCore", "SVGParse", "CGGenCLI"],
+      dependencies: [
+        "CGGenCore", "SVGParse", "CGGenCLI", "CGGenBytecodeDecoding",
+      ],
       resources: [
         .copy("UnitTests.xctestplan"),
       ]
